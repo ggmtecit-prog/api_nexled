@@ -1,0 +1,309 @@
+{
+
+    "descricao": {
+        "pt": "Temperatura de cor",
+        "en": "Colour temperature", 
+        "es": "Temperatura del color"
+    }, 
+
+
+    "leds": [
+
+        {
+            "led": ["Vero13D273"],
+            "pt": "2700K - Branco Quente 2700K CRI >80",
+            "en": "2700K - Warm White 2700K CRI >80", 
+            "es": "2700K - Blanco cálido 2700K CRI >80",
+            "scdm": "1"
+        },
+
+        {
+            "led": ["WW273", "WW273HE"],
+            "pt": "Branco Quente 2700K CRI >80",
+            "en": "Warm White 2700K CRI >80", 
+            "es": "Blanco cálido 2700K CRI >80",
+            "scdm": "1"
+        },
+
+        {
+            "led": ["WW273HEPRO"],
+            "pt": "Branco Quente 2700K CRI >90",
+            "en": "Warm White 2700K CRI >90", 
+            "es": "Blanco cálido 2700K CRI >90",
+            "scdm": "1"
+        },
+
+        {
+            "led": ["CCT2757HE"],
+            "pt": "Branco Quente 2700K CRI >80 + Branco Frio 5700K CRI >80",
+            "en": "Warm White 2700K CRI >80 + Cool White 5700K CRI >80",
+            "es": "Blanco cálido 2700K CRI >80 + Blanco frío 5700K CRI >80",
+            "scdm": "1"
+        },
+
+        {
+            "led": ["CCT2757HEPRO"],
+            "pt": "Branco Quente 2700K CRI >90 + Branco Frio 5700K CRI >90",
+            "en": "Warm White 2700K CRI >90 + Cool White 5700K CRI >90",
+            "es": "Blanco cálido 2700K CRI >90 + Blanco frío 5700K CRI >90",
+            "scdm": "1"
+        },
+
+        {
+            "led": ["5050WW3031W"],
+            "pt": "3000K - Branco Quente 3000K CRI >70",
+            "en": "3000K - Warm White 3000K CRI >70",
+            "es": "3000K - Blanco cálido 3000K CRI >70",
+            "scdm": "1"
+        },
+
+        {
+            "led": ["Vero13D303", "V13C303E"],
+            "pt": "3000K - Branco Quente 3000K CRI >80",
+            "en": "3000K - Warm White 3000K CRI >80",
+            "es": "3000K - Blanco cálido 3000K CRI >80",
+            "scdm": "1"
+        },
+
+        {
+            "led": ["WW303", "WW303HE"],
+            "pt": "Branco Quente 3000K CRI >80",
+            "en": "Warm White 3000K CRI >80",
+            "es": "Blanco cálido 3000K CRI >80",
+            "scdm": "1"
+        },
+		
+		{
+            "led": ["WW303", "WW303E1"],
+            "pt": "Branco Quente 3000K CRI >80",
+            "en": "Warm White 3000K CRI >80",
+            "es": "Blanco cálido 3000K CRI >80",
+            "scdm": "1"
+        },
+
+        {
+            "led": ["WW303HEPRO"],
+            "pt": "Branco Quente 3000K CRI >90",
+            "en": "Warm White 3000K CRI >90",
+            "es": "Blanco cálido 3000K CRI >90",
+            "scdm": "1"
+        },
+		
+		{
+            "led": ["WW303HETHR"],
+            "pt": "Branco Quente 3000K CRI >93 RG >95 R9 >85",
+            "en": "Warm White 3000K CRI >93 RG >95 R9 >85",
+            "es": "Blanco cálido 3000K CRI >93 RG >95 R9 >85",
+            "scdm": "1"
+        },
+		{
+            "led": ["NW403HETHR"],
+            "pt": "Branco Neutro 4000K CRI >93 RG >95 R9 >85",
+            "en": "Neutal White 4000K CRI >93 RG >95 R9 >85",
+            "es": "Blanco neutro 4000K CRI >93 RG >95 R9 >85",
+            "scdm": "1"
+        },
+
+        {
+            "led": ["5050NW4031W"],
+            "pt": "4000K - Branco Neutro 4000K CRI >70",
+            "en": "4000K - Neutral White 4000K CRI >70",
+            "es": "4000K - Blanco neutro 4000K CRI >70",
+            "scdm": "1"
+        },
+
+        {
+            "led": ["Vero13D403", "V13C403E"],
+            "pt": "4000K - Branco Neutro 4000K CRI >80",
+            "en": "4000K - Neutral White 4000K CRI >80",
+            "es": "4000K - Blanco neutro 4000K CRI >80",
+            "scdm": "1"
+        },
+		
+		{
+            "led": ["NW353HE"],
+            "pt": "Branco Neutro 3500K CRI >80",
+            "en": "Neutral White 3500K CRI >80",
+            "es": "Blanco neutro 3500K CRI >80",
+            "scdm": "1"
+        },
+		 {
+            "led": ["NW353HEPRO"],
+            "pt": "Branco Neutro 3500K CRI >90",
+            "en": "Neutral White 3500K CRI >90",
+            "es": "Blanco neutro 3500K CRI >90",
+            "scdm": "1"
+        },
+
+        {
+            "led": ["NW403", "NW403HE"],
+            "pt": "Branco Neutro 4000K CRI >80",
+            "en": "Neutral White 4000K CRI >80",
+            "es": "Blanco neutro 4000K CRI >80",
+            "scdm": "1"
+        },
+		{
+            "led": ["NW403", "NW403E1"],
+            "pt": "Branco Neutro 4000K CRI >80",
+            "en": "Neutral White 4000K CRI >80",
+            "es": "Blanco neutro 4000K CRI >80",
+            "scdm": "1"
+        },
+
+        {
+            "led": ["NW403HER9"],
+            "pt": "Branco Neutro 4000K CRI >90 R9 >85",
+            "en": "Neutral White 4000K CRI >90 R9 >85",
+            "es": "Blanco neutro 4000K CRI >90 R9 >85",
+            "scdm": "1"
+        },
+
+        {
+            "led": ["NW403HEPRO"],
+            "pt": "Branco Neutro 4000K CRI >90",
+            "en": "Neutral White 4000K CRI >90",
+            "es": "Blanco neutro 4000K CRI >90",
+            "scdm": "1"
+        },
+
+        {
+            "led": ["NW403Pro"],
+            "pt": "Branco Neutro 4000K CRI >90",
+            "en": "Neutral White 4000K CRI >90",
+            "es": "Blanco neutro 4000K CRI >90",
+            "scdm": "1"
+        },
+
+        {
+            "led": ["5050NW5031W"],
+            "pt": "5000K - Branco Frio 5000K CRI >70",
+            "en": "5000K - Cool White 5000K CRI >70",
+            "es": "5000K - Blanco frío 5000K CRI >70",
+            "scdm": "1"
+        },
+
+        {
+            "led": ["CW503", "CW503HE"],
+            "pt": "Branco Frio 5000K CRI >80",
+            "en": "Cool White 5000K CRI >80",
+            "es": "Blanco frío 5000K CRI >80",
+            "scdm": "1"
+        },
+
+        {
+            "led": ["CW503HEPRO"],
+            "pt": "Branco Frio 5000K CRI >90",
+            "en": "Cool White 5000K CRI >90",
+            "es": "Blanco frío 5000K CRI >90",
+            "scdm": "1"
+        },
+
+        {
+            "led": ["CCTPK50"],
+            "pt": "PINK + Branco Frio 5000K CRI >80",
+            "en": "PINK + Cool White 5000K CRI >80",
+            "es": "ROSA + Blanco frío 5000K CRI >80",
+            "scdm": "1"
+        },
+
+        {
+            "led": ["CW573", "CW573HE"],
+            "pt": "Branco Frio 5700K CRI >80",
+            "en": "Cool White 5700K CRI >80",
+            "es": "Blanco frío 5700K CRI >80",
+            "scdm": "1"
+        },
+
+        {
+            "led": ["CW573HEPRO"],
+            "pt": "Branco Frio 5700K CRI >90",
+            "en": "Cool White 5700K CRI >90",
+            "es": "Blanco frío 5700K CRI >90",
+            "scdm": "1"
+        },
+
+        {
+            "led": ["CW653"],
+            "pt": "Branco Frio 6500K CRI >80",
+            "en": "Cool White 6500K CRI >80",
+            "es": "Blanco frío 6500K CRI >80",
+            "scdm": "1"
+        },
+		
+		{
+            "led": ["CW653HE"],
+            "pt": "Branco Frio 6500K CRI >80",
+            "en": "Cool White 6500K CRI >80",
+            "es": "Blanco frío 6500K CRI >80",
+            "scdm": "1"
+        },
+		
+		 {
+            "led": ["CW653HEPRO"],
+            "pt": "Branco Frio 6500K CRI >90",
+            "en": "Cool White 6500K CRI >90",
+            "es": "Blanco frío 6500K CRI >90",
+            "scdm": "1"
+        },
+
+        {
+            "led": ["3528B"],
+            "pt": "AZ - Azul",
+            "en": "AZ - Blue",
+            "es": "AZ - Azul"
+        },
+
+        {
+            "led": ["2835PINK"],
+            "pt": "Talho HE - Pink",
+            "en": "Talho HE - Pink",
+            "es": "Talho HE - Pink"
+        },
+
+        {
+            "led": ["FreshMHE"],
+            "pt": "Fresh Meat CRI>80",
+            "en": "Fresh Meat CRI>80",
+            "es": "Fresh Meat CRI>80"
+        },
+		
+		{
+            "led": ["CW573HEPRO"],
+            "pt": "Branco Frio 5700K CRI >90",
+            "en": "Cool White 5700K CRI >90",
+            "es": "Blanco frío 5700K CRI >90",
+            "scdm": "1"
+        },
+
+        {
+            "led": ["5050R"],
+            "pt": "RGB",
+            "en": "RGB",
+            "es": "RGB"
+        }
+    
+    ],
+
+    "SDCM": {
+
+        "excecoes": [
+                
+            {
+                "familias": ["37", "38"],
+                "pt": "Margem da temperatura de cor de 5 SDCM tendo como referencia o centro da elipse de MacAdam segundo a norma ANSI C78.377:2011.",
+                "en": "Colour temperature margin of 5 SDCM with reference to the centre of the MacAdam ellipse according to ANSI C78.377:2011.",
+                "es": "Margen de temperatura de color de 5 SDCM con referencia al centro de la elipse de MacAdam según ANSI C78.377:2011."
+            }
+        ],
+        
+        "default": {
+            "pt": "Margem da temperatura de cor de 3 SDCM tendo como referencia o centro da elipse de MacAdam segundo a norma ANSI C78.377:2011.",
+            "en": "Colour temperature margin of 3 SDCM with reference to the centre of the MacAdam ellipse according to ANSI C78.377:2011.",
+            "es": "Margen de temperatura de color de 3 SDCM con referencia al centro de la elipse de MacAdam según ANSI C78.377:2011."
+        }
+    }
+
+}
+    
+
+        

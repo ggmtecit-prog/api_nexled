@@ -1,0 +1,27 @@
+{
+    "produtos": [
+        {
+            "familias": ["11", "55"],
+            "tamanhos": "barras",
+            "tipo": "barra"
+        },
+        {
+            "familias": ["58"],
+            "tamanhos": "barras_hot",
+            "tipo": "barra"
+        },
+        {
+            "familias": ["32"],
+            "tamanhos": "barras_bt",
+            "tipo": "barra"
+        },
+        {
+            "familias": ["29", "30"],
+            "tipo": "downlight"
+        },
+        {
+            "familias": ["48"],
+            "tipo": "dynamic"
+        }
+    ]
+}

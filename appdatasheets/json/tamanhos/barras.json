@@ -1,0 +1,165 @@
+{
+
+    "comentário tampa": [
+        "tampa -> código da tampa selecionada",
+            "desc: indicação do nome da tampa - apenas para organização interna, não tem qualquer função",
+            "comprimento: comprimento que será adicionado ao total do comprimento da barra",
+            "largura: largura da tampa",
+            "altura -> código da lente: a altura da barra com aquela tampa e lente"
+    ],
+
+    "tampa": {
+
+        "0": {
+            "desc": "normal", 
+            "comprimento": "1.5", 
+            "largura": "19", 
+            "altura": {
+                "1": "13",
+                "2": "13",
+                "6": "14",
+                "7": "15.5",
+                "8": "16"
+            }
+        },
+
+        "1": {
+            "desc": "fricon", 
+            "comprimento": "3", 
+            "largura": "17", 
+            "altura": {
+                "1": "12",
+                "2": "12",
+				"8": "15",
+				"9": "14.5"
+            }
+        },
+
+        "2": {
+            "desc": "chapa", 
+            "comprimento": "1.5", 
+            "largura": "17", 
+            "altura": {
+                "1": "12",
+                "2": "12"
+            }
+        }
+    },
+
+    
+
+    "comentário barra": [
+        "largura: largura do perfil em alumínio",
+        "altura -> código da lente: a altura da barra aquela lente"
+    ],
+
+    "barra": {
+
+        "largura": "17",
+        "altura": {
+            "1": "11.4",
+            "2": "11.4",
+            "6": "12.4",
+            "7": "13.4",
+            "8": "18",
+            "9": "14.5"
+        }
+    },
+
+
+
+    "comentário caps": [
+        "desc: indicação do cap - apenas para organização interna, não tem qualquer função",
+        "cap: referências de cap que têm aquelas medidas",
+        "tampas: número de tampas daquele cap -> colocar apenas se for diferente de 2",
+        "vedantes: número de vedantes daquele cap -> colocar apenas se for diferente de 2",
+        "comprimento: comprimento que será adicionado ao total do comprimento da barra",
+        "altura: altura do conector da barra -> colocar apenas se houver conector da barra",
+        "largura: largura do conector da barra -> colocar apenas se houver conector da barra"
+    ],
+
+    "caps": [
+
+        {
+            "desc": "saida tras", 
+            "cap": ["02"], 
+            "comprimento": "10"
+        },
+
+        {
+            "desc": "1C2P / 1C4P", 
+            "cap": ["04", "05", "08", "10", "11"], 
+            "tampas": "1",
+            "vedantes": "1", 
+            "comprimento": "17.5", 
+            "altura": "", 
+            "largura": ""
+        },
+
+        {
+            "desc": "1C2P + saida tras / 1C4P + saida tras", 
+            "cap": ["09", "12"],  
+            "tampas": "1",
+            "vedantes": "1", 
+            "comprimento": "27.5", 
+            "altura": "15", 
+            "largura": "20"
+        },
+
+        {
+            "desc": "2C2P / 2C4P", 
+            "cap": ["06", "07"], 
+            "tampas": "0",
+            "vedantes": "0", 
+            "comprimento": "35",
+            "altura": "15", 
+            "largura": "20"
+        },
+
+        {
+            "desc": "1C1M", 
+            "cap": ["14", "16"],
+            "tampas": "1", 
+            "comprimento": "15", 
+            "altura": "14", 
+            "largura": "20"
+        },
+
+        {
+            "desc": "2C1M",
+            "cap": ["15", "19"],
+            "tampas": "0",
+            "comprimento": "30", 
+            "altura": "14", 
+            "largura": "20"
+        },
+
+        {
+            "desc": "1C1M + saida tras",
+            "cap": ["17"],
+            "tampas": "1",
+            "comprimento": "25", 
+            "altura": "14", 
+            "largura": "20"
+        }
+
+    ],
+
+
+
+    "comentário conectorcabo": [
+        "altura: altura do conector do cabo",
+        "largura: largura do conector do cabo"
+    ],
+
+    "conectorcabo": {
+
+        "asqc2": {"altura": "6", "largura": "8"},
+
+        "c1m": {"altura": "13", "largura": "13"},
+
+        "dc24": {"altura": "13", "largura": "13"},
+
+        "c2p": {"altura": "15", "largura": "20", "comprimento":"45"}
+    }
+}

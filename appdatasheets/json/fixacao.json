@@ -1,0 +1,45 @@
+{
+    "fixacao": {
+
+        "clip180": {
+            "pt": "Clip metálico fixo 180º",
+            "en": "180º fixed metal clip", 
+            "es": "Clip metálico fijo 180"
+        },
+
+        "cliprotativo": {
+            "pt": "Clip metálico rotativo",
+            "en": "Rotating metal clip", 
+            "es": "Clip metálico giratorio"
+        },
+        
+        "clipmagnetico": {
+            "pt": "Clip PVC Magnético",
+            "en": "Magnetic PVC Clip", 
+            "es": "Clipe de PVC magnético"
+        },
+
+        "suporte180": {
+            "pt": "Suporte PVC 180º",
+            "en": "PVC support 180º", 
+            "es": "Soporte PVC 180"
+        },
+
+        "suporte45": {
+            "pt": "Suporte PVC 45º",
+            "en": "PVC support 45º", 
+            "es": "Soporte PVC 45º"
+        },
+
+        "suportecanto": {
+            "pt": "Suporte PVC Canto",
+            "en": "PVC support corner", 
+            "es": "Soporte PVC esquina"
+        }
+    
+    }
+
+}
+    
+
+        

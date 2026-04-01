@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(//c/xampp/htdocs/api_nexled/**)",
+      "Bash(gh auth:*)",
+      "Bash(git --version)"
+    ],
+    "additionalDirectories": [
+      "c:\\xampp\\htdocs\\api_nexled"
+    ]
+  }
+}
