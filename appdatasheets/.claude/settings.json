@@ -3,7 +3,9 @@
     "allow": [
       "Read(//c/xampp/htdocs/api_nexled/**)",
       "Bash(gh auth:*)",
-      "Bash(git --version)"
+      "Bash(git --version)",
+      "Bash(rtk git:*)",
+      "Bash(rtk git commit -m ':*)"
     ],
     "additionalDirectories": [
       "c:\\xampp\\htdocs\\api_nexled"
