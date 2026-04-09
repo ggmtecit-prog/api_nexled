@@ -36,13 +36,19 @@ const COPY_LABELS = {
     "output-description": "description",
 };
 
-const STATUS_BASE_CLASS = "text-body-xs min-h-16";
+const STATUS_BASE_CLASS = "text-body-xs min-h-16 text-center pt-16";
 const STATUS_TONE_CLASS = {
     neutral: "text-grey-primary",
     loading: "text-blue-primary",
     success: "text-green-primary",
     error: "text-red-primary",
 };
+const API_BADGE_TONE_CLASS = {
+    loading: "bg-blue-primary",
+    success: "bg-green-primary",
+    error: "bg-red-primary",
+};
+const NAV_GENERATE_IDS = ["nav-generate-desktop", "nav-generate-mobile"];
 
 let descriptionRequestToken = 0;
 let apiBasePromise = null;
@@ -51,6 +57,7 @@ document.addEventListener("DOMContentLoaded", () => {
     document.getElementById("select-family").addEventListener("change", handleFamilyChange);
     document.getElementById("btn-generate").addEventListener("click", generateDatasheet);
 
+    bindShellActions();
     bindReferenceListeners();
     bindCopyButtons();
     resetConfiguratorState();
@@ -112,6 +119,7 @@ async function apiPost(path, body) {
 async function loadFamilies() {
     const select = document.getElementById("select-family");
 
+    setApiBadge("loading", "Connecting to API");
     setStatus("Loading families...", "loading");
 
     try {
@@ -126,9 +134,11 @@ async function loadFamilies() {
             select.appendChild(option);
         });
 
+        setApiBadge("success", "API ready");
         setStatus("Choose a family to begin.", "neutral");
     } catch (error) {
         select.innerHTML = '<option value="">Unable to load families</option>';
+        setApiBadge("error", "API unavailable");
         setStatus("Unable to load product families.", "error");
         console.error(error);
     }
@@ -304,7 +314,6 @@ async function updateDescription(reference) {
 }
 
 async function generateDatasheet() {
-    const button = document.getElementById("btn-generate");
     const reference = document.getElementById("output-reference").value;
     const description = document.getElementById("output-description").value;
 
@@ -335,13 +344,13 @@ async function generateDatasheet() {
         finalidade: get("select-purpose"),
     };
 
-    button.disabled = true;
+    setGenerateControlsDisabled(true);
     setStatus("Generating datasheet...", "loading");
 
     try {
         const response = await apiPost("/?endpoint=datasheet", body);
 
-        button.disabled = false;
+        setGenerateControlsDisabled(false);
         syncGenerateButton();
 
         if (!response.ok) {
@@ -368,7 +377,7 @@ async function generateDatasheet() {
         URL.revokeObjectURL(url);
         setStatus("Datasheet ready. The PDF download has started.", "success");
     } catch (error) {
-        button.disabled = false;
+        setGenerateControlsDisabled(false);
         syncGenerateButton();
         setStatus("Datasheet generation failed.", "error");
         console.error(error);
@@ -381,6 +390,26 @@ function bindCopyButtons() {
     });
 
     syncCopyButtons();
+}
+
+function bindShellActions() {
+    const focusButton = document.getElementById("focus-family");
+    const resetTabButton = document.getElementById("reset-configurator");
+    const resetPanelButton = document.getElementById("reset-configurator-panel");
+
+    focusButton?.addEventListener("click", focusFamilyField);
+    resetTabButton?.addEventListener("click", resetAllSelections);
+    resetPanelButton?.addEventListener("click", resetAllSelections);
+
+    NAV_GENERATE_IDS.forEach((id) => {
+        const button = document.getElementById(id);
+
+        button?.addEventListener("click", () => {
+            if (!button.disabled) {
+                generateDatasheet();
+            }
+        });
+    });
 }
 
 async function copyField(button) {
@@ -423,6 +452,36 @@ function syncGenerateButton() {
     const hasReference = document.getElementById("output-reference").value.length > 0;
 
     button.disabled = !hasReference;
+
+    NAV_GENERATE_IDS.forEach((id) => {
+        const navButton = document.getElementById(id);
+
+        if (!navButton) {
+            return;
+        }
+
+        navButton.disabled = !hasReference;
+        navButton.setAttribute("aria-disabled", String(!hasReference));
+    });
+}
+
+function setGenerateControlsDisabled(isDisabled) {
+    const primaryButton = document.getElementById("btn-generate");
+
+    if (primaryButton) {
+        primaryButton.disabled = isDisabled;
+    }
+
+    NAV_GENERATE_IDS.forEach((id) => {
+        const navButton = document.getElementById(id);
+
+        if (!navButton) {
+            return;
+        }
+
+        navButton.disabled = isDisabled;
+        navButton.setAttribute("aria-disabled", String(isDisabled));
+    });
 }
 
 function syncCopyButtons() {
@@ -480,4 +539,55 @@ function pad(value, length) {
     }
 
     return output;
+}
+
+function focusFamilyField() {
+    const field = document.getElementById("select-family");
+
+    if (!field) {
+        return;
+    }
+
+    field.scrollIntoView({ behavior: "smooth", block: "center" });
+    field.focus({ preventScroll: true });
+}
+
+function resetAllSelections() {
+    const familySelect = document.getElementById("select-family");
+
+    if (!familySelect) {
+        return;
+    }
+
+    familySelect.value = "";
+
+    document.querySelectorAll("#options-group select").forEach((element) => {
+        if (element.options.length > 0) {
+            element.selectedIndex = 0;
+        }
+    });
+
+    document.querySelectorAll('#options-group input[type="number"]').forEach((element) => {
+        element.value = "0";
+    });
+
+    resetConfiguratorState();
+    focusFamilyField();
+}
+
+function setApiBadge(tone, text) {
+    const dotClass = API_BADGE_TONE_CLASS[tone] || API_BADGE_TONE_CLASS.error;
+
+    document.querySelectorAll("[data-api-badge-dot]").forEach((dot) => {
+        dot.classList.remove(
+            API_BADGE_TONE_CLASS.loading,
+            API_BADGE_TONE_CLASS.success,
+            API_BADGE_TONE_CLASS.error
+        );
+        dot.classList.add(dotClass);
+    });
+
+    document.querySelectorAll("[data-api-badge-text]").forEach((label) => {
+        label.textContent = text;
+    });
 }
