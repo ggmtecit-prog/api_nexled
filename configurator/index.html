@@ -3,246 +3,484 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Nexled Configurator</title>
-    <link rel="stylesheet" href="style.css">
+    <title>NexLed - Product Configurator</title>
+
+    <!-- 1. Load Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Urbanist:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/remixicon@4.5.0/fonts/remixicon.css" rel="stylesheet">
+
+    <!-- 2. Tailwind CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- 3. Configure Tailwind -->
+    <script src="https://ggmtecit-prog.github.io/NexLed_UI_System/src/config-cdn.js?v=1.3"></script>
+    <link rel="stylesheet" href="https://ggmtecit-prog.github.io/NexLed_UI_System/src/nexled.css?v=1.3">
 </head>
-<body>
+<body class="bg-grey-tertiary text-black selection:bg-green-primary/10 min-h-screen">
 
-    <div id="app">
+    <header class="sticky top-0 z-sticky">
+        <div class="panel rounded-none border-x-0 border-t-0">
+            <div class="container-balanced flex items-center justify-between gap-16 py-16">
+                <a href="#builder" class="flex items-center gap-12 min-w-0">
+                    <img src="../appdatasheets/img/logos/nexled.png" alt="NexLed" class="w-40 h-40 md:w-48 md:h-48 object-contain">
+                    <div class="min-w-0 flex flex-col">
+                        <span class="text-card-title leading-none tracking-tight text-black">NexLed</span>
+                        <span class="text-label text-grey-primary tracking-wider">Product Configurator</span>
+                    </div>
+                </a>
 
-        <!-- HEADER -->
-        <header id="site-header">
-            <img src="" alt="Nexled" id="logo">
-            <h1>Product Configurator</h1>
+                <div class="hidden md:flex items-center gap-12">
+                    <span class="text-body-xs text-grey-primary">Factory-safe product reference builder</span>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="container-balanced py-24 md:py-32 lg:py-40 flex flex-col gap-24 md:gap-32">
+
+        <header class="page-header-hero" data-reveal="hero">
+            <h1 class="text-hero-title text-black">Build a NexLed reference with the current option matrix.</h1>
+            <p class="text-hero-subtitle text-black max-w-readable">
+                Select a product family first. The configurator loads the valid manufacturing combinations, assembles the
+                reference automatically, and keeps the datasheet output ready without manual formatting.
+            </p>
+            <div class="flex flex-wrap justify-center gap-16">
+                <a href="#builder" class="btn btn-primary btn-sm">Start configuring</a>
+                <a href="#output-panel" class="btn btn-secondary btn-sm">Review output</a>
+            </div>
         </header>
 
-        <!-- MAIN CONTENT -->
-        <main id="configurator">
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-24 lg:gap-32 items-start">
 
-            <!-- STEP 1: Family -->
-            <section id="step-family" class="step">
-                <label for="select-family">Product Family</label>
-                <select id="select-family">
-                    <option value="">Loading...</option>
-                </select>
+            <aside id="output-panel" class="order-first lg:order-none lg:sticky lg:top-24 flex flex-col gap-16">
+                <div class="card card-primary">
+                    <div class="card-body">
+                        <h2 class="card-title">Live datasheet output</h2>
+                        <p class="card-text">
+                            The summary stays in sync with the active configuration so the final request uses the same
+                            production-safe structure every time.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-body">
+                        <div class="flex items-start justify-between gap-12">
+                            <div class="min-w-0">
+                                <p class="text-overline text-grey-primary">Current state</p>
+                                <h2 id="output-title" class="card-title">Start with a family</h2>
+                            </div>
+                            <span id="config-step" class="text-overline text-green-primary">Step 1</span>
+                        </div>
+
+                        <p id="output-subtitle" class="card-text">Select a family to unlock the valid option set.</p>
+
+                        <div id="output-fields" class="hidden flex flex-col gap-16">
+                            <div>
+                                <label class="input-label" for="output-reference">Reference</label>
+                                <div class="text-field-shell text-field-shell-trailing-action">
+                                    <input type="text" id="output-reference" class="input input-sm" readonly>
+                                    <button type="button" class="btn btn-secondary btn-icon btn-xs text-field-shell-action" data-copy-target="output-reference" aria-label="Copy reference">
+                                        <i class="ri-file-copy-line text-icon-sm" aria-hidden="true"></i>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div>
+                                <label class="input-label" for="output-description">Description</label>
+                                <div class="text-field-shell text-field-shell-trailing-action">
+                                    <input type="text" id="output-description" class="input input-sm" readonly>
+                                    <button type="button" class="btn btn-secondary btn-icon btn-xs text-field-shell-action" data-copy-target="output-description" aria-label="Copy description">
+                                        <i class="ri-file-copy-line text-icon-sm" aria-hidden="true"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <button id="btn-generate" type="button" class="btn btn-primary btn-sm w-full" disabled>
+                            <i class="ri-file-pdf-line text-icon-md" aria-hidden="true"></i>
+                            <span>Generate datasheet</span>
+                        </button>
+
+                        <p id="status-message" class="text-body-xs text-grey-primary min-h-16">Choose a family to begin.</p>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-body">
+                        <h3 class="card-title">Reference flow</h3>
+                        <p class="card-text">
+                            Family, dimensions, light source, optics, finishing, and export metadata stay grouped so the
+                            selection path is easy to audit before generating the PDF.
+                        </p>
+                    </div>
+                </div>
+            </aside>
+
+            <section id="builder" class="lg:col-span-2 flex flex-col gap-16 md:gap-24">
+
+                <div class="card">
+                    <div class="card-body">
+                        <div class="card-header">
+                            <div class="card-icon">
+                                <i class="ri-stack-line text-icon-lg" aria-hidden="true"></i>
+                            </div>
+                            <div class="min-w-0">
+                                <h2 class="card-title">1. Product family</h2>
+                                <p class="card-text">
+                                    Start here. This choice loads the manufacturing-safe combinations for the rest of the
+                                    configurator.
+                                </p>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-16 items-start">
+                            <div>
+                                <label class="input-label" for="select-family">Family</label>
+                                <select id="select-family" class="input input-sm">
+                                    <option value="">Loading families...</option>
+                                </select>
+                            </div>
+
+                            <div>
+                                <p class="input-label">What happens next</p>
+                                <p class="text-body-sm text-grey-primary">
+                                    Once a family is selected, the valid size, light source, optics, and finishing options
+                                    appear automatically below.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="options-group" class="hidden flex flex-col gap-16 md:gap-24">
+
+                    <div class="card">
+                        <div class="card-body">
+                            <div class="card-header">
+                                <div class="card-icon">
+                                    <i class="ri-ruler-2-line text-icon-lg" aria-hidden="true"></i>
+                                </div>
+                                <div class="min-w-0">
+                                    <h2 class="card-title">2. Dimensions</h2>
+                                    <p class="card-text">Set the physical size and any extra length required for the build.</p>
+                                </div>
+                            </div>
+
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-16">
+                                <div>
+                                    <label class="input-label" for="select-size">Size</label>
+                                    <select id="select-size" class="input input-sm"></select>
+                                </div>
+
+                                <div>
+                                    <label class="input-label" for="input-extra-length">Extra length (mm)</label>
+                                    <input type="number" id="input-extra-length" class="input input-sm" value="0" min="0" step="1">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-body">
+                            <div class="card-header">
+                                <div class="card-icon">
+                                    <i class="ri-sun-line text-icon-lg" aria-hidden="true"></i>
+                                </div>
+                                <div class="min-w-0">
+                                    <h2 class="card-title">3. Light source</h2>
+                                    <p class="card-text">Choose the light output, rendering profile, and series code.</p>
+                                </div>
+                            </div>
+
+                            <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-16">
+                                <div>
+                                    <label class="input-label" for="select-color">Color</label>
+                                    <select id="select-color" class="input input-sm"></select>
+                                </div>
+
+                                <div>
+                                    <label class="input-label" for="select-cri">CRI</label>
+                                    <select id="select-cri" class="input input-sm"></select>
+                                </div>
+
+                                <div>
+                                    <label class="input-label" for="select-series">Series</label>
+                                    <select id="select-series" class="input input-sm"></select>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-body">
+                            <div class="card-header">
+                                <div class="card-icon">
+                                    <i class="ri-focus-2-line text-icon-lg" aria-hidden="true"></i>
+                                </div>
+                                <div class="min-w-0">
+                                    <h2 class="card-title">4. Optics and finish</h2>
+                                    <p class="card-text">Define the lens behavior and the external finish code.</p>
+                                </div>
+                            </div>
+
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-16">
+                                <div>
+                                    <label class="input-label" for="select-lens">Lens</label>
+                                    <select id="select-lens" class="input input-sm"></select>
+                                </div>
+
+                                <div>
+                                    <label class="input-label" for="select-finish">Finish</label>
+                                    <select id="select-finish" class="input input-sm"></select>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-body">
+                            <div class="card-header">
+                                <div class="card-icon">
+                                    <i class="ri-layout-grid-line text-icon-lg" aria-hidden="true"></i>
+                                </div>
+                                <div class="min-w-0">
+                                    <h2 class="card-title">5. Cap and option</h2>
+                                    <p class="card-text">Select the cap code and the matching option bundle.</p>
+                                </div>
+                            </div>
+
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-16">
+                                <div>
+                                    <label class="input-label" for="select-cap">Cap</label>
+                                    <select id="select-cap" class="input input-sm"></select>
+                                </div>
+
+                                <div>
+                                    <label class="input-label" for="select-option">Option</label>
+                                    <select id="select-option" class="input input-sm"></select>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-body">
+                            <div class="card-header">
+                                <div class="card-icon">
+                                    <i class="ri-plug-2-line text-icon-lg" aria-hidden="true"></i>
+                                </div>
+                                <div class="min-w-0">
+                                    <h2 class="card-title">6. Cable and connectors</h2>
+                                    <p class="card-text">Configure the main cable, connector family, and outgoing length.</p>
+                                </div>
+                            </div>
+
+                            <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-16">
+                                <div>
+                                    <label class="input-label" for="select-connector-cable">Cable connector</label>
+                                    <select id="select-connector-cable" class="input input-sm">
+                                        <option value="0">None</option>
+                                        <option value="asqc2">ASQC2</option>
+                                        <option value="c1m">C1M</option>
+                                        <option value="dc24">DC24</option>
+                                        <option value="dcj">DCJ</option>
+                                        <option value="c2p">C2P</option>
+                                    </select>
+                                </div>
+
+                                <div>
+                                    <label class="input-label" for="select-cable-type">Cable type</label>
+                                    <select id="select-cable-type" class="input input-sm">
+                                        <option value="branco">White</option>
+                                        <option value="preto">Black</option>
+                                        <option value="cinza">Grey</option>
+                                        <option value="fio">Wire</option>
+                                        <option value="transparente">Transparent</option>
+                                    </select>
+                                </div>
+
+                                <div>
+                                    <label class="input-label" for="input-cable-length">Cable length (m)</label>
+                                    <input type="number" id="input-cable-length" class="input input-sm" value="0" min="0" step="0.01">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-body">
+                            <div class="card-header">
+                                <div class="card-icon">
+                                    <i class="ri-shield-check-line text-icon-lg" aria-hidden="true"></i>
+                                </div>
+                                <div class="min-w-0">
+                                    <h2 class="card-title">7. Mounting and protection</h2>
+                                    <p class="card-text">Control the end-cap, gasket, IP rating, and mechanical fixing.</p>
+                                </div>
+                            </div>
+
+                            <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-16">
+                                <div>
+                                    <label class="input-label" for="select-end-cap">End cap</label>
+                                    <select id="select-end-cap" class="input input-sm">
+                                        <option value="0">Standard</option>
+                                        <option value="1">Fricon</option>
+                                        <option value="2">Plate</option>
+                                    </select>
+                                </div>
+
+                                <div>
+                                    <label class="input-label" for="select-gasket">Gasket</label>
+                                    <select id="select-gasket" class="input input-sm">
+                                        <option value="5">5 mm</option>
+                                        <option value="0.5">0.5 mm</option>
+                                    </select>
+                                </div>
+
+                                <div>
+                                    <label class="input-label" for="select-ip">IP rating</label>
+                                    <select id="select-ip" class="input input-sm">
+                                        <option value="0">Auto-detect</option>
+                                        <option value="IP20">IP20</option>
+                                        <option value="IP40">IP40</option>
+                                        <option value="IP42">IP42</option>
+                                        <option value="IP45">IP45</option>
+                                        <option value="IP60">IP60</option>
+                                        <option value="IP64">IP64</option>
+                                        <option value="IP65">IP65</option>
+                                        <option value="IP66">IP66</option>
+                                        <option value="IP67">IP67</option>
+                                    </select>
+                                </div>
+
+                                <div>
+                                    <label class="input-label" for="select-fixing">Fixing</label>
+                                    <select id="select-fixing" class="input input-sm">
+                                        <option value="0">None</option>
+                                        <option value="clip180">Fixed Metal Clip 180&deg;</option>
+                                        <option value="cliprotativo">Rotating Metal Clip</option>
+                                        <option value="clipmagnetico">Magnetic PC Clip</option>
+                                        <option value="suporte180">PVC Support 180&deg;</option>
+                                        <option value="suporte45">PVC Support 45&deg;</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-body">
+                            <div class="card-header">
+                                <div class="card-icon">
+                                    <i class="ri-flashlight-line text-icon-lg" aria-hidden="true"></i>
+                                </div>
+                                <div class="min-w-0">
+                                    <h2 class="card-title">8. Power and wiring</h2>
+                                    <p class="card-text">Set the power supply and the connection cable details used in the export.</p>
+                                </div>
+                            </div>
+
+                            <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-16">
+                                <div>
+                                    <label class="input-label" for="select-power-supply">Power supply</label>
+                                    <select id="select-power-supply" class="input input-sm">
+                                        <option value="0">None</option>
+                                        <option value="30w">30W</option>
+                                    </select>
+                                </div>
+
+                                <div>
+                                    <label class="input-label" for="select-connection-cable">Connection cable</label>
+                                    <select id="select-connection-cable" class="input input-sm">
+                                        <option value="0">None</option>
+                                        <option value="branco">White</option>
+                                        <option value="preto">Black</option>
+                                        <option value="cinzento">Grey</option>
+                                        <option value="transparente">Transparent</option>
+                                    </select>
+                                </div>
+
+                                <div>
+                                    <label class="input-label" for="select-connection-connector">Connection connector</label>
+                                    <select id="select-connection-connector" class="input input-sm">
+                                        <option value="0">None</option>
+                                        <option value="asqc2">ASQC2</option>
+                                        <option value="c1m">C1M</option>
+                                        <option value="dc24">DC24</option>
+                                        <option value="c2p">C2P</option>
+                                        <option value="dcj">DCJ</option>
+                                    </select>
+                                </div>
+
+                                <div>
+                                    <label class="input-label" for="input-connection-cable-length">Connection cable length (m)</label>
+                                    <input type="number" id="input-connection-cable-length" class="input input-sm" value="0" min="0" step="0.01">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-body">
+                            <div class="card-header">
+                                <div class="card-icon">
+                                    <i class="ri-file-settings-line text-icon-lg" aria-hidden="true"></i>
+                                </div>
+                                <div class="min-w-0">
+                                    <h2 class="card-title">9. Datasheet metadata</h2>
+                                    <p class="card-text">Control the application context, branded export, and datasheet language.</p>
+                                </div>
+                            </div>
+
+                            <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-16">
+                                <div>
+                                    <label class="input-label" for="select-purpose">Purpose</label>
+                                    <select id="select-purpose" class="input input-sm">
+                                        <option value="0">General</option>
+                                        <option value="retalho">Retail</option>
+                                        <option value="padaria">Bakery</option>
+                                        <option value="queijo">Cheese</option>
+                                        <option value="peixe">Fish</option>
+                                        <option value="talho">Meat</option>
+                                        <option value="talhoR9">Meat R9</option>
+                                        <option value="charcutaria">Deli</option>
+                                        <option value="murallacteo">Dairy Wall</option>
+                                        <option value="muralcongelados">Frozen Wall</option>
+                                        <option value="frutaslegumes">Fruits and Vegetables</option>
+                                        <option value="vinho">Wine</option>
+                                    </select>
+                                </div>
+
+                                <div>
+                                    <label class="input-label" for="select-company">Company logo</label>
+                                    <select id="select-company" class="input input-sm">
+                                        <option value="0">None</option>
+                                        <option value="jordao">Jord&atilde;o</option>
+                                        <option value="fricon">Fricon</option>
+                                        <option value="tensai">Tensai</option>
+                                    </select>
+                                </div>
+
+                                <div>
+                                    <label class="input-label" for="select-language">Language</label>
+                                    <select id="select-language" class="input input-sm">
+                                        <option value="pt">PT</option>
+                                        <option value="en">EN</option>
+                                        <option value="es">ES</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
             </section>
-
-            <!-- STEP 2: Options (shown after family is selected) -->
-            <section id="step-options" class="step hidden">
-
-                <div class="field">
-                    <label for="select-size">Size</label>
-                    <select id="select-size"></select>
-                    <input type="number" id="input-extra-length" value="0" min="0" step="1" placeholder="Extra length (mm)">
-                </div>
-
-                <div class="field">
-                    <label for="select-color">Color</label>
-                    <select id="select-color"></select>
-                </div>
-
-                <div class="field">
-                    <label for="select-cri">CRI</label>
-                    <select id="select-cri"></select>
-                </div>
-
-                <div class="field">
-                    <label for="select-series">Series</label>
-                    <select id="select-series"></select>
-                </div>
-
-                <div class="field">
-                    <label for="select-lens">Lens</label>
-                    <select id="select-lens"></select>
-                </div>
-
-                <div class="field">
-                    <label for="select-finish">Finish</label>
-                    <select id="select-finish"></select>
-                </div>
-
-                <div class="field">
-                    <label for="select-cap">Cap</label>
-                    <select id="select-cap"></select>
-                </div>
-
-                <div class="field">
-                    <label for="select-option">Option</label>
-                    <select id="select-option"></select>
-                </div>
-
-                <!-- Extra fields (always visible but optional) -->
-                <div class="field">
-                    <label for="select-connector-cable">Cable Connector</label>
-                    <select id="select-connector-cable">
-                        <option value="0">None</option>
-                        <option value="asqc2">ASQC2</option>
-                        <option value="c1m">C1M</option>
-                        <option value="dc24">DC24</option>
-                        <option value="dcj">DCJ</option>
-                        <option value="c2p">C2P</option>
-                    </select>
-                </div>
-
-                <div class="field">
-                    <label for="select-cable-type">Cable Type</label>
-                    <select id="select-cable-type">
-                        <option value="branco">White</option>
-                        <option value="preto">Black</option>
-                        <option value="cinza">Grey</option>
-                        <option value="fio">Wire</option>
-                        <option value="transparente">Transparent</option>
-                    </select>
-                </div>
-
-                <div class="field">
-                    <label for="input-cable-length">Cable Length (m)</label>
-                    <input type="number" id="input-cable-length" value="0" min="0" step="0.01">
-                </div>
-
-                <div class="field">
-                    <label for="select-end-cap">End Cap</label>
-                    <select id="select-end-cap">
-                        <option value="0">Standard</option>
-                        <option value="1">Fricon</option>
-                        <option value="2">Plate</option>
-                    </select>
-                </div>
-
-                <div class="field">
-                    <label for="select-gasket">Gasket</label>
-                    <select id="select-gasket">
-                        <option value="5">5 mm</option>
-                        <option value="0.5">0.5 mm</option>
-                    </select>
-                </div>
-
-                <div class="field">
-                    <label for="select-ip">IP Rating</label>
-                    <select id="select-ip">
-                        <option value="0">Auto-detect</option>
-                        <option value="IP20">IP20</option>
-                        <option value="IP40">IP40</option>
-                        <option value="IP42">IP42</option>
-                        <option value="IP45">IP45</option>
-                        <option value="IP60">IP60</option>
-                        <option value="IP64">IP64</option>
-                        <option value="IP65">IP65</option>
-                        <option value="IP66">IP66</option>
-                        <option value="IP67">IP67</option>
-                    </select>
-                </div>
-
-                <div class="field">
-                    <label for="select-fixing">Fixing</label>
-                    <select id="select-fixing">
-                        <option value="0">None</option>
-                        <option value="clip180">Fixed Metal Clip 180°</option>
-                        <option value="cliprotativo">Rotating Metal Clip</option>
-                        <option value="clipmagnetico">Magnetic PC Clip</option>
-                        <option value="suporte180">PVC Support 180°</option>
-                        <option value="suporte45">PVC Support 45°</option>
-                    </select>
-                </div>
-
-                <div class="field">
-                    <label for="select-power-supply">Power Supply</label>
-                    <select id="select-power-supply">
-                        <option value="0">None</option>
-                        <option value="30w">30W</option>
-                    </select>
-                </div>
-
-                <div class="field">
-                    <label for="select-connection-cable">Connection Cable</label>
-                    <select id="select-connection-cable">
-                        <option value="0">None</option>
-                        <option value="branco">White</option>
-                        <option value="preto">Black</option>
-                        <option value="cinzento">Grey</option>
-                        <option value="transparente">Transparent</option>
-                    </select>
-                </div>
-
-                <div class="field">
-                    <label for="select-connection-connector">Connection Connector</label>
-                    <select id="select-connection-connector">
-                        <option value="0">None</option>
-                        <option value="asqc2">ASQC2</option>
-                        <option value="c1m">C1M</option>
-                        <option value="dc24">DC24</option>
-                        <option value="c2p">C2P</option>
-                        <option value="dcj">DCJ</option>
-                    </select>
-                </div>
-
-                <div class="field">
-                    <label for="input-connection-cable-length">Connection Cable Length (m)</label>
-                    <input type="number" id="input-connection-cable-length" value="0" min="0" step="0.01">
-                </div>
-
-                <div class="field">
-                    <label for="select-purpose">Purpose</label>
-                    <select id="select-purpose">
-                        <option value="0">General</option>
-                        <option value="retalho">Retail</option>
-                        <option value="padaria">Bakery</option>
-                        <option value="queijo">Cheese</option>
-                        <option value="peixe">Fish</option>
-                        <option value="talho">Meat</option>
-                        <option value="talhoR9">Meat R9</option>
-                        <option value="charcutaria">Deli</option>
-                        <option value="murallacteo">Dairy Wall</option>
-                        <option value="muralcongelados">Frozen Wall</option>
-                        <option value="frutaslegumes">Fruits & Vegetables</option>
-                        <option value="vinho">Wine</option>
-                    </select>
-                </div>
-
-                <div class="field">
-                    <label for="select-company">Company Logo</label>
-                    <select id="select-company">
-                        <option value="0">None</option>
-                        <option value="jordao">Jordão</option>
-                        <option value="fricon">Fricon</option>
-                        <option value="tensai">Tensai</option>
-                    </select>
-                </div>
-
-                <div class="field">
-                    <label for="select-language">Language</label>
-                    <select id="select-language">
-                        <option value="pt">PT</option>
-                        <option value="en">EN</option>
-                        <option value="es">ES</option>
-                    </select>
-                </div>
-
-            </section>
-
-            <!-- STEP 3: Output (shown after options are loaded) -->
-            <section id="step-output" class="step hidden">
-
-                <div class="field">
-                    <label for="output-reference">Reference</label>
-                    <input type="text" id="output-reference" readonly>
-                </div>
-
-                <div class="field">
-                    <label for="output-description">Description</label>
-                    <input type="text" id="output-description" readonly>
-                </div>
-
-                <button id="btn-generate" type="button">Generate Datasheet</button>
-                <p id="status-message"></p>
-
-            </section>
-
-        </main>
-
-    </div>
+        </div>
+    </main>
 
     <script src="script.js"></script>
-
 </body>
 </html>
