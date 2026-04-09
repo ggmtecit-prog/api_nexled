@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nexled Configurator</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <div id="app">
+
+        <!-- HEADER -->
+        <header id="site-header">
+            <img src="" alt="Nexled" id="logo">
+            <h1>Product Configurator</h1>
+        </header>
+
+        <!-- MAIN CONTENT -->
+        <main id="configurator">
+
+            <!-- STEP 1: Family -->
+            <section id="step-family" class="step">
+                <label for="select-family">Product Family</label>
+                <select id="select-family">
+                    <option value="">Loading...</option>
+                </select>
+            </section>
+
+            <!-- STEP 2: Options (shown after family is selected) -->
+            <section id="step-options" class="step hidden">
+
+                <div class="field">
+                    <label for="select-size">Size</label>
+                    <select id="select-size"></select>
+                    <input type="number" id="input-extra-length" value="0" min="0" step="1" placeholder="Extra length (mm)">
+                </div>
+
+                <div class="field">
+                    <label for="select-color">Color</label>
+                    <select id="select-color"></select>
+                </div>
+
+                <div class="field">
+                    <label for="select-cri">CRI</label>
+                    <select id="select-cri"></select>
+                </div>
+
+                <div class="field">
+                    <label for="select-series">Series</label>
+                    <select id="select-series"></select>
+                </div>
+
+                <div class="field">
+                    <label for="select-lens">Lens</label>
+                    <select id="select-lens"></select>
+                </div>
+
+                <div class="field">
+                    <label for="select-finish">Finish</label>
+                    <select id="select-finish"></select>
+                </div>
+
+                <div class="field">
+                    <label for="select-cap">Cap</label>
+                    <select id="select-cap"></select>
+                </div>
+
+                <div class="field">
+                    <label for="select-option">Option</label>
+                    <select id="select-option"></select>
+                </div>
+
+                <!-- Extra fields (always visible but optional) -->
+                <div class="field">
+                    <label for="select-connector-cable">Cable Connector</label>
+                    <select id="select-connector-cable">
+                        <option value="0">None</option>
+                        <option value="asqc2">ASQC2</option>
+                        <option value="c1m">C1M</option>
+                        <option value="dc24">DC24</option>
+                        <option value="dcj">DCJ</option>
+                        <option value="c2p">C2P</option>
+                    </select>
+                </div>
+
+                <div class="field">
+                    <label for="select-cable-type">Cable Type</label>
+                    <select id="select-cable-type">
+                        <option value="branco">White</option>
+                        <option value="preto">Black</option>
+                        <option value="cinza">Grey</option>
+                        <option value="fio">Wire</option>
+                        <option value="transparente">Transparent</option>
+                    </select>
+                </div>
+
+                <div class="field">
+                    <label for="input-cable-length">Cable Length (m)</label>
+                    <input type="number" id="input-cable-length" value="0" min="0" step="0.01">
+                </div>
+
+                <div class="field">
+                    <label for="select-end-cap">End Cap</label>
+                    <select id="select-end-cap">
+                        <option value="0">Standard</option>
+                        <option value="1">Fricon</option>
+                        <option value="2">Plate</option>
+                    </select>
+                </div>
+
+                <div class="field">
+                    <label for="select-gasket">Gasket</label>
+                    <select id="select-gasket">
+                        <option value="5">5 mm</option>
+                        <option value="0.5">0.5 mm</option>
+                    </select>
+                </div>
+
+                <div class="field">
+                    <label for="select-ip">IP Rating</label>
+                    <select id="select-ip">
+                        <option value="0">Auto-detect</option>
+                        <option value="IP20">IP20</option>
+                        <option value="IP40">IP40</option>
+                        <option value="IP42">IP42</option>
+                        <option value="IP45">IP45</option>
+                        <option value="IP60">IP60</option>
+                        <option value="IP64">IP64</option>
+                        <option value="IP65">IP65</option>
+                        <option value="IP66">IP66</option>
+                        <option value="IP67">IP67</option>
+                    </select>
+                </div>
+
+                <div class="field">
+                    <label for="select-fixing">Fixing</label>
+                    <select id="select-fixing">
+                        <option value="0">None</option>
+                        <option value="clip180">Fixed Metal Clip 180°</option>
+                        <option value="cliprotativo">Rotating Metal Clip</option>
+                        <option value="clipmagnetico">Magnetic PC Clip</option>
+                        <option value="suporte180">PVC Support 180°</option>
+                        <option value="suporte45">PVC Support 45°</option>
+                    </select>
+                </div>
+
+                <div class="field">
+                    <label for="select-power-supply">Power Supply</label>
+                    <select id="select-power-supply">
+                        <option value="0">None</option>
+                        <option value="30w">30W</option>
+                    </select>
+                </div>
+
+                <div class="field">
+                    <label for="select-connection-cable">Connection Cable</label>
+                    <select id="select-connection-cable">
+                        <option value="0">None</option>
+                        <option value="branco">White</option>
+                        <option value="preto">Black</option>
+                        <option value="cinzento">Grey</option>
+                        <option value="transparente">Transparent</option>
+                    </select>
+                </div>
+
+                <div class="field">
+                    <label for="select-connection-connector">Connection Connector</label>
+                    <select id="select-connection-connector">
+                        <option value="0">None</option>
+                        <option value="asqc2">ASQC2</option>
+                        <option value="c1m">C1M</option>
+                        <option value="dc24">DC24</option>
+                        <option value="c2p">C2P</option>
+                        <option value="dcj">DCJ</option>
+                    </select>
+                </div>
+
+                <div class="field">
+                    <label for="input-connection-cable-length">Connection Cable Length (m)</label>
+                    <input type="number" id="input-connection-cable-length" value="0" min="0" step="0.01">
+                </div>
+
+                <div class="field">
+                    <label for="select-purpose">Purpose</label>
+                    <select id="select-purpose">
+                        <option value="0">General</option>
+                        <option value="retalho">Retail</option>
+                        <option value="padaria">Bakery</option>
+                        <option value="queijo">Cheese</option>
+                        <option value="peixe">Fish</option>
+                        <option value="talho">Meat</option>
+                        <option value="talhoR9">Meat R9</option>
+                        <option value="charcutaria">Deli</option>
+                        <option value="murallacteo">Dairy Wall</option>
+                        <option value="muralcongelados">Frozen Wall</option>
+                        <option value="frutaslegumes">Fruits & Vegetables</option>
+                        <option value="vinho">Wine</option>
+                    </select>
+                </div>
+
+                <div class="field">
+                    <label for="select-company">Company Logo</label>
+                    <select id="select-company">
+                        <option value="0">None</option>
+                        <option value="jordao">Jordão</option>
+                        <option value="fricon">Fricon</option>
+                        <option value="tensai">Tensai</option>
+                    </select>
+                </div>
+
+                <div class="field">
+                    <label for="select-language">Language</label>
+                    <select id="select-language">
+                        <option value="pt">PT</option>
+                        <option value="en">EN</option>
+                        <option value="es">ES</option>
+                    </select>
+                </div>
+
+            </section>
+
+            <!-- STEP 3: Output (shown after options are loaded) -->
+            <section id="step-output" class="step hidden">
+
+                <div class="field">
+                    <label for="output-reference">Reference</label>
+                    <input type="text" id="output-reference" readonly>
+                </div>
+
+                <div class="field">
+                    <label for="output-description">Description</label>
+                    <input type="text" id="output-description" readonly>
+                </div>
+
+                <button id="btn-generate" type="button">Generate Datasheet</button>
+                <p id="status-message"></p>
+
+            </section>
+
+        </main>
+
+    </div>
+
+    <script src="script.js"></script>
+
+</body>
+</html>

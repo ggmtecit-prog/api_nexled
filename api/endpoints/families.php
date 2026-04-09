@@ -5,7 +5,7 @@
 
 $con = connectDBReferencias();
 
-$result = mysqli_query($con, "SELECT id, nome FROM familias ORDER BY nome");
+$result = mysqli_query($con, "SELECT nome, codigo FROM Familias ORDER BY codigo");
 
 if (!$result) {
     http_response_code(500);
@@ -17,6 +17,10 @@ if (!$result) {
 $families = [];
 
 while ($row = mysqli_fetch_assoc($result)) {
+    // Pad single-digit codes to 2 digits (e.g. "9" → "09")
+    if (strlen($row['codigo']) < 2) {
+        $row['codigo'] = "0" . $row['codigo'];
+    }
     $families[] = $row;
 }
 

@@ -12,6 +12,7 @@ if ($_SERVER["REQUEST_METHOD"] === "OPTIONS") {
 
 require_once "./auth.php";
 require_once "../appdatasheets/config.php";
+require_once "./lib/validate.php";
 
 // Route: /api/?endpoint=families
 // Route: /api/?endpoint=options&family=11

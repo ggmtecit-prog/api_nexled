@@ -1,0 +1,444 @@
+{
+    "caracteristicas" : {
+
+        "titulo": {
+            "pt": "Características",
+            "en": "Characteristics",
+            "es": "Características"
+        }
+    }, 
+
+    
+
+    "luminotecnicas" : {
+
+        "titulo": {
+            "pt": "Características Luminotécnicas",
+            "en": "Lighting characteristics",
+            "es": "Características"
+        },
+        
+        "colunas": [
+
+            {
+                "size": "12",
+                "pt": "Referência",
+                "en": "Reference",
+                "es": "Referencia"
+            },
+
+            {
+                "size": "30",
+                "pt": "Descrição",
+                "en": "Description",
+                "es": "Descripción"
+            },
+
+            {
+                "size": "8",
+                "pt": "Fluxo (Lm)<sup>1</sup>",
+                "en": "Flux (Lm)<sup>1</sup>",
+                "es": "Fluxo (Lm)<sup>1</sup>"
+            },
+
+            {
+                "size": "7",
+                "pt": "Efi. (Lm/W)",
+                "en": "Effi. (Lm/W)",
+                "es": "Efi. (LM/W)"
+            },
+            
+            {
+                "size": "7",
+                "pt": "Temp. (K)<sup>2</sup>",
+                "en": "Temp. (K)<sup>2</sup>",
+                "es": "Temp. (K)<sup>2</sup>"
+            },
+
+            {
+                "size": "5",
+                "pt": "Cor",
+                "en": "Colour",
+                "es": "Color"
+            },
+            
+            {
+                "size": "3",
+                "pt": "CRI",
+                "en": "CRI",
+                "es": "CRI"
+            },
+
+            {
+                "size": "8",
+                "pt": "Lente",
+                "en": "Cover",
+                "es": "Lente"
+            }
+
+        ],
+
+        "fonteLuz": {
+            "NDLS_MLS": "1",
+            "NDLS_NMLS": "0.926",
+            "DLS_MLS": "1.176",
+            "DLS_NMLS": "1.089"
+        },
+
+        "classeEnergetica": [
+            {
+                "min": "0",
+                "max": "84",
+                "src": "G"
+            },
+            {
+                "min": "85",
+                "max": "109",
+                "src": "F"
+            },
+            {
+                "min": "110",
+                "max": "134",
+                "src": "E"
+            },
+            {
+                "min": "135",
+                "max": "159",
+                "src": "D"
+            },
+            {
+                "min": "160",
+                "max": "184",
+                "src": "C"
+            },
+            {
+                "min": "185",
+                "max": "209",
+                "src": "B"
+            },
+            {
+                "min": "210",
+                "src": "A"
+            }
+        ],
+
+        "temperaturas": [
+            {
+                "min": "0",
+                "max": "3499",
+                "pt": "Quente",
+                "en": "Warm",
+                "es": "Caliente"
+            },
+            {
+                "min": "3500",
+                "max": "4999",
+                "pt": "Neutro",
+                "en": "Neutral",
+                "es": "Neutro"
+            },
+            {
+                "min": "5000",
+                "pt": "Frio",
+                "en": "Cool",
+                "es": "Frio"
+            }
+        ],
+
+        "notas": {
+
+            "notas": [
+    
+                {
+                    "familias": "01/05/11/22/29/30/31/32/35/36/37/38/40/43/48/49/50/52/53/55/58/60",
+                    "pt": "¹ Depreciação luminosa baseada no L70.",
+                    "en": "¹ Luminosity depreciation based on L70.",
+                    "es": "¹ Depreciación de la luminosidad basada en L70."
+                },
+        
+                {
+                    "familias": "01/05/11/22/29/30/31/32/35/36/37/38/40/43/48/49/50/52/53/55/58/60",
+                    "pt": "² Feixe de luz: 50% da luminosidade máxima.",
+                    "en": "² Beam angle: 50% of maximum luminosity.",
+                    "es": "² Haz luminoso: 50% de la luminosidad máxima."
+                },
+        
+                {
+                    "familias": "01/05/11/22/29/30/31/32/35/36/37/38/40/43/48/49/50/52/53/55/58/60",
+                    "pt": "³ Abertura de luz: 10% da luminosidade máxima.",
+                    "en": "³ Field angle: 10% of maximum luminosity.",
+                    "es": "³ Apertura de la luz: 10% de la luminosidad máxima."
+                },
+                
+                {
+                    "familias": "01/05/11/22/29/30/31/32/35/36/37/38/40/43/48/49/50/52/53/55/58/60",
+                    "pt": "<sup>4</sup> Fluxo Luminoso ± 7.5%.",
+                    "en": "<sup>4</sup> Fluxo Luminoso ± 7.5%.",
+                    "es": "<sup>4</sup> Flujo luminoso ± 7,5%."
+                },
+        
+                {
+                    "familias": "01/05/11/22/29/30/32/35/36/37/38/40/43/48/49/50/52/53/55/58/60",
+                    "pt": "<sup>5</sup> Outras temperaturas de cor disponíveis sob encomenda.",
+                    "en": "<sup>5</sup> Other color temperatures available uppon request.",
+                    "es": "<sup>5</sup> Otras temperaturas de color disponibles bajo pedido."
+                }
+    
+            ],
+    
+            "simbolos": [
+    
+                "ce.svg",
+    
+                "rohs.svg",
+    
+                "lm80.svg",
+    
+                "norecicl.svg",
+    
+                {
+                    "familias": ["01", "05", "11", "22", "29", "30", "31", "32", "35", "36", "37", "38", "40", "43", "49", "52", "53", "55", "58", "60"],
+                    "img": "indoor.svg"
+                },
+    
+                {
+                    "familias": ["50"],
+                    "img": "outdoor.svg"
+                },
+    
+                {
+                    "familias": ["22", "35", "36", "50", "52", "53"],
+                    "img": "class1.svg"
+                },
+    
+                {
+                    "familias": ["01", "43", "48"],
+                    "img": "class2.svg"
+                },
+    
+                {
+                    "familias": ["05", "11", "29", "30", "31", "32", "37", "38", "40", "49", "55", "58", "60"],
+                    "img": "class3.svg"
+                },
+				
+				{
+                    "familias": ["29", "30"],
+                    "img": "notisolate.svg"
+                }
+    
+            ]
+        }
+
+    },
+
+
+
+    "footer": [
+        {
+            "pt": "<b>TEC IT, Tecnologia, Inteligência e Domótica, S.A.</b><br>",
+            "en": "<b>TEC IT, Tecnologia, Inteligência e Domótica, S.A.</b><br>",
+            "es": "<b>TEC IT, Tecnologia, Inteligência e Domótica, S.A.</b><br>"
+        },
+        {
+            "pt": "Travessa Cabo do Mundo, 681 - 4455-427 Perafita Matosinhos  |  tel: +351 229 999 230  |  e-mail: comercial@tecit.pt  |  www.tecit.pt<br>",
+            "en": "Travessa Cabo do Mundo, 681  |  4455-427 Perafita Matosinhos  |  tel: +351 229 999 230  |  e-mail: comercial@tecit.pt  |  www.tecit.pt<br>",
+            "es": "Travessa Cabo do Mundo, 681 - 4455-427 Perafita Matosinhos  |  tel: +351 229 999 230  |  e-mail: comercial@tecit.pt  |  www.tecit.pt<br>"
+        }, 
+        {
+            "pt": "Última atualização: [data]. Perfil técnico v.: [versao]  |  Especificações e desenho sujeitos a alterações sem aviso prévio.",
+            "en": "Last update:  [data]. Datasheet v.: [versao]  |  Specifications and design subject to change without notice.",
+            "es": "Última actualización: [data]. Perfil técnico v.: [versao] | Especificaciones y diseño sujetos a cambios sin previo aviso."
+        }
+    ],
+
+
+
+    "desenhotecnico" : {
+
+        "titulo": {
+            "pt": "Desenho Técnico",
+            "en": "Technical Drawing",
+            "es": "Diseño técnico"
+        }
+    },
+
+
+
+    "graficocor" : {
+
+        "titulo": {
+            "pt": "Temperatura de Cor - Espectro De Cor",
+            "en": "Color Temperature - Color Spectrum",
+            "es": "Temperatura de color - Espectro de color"
+        },
+
+        "SDCM": {
+
+            "37": {
+                "pt": "Margem da temperatura de cor de 5 SDCM tendo como referencia o centro da elipse de MacAdam segundo a norma ANSI C78.377:2011.",
+                "en": "Colour temperature margin of 5 SDCM with reference to the centre of the MacAdam ellipse according to ANSI C78.377:2011.",
+                "es": "Margen de temperatura de color de 5 SDCM con referencia al centro de la elipse de MacAdam según ANSI C78.377:2011."
+            },
+
+            "all": {
+                "pt": "Margem da temperatura de cor de 3 SDCM tendo como referencia o centro da elipse de MacAdam segundo a norma ANSI C78.377:2011.",
+                "en": "Colour temperature margin of 3 SDCM with reference to the centre of the MacAdam ellipse according to ANSI C78.377:2011.",
+                "es": "Margen de temperatura de color de 3 SDCM con referencia al centro de la elipse de MacAdam según ANSI C78.377:2011."
+            }
+        }
+    },
+
+
+
+    "diagramalente" : {
+
+        "titulo": {
+            "pt": "Lente - Diagrama De Radiação",
+            "en": "Lens - Radiation Diagram",
+            "es": "Lente - Diagrama de radiación"
+        }
+    },
+
+
+
+    "acabamento" : {
+
+        "titulo": {
+            "pt": "Lente e acabamento do corpo",
+            "en": "Cover and body finishing",
+            "es": "Lente y acabado del cuerpo"
+        },
+        
+        "corpo": {
+            "pt": "Acabamento do corpo",
+            "en": "Body finishing",
+            "es": "Acabado del cuerpo"
+        },
+
+        "lente": {
+            "pt": "Lente",
+            "en": "Cover",
+            "es": "Lente"
+        },
+
+        "notas": {
+
+            "familias": ["11", "29", "30", "31", "32", "40", "48", "49", "55", "58", "60"],
+
+            "comlink": {
+
+                "pt": "Consulte todas as opções de lente e de acabamento disponíveis <u>aqui</u>.",
+                "en": "See all available cover and body finish options <u>here</u>.",
+                "es": "Consulta todas las opciones de lentes y acabados disponibles <u>aquí</u>.",
+
+                "links": [
+                    {
+                        "familias": ["11"],
+                        "link": "https://www.nexled.pt/sites/default/files/downloads/outros/lentes_acabamentos_barra24v.pdf"
+                    },
+                    {
+                        "familias": ["32"],
+                        "link": "https://www.nexled.pt/sites/default/files/downloads/outros/lentes_acabamentos_barrabt.pdf"
+                    },
+                    {
+                        "familias": ["55"],
+                        "link": "https://www.nexled.pt/sites/default/files/downloads/outros/lentes_acabamentos_barra12v.pdf"
+                    }
+                ]
+            },
+
+            "semlink": {
+                "pt": "Consulte-nos para conhecer todas as opções de lente e/ou acabamento.",
+                "en": "Consult us to find out other cover and/or body finish options.",
+                "es": "Consúltenos para conocer otras opciones de lentes y/o acabados."
+            }
+
+        }
+
+    },
+
+
+
+    "fixacao" : {
+
+        "familias": ["11", "31", "32", "40", "49", "55", "58", "60"],
+
+        "titulo": {
+            "pt": "Fixação",
+            "en": "Fixing",
+            "es": "Fijación"
+        },
+
+        "notas": {
+
+            "comlink": {
+
+                "pt": "Pode consultar todas as opções de fixação disponíveis <u>aqui</u>.",
+                "en": "See all available fixing options <u>here</u>.",
+                "es": "Consulta todas las opciones disponibles de fijación <u>aquí</u>.",
+
+                "links": [
+                    {
+                        "familias": ["11"],
+                        "link": {
+                            "pt": "https://www.nexled.pt/sites/default/files/downloads/barras/Barra24V/fixacao_pt.pdf", 
+                            "en": "https://www.nexled.pt/sites/default/files/downloads/barras/Barra24V/fixacao_en.pdf"
+                        }
+                    },
+                    {
+                        "familias": ["30"],
+                        "link": {
+                            "pt": "https://www.nexled.pt/sites/default/files/downloads/barras/Barra24V/fixacao_pt.pdf", 
+                            "en": "https://www.nexled.pt/sites/default/files/downloads/barras/Barra24V/fixacao_en.pdf"
+                        }
+                    }
+                ]
+            },
+
+            "semlink": {
+                "pt": "Consulte-nos para conhecer as opções de fixação.",
+                "en": "Consult us to find out about fixing options.",
+                "es": "Consúltenos para conocer las opciones de fijación."
+            }
+
+        }        
+    },
+
+
+
+    "fonte" : {
+
+        "titulo": {
+            "pt": "Fonte de alimentação",
+            "en": "Power supply",
+            "es": "Fuente de alimentación"
+        }
+    },
+
+
+
+    "ligacao" : {
+
+        "titulo": {
+            "pt": "Cabo de ligação",
+            "en": "Connection cable",
+            "es": "Cable de conexión"
+        },
+
+        "notas" : {
+            "pt": "Cabos de ligação disponíveis em branco, preto ou cinzento.",
+            "en": "Connection cables available in white, black or grey.", 
+            "es": "Cables de conexión disponibles en blanco, negro o gris."
+        }
+
+    },
+
+
+
+    "notaMedidas" : {
+        "pt": "Medidas em mílimetros (mm)",
+        "en": "Measurements in millimetres (mm)",
+        "es": "Medidas en milímetros (mm)"
+    }
+
+}

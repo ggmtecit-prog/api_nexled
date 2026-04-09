@@ -1,0 +1,85 @@
+{
+    "descricao": {
+        
+        "safetyfood": {
+            "pt": "A lente da barra em policarbonato Wonderlite® PC-110U, cumpre as normas de segurança alimentar food contact FDA 21CFR 177.1580 e a norma europeia (EU) No. 10/2011.",
+            "en": "The polycarbonate bar lens Wonderlite® PC-110U, meets the food safety standards for FDA 21CFR 177.1580 and the European standard (EU) No. 10/2011.", 
+            "es": "La lente de barra de policarbonato Wonderlite® PC-110U, cumple con los estándares de seguridad alimentaria FDA 21CFR 177.1580 y la norma europea (UE) No. 10/2011."
+        },
+
+        "retalho": {
+            "safetyfood": "1"
+        },
+
+        "padaria": {
+            "safetyfood": "1",
+            "pt": "Este tipo de iluminação é ideal para uma boa apresentação, realçando as várias tonalidades dos produtos em expositores de padaria e pastelaria.",
+            "en": "This type of lighting is good to display and highlight the various shades of products in bakery and pastry displays.", 
+            "es": "Este tipo de iluminación es ideal para una buena presentación, resaltando las distintas tonalidades de los productos en expositores de panadería y pastelería."
+        },
+
+        "queijo": {
+            "safetyfood": "1",
+            "pt": "Este tipo de iluminação é ideal para realçar as características intrínsecas e as várias texturas dos queijos, sem qualquer alteração real da qualidade dos mesmos.",
+            "en": "This type of lighting is good to enhance the intrinsic characteristics and the various cheese textures, without any real change in their quality.", 
+            "es": "Este tipo de iluminación es ideal para resaltar las características intrínsecas y las diferentes texturas de los quesos, sin alterar realmente su calidad."
+        },
+
+        "peixe": {
+            "safetyfood": "1",
+            "pt": "Este tipo de iluminação é ideal para destacar as características, brilho e cores naturais do peixe.",
+            "en": "This type of lighting is good to highlight the characteristics, brightness and natural colors of the fish.", 
+            "es": "Este tipo de iluminación es ideal para resaltar las características, brillo y colores naturales de los peces."
+        },
+
+        "talho": {
+            "safetyfood": "1",
+            "pt": "Este tipo de iluminação é ideal para realçar a cor da carne, sem torná-la muito vermelha ou alterar as suas qualidades.",
+            "en": "This type of lighting is good to enhance the color of the meat without making it too red or altering its qualities.", 
+            "es": "Este tipo de iluminación es ideal para realzar el color de la carne, sin volverla demasiado brillante ni alterar su calidad."
+        },
+
+        "talhoR9": {
+            "safetyfood": "1",
+            "pt": "Este tipo de iluminação é ideal para expositores de carne, realçando a sua tonalidade, tornando-a mais apetecível, mas sem alterar a cor do ambiente onde o produto está exposto, nem as qualidades do produto.",
+            "en": "This type of lighting is ideal for fresh meat displays, enhancing the meat color contrast and saturation, but without changing the color of the environment where the product is displayed, nor the qualities of the product.", 
+            "es": "Este tipo de iluminación es ideal para exhibidores de carne fresca, potenciando el contraste y la saturación del color de la carne, pero sin cambiar el color del ambiente donde se exhibe el producto, ni las cualidades del producto."
+        },
+
+        "charcutaria": {
+            "safetyfood": "1",
+            "pt": "Este tipo de iluminação é ideal para evidenciar os produtos expostos na secção de charcutaria.",
+            "en": "This type of lighting is good to highlight the products displayed in the delicatessen section.", 
+            "es": "Este tipo de iluminación es ideal para resaltar los productos expuestos en la sección de charcutería."
+        },
+
+        "murallacteo": {
+            "safetyfood": "1",
+            "pt": "Este tipo de iluminação é ideal para os murais lácteos, atingindo um equilíbrio perfeito entre as cores vibrantes e o sentido da natureza.",
+            "en": "This type of lighting is good for dairy murals, striking a perfect balance between vibrant colors and a sense of nature.", 
+            "es": "Este tipo de iluminación es ideal para murales de lácteos, logrando un equilibrio perfecto entre colores vibrantes y un sentido de la naturaleza."
+        },
+
+        "muralcongelados": {
+            "safetyfood": "1",
+            "pt": "Este tipo de iluminação é ideal para os murais de congelados, evidenciando frescura e brilho de forma homogénea da grande variedade de produtos expostos.",
+            "en": "This type of lighting is good for frozen food murals, showing the freshness and brightness of the wide variety of products on display.", 
+            "es": "Este tipo de iluminación es ideal para murales de alimentos congelados, mostrando la frescura y luminosidad de la gran variedad de productos expuestos."
+        },
+
+        "frutaslegumes": {
+            "safetyfood": "1",
+            "pt": "Este tipo de iluminação é ideal para reproduzir fielmente as cores e texturas de frutas e legumes, exibindo o seu estado natural, fresco e brilhante.",
+            "en": "This type of lighting is good to faithfully reproduce the colors and textures of fruits and vegetables, displaying their natural, fresh and bright state.", 
+            "es": "Este tipo de iluminación es ideal para reproducir fielmente los colores y texturas de frutas y verduras, mostrando su estado natural, fresco y luminoso."
+        },
+
+        "vinho": {
+            "safetyfood": "1",
+            "pt": "Este tipo de iluminação é ideal para espaços de exposição de vinhos.",
+            "en": "This type of lighting is good for wine exhibition spaces.", 
+            "es": "Este tipo de iluminación es ideal para espacios de exposición de vinos."
+        }
+         
+    }
+}

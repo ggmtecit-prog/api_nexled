@@ -2,7 +2,9 @@
 
 // POST /api/?endpoint=datasheet
 // Generates and returns a PDF datasheet
-// Body: same JSON structure as the original form submission
+// Body: JSON with referencia, descricao, idioma, empresa, lente, acabamento,
+//       opcao, conectorcabo, tipocabo, tampa, vedante, acrescimo, ip,
+//       fixacao, fonte, caboligacao, conectorligacao, tamanhocaboligacao, finalidade
 
 if ($_SERVER["REQUEST_METHOD"] !== "POST") {
     http_response_code(405);
@@ -10,5 +12,6 @@ if ($_SERVER["REQUEST_METHOD"] !== "POST") {
     exit();
 }
 
-// Delegate to existing datasheet generator
-require_once "../../appdatasheets/funcoes/gerarDatasheet.php";
+require_once dirname(__FILE__, 2) . "/lib/pdf-engine.php";
+
+generateDatasheet();
