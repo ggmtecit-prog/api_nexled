@@ -1,0 +1,53 @@
+name: Deploy To Alwaysdata
+
+on:
+  push:
+    branches:
+      - master
+      - main
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Start SSH agent
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.ALWAYSDATA_SSH_KEY }}
+
+      - name: Trust alwaysdata host key
+        run: ssh-keyscan -p "${{ secrets.ALWAYSDATA_PORT }}" "${{ secrets.ALWAYSDATA_HOST }}" >> ~/.ssh/known_hosts
+
+      - name: Ensure target folders exist
+        run: |
+          ssh -p "${{ secrets.ALWAYSDATA_PORT }}" "${{ secrets.ALWAYSDATA_USER }}@${{ secrets.ALWAYSDATA_HOST }}" \
+            "mkdir -p '${{ secrets.ALWAYSDATA_TARGET_DIR }}' '${{ secrets.ALWAYSDATA_TARGET_DIR }}/api' '${{ secrets.ALWAYSDATA_TARGET_DIR }}/appdatasheets'"
+
+      - name: Deploy frontend root
+        run: |
+          rsync -az \
+            --exclude "UI_SYSTEM/" \
+            --exclude ".env" \
+            configurator/ \
+            "${{ secrets.ALWAYSDATA_USER }}@${{ secrets.ALWAYSDATA_HOST }}:${{ secrets.ALWAYSDATA_TARGET_DIR }}/"
+
+      - name: Deploy API
+        run: |
+          rsync -az --delete \
+            --exclude "auth.php" \
+            --exclude ".env" \
+            api/ \
+            "${{ secrets.ALWAYSDATA_USER }}@${{ secrets.ALWAYSDATA_HOST }}:${{ secrets.ALWAYSDATA_TARGET_DIR }}/api/"
+
+      - name: Deploy datasheet app
+        run: |
+          rsync -az --delete \
+            --exclude "config.php" \
+            --exclude ".env" \
+            appdatasheets/ \
+            "${{ secrets.ALWAYSDATA_USER }}@${{ secrets.ALWAYSDATA_HOST }}:${{ secrets.ALWAYSDATA_TARGET_DIR }}/appdatasheets/"

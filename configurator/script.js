@@ -5,8 +5,8 @@
  * and exports the datasheet request from the live UI state.
  */
 
-const API_BASE = "/api_nexled/api";
 const API_KEY = "7b8edd27a16f60bf7a1c92b8ceb40cda474588d24491140c130418153053063b";
+const API_BASE_CANDIDATES = ["./api", "../api", "/api_nexled/api"];
 
 const REF_LENGTHS = {
     size: 4,
@@ -45,6 +45,7 @@ const STATUS_TONE_CLASS = {
 };
 
 let descriptionRequestToken = 0;
+let apiBasePromise = null;
 
 document.addEventListener("DOMContentLoaded", () => {
     document.getElementById("select-family").addEventListener("change", handleFamilyChange);
@@ -56,8 +57,35 @@ document.addEventListener("DOMContentLoaded", () => {
     loadFamilies();
 });
 
+async function getApiBase() {
+    if (!apiBasePromise) {
+        apiBasePromise = resolveApiBase();
+    }
+
+    return apiBasePromise;
+}
+
+async function resolveApiBase() {
+    for (const base of API_BASE_CANDIDATES) {
+        try {
+            const response = await fetch(base + "/?endpoint=families", {
+                headers: { "X-API-Key": API_KEY },
+            });
+
+            if (response.status !== 404) {
+                return base;
+            }
+        } catch (error) {
+            console.warn("API base probe failed for", base, error);
+        }
+    }
+
+    throw new Error("Unable to resolve the NexLed API base URL.");
+}
+
 async function apiFetch(path) {
-    const response = await fetch(API_BASE + path, {
+    const apiBase = await getApiBase();
+    const response = await fetch(apiBase + path, {
         headers: { "X-API-Key": API_KEY },
     });
 
@@ -69,7 +97,9 @@ async function apiFetch(path) {
 }
 
 async function apiPost(path, body) {
-    return fetch(API_BASE + path, {
+    const apiBase = await getApiBase();
+
+    return fetch(apiBase + path, {
         method: "POST",
         headers: {
             "X-API-Key": API_KEY,
