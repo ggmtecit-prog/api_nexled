@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DAM - NexLed</title>
+    <link rel="icon" type="image/svg+xml" href="./UI_SYSTEM/favicon.svg">
+
+    <!-- 1. Load Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Urbanist:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/remixicon@4.5.0/fonts/remixicon.css" rel="stylesheet">
+
+    <!-- 2. Tailwind CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- 3. Configure Tailwind -->
+    <script src="https://ggmtecit-prog.github.io/NexLed_UI_System/src/config-cdn.js?v=1.3"></script>
+    <link rel="stylesheet" href="https://ggmtecit-prog.github.io/NexLed_UI_System/src/nexled.css?v=1.3">
+    <script src="https://ggmtecit-prog.github.io/NexLed_UI_System/src/nexled.js?v=1.3"></script>
+</head>
+<body class="bg-grey-tertiary text-black selection:bg-green-primary/10 min-h-screen lg:flex">
+
+    <header class="sticky top-0 z-sticky lg:hidden">
+        <div class="panel rounded-none border-x-0 border-t-0">
+            <div class="container-standard flex items-center justify-between gap-16 py-16">
+                <a href="index.html" class="flex items-center gap-12">
+                    <img src="./UI_SYSTEM/favicon.svg" alt="NexLed" class="w-40 h-40">
+                    <div class="flex flex-col">
+                        <span class="font-semibold text-body-lg leading-none tracking-tight text-black">NexLed</span>
+                        <span class="text-overline text-grey-primary">DAM</span>
+                    </div>
+                </a>
+                <button type="button" class="btn btn-secondary btn-icon btn-xs" data-drawer-target="app-nav-drawer" aria-label="Open navigation">
+                    <i class="ri-menu-3-line icon icon-md" aria-hidden="true"></i>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <div id="app-nav-drawer" class="drawer-sheet drawer-sheet-sm lg:hidden" aria-hidden="true">
+        <div class="drawer-sheet-panel">
+            <div class="drawer-sheet-header">
+                <div class="flex items-center gap-12">
+                    <img src="./UI_SYSTEM/favicon.svg" alt="NexLed" class="w-40 h-40">
+                    <div class="flex flex-col">
+                        <span class="font-semibold text-body-lg leading-none tracking-tight text-black">NexLed</span>
+                        <span class="text-overline text-grey-primary">DAM</span>
+                    </div>
+                </div>
+                <button type="button" class="btn btn-secondary btn-icon btn-xs drawer-sheet-close" data-drawer-close data-drawer-initial-focus aria-label="Close navigation">
+                    <i class="ri-close-line icon icon-md" aria-hidden="true"></i>
+                </button>
+            </div>
+            <div class="drawer-sheet-body">
+                <div class="flex h-full flex-col justify-between gap-24">
+                    <nav class="flex flex-col gap-12">
+                        <div class="dropdown dropdown-minimal dropdown-md">
+                            <a href="index.html" class="dropdown-trigger">
+                                <span class="flex items-center gap-8">
+                                    <i class="ri-file-list-3-line text-icon-md" aria-hidden="true"></i>
+                                    <span class="dropdown-value">Configurator</span>
+                                </span>
+                                <i class="ri-arrow-right-s-line dropdown-arrow" aria-hidden="true"></i>
+                            </a>
+                        </div>
+                        <div class="dropdown dropdown-minimal dropdown-md">
+                            <a href="dam.html" class="dropdown-trigger" aria-current="page">
+                                <span class="flex items-center gap-8">
+                                    <i class="ri-folder-line text-icon-md" aria-hidden="true"></i>
+                                    <span class="dropdown-value">DAM</span>
+                                </span>
+                                <i class="ri-arrow-right-s-line dropdown-arrow" aria-hidden="true"></i>
+                            </a>
+                        </div>
+                        <div class="dropdown dropdown-minimal dropdown-md">
+                            <button type="button" class="dropdown-trigger" disabled aria-disabled="true">
+                                <span class="flex items-center gap-8">
+                                    <i class="ri-search-eye-line text-icon-md" aria-hidden="true"></i>
+                                    <span class="dropdown-value">Search Assets</span>
+                                </span>
+                                <i class="ri-arrow-right-s-line dropdown-arrow" aria-hidden="true"></i>
+                            </button>
+                        </div>
+                        <div class="dropdown dropdown-minimal dropdown-md">
+                            <button type="button" class="dropdown-trigger" disabled aria-disabled="true">
+                                <span class="flex items-center gap-8">
+                                    <i class="ri-download-cloud-line text-icon-md" aria-hidden="true"></i>
+                                    <span class="dropdown-value">Bulk Export</span>
+                                </span>
+                                <i class="ri-arrow-right-s-line dropdown-arrow" aria-hidden="true"></i>
+                            </button>
+                        </div>
+                    </nav>
+
+                    <button type="button" class="badge badge-neutral badge-md self-center">
+                        <span class="text-body-xs">DAM Preview</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <aside class="hidden lg:block shrink-0 sticky top-0 h-screen px-24 py-24">
+        <div class="sidebar w-sidebar h-full">
+            <div class="flex flex-col h-full gap-16 p-48">
+                <a href="index.html" class="flex items-center justify-center gap-12 group">
+                    <img src="./UI_SYSTEM/favicon.svg" alt="NexLed" class="w-64 h-64">
+                    <div class="flex flex-col">
+                        <span class="text-card-title leading-none tracking-tight text-black">NexLed</span>
+                        <span class="text-label text-black tracking-wider">DAM</span>
+                    </div>
+                </a>
+
+                <nav class="flex flex-col gap-24 flex-1 justify-center">
+                    <div class="dropdown dropdown-minimal dropdown-sm">
+                        <a href="index.html" class="dropdown-trigger">
+                            <span class="flex items-center gap-8">
+                                <i class="ri-file-list-3-line text-icon-md" aria-hidden="true"></i>
+                                <span class="dropdown-value">Configurator</span>
+                            </span>
+                            <i class="ri-arrow-right-s-line dropdown-arrow" aria-hidden="true"></i>
+                        </a>
+                    </div>
+
+                    <div class="dropdown dropdown-minimal dropdown-sm">
+                        <a href="dam.html" class="dropdown-trigger" aria-current="page">
+                            <span class="flex items-center gap-8">
+                                <i class="ri-folder-line text-icon-md" aria-hidden="true"></i>
+                                <span class="dropdown-value">DAM</span>
+                            </span>
+                            <i class="ri-arrow-right-s-line dropdown-arrow" aria-hidden="true"></i>
+                        </a>
+                    </div>
+
+                    <div class="dropdown dropdown-minimal dropdown-sm">
+                        <button type="button" class="dropdown-trigger" disabled aria-disabled="true">
+                            <span class="flex items-center gap-8">
+                                <i class="ri-search-eye-line text-icon-md" aria-hidden="true"></i>
+                                <span class="dropdown-value">Search Assets</span>
+                            </span>
+                            <i class="ri-arrow-right-s-line dropdown-arrow" aria-hidden="true"></i>
+                        </button>
+                    </div>
+
+                    <div class="dropdown dropdown-minimal dropdown-sm">
+                        <button type="button" class="dropdown-trigger" disabled aria-disabled="true">
+                            <span class="flex items-center gap-8">
+                                <i class="ri-download-cloud-line text-icon-md" aria-hidden="true"></i>
+                                <span class="dropdown-value">Bulk Export</span>
+                            </span>
+                            <i class="ri-arrow-right-s-line dropdown-arrow" aria-hidden="true"></i>
+                        </button>
+                    </div>
+                </nav>
+
+                <button type="button" class="badge badge-neutral badge-md self-center">
+                    <span class="text-body-xs">DAM Preview</span>
+                </button>
+            </div>
+        </div>
+    </aside>
+
+    <div class="flex-1 min-w-0 flex flex-col lg:h-screen overflow-y-auto">
+        <main class="flex-1 px-16 pt-32 pb-32 sm:px-20 sm:pt-40 sm:pb-40 md:px-24 md:pt-48 md:pb-48 lg:px-32 lg:pt-64 lg:pb-64 w-full">
+            <h2 class="text-h1 font-medium text-black pb-24 pt-24" data-reveal="hero">
+                Manage Brand Assets
+            </h2>
+
+            <div class="flex flex-col lg:flex-row gap-48 items-start justify-center">
+
+                <div class="relative flex-1" data-reveal="section">
+                    <div class="input-icon-wrapper absolute inset-x-0 top-0 z-sticky">
+                        <span class="input-icon-area" aria-hidden="true">
+                            <i class="ri-search-line text-icon-md"></i>
+                        </span>
+                        <input type="text" id="searchInput" placeholder="Search assets..." class="input-icon-field" aria-label="Search assets">
+                    </div>
+
+                    <div class="card overflow-hidden">
+                        <div class="card-body pt-64">
+                            <div id="fileGrid" class="grid grid-cols-2 gap-24 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 md:gap-32">
+                                <div class="group relative flex flex-col items-center gap-12 p-16 rounded-8" title="Brand_Guidelines.pdf&#10;18.4 MB">
+                                    <i class="ri-file-pdf-2-line text-icon-xxl text-grey-primary" aria-hidden="true"></i>
+                                    <span class="text-body-sm text-grey-primary text-center break-all leading-tight">Brand_Guidelines.pdf</span>
+                                    <div class="absolute inset-0 flex items-center justify-center gap-12 rounded-8 bg-white/90 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none group-hover:pointer-events-auto">
+                                        <span class="tooltip-wrapper group/tip">
+                                            <button type="button" class="btn btn-ghost btn-icon btn-xs" aria-label="Download">
+                                                <i class="ri-download-line text-icon-lg" aria-hidden="true"></i>
+                                            </button>
+                                            <span class="absolute left-1/2 -translate-x-1/2 top-full mt-8 bg-black text-white py-4 px-8 text-body-xs rounded-xs whitespace-nowrap pointer-events-none shadow-btn-default opacity-0 group-hover/tip:opacity-100 transition-all">Download</span>
+                                        </span>
+                                        <span class="tooltip-wrapper group/tip">
+                                            <button type="button" class="btn btn-ghost btn-icon btn-xs" aria-label="Preview">
+                                                <i class="ri-eye-line text-icon-lg" aria-hidden="true"></i>
+                                            </button>
+                                            <span class="absolute left-1/2 -translate-x-1/2 top-full mt-8 bg-black text-white py-4 px-8 text-body-xs rounded-xs whitespace-nowrap pointer-events-none shadow-btn-default opacity-0 group-hover/tip:opacity-100 transition-all">Preview</span>
+                                        </span>
+                                        <span class="tooltip-wrapper group/tip">
+                                            <button type="button" class="btn btn-ghost btn-icon btn-xs" aria-label="Archive">
+                                                <i class="ri-archive-line text-icon-lg" aria-hidden="true"></i>
+                                            </button>
+                                            <span class="absolute left-1/2 -translate-x-1/2 top-full mt-8 bg-black text-white py-4 px-8 text-body-xs rounded-xs whitespace-nowrap pointer-events-none shadow-btn-default opacity-0 group-hover/tip:opacity-100 transition-all">Archive</span>
+                                        </span>
+                                    </div>
+                                </div>
+
+                                <div class="group relative flex flex-col items-center gap-12 p-16 rounded-8" title="Hero_Shot_Outdoor.jpg&#10;6.8 MB">
+                                    <i class="ri-image-line text-icon-xxl text-grey-primary" aria-hidden="true"></i>
+                                    <span class="text-body-sm text-grey-primary text-center break-all leading-tight">Hero_Shot_Outdoor.jpg</span>
+                                    <div class="absolute inset-0 flex items-center justify-center gap-12 rounded-8 bg-white/90 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none group-hover:pointer-events-auto">
+                                        <span class="tooltip-wrapper group/tip">
+                                            <button type="button" class="btn btn-ghost btn-icon btn-xs" aria-label="Download">
+                                                <i class="ri-download-line text-icon-lg" aria-hidden="true"></i>
+                                            </button>
+                                            <span class="absolute left-1/2 -translate-x-1/2 top-full mt-8 bg-black text-white py-4 px-8 text-body-xs rounded-xs whitespace-nowrap pointer-events-none shadow-btn-default opacity-0 group-hover/tip:opacity-100 transition-all">Download</span>
+                                        </span>
+                                        <span class="tooltip-wrapper group/tip">
+                                            <button type="button" class="btn btn-ghost btn-icon btn-xs" aria-label="Preview">
+                                                <i class="ri-eye-line text-icon-lg" aria-hidden="true"></i>
+                                            </button>
+                                            <span class="absolute left-1/2 -translate-x-1/2 top-full mt-8 bg-black text-white py-4 px-8 text-body-xs rounded-xs whitespace-nowrap pointer-events-none shadow-btn-default opacity-0 group-hover/tip:opacity-100 transition-all">Preview</span>
+                                        </span>
+                                        <span class="tooltip-wrapper group/tip">
+                                            <button type="button" class="btn btn-ghost btn-icon btn-xs" aria-label="Archive">
+                                                <i class="ri-archive-line text-icon-lg" aria-hidden="true"></i>
+                                            </button>
+                                            <span class="absolute left-1/2 -translate-x-1/2 top-full mt-8 bg-black text-white py-4 px-8 text-body-xs rounded-xs whitespace-nowrap pointer-events-none shadow-btn-default opacity-0 group-hover/tip:opacity-100 transition-all">Archive</span>
+                                        </span>
+                                    </div>
+                                </div>
+
+                                <div class="group relative flex flex-col items-center gap-12 p-16 rounded-8" title="Indoor_Catalogue_2026.zip&#10;42.1 MB">
+                                    <i class="ri-file-zip-line text-icon-xxl text-grey-primary" aria-hidden="true"></i>
+                                    <span class="text-body-sm text-grey-primary text-center break-all leading-tight">Indoor_Catalogue_2026.zip</span>
+                                    <div class="absolute inset-0 flex items-center justify-center gap-12 rounded-8 bg-white/90 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none group-hover:pointer-events-auto">
+                                        <span class="tooltip-wrapper group/tip">
+                                            <button type="button" class="btn btn-ghost btn-icon btn-xs" aria-label="Download">
+                                                <i class="ri-download-line text-icon-lg" aria-hidden="true"></i>
+                                            </button>
+                                            <span class="absolute left-1/2 -translate-x-1/2 top-full mt-8 bg-black text-white py-4 px-8 text-body-xs rounded-xs whitespace-nowrap pointer-events-none shadow-btn-default opacity-0 group-hover/tip:opacity-100 transition-all">Download</span>
+                                        </span>
+                                        <span class="tooltip-wrapper group/tip">
+                                            <button type="button" class="btn btn-ghost btn-icon btn-xs" aria-label="Preview">
+                                                <i class="ri-eye-line text-icon-lg" aria-hidden="true"></i>
+                                            </button>
+                                            <span class="absolute left-1/2 -translate-x-1/2 top-full mt-8 bg-black text-white py-4 px-8 text-body-xs rounded-xs whitespace-nowrap pointer-events-none shadow-btn-default opacity-0 group-hover/tip:opacity-100 transition-all">Preview</span>
+                                        </span>
+                                        <span class="tooltip-wrapper group/tip">
+                                            <button type="button" class="btn btn-ghost btn-icon btn-xs" aria-label="Archive">
+                                                <i class="ri-archive-line text-icon-lg" aria-hidden="true"></i>
+                                            </button>
+                                            <span class="absolute left-1/2 -translate-x-1/2 top-full mt-8 bg-black text-white py-4 px-8 text-body-xs rounded-xs whitespace-nowrap pointer-events-none shadow-btn-default opacity-0 group-hover/tip:opacity-100 transition-all">Archive</span>
+                                        </span>
+                                    </div>
+                                </div>
+
+                                <div class="group relative flex flex-col items-center gap-12 p-16 rounded-8" title="Logo_Mark_White.svg&#10;132 KB">
+                                    <i class="ri-braces-line text-icon-xxl text-grey-primary" aria-hidden="true"></i>
+                                    <span class="text-body-sm text-grey-primary text-center break-all leading-tight">Logo_Mark_White.svg</span>
+                                    <div class="absolute inset-0 flex items-center justify-center gap-12 rounded-8 bg-white/90 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none group-hover:pointer-events-auto">
+                                        <span class="tooltip-wrapper group/tip">
+                                            <button type="button" class="btn btn-ghost btn-icon btn-xs" aria-label="Download">
+                                                <i class="ri-download-line text-icon-lg" aria-hidden="true"></i>
+                                            </button>
+                                            <span class="absolute left-1/2 -translate-x-1/2 top-full mt-8 bg-black text-white py-4 px-8 text-body-xs rounded-xs whitespace-nowrap pointer-events-none shadow-btn-default opacity-0 group-hover/tip:opacity-100 transition-all">Download</span>
+                                        </span>
+                                        <span class="tooltip-wrapper group/tip">
+                                            <button type="button" class="btn btn-ghost btn-icon btn-xs" aria-label="Preview">
+                                                <i class="ri-eye-line text-icon-lg" aria-hidden="true"></i>
+                                            </button>
+                                            <span class="absolute left-1/2 -translate-x-1/2 top-full mt-8 bg-black text-white py-4 px-8 text-body-xs rounded-xs whitespace-nowrap pointer-events-none shadow-btn-default opacity-0 group-hover/tip:opacity-100 transition-all">Preview</span>
+                                        </span>
+                                        <span class="tooltip-wrapper group/tip">
+                                            <button type="button" class="btn btn-ghost btn-icon btn-xs" aria-label="Archive">
+                                                <i class="ri-archive-line text-icon-lg" aria-hidden="true"></i>
+                                            </button>
+                                            <span class="absolute left-1/2 -translate-x-1/2 top-full mt-8 bg-black text-white py-4 px-8 text-body-xs rounded-xs whitespace-nowrap pointer-events-none shadow-btn-default opacity-0 group-hover/tip:opacity-100 transition-all">Archive</span>
+                                        </span>
+                                    </div>
+                                </div>
+
+                                <div class="group relative flex flex-col items-center gap-12 p-16 rounded-8" title="Retail_Promo_Edit.mp4&#10;88.0 MB">
+                                    <i class="ri-video-line text-icon-xxl text-grey-primary" aria-hidden="true"></i>
+                                    <span class="text-body-sm text-grey-primary text-center break-all leading-tight">Retail_Promo_Edit.mp4</span>
+                                    <div class="absolute inset-0 flex items-center justify-center gap-12 rounded-8 bg-white/90 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none group-hover:pointer-events-auto">
+                                        <span class="tooltip-wrapper group/tip">
+                                            <button type="button" class="btn btn-ghost btn-icon btn-xs" aria-label="Download">
+                                                <i class="ri-download-line text-icon-lg" aria-hidden="true"></i>
+                                            </button>
+                                            <span class="absolute left-1/2 -translate-x-1/2 top-full mt-8 bg-black text-white py-4 px-8 text-body-xs rounded-xs whitespace-nowrap pointer-events-none shadow-btn-default opacity-0 group-hover/tip:opacity-100 transition-all">Download</span>
+                                        </span>
+                                        <span class="tooltip-wrapper group/tip">
+                                            <button type="button" class="btn btn-ghost btn-icon btn-xs" aria-label="Preview">
+                                                <i class="ri-eye-line text-icon-lg" aria-hidden="true"></i>
+                                            </button>
+                                            <span class="absolute left-1/2 -translate-x-1/2 top-full mt-8 bg-black text-white py-4 px-8 text-body-xs rounded-xs whitespace-nowrap pointer-events-none shadow-btn-default opacity-0 group-hover/tip:opacity-100 transition-all">Preview</span>
+                                        </span>
+                                        <span class="tooltip-wrapper group/tip">
+                                            <button type="button" class="btn btn-ghost btn-icon btn-xs" aria-label="Archive">
+                                                <i class="ri-archive-line text-icon-lg" aria-hidden="true"></i>
+                                            </button>
+                                            <span class="absolute left-1/2 -translate-x-1/2 top-full mt-8 bg-black text-white py-4 px-8 text-body-xs rounded-xs whitespace-nowrap pointer-events-none shadow-btn-default opacity-0 group-hover/tip:opacity-100 transition-all">Archive</span>
+                                        </span>
+                                    </div>
+                                </div>
+
+                                <div class="group relative flex flex-col items-center gap-12 p-16 rounded-8" title="Spec_Sheet_Linear.xml&#10;420 KB">
+                                    <i class="ri-file-code-line text-icon-xxl text-grey-primary" aria-hidden="true"></i>
+                                    <span class="text-body-sm text-grey-primary text-center break-all leading-tight">Spec_Sheet_Linear.xml</span>
+                                    <div class="absolute inset-0 flex items-center justify-center gap-12 rounded-8 bg-white/90 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none group-hover:pointer-events-auto">
+                                        <span class="tooltip-wrapper group/tip">
+                                            <button type="button" class="btn btn-ghost btn-icon btn-xs" aria-label="Download">
+                                                <i class="ri-download-line text-icon-lg" aria-hidden="true"></i>
+                                            </button>
+                                            <span class="absolute left-1/2 -translate-x-1/2 top-full mt-8 bg-black text-white py-4 px-8 text-body-xs rounded-xs whitespace-nowrap pointer-events-none shadow-btn-default opacity-0 group-hover/tip:opacity-100 transition-all">Download</span>
+                                        </span>
+                                        <span class="tooltip-wrapper group/tip">
+                                            <button type="button" class="btn btn-ghost btn-icon btn-xs" aria-label="Preview">
+                                                <i class="ri-eye-line text-icon-lg" aria-hidden="true"></i>
+                                            </button>
+                                            <span class="absolute left-1/2 -translate-x-1/2 top-full mt-8 bg-black text-white py-4 px-8 text-body-xs rounded-xs whitespace-nowrap pointer-events-none shadow-btn-default opacity-0 group-hover/tip:opacity-100 transition-all">Preview</span>
+                                        </span>
+                                        <span class="tooltip-wrapper group/tip">
+                                            <button type="button" class="btn btn-ghost btn-icon btn-xs" aria-label="Archive">
+                                                <i class="ri-archive-line text-icon-lg" aria-hidden="true"></i>
+                                            </button>
+                                            <span class="absolute left-1/2 -translate-x-1/2 top-full mt-8 bg-black text-white py-4 px-8 text-body-xs rounded-xs whitespace-nowrap pointer-events-none shadow-btn-default opacity-0 group-hover/tip:opacity-100 transition-all">Archive</span>
+                                        </span>
+                                    </div>
+                                </div>
+
+                                <div class="group relative flex flex-col items-center gap-12 p-16 rounded-8" title="Packaging_Mockup.png&#10;4.1 MB">
+                                    <i class="ri-image-line text-icon-xxl text-grey-primary" aria-hidden="true"></i>
+                                    <span class="text-body-sm text-grey-primary text-center break-all leading-tight">Packaging_Mockup.png</span>
+                                    <div class="absolute inset-0 flex items-center justify-center gap-12 rounded-8 bg-white/90 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none group-hover:pointer-events-auto">
+                                        <span class="tooltip-wrapper group/tip">
+                                            <button type="button" class="btn btn-ghost btn-icon btn-xs" aria-label="Download">
+                                                <i class="ri-download-line text-icon-lg" aria-hidden="true"></i>
+                                            </button>
+                                            <span class="absolute left-1/2 -translate-x-1/2 top-full mt-8 bg-black text-white py-4 px-8 text-body-xs rounded-xs whitespace-nowrap pointer-events-none shadow-btn-default opacity-0 group-hover/tip:opacity-100 transition-all">Download</span>
+                                        </span>
+                                        <span class="tooltip-wrapper group/tip">
+                                            <button type="button" class="btn btn-ghost btn-icon btn-xs" aria-label="Preview">
+                                                <i class="ri-eye-line text-icon-lg" aria-hidden="true"></i>
+                                            </button>
+                                            <span class="absolute left-1/2 -translate-x-1/2 top-full mt-8 bg-black text-white py-4 px-8 text-body-xs rounded-xs whitespace-nowrap pointer-events-none shadow-btn-default opacity-0 group-hover/tip:opacity-100 transition-all">Preview</span>
+                                        </span>
+                                        <span class="tooltip-wrapper group/tip">
+                                            <button type="button" class="btn btn-ghost btn-icon btn-xs" aria-label="Archive">
+                                                <i class="ri-archive-line text-icon-lg" aria-hidden="true"></i>
+                                            </button>
+                                            <span class="absolute left-1/2 -translate-x-1/2 top-full mt-8 bg-black text-white py-4 px-8 text-body-xs rounded-xs whitespace-nowrap pointer-events-none shadow-btn-default opacity-0 group-hover/tip:opacity-100 transition-all">Archive</span>
+                                        </span>
+                                    </div>
+                                </div>
+
+                                <div class="group relative flex flex-col items-center gap-12 p-16 rounded-8" title="Trade_Fair_Booth.ai&#10;2.3 MB">
+                                    <i class="ri-braces-line text-icon-xxl text-grey-primary" aria-hidden="true"></i>
+                                    <span class="text-body-sm text-grey-primary text-center break-all leading-tight">Trade_Fair_Booth.ai</span>
+                                    <div class="absolute inset-0 flex items-center justify-center gap-12 rounded-8 bg-white/90 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none group-hover:pointer-events-auto">
+                                        <span class="tooltip-wrapper group/tip">
+                                            <button type="button" class="btn btn-ghost btn-icon btn-xs" aria-label="Download">
+                                                <i class="ri-download-line text-icon-lg" aria-hidden="true"></i>
+                                            </button>
+                                            <span class="absolute left-1/2 -translate-x-1/2 top-full mt-8 bg-black text-white py-4 px-8 text-body-xs rounded-xs whitespace-nowrap pointer-events-none shadow-btn-default opacity-0 group-hover/tip:opacity-100 transition-all">Download</span>
+                                        </span>
+                                        <span class="tooltip-wrapper group/tip">
+                                            <button type="button" class="btn btn-ghost btn-icon btn-xs" aria-label="Preview">
+                                                <i class="ri-eye-line text-icon-lg" aria-hidden="true"></i>
+                                            </button>
+                                            <span class="absolute left-1/2 -translate-x-1/2 top-full mt-8 bg-black text-white py-4 px-8 text-body-xs rounded-xs whitespace-nowrap pointer-events-none shadow-btn-default opacity-0 group-hover/tip:opacity-100 transition-all">Preview</span>
+                                        </span>
+                                        <span class="tooltip-wrapper group/tip">
+                                            <button type="button" class="btn btn-ghost btn-icon btn-xs" aria-label="Archive">
+                                                <i class="ri-archive-line text-icon-lg" aria-hidden="true"></i>
+                                            </button>
+                                            <span class="absolute left-1/2 -translate-x-1/2 top-full mt-8 bg-black text-white py-4 px-8 text-body-xs rounded-xs whitespace-nowrap pointer-events-none shadow-btn-default opacity-0 group-hover/tip:opacity-100 transition-all">Archive</span>
+                                        </span>
+                                    </div>
+                                </div>
+
+                                <div class="group relative flex flex-col items-center gap-12 p-16 rounded-8" title="Linecard_Short.docx&#10;860 KB">
+                                    <i class="ri-file-word-line text-icon-xxl text-grey-primary" aria-hidden="true"></i>
+                                    <span class="text-body-sm text-grey-primary text-center break-all leading-tight">Linecard_Short.docx</span>
+                                    <div class="absolute inset-0 flex items-center justify-center gap-12 rounded-8 bg-white/90 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none group-hover:pointer-events-auto">
+                                        <span class="tooltip-wrapper group/tip">
+                                            <button type="button" class="btn btn-ghost btn-icon btn-xs" aria-label="Download">
+                                                <i class="ri-download-line text-icon-lg" aria-hidden="true"></i>
+                                            </button>
+                                            <span class="absolute left-1/2 -translate-x-1/2 top-full mt-8 bg-black text-white py-4 px-8 text-body-xs rounded-xs whitespace-nowrap pointer-events-none shadow-btn-default opacity-0 group-hover/tip:opacity-100 transition-all">Download</span>
+                                        </span>
+                                        <span class="tooltip-wrapper group/tip">
+                                            <button type="button" class="btn btn-ghost btn-icon btn-xs" aria-label="Preview">
+                                                <i class="ri-eye-line text-icon-lg" aria-hidden="true"></i>
+                                            </button>
+                                            <span class="absolute left-1/2 -translate-x-1/2 top-full mt-8 bg-black text-white py-4 px-8 text-body-xs rounded-xs whitespace-nowrap pointer-events-none shadow-btn-default opacity-0 group-hover/tip:opacity-100 transition-all">Preview</span>
+                                        </span>
+                                        <span class="tooltip-wrapper group/tip">
+                                            <button type="button" class="btn btn-ghost btn-icon btn-xs" aria-label="Archive">
+                                                <i class="ri-archive-line text-icon-lg" aria-hidden="true"></i>
+                                            </button>
+                                            <span class="absolute left-1/2 -translate-x-1/2 top-full mt-8 bg-black text-white py-4 px-8 text-body-xs rounded-xs whitespace-nowrap pointer-events-none shadow-btn-default opacity-0 group-hover/tip:opacity-100 transition-all">Archive</span>
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div id="emptyState" class="hidden flex flex-col items-center gap-16 py-64">
+                                <i class="ri-folder-open-line text-icon-xxl text-grey-quaternary" aria-hidden="true"></i>
+                                <span class="text-body-md text-grey-secondary">No assets in this collection</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card overflow-visible shrink-0 w-full lg:w-fit lg:sticky lg:top-56" data-reveal="section">
+                    <div class="card-body p-24">
+                        <h3 class="card-title">Quick Actions</h3>
+
+                        <div class="flex flex-col gap-12 pt-24">
+                            <span class="input-label">Select Collection</span>
+                            <div class="flex items-center gap-12">
+                                <div class="dropdown dropdown-sm flex-1 relative">
+                                    <button type="button" class="dropdown-trigger" aria-haspopup="listbox" aria-expanded="false">
+                                        <span class="dropdown-value">Campaign Assets</span>
+                                        <i class="ri-arrow-down-s-line dropdown-arrow" aria-hidden="true"></i>
+                                    </button>
+                                    <ul class="dropdown-menu custom-scrollbar" role="listbox" aria-label="Collection options">
+                                        <li class="dropdown-item" role="option" aria-selected="true" tabindex="-1">
+                                            <span>Campaign Assets</span>
+                                            <i class="ri-check-line dropdown-item-check" aria-hidden="true"></i>
+                                        </li>
+                                        <li class="dropdown-item" role="option" aria-selected="false" tabindex="-1">
+                                            <span>Launch Packs</span>
+                                            <i class="ri-check-line dropdown-item-check" aria-hidden="true"></i>
+                                        </li>
+                                        <li class="dropdown-item" role="option" aria-selected="false" tabindex="-1">
+                                            <span>Datasheet Exports</span>
+                                            <i class="ri-check-line dropdown-item-check" aria-hidden="true"></i>
+                                        </li>
+                                        <li class="dropdown-item" role="option" aria-selected="false" tabindex="-1">
+                                            <span>Video Library</span>
+                                            <i class="ri-check-line dropdown-item-check" aria-hidden="true"></i>
+                                        </li>
+                                    </ul>
+                                </div>
+                                <button type="button" class="btn btn-secondary btn-sm" aria-label="Refresh collections">
+                                    <i class="ri-refresh-line text-icon-md" aria-hidden="true"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="flex flex-col gap-12 pt-32 items-start">
+                            <button type="button" class="btn btn-secondary btn-sm">
+                                <i class="ri-folder-add-line text-icon-sm" aria-hidden="true"></i>
+                                Create Folder
+                            </button>
+                            <button type="button" class="btn btn-secondary btn-sm">
+                                <i class="ri-upload-2-line text-icon-sm" aria-hidden="true"></i>
+                                Upload Assets
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+</body>
+</html>
