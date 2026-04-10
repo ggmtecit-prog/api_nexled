@@ -67,7 +67,13 @@ function hasRuntimeDatabaseConfig(): bool {
 
 function getRuntimeDatabaseName(string $envKey, string $fallback): string {
     $value = getRuntimeEnvValue($envKey);
-    return $value !== null ? $value : $fallback;
+
+    if ($value !== null) {
+        return $value;
+    }
+
+    $defaultDatabaseName = getDefaultRuntimeDatabaseName();
+    return $defaultDatabaseName !== null ? $defaultDatabaseName : $fallback;
 }
 
 function getRuntimeEnvValue(string $key): ?string {
@@ -149,6 +155,39 @@ function getRuntimeDatabaseConfig(string $databaseName): array {
         "database" => $databaseName,
         "port" => (int) (getRuntimeEnvValue("MYSQLPORT") ?? "3306"),
     ];
+}
+
+function getDefaultRuntimeDatabaseName(): ?string {
+    $databaseName = getRuntimeEnvValue("MYSQLDATABASE");
+
+    if ($databaseName !== null) {
+        return $databaseName;
+    }
+
+    $databaseName = getRuntimeEnvValue("DB_NAME");
+
+    if ($databaseName !== null) {
+        return $databaseName;
+    }
+
+    $databaseUrl = getRuntimeEnvValue("MYSQL_URL");
+
+    if ($databaseUrl === null) {
+        $databaseUrl = getRuntimeEnvValue("DATABASE_URL");
+    }
+
+    if ($databaseUrl === null) {
+        return null;
+    }
+
+    $parsedUrl = parse_url($databaseUrl);
+
+    if (!is_array($parsedUrl) || !isset($parsedUrl["path"])) {
+        return null;
+    }
+
+    $databaseName = ltrim($parsedUrl["path"], "/");
+    return $databaseName !== "" ? $databaseName : null;
 }
 
 function failRuntimeDatabaseConnection(string $databaseName, string $message): void {
