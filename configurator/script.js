@@ -36,9 +36,9 @@ const REFERENCE_INPUT_IDS = [
     "input-extra-length",
 ];
 
-const COPY_LABELS = {
-    "output-reference": "reference",
-    "output-description": "description",
+const COPY_LABEL_KEYS = {
+    "output-reference": "shared.actions.reference",
+    "output-description": "shared.actions.description",
 };
 
 const STATUS_BASE_CLASS = "text-body-xs min-h-16 text-center pt-16";
@@ -54,7 +54,7 @@ const API_BADGE_TONE_CLASS = {
     error: "bg-red-primary",
 };
 const NAV_GENERATE_IDS = ["nav-generate-desktop", "nav-generate-mobile"];
-const APP_LANGUAGE_EVENT = "nexled:app-language-change";
+const APP_I18N_EVENT = "nexled:i18n-applied";
 
 let descriptionRequestToken = 0;
 let apiBasePromise = null;
@@ -63,6 +63,30 @@ let selectDropdowns = new Map();
 let activeSelectDropdown = null;
 let selectDropdownEventsBound = false;
 let syncConfiguredLanguageSelect = null;
+let apiBadgeState = {
+    tone: "error",
+    key: "shared.badge.apiUnavailable",
+    fallback: "API unavailable",
+};
+let statusState = {
+    tone: "neutral",
+    key: "configurator.runtime.chooseFamilyToBegin",
+    fallback: "Choose a family to begin.",
+};
+let summaryState = {
+    stepKey: "configurator.runtime.step1",
+    titleKey: "configurator.runtime.startWithFamily",
+    subtitleKey: "configurator.runtime.selectFamilyToUnlock",
+    fallbacks: {
+        step: "Step 1",
+        title: "Start with a family",
+        subtitle: "Select a family to unlock the valid option set.",
+    },
+};
+let familyPlaceholderState = {
+    key: "configurator.runtime.familyLoading",
+    fallback: "Loading families...",
+};
 
 document.addEventListener("DOMContentLoaded", () => {
     familyCombobox = setupFamilyCombobox();
@@ -112,28 +136,48 @@ function getApiBaseCandidates() {
     return API_BASE_CANDIDATES;
 }
 
-function getApiFailureMessage() {
+function getApiFailureMessageKey() {
     if (window.location.protocol === "file:") {
-        return "Start Apache/XAMPP. This page needs the PHP API at http://localhost/api_nexled/api.";
+        return "configurator.runtime.apiFailureFile";
     }
 
     if (LOCAL_HOSTNAMES.has(window.location.hostname)) {
-        return "Start Apache/XAMPP. The local NexLed API is not responding.";
+        return "configurator.runtime.apiFailureLocal";
     }
 
-    return "The NexLed API is not reachable from this page.";
+    return "configurator.runtime.apiFailureRemote";
 }
 
-function getFamilyPlaceholderMessage() {
+function getApiFailureFallback(key) {
+    const fallbacks = {
+        "configurator.runtime.apiFailureFile": "Start Apache/XAMPP. This page needs the PHP API at http://localhost/api_nexled/api.",
+        "configurator.runtime.apiFailureLocal": "Start Apache/XAMPP. The local NexLed API is not responding.",
+        "configurator.runtime.apiFailureRemote": "The NexLed API is not reachable from this page.",
+    };
+
+    return fallbacks[key] || "";
+}
+
+function getFamilyPlaceholderMessageKey() {
     if (window.location.protocol === "file:") {
-        return "Start localhost API to load families";
+        return "configurator.runtime.familyPlaceholderFile";
     }
 
     if (LOCAL_HOSTNAMES.has(window.location.hostname)) {
-        return "Start Apache to load families";
+        return "configurator.runtime.familyPlaceholderLocal";
     }
 
-    return "Unable to load families";
+    return "configurator.runtime.familyPlaceholderRemote";
+}
+
+function getFamilyPlaceholderFallback(key) {
+    const fallbacks = {
+        "configurator.runtime.familyPlaceholderFile": "Start localhost API to load families",
+        "configurator.runtime.familyPlaceholderLocal": "Start Apache to load families",
+        "configurator.runtime.familyPlaceholderRemote": "Unable to load families",
+    };
+
+    return fallbacks[key] || "";
 }
 
 function setupFamilyCombobox() {
@@ -434,7 +478,6 @@ function setupSelectDropdowns() {
 
 function createSelectDropdown(select) {
     const label = document.querySelector('label[for="' + select.id + '"]');
-    const labelText = label ? label.textContent.replace(/\*/g, "").trim() : "Options";
     const root = document.createElement("div");
     const trigger = document.createElement("button");
     const valueDisplay = document.createElement("span");
@@ -444,6 +487,22 @@ function createSelectDropdown(select) {
 
     if (label && !label.id) {
         label.id = select.id + "-label";
+    }
+
+    function getLabelText() {
+        return label ? label.textContent.replace(/\*/g, "").trim() : "Options";
+    }
+
+    function syncAccessibleText() {
+        const labelText = getLabelText();
+
+        if (label?.id) {
+            trigger.setAttribute("aria-labelledby", label.id + " " + valueDisplay.id);
+        } else {
+            trigger.setAttribute("aria-label", labelText);
+        }
+
+        menu.setAttribute("aria-label", labelText);
     }
 
     root.className = "dropdown dropdown-md w-full";
@@ -458,12 +517,6 @@ function createSelectDropdown(select) {
     trigger.setAttribute("aria-haspopup", "listbox");
     trigger.setAttribute("aria-expanded", "false");
 
-    if (label?.id) {
-        trigger.setAttribute("aria-labelledby", label.id + " " + valueDisplay.id);
-    } else {
-        trigger.setAttribute("aria-label", labelText);
-    }
-
     arrow.className = "ri-arrow-down-s-line dropdown-arrow";
     arrow.setAttribute("aria-hidden", "true");
 
@@ -471,10 +524,10 @@ function createSelectDropdown(select) {
 
     menu.className = "dropdown-menu custom-scrollbar";
     menu.setAttribute("role", "listbox");
-    menu.setAttribute("aria-label", labelText + " options");
 
     root.append(trigger, menu);
     select.insertAdjacentElement("afterend", root);
+    syncAccessibleText();
 
     select.hidden = true;
     select.setAttribute("aria-hidden", "true");
@@ -534,7 +587,7 @@ function createSelectDropdown(select) {
         if (selectedOption) {
             updateValueDisplay(selectedOption.textContent || "", hasSelection);
         } else {
-            updateValueDisplay("No options available", false);
+            updateValueDisplay(t("configurator.runtime.noOptionsAvailable", {}, "No options available"), false);
         }
 
         const isDisabled = select.disabled || getEnabledItems().length === 0;
@@ -628,6 +681,7 @@ function createSelectDropdown(select) {
     function refreshOptions() {
         menu.innerHTML = "";
         itemElements = [];
+        syncAccessibleText();
 
         Array.from(select.options).forEach((option) => {
             const item = document.createElement("li");
@@ -756,6 +810,148 @@ function getCurrentAppLanguage() {
     return normalizeAppLanguage(window.NexLedAppShell?.getLanguage?.() || "en");
 }
 
+function t(key, variables = {}, fallback = "") {
+    return window.NexLedI18n?.t?.(key, variables, fallback) || fallback;
+}
+
+function resolveTranslatedVariables(state) {
+    const variables = { ...(state?.variables || {}) };
+    const variableKeys = state?.variableKeys || {};
+
+    Object.keys(variableKeys).forEach((token) => {
+        const entry = variableKeys[token];
+
+        if (typeof entry === "string") {
+            variables[token] = t(entry, {}, variables[token] || "");
+            return;
+        }
+
+        if (entry && typeof entry === "object") {
+            variables[token] = t(entry.key, entry.variables || {}, entry.fallback || variables[token] || "");
+        }
+    });
+
+    return variables;
+}
+
+function setFamilyPlaceholderKey(key, fallback = "") {
+    familyPlaceholderState = { key, fallback };
+    applyFamilyPlaceholderState();
+}
+
+function applyFamilyPlaceholderState() {
+    if (!familyCombobox || !familyPlaceholderState) {
+        return;
+    }
+
+    familyCombobox.setPlaceholder(t(familyPlaceholderState.key, {}, familyPlaceholderState.fallback));
+}
+
+function setStatusKey(key, tone = "neutral", variables = {}, fallback = "", variableKeys = {}) {
+    statusState = {
+        tone,
+        key,
+        variables,
+        variableKeys,
+        fallback,
+    };
+    applyStatusState();
+}
+
+function applyStatusState() {
+    if (!statusState) {
+        return;
+    }
+
+    if (statusState.key) {
+        applyStatusText(
+            t(statusState.key, resolveTranslatedVariables(statusState), statusState.fallback),
+            statusState.tone
+        );
+        return;
+    }
+
+    applyStatusText(statusState.text || "", statusState.tone);
+}
+
+function setSummaryStateKeys(stepKey, titleKey, subtitleKey, variables = {}, fallbacks = {}) {
+    summaryState = {
+        stepKey,
+        titleKey,
+        subtitleKey,
+        variables,
+        fallbacks,
+    };
+    applySummaryState();
+}
+
+function applySummaryState() {
+    const stepElement = document.getElementById("config-step");
+    const titleElement = document.getElementById("output-title");
+    const subtitleElement = document.getElementById("output-subtitle");
+
+    if (!summaryState || !stepElement || !titleElement || !subtitleElement) {
+        return;
+    }
+
+    const variables = resolveTranslatedVariables(summaryState);
+
+    stepElement.textContent = summaryState.stepKey
+        ? t(summaryState.stepKey, variables, summaryState.fallbacks?.step || "")
+        : summaryState.step || "";
+    titleElement.textContent = summaryState.titleKey
+        ? t(summaryState.titleKey, variables, summaryState.fallbacks?.title || "")
+        : summaryState.title || "";
+    subtitleElement.textContent = summaryState.subtitleKey
+        ? t(summaryState.subtitleKey, variables, summaryState.fallbacks?.subtitle || "")
+        : summaryState.subtitle || "";
+}
+
+function setApiBadgeKey(tone, key, fallback = "") {
+    apiBadgeState = {
+        tone,
+        key,
+        fallback,
+    };
+    applyApiBadgeState();
+}
+
+function applyApiBadgeState() {
+    if (!apiBadgeState) {
+        return;
+    }
+
+    const dotClass = API_BADGE_TONE_CLASS[apiBadgeState.tone] || API_BADGE_TONE_CLASS.error;
+    const text = apiBadgeState.key
+        ? t(apiBadgeState.key, resolveTranslatedVariables(apiBadgeState), apiBadgeState.fallback)
+        : apiBadgeState.text || "";
+
+    document.querySelectorAll("[data-api-badge-dot]").forEach((dot) => {
+        dot.classList.remove(
+            API_BADGE_TONE_CLASS.loading,
+            API_BADGE_TONE_CLASS.success,
+            API_BADGE_TONE_CLASS.error
+        );
+        dot.classList.add(dotClass);
+    });
+
+    document.querySelectorAll("[data-api-badge-text]").forEach((label) => {
+        label.textContent = text;
+    });
+}
+
+function refreshLocalizedControls() {
+    applyFamilyPlaceholderState();
+    selectDropdowns.forEach((dropdown) => {
+        dropdown.refreshOptions();
+    });
+    applyStatusState();
+    applySummaryState();
+    applyApiBadgeState();
+}
+
+window.addEventListener(APP_I18N_EVENT, refreshLocalizedControls);
+
 function bindDocumentLanguageControls() {
     const languageSelect = document.getElementById("select-language");
 
@@ -787,16 +983,6 @@ function bindDocumentLanguageControls() {
 
     languageSelect.addEventListener("change", () => {
         selectDropdowns.get("select-language")?.syncFromSelect();
-
-        const nextLanguage = normalizeAppLanguage(languageSelect.value);
-
-        if (window.NexLedAppShell?.getLanguage?.() !== nextLanguage) {
-            window.NexLedAppShell?.setLanguage?.(nextLanguage);
-        }
-    });
-
-    window.addEventListener(APP_LANGUAGE_EVENT, (event) => {
-        syncConfiguredLanguageSelect?.(event.detail?.language, false);
     });
 }
 
@@ -827,10 +1013,10 @@ async function apiPost(path, body) {
 }
 
 async function loadFamilies() {
-    setApiBadge("loading", "Connecting to API");
-    setStatus("Loading families...", "loading");
+    setApiBadgeKey("loading", "shared.badge.apiConnecting", "Connecting to API");
+    setStatusKey("configurator.runtime.familyLoading", "loading", {}, "Loading families...");
     familyCombobox?.setDisabled(true);
-    familyCombobox?.setPlaceholder("Loading families...");
+    setFamilyPlaceholderKey("configurator.runtime.familyLoading", "Loading families...");
 
     try {
         const data = await apiFetch("/?endpoint=families");
@@ -841,16 +1027,16 @@ async function loadFamilies() {
             }))
         );
         familyCombobox?.setDisabled(false);
-        familyCombobox?.setPlaceholder("Select a family");
+        setFamilyPlaceholderKey("configurator.runtime.familySelect", "Select a family");
 
-        setApiBadge("success", "API ready");
-        setStatus("Choose a family to begin.", "neutral");
+        setApiBadgeKey("success", "shared.badge.apiReady", "API ready");
+        setStatusKey("configurator.runtime.chooseFamilyToBegin", "neutral", {}, "Choose a family to begin.");
     } catch (error) {
         familyCombobox?.renderOptions([]);
         familyCombobox?.setDisabled(true);
-        familyCombobox?.setPlaceholder(getFamilyPlaceholderMessage());
-        setApiBadge("error", "API unavailable");
-        setStatus(getApiFailureMessage(), "error");
+        setFamilyPlaceholderKey(getFamilyPlaceholderMessageKey(), getFamilyPlaceholderFallback(getFamilyPlaceholderMessageKey()));
+        setApiBadgeKey("error", "shared.badge.apiUnavailable", "API unavailable");
+        setStatusKey(getApiFailureMessageKey(), "error", {}, getApiFailureFallback(getApiFailureMessageKey()));
         console.error(error);
     }
 }
@@ -863,14 +1049,24 @@ async function handleFamilyChange() {
         return;
     }
 
-    setSummaryState("Step 2", "Loading valid options", "Pulling the allowed manufacturing matrix for the selected family.");
-    setStatus("Loading options...", "loading");
+    setSummaryStateKeys(
+        "configurator.runtime.step2",
+        "configurator.runtime.loadingValidOptions",
+        "configurator.runtime.loadingValidOptionsSubtitle",
+        {},
+        {
+            step: "Step 2",
+            title: "Loading valid options",
+            subtitle: "Pulling the allowed manufacturing matrix for the selected family.",
+        }
+    );
+    setStatusKey("configurator.runtime.loadingOptions", "loading", {}, "Loading options...");
 
     try {
         await loadOptions(familyCode);
     } catch (error) {
         resetConfiguratorState();
-        setStatus("Unable to load options for this family.", "error");
+        setStatusKey("configurator.runtime.unableToLoadOptions", "error", {}, "Unable to load options for this family.");
         console.error(error);
     }
 }
@@ -892,12 +1088,18 @@ async function loadOptions(familyCode) {
 
     buildReference();
 
-    setSummaryState(
-        "Step 2",
-        "Reference builder active",
-        "Adjust the configuration. The live output on the right updates automatically."
+    setSummaryStateKeys(
+        "configurator.runtime.step2",
+        "configurator.runtime.referenceBuilderActive",
+        "configurator.runtime.referenceBuilderSubtitle",
+        {},
+        {
+            step: "Step 2",
+            title: "Reference builder active",
+            subtitle: "Adjust the configuration. The live output on the right updates automatically.",
+        }
     );
-    setStatus("Options loaded. The reference now updates automatically.", "success");
+    setStatusKey("configurator.runtime.optionsLoaded", "success", {}, "Options loaded. The reference now updates automatically.");
 }
 
 function fillSelect(id, items, isArray) {
@@ -912,7 +1114,8 @@ function fillSelect(id, items, isArray) {
     if (!Array.isArray(items) || items.length === 0) {
         const emptyOption = document.createElement("option");
         emptyOption.value = "";
-        emptyOption.textContent = "No options available";
+        emptyOption.dataset.i18n = "configurator.runtime.noOptionsAvailable";
+        emptyOption.textContent = t("configurator.runtime.noOptionsAvailable", {}, "No options available");
         select.appendChild(emptyOption);
         selectDropdowns.get(id)?.refreshOptions();
         return;
@@ -1007,12 +1210,18 @@ async function updateDescription(reference) {
 
         outputField.value = data.description || "";
 
-        setSummaryState(
-            "Ready",
-            "Reference ready",
-            familyName
-                ? familyName + " is ready for datasheet generation."
-                : "The current configuration is ready for datasheet generation."
+        setSummaryStateKeys(
+            "configurator.runtime.ready",
+            "configurator.runtime.referenceReady",
+            familyName ? "configurator.runtime.referenceReadyWithFamily" : "configurator.runtime.referenceReadyGeneric",
+            { familyName },
+            {
+                step: "Ready",
+                title: "Reference ready",
+                subtitle: familyName
+                    ? familyName + " is ready for datasheet generation."
+                    : "The current configuration is ready for datasheet generation.",
+            }
         );
 
         syncCopyButtons();
@@ -1022,7 +1231,7 @@ async function updateDescription(reference) {
         }
 
         outputField.value = "";
-        setStatus("The reference was built, but the description could not be loaded.", "error");
+        setStatusKey("configurator.runtime.descriptionLoadFailed", "error", {}, "The reference was built, but the description could not be loaded.");
         console.error(error);
     }
 }
@@ -1032,7 +1241,7 @@ async function generateDatasheet() {
     const description = document.getElementById("output-description").value;
 
     if (!reference) {
-        setStatus("Complete the configuration before generating the datasheet.", "error");
+        setStatusKey("configurator.runtime.completeConfiguration", "error", {}, "Complete the configuration before generating the datasheet.");
         return;
     }
 
@@ -1059,7 +1268,7 @@ async function generateDatasheet() {
     };
 
     setGenerateControlsDisabled(true);
-    setStatus("Generating datasheet...", "loading");
+    setStatusKey("configurator.runtime.generatingDatasheet", "loading", {}, "Generating datasheet...");
 
     try {
         const response = await apiPost("/?endpoint=datasheet", body);
@@ -1069,14 +1278,19 @@ async function generateDatasheet() {
 
         if (!response.ok) {
             const contentType = response.headers.get("content-type") || "";
-            let message = "Unknown error";
+            let message = t("configurator.runtime.unknownError", {}, "Unknown error");
 
             if (contentType.includes("application/json")) {
                 const error = await response.json();
                 message = error.error || message;
             }
 
-            setStatus("Datasheet generation failed: " + message, "error");
+            setStatusKey(
+                "configurator.runtime.datasheetFailedWithMessage",
+                "error",
+                { message },
+                "Datasheet generation failed: " + message
+            );
             return;
         }
 
@@ -1089,11 +1303,11 @@ async function generateDatasheet() {
         link.click();
 
         URL.revokeObjectURL(url);
-        setStatus("Datasheet ready. The PDF download has started.", "success");
+        setStatusKey("configurator.runtime.datasheetReady", "success", {}, "Datasheet ready. The PDF download has started.");
     } catch (error) {
         setGenerateControlsDisabled(false);
         syncGenerateButton();
-        setStatus("Datasheet generation failed.", "error");
+        setStatusKey("configurator.runtime.datasheetFailed", "error", {}, "Datasheet generation failed.");
         console.error(error);
     }
 }
@@ -1125,18 +1339,24 @@ function bindShellActions() {
 async function copyField(button) {
     const targetId = button.getAttribute("data-copy-target");
     const field = targetId ? document.getElementById(targetId) : null;
-    const label = targetId ? (COPY_LABELS[targetId] || "value") : "value";
+    const labelKey = targetId ? (COPY_LABEL_KEYS[targetId] || "shared.actions.value") : "shared.actions.value";
 
     if (!field || !field.value) {
-        setStatus("Nothing to copy yet.", "error");
+        setStatusKey("configurator.runtime.nothingToCopy", "error", {}, "Nothing to copy yet.");
         return;
     }
 
     try {
         await navigator.clipboard.writeText(field.value);
-        setStatus("Copied " + label + ".", "success");
+        setStatusKey(
+            "configurator.runtime.copied",
+            "success",
+            {},
+            "Copied " + t(labelKey, {}, "value") + ".",
+            { label: labelKey }
+        );
     } catch (error) {
-        setStatus("Clipboard copy failed. Please copy manually.", "error");
+        setStatusKey("configurator.runtime.clipboardFailed", "error", {}, "Clipboard copy failed. Please copy manually.");
         console.error(error);
     }
 }
@@ -1148,8 +1368,18 @@ function resetConfiguratorState() {
     clearOutputValues();
     syncGenerateButton();
     syncCopyButtons();
-    setSummaryState("Step 1", "Start with a family", "Select a family to unlock the valid option set.");
-    setStatus("Choose a family to begin.", "neutral");
+    setSummaryStateKeys(
+        "configurator.runtime.step1",
+        "configurator.runtime.startWithFamily",
+        "configurator.runtime.selectFamilyToUnlock",
+        {},
+        {
+            step: "Step 1",
+            title: "Start with a family",
+            subtitle: "Select a family to unlock the valid option set.",
+        }
+    );
+    setStatusKey("configurator.runtime.chooseFamilyToBegin", "neutral", {}, "Choose a family to begin.");
 }
 
 function clearOutputValues() {
@@ -1203,17 +1433,8 @@ function syncCopyButtons() {
 }
 
 function setSummaryState(step, title, subtitle) {
-    const stepElement = document.getElementById("config-step");
-    const titleElement = document.getElementById("output-title");
-    const subtitleElement = document.getElementById("output-subtitle");
-
-    if (!stepElement || !titleElement || !subtitleElement) {
-        return;
-    }
-
-    stepElement.textContent = step;
-    titleElement.textContent = title;
-    subtitleElement.textContent = subtitle;
+    summaryState = { step, title, subtitle };
+    applySummaryState();
 }
 
 function setHidden(id, shouldHide) {
@@ -1227,8 +1448,20 @@ function setHidden(id, shouldHide) {
 }
 
 function setStatus(message, tone = "neutral") {
+    statusState = {
+        tone,
+        text: message,
+    };
+    applyStatusState();
+}
+
+function applyStatusText(message, tone = "neutral") {
     const element = document.getElementById("status-message");
     const toneClass = STATUS_TONE_CLASS[tone] || STATUS_TONE_CLASS.neutral;
+
+    if (!element) {
+        return;
+    }
 
     element.textContent = message;
     element.className = STATUS_BASE_CLASS + " " + toneClass;
@@ -1308,18 +1541,9 @@ function resetAllSelections() {
 }
 
 function setApiBadge(tone, text) {
-    const dotClass = API_BADGE_TONE_CLASS[tone] || API_BADGE_TONE_CLASS.error;
-
-    document.querySelectorAll("[data-api-badge-dot]").forEach((dot) => {
-        dot.classList.remove(
-            API_BADGE_TONE_CLASS.loading,
-            API_BADGE_TONE_CLASS.success,
-            API_BADGE_TONE_CLASS.error
-        );
-        dot.classList.add(dotClass);
-    });
-
-    document.querySelectorAll("[data-api-badge-text]").forEach((label) => {
-        label.textContent = text;
-    });
+    apiBadgeState = {
+        tone,
+        text,
+    };
+    applyApiBadgeState();
 }

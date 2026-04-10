@@ -51,6 +51,19 @@ const APP_SHELL_LANGUAGES = {
         return "https://flagcdn.com/w80/" + code + ".png 2x";
     }
 
+    function getLanguageKey(language) {
+        return language.app === "pt" ? "shared.language.portuguese" : "shared.language.english";
+    }
+
+    function getCurrentLanguageAriaLabel(language) {
+        const fallback = "Current language: " + language.label;
+        const translatedLabel = window.NexLedI18n?.t?.(getLanguageKey(language), {}, language.label) || language.label;
+
+        return window.NexLedI18n?.t?.("shared.language.current", {
+            language: translatedLabel,
+        }, fallback) || fallback;
+    }
+
     function syncSelector(selector, language) {
         const trigger = selector.querySelector(".language-selector-trigger");
         const value = selector.querySelector(".language-selector-value");
@@ -62,7 +75,7 @@ const APP_SHELL_LANGUAGES = {
         });
 
         if (trigger) {
-            trigger.setAttribute("aria-label", "Current language: " + language.label);
+            trigger.setAttribute("aria-label", getCurrentLanguageAriaLabel(language));
         }
 
         if (value) {

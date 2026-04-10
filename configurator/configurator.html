@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NexLed - Product Configurator</title>
+    <title data-i18n="title.configurator">NexLed - Product Configurator</title>
     <link rel="icon" type="image/svg+xml" href="./nexled-project-icon.svg">
 
     <!-- 1. Load Fonts -->
@@ -32,7 +32,7 @@
                         <span class="text-overline text-grey-primary">API</span>
                     </div>
                 </a>
-                <button type="button" class="btn btn-secondary btn-icon btn-xs" data-drawer-target="app-nav-drawer" aria-label="Open navigation">
+                <button type="button" class="btn btn-secondary btn-icon btn-xs" data-drawer-target="app-nav-drawer" aria-label="Open navigation" data-i18n-aria-label="shared.drawer.open">
                     <i class="ri-menu-3-line icon icon-md" aria-hidden="true"></i>
                 </button>
             </div>
@@ -49,7 +49,7 @@
                         <span class="text-overline text-grey-primary">API</span>
                     </div>
                 </div>
-                <button type="button" class="btn btn-secondary btn-icon btn-xs drawer-sheet-close" data-drawer-close data-drawer-initial-focus aria-label="Close navigation">
+                <button type="button" class="btn btn-secondary btn-icon btn-xs drawer-sheet-close" data-drawer-close data-drawer-initial-focus aria-label="Close navigation" data-i18n-aria-label="shared.drawer.close">
                     <i class="ri-close-line icon icon-md" aria-hidden="true"></i>
                 </button>
             </div>
@@ -60,7 +60,7 @@
                             <a href="index.html" class="dropdown-trigger">
                                 <span class="flex items-center gap-8">
                                     <i class="ri-home-5-line text-icon-md" aria-hidden="true"></i>
-                                    <span class="dropdown-value">Workspace Home</span>
+                                    <span class="dropdown-value" data-i18n="shared.nav.home">Workspace Home</span>
                                 </span>
                                 <i class="ri-arrow-right-s-line dropdown-arrow" aria-hidden="true"></i>
                             </a>
@@ -69,7 +69,7 @@
                             <a href="configurator.html" class="dropdown-trigger" aria-current="page">
                                 <span class="flex items-center gap-8">
                                     <i class="ri-file-list-3-line text-icon-md" aria-hidden="true"></i>
-                                    <span class="dropdown-value">Configurator</span>
+                                    <span class="dropdown-value" data-i18n="shared.nav.configurator">Configurator</span>
                                 </span>
                                 <i class="ri-arrow-right-s-line dropdown-arrow" aria-hidden="true"></i>
                             </a>
@@ -78,7 +78,7 @@
                             <a href="dam.html" class="dropdown-trigger">
                                 <span class="flex items-center gap-8">
                                     <i class="ri-folder-line text-icon-md" aria-hidden="true"></i>
-                                    <span class="dropdown-value">DAM</span>
+                                    <span class="dropdown-value" data-i18n="shared.nav.dam">DAM</span>
                                 </span>
                                 <i class="ri-arrow-right-s-line dropdown-arrow" aria-hidden="true"></i>
                             </a>
@@ -93,22 +93,22 @@
                                 </span>
                                 <i class="ri-arrow-down-s-line language-selector-arrow" aria-hidden="true"></i>
                             </button>
-                            <ul class="language-selector-menu custom-scrollbar" role="listbox" aria-label="Application language options">
+                            <ul class="language-selector-menu custom-scrollbar" role="listbox" aria-label="Application language options" data-i18n-aria-label="shared.language.options">
                                 <li class="language-selector-option" role="option" aria-selected="true" data-code="gb" data-app-lang="en">
                                     <img class="language-selector-flag" src="https://flagcdn.com/w40/gb.png" srcset="https://flagcdn.com/w80/gb.png 2x" alt="">
-                                    <span>English</span>
+                                    <span data-i18n="shared.language.english">English</span>
                                     <i class="ri-check-line language-selector-check" aria-hidden="true"></i>
                                 </li>
                                 <li class="language-selector-option" role="option" aria-selected="false" data-code="pt" data-app-lang="pt">
                                     <img class="language-selector-flag" src="https://flagcdn.com/w40/pt.png" srcset="https://flagcdn.com/w80/pt.png 2x" alt="">
-                                    <span>Portuguese</span>
+                                    <span data-i18n="shared.language.portuguese">Portuguese</span>
                                     <i class="ri-check-line language-selector-check" aria-hidden="true"></i>
                                 </li>
                             </ul>
                         </div>
                         <button type="button" class="badge badge-neutral badge-md shrink-0" data-api-badge>
                             <span class="w-8 h-8 rounded-full bg-red-primary shrink-0" data-api-badge-dot></span>
-                            <span class="truncate text-body-xs" data-api-badge-text>API unavailable</span>
+                            <span class="truncate text-body-xs" data-api-badge-text data-i18n="shared.badge.apiUnavailable">API unavailable</span>
                         </button>
                     </div>
                 </div>
@@ -133,7 +133,7 @@
                             <a href="index.html" class="dropdown-trigger">
                                 <span class="flex items-center gap-8">
                                     <i class="ri-home-5-line text-icon-md" aria-hidden="true"></i>
-                                    <span class="dropdown-value">Workspace Home</span>
+                                    <span class="dropdown-value" data-i18n="shared.nav.home">Workspace Home</span>
                                 </span>
                                 <i class="ri-arrow-right-s-line dropdown-arrow" aria-hidden="true"></i>
                             </a>
@@ -143,7 +143,7 @@
                             <a href="configurator.html" class="dropdown-trigger" aria-current="page">
                                 <span class="flex items-center gap-8">
                                     <i class="ri-file-list-3-line text-icon-md" aria-hidden="true"></i>
-                                    <span class="dropdown-value">Configurator</span>
+                                    <span class="dropdown-value" data-i18n="shared.nav.configurator">Configurator</span>
                                 </span>
                                 <i class="ri-arrow-right-s-line dropdown-arrow" aria-hidden="true"></i>
                             </a>
@@ -153,7 +153,7 @@
                             <a href="dam.html" class="dropdown-trigger">
                                 <span class="flex items-center gap-8">
                                     <i class="ri-folder-line text-icon-md" aria-hidden="true"></i>
-                                    <span class="dropdown-value">DAM</span>
+                                    <span class="dropdown-value" data-i18n="shared.nav.dam">DAM</span>
                                 </span>
                                 <i class="ri-arrow-right-s-line dropdown-arrow" aria-hidden="true"></i>
                             </a>
@@ -169,22 +169,22 @@
                             </span>
                             <i class="ri-arrow-down-s-line language-selector-arrow" aria-hidden="true"></i>
                         </button>
-                        <ul class="language-selector-menu custom-scrollbar" role="listbox" aria-label="Application language options">
+                        <ul class="language-selector-menu custom-scrollbar" role="listbox" aria-label="Application language options" data-i18n-aria-label="shared.language.options">
                             <li class="language-selector-option" role="option" aria-selected="true" data-code="gb" data-app-lang="en">
                                 <img class="language-selector-flag" src="https://flagcdn.com/w40/gb.png" srcset="https://flagcdn.com/w80/gb.png 2x" alt="">
-                                <span>English</span>
+                                <span data-i18n="shared.language.english">English</span>
                                 <i class="ri-check-line language-selector-check" aria-hidden="true"></i>
                             </li>
                             <li class="language-selector-option" role="option" aria-selected="false" data-code="pt" data-app-lang="pt">
                                 <img class="language-selector-flag" src="https://flagcdn.com/w40/pt.png" srcset="https://flagcdn.com/w80/pt.png 2x" alt="">
-                                <span>Portuguese</span>
+                                <span data-i18n="shared.language.portuguese">Portuguese</span>
                                 <i class="ri-check-line language-selector-check" aria-hidden="true"></i>
                             </li>
                         </ul>
                     </div>
                     <button type="button" class="badge badge-neutral badge-md shrink-0" data-api-badge>
                         <span class="w-8 h-8 rounded-full bg-red-primary shrink-0" data-api-badge-dot></span>
-                        <span class="truncate text-body-xs" data-api-badge-text>API unavailable</span>
+                        <span class="truncate text-body-xs" data-api-badge-text data-i18n="shared.badge.apiUnavailable">API unavailable</span>
                     </button>
                 </div>
             </div>
@@ -193,7 +193,7 @@
 
     <div class="flex-1 min-w-0 flex flex-col lg:h-screen overflow-y-auto">
         <main class="flex-1 px-16 pt-32 pb-32 sm:px-20 sm:pt-40 sm:pb-40 md:px-24 md:pt-48 md:pb-48 lg:px-32 lg:pt-64 lg:pb-64 w-full">
-            <h2 id="page-title" class="text-h1 font-medium text-black pb-24 pt-24" data-reveal="hero">
+            <h2 id="page-title" class="text-h1 font-medium text-black pb-24 pt-24" data-reveal="hero" data-i18n="configurator.heading">
                 Build Product Configurator
             </h2>
 
@@ -203,8 +203,8 @@
                     <div class="card overflow-visible" id="builder-card">
                         <div class="card-body">
                             <div id="builder" class="flex flex-col gap-4">
-                                <h3 class="card-title">Reference Setup</h3>
-                                <p class="text-body-sm text-grey-primary max-w-readable">
+                                <h3 class="card-title" data-i18n="configurator.referenceSetupTitle">Reference Setup</h3>
+                                <p class="text-body-sm text-grey-primary max-w-readable" data-i18n="configurator.referenceSetupText">
                                     Start with the product family, then complete the valid manufacturing options. The
                                     live export state stays pinned on the right.
                                 </p>
@@ -212,24 +212,24 @@
 
                             <div class="pt-40">
                                 <div>
-                                    <label class="input-label ml-12" for="family-combobox-input">Product Family *</label>
+                                    <label class="input-label ml-12" for="family-combobox-input" data-i18n="configurator.familyLabel">Product Family *</label>
                                     <div id="family-combobox" class="combobox combobox-md">
                                         <div class="combobox-control">
                                             <span class="input-icon-area" aria-hidden="true">
                                                 <i class="ri-search-line"></i>
                                             </span>
-                                            <input type="text" id="family-combobox-input" class="combobox-input" placeholder="Loading families..." aria-label="Product family" autocomplete="off">
-                                            <button type="button" id="family-combobox-clear" class="btn btn-ghost btn-icon btn-xs combobox-clear" aria-label="Clear product family" hidden disabled>
+                                            <input type="text" id="family-combobox-input" class="combobox-input" placeholder="Loading families..." aria-label="Product family" autocomplete="off" data-i18n-placeholder="configurator.runtime.familyLoading" data-i18n-aria-label="configurator.familyAria">
+                                            <button type="button" id="family-combobox-clear" class="btn btn-ghost btn-icon btn-xs combobox-clear" aria-label="Clear product family" hidden disabled data-i18n-aria-label="configurator.clearFamilyAria">
                                                 <i class="ri-close-line text-icon-sm" aria-hidden="true"></i>
                                             </button>
                                         </div>
                                         <input type="hidden" id="select-family" value="">
                                         <div class="combobox-panel" id="family-combobox-panel" hidden aria-hidden="true">
                                             <div class="combobox-list" id="family-combobox-list"></div>
-                                            <p class="combobox-empty" id="family-combobox-empty" hidden>No matching families</p>
+                                            <p class="combobox-empty" id="family-combobox-empty" hidden data-i18n="configurator.familyEmpty">No matching families</p>
                                         </div>
                                     </div>
-                                    <p class="input-hint ml-12">Select the family to unlock the valid option matrix.</p>
+                                    <p class="input-hint ml-12" data-i18n="configurator.familyHint">Select the family to unlock the valid option matrix.</p>
                                 </div>
                             </div>
 
@@ -237,16 +237,16 @@
                                 <div class="divider"></div>
 
                                 <div class="flex flex-col gap-4 pt-16">
-                                    <h3 class="card-title">Dimensions</h3>
-                                    <p class="text-body-sm text-grey-primary max-w-readable">Set the size and any extra length required for the product build.</p>
+                                    <h3 class="card-title" data-i18n="configurator.sections.dimensionsTitle">Dimensions</h3>
+                                    <p class="text-body-sm text-grey-primary max-w-readable" data-i18n="configurator.sections.dimensionsText">Set the size and any extra length required for the product build.</p>
                                 </div>
                                 <div class="grid grid-cols-1 md:grid-cols-2 gap-24 items-start">
                                     <div>
-                                        <label class="input-label ml-12" for="select-size">Size</label>
+                                        <label class="input-label ml-12" for="select-size" data-i18n="configurator.fields.size">Size</label>
                                         <select id="select-size" class="input input-sm"></select>
                                     </div>
                                     <div>
-                                        <label class="input-label ml-12" for="input-extra-length">Extra Length (mm)</label>
+                                        <label class="input-label ml-12" for="input-extra-length" data-i18n="configurator.fields.extraLength">Extra Length (mm)</label>
                                         <input type="number" id="input-extra-length" class="input input-sm" value="0" min="0" step="1">
                                     </div>
                                 </div>
@@ -254,20 +254,20 @@
                                 <div class="divider"></div>
 
                                 <div class="flex flex-col gap-4 pt-16">
-                                    <h3 class="card-title">Light Source Configuration</h3>
-                                    <p class="text-body-sm text-grey-primary max-w-readable">Choose the light output, rendering profile, and compatible series code.</p>
+                                    <h3 class="card-title" data-i18n="configurator.sections.lightTitle">Light Source Configuration</h3>
+                                    <p class="text-body-sm text-grey-primary max-w-readable" data-i18n="configurator.sections.lightText">Choose the light output, rendering profile, and compatible series code.</p>
                                 </div>
                                 <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-24 items-start">
                                     <div>
-                                        <label class="input-label ml-12" for="select-color">Color</label>
+                                        <label class="input-label ml-12" for="select-color" data-i18n="configurator.fields.color">Color</label>
                                         <select id="select-color" class="input input-sm"></select>
                                     </div>
                                     <div>
-                                        <label class="input-label ml-12" for="select-cri">CRI</label>
+                                        <label class="input-label ml-12" for="select-cri" data-i18n="configurator.fields.cri">CRI</label>
                                         <select id="select-cri" class="input input-sm"></select>
                                     </div>
                                     <div>
-                                        <label class="input-label ml-12" for="select-series">Series</label>
+                                        <label class="input-label ml-12" for="select-series" data-i18n="configurator.fields.series">Series</label>
                                         <select id="select-series" class="input input-sm"></select>
                                     </div>
                                 </div>
@@ -275,24 +275,24 @@
                                 <div class="divider"></div>
 
                                 <div class="flex flex-col gap-4 pt-16">
-                                    <h3 class="card-title">Optics and Finish</h3>
-                                    <p class="text-body-sm text-grey-primary max-w-readable">Define the lens behavior, finishing code, end cap, and option bundle.</p>
+                                    <h3 class="card-title" data-i18n="configurator.sections.opticsTitle">Optics and Finish</h3>
+                                    <p class="text-body-sm text-grey-primary max-w-readable" data-i18n="configurator.sections.opticsText">Define the lens behavior, finishing code, end cap, and option bundle.</p>
                                 </div>
                                 <div class="grid grid-cols-1 md:grid-cols-2 gap-24 items-start">
                                     <div>
-                                        <label class="input-label ml-12" for="select-lens">Lens</label>
+                                        <label class="input-label ml-12" for="select-lens" data-i18n="configurator.fields.lens">Lens</label>
                                         <select id="select-lens" class="input input-sm"></select>
                                     </div>
                                     <div>
-                                        <label class="input-label ml-12" for="select-finish">Finish</label>
+                                        <label class="input-label ml-12" for="select-finish" data-i18n="configurator.fields.finish">Finish</label>
                                         <select id="select-finish" class="input input-sm"></select>
                                     </div>
                                     <div>
-                                        <label class="input-label ml-12" for="select-cap">Cap</label>
+                                        <label class="input-label ml-12" for="select-cap" data-i18n="configurator.fields.cap">Cap</label>
                                         <select id="select-cap" class="input input-sm"></select>
                                     </div>
                                     <div>
-                                        <label class="input-label ml-12" for="select-option">Option</label>
+                                        <label class="input-label ml-12" for="select-option" data-i18n="configurator.fields.option">Option</label>
                                         <select id="select-option" class="input input-sm"></select>
                                     </div>
                                 </div>
@@ -300,14 +300,14 @@
                                 <div class="divider"></div>
 
                                 <div class="flex flex-col gap-4 pt-16">
-                                    <h3 class="card-title">Cable and Connectors</h3>
-                                    <p class="text-body-sm text-grey-primary max-w-readable">Configure the outgoing cable, connector family, and cable length used in the build.</p>
+                                    <h3 class="card-title" data-i18n="configurator.sections.cableTitle">Cable and Connectors</h3>
+                                    <p class="text-body-sm text-grey-primary max-w-readable" data-i18n="configurator.sections.cableText">Configure the outgoing cable, connector family, and cable length used in the build.</p>
                                 </div>
                                 <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-24 items-start">
                                     <div>
-                                        <label class="input-label ml-12" for="select-connector-cable">Cable Connector</label>
+                                        <label class="input-label ml-12" for="select-connector-cable" data-i18n="configurator.fields.cableConnector">Cable Connector</label>
                                         <select id="select-connector-cable" class="input input-sm">
-                                            <option value="0">None</option>
+                                            <option value="0" data-i18n="configurator.staticOptions.none">None</option>
                                             <option value="asqc2">ASQC2</option>
                                             <option value="c1m">C1M</option>
                                             <option value="dc24">DC24</option>
@@ -316,17 +316,17 @@
                                         </select>
                                     </div>
                                     <div>
-                                        <label class="input-label ml-12" for="select-cable-type">Cable Type</label>
+                                        <label class="input-label ml-12" for="select-cable-type" data-i18n="configurator.fields.cableType">Cable Type</label>
                                         <select id="select-cable-type" class="input input-sm">
-                                            <option value="branco">White</option>
-                                            <option value="preto">Black</option>
-                                            <option value="cinza">Grey</option>
-                                            <option value="fio">Wire</option>
-                                            <option value="transparente">Transparent</option>
+                                            <option value="branco" data-i18n="configurator.staticOptions.white">White</option>
+                                            <option value="preto" data-i18n="configurator.staticOptions.black">Black</option>
+                                            <option value="cinza" data-i18n="configurator.staticOptions.grey">Grey</option>
+                                            <option value="fio" data-i18n="configurator.staticOptions.wire">Wire</option>
+                                            <option value="transparente" data-i18n="configurator.staticOptions.transparent">Transparent</option>
                                         </select>
                                     </div>
                                     <div>
-                                        <label class="input-label ml-12" for="input-cable-length">Cable Length (m)</label>
+                                        <label class="input-label ml-12" for="input-cable-length" data-i18n="configurator.fields.cableLength">Cable Length (m)</label>
                                         <input type="number" id="input-cable-length" class="input input-sm" value="0" min="0" step="0.01">
                                     </div>
                                 </div>
@@ -334,29 +334,29 @@
                                 <div class="divider"></div>
 
                                 <div class="flex flex-col gap-4 pt-16">
-                                    <h3 class="card-title">Mounting and Protection</h3>
-                                    <p class="text-body-sm text-grey-primary max-w-readable">Control the end cap, gasket, IP rating, and mechanical fixing profile.</p>
+                                    <h3 class="card-title" data-i18n="configurator.sections.mountingTitle">Mounting and Protection</h3>
+                                    <p class="text-body-sm text-grey-primary max-w-readable" data-i18n="configurator.sections.mountingText">Control the end cap, gasket, IP rating, and mechanical fixing profile.</p>
                                 </div>
                                 <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-24 items-start">
                                     <div>
-                                        <label class="input-label ml-12" for="select-end-cap">End Cap</label>
+                                        <label class="input-label ml-12" for="select-end-cap" data-i18n="configurator.fields.endCap">End Cap</label>
                                         <select id="select-end-cap" class="input input-sm">
-                                            <option value="0">Standard</option>
+                                            <option value="0" data-i18n="configurator.staticOptions.standard">Standard</option>
                                             <option value="1">Fricon</option>
-                                            <option value="2">Plate</option>
+                                            <option value="2" data-i18n="configurator.staticOptions.plate">Plate</option>
                                         </select>
                                     </div>
                                     <div>
-                                        <label class="input-label ml-12" for="select-gasket">Gasket</label>
+                                        <label class="input-label ml-12" for="select-gasket" data-i18n="configurator.fields.gasket">Gasket</label>
                                         <select id="select-gasket" class="input input-sm">
                                             <option value="5">5 mm</option>
                                             <option value="0.5">0.5 mm</option>
                                         </select>
                                     </div>
                                     <div>
-                                        <label class="input-label ml-12" for="select-ip">IP Rating</label>
+                                        <label class="input-label ml-12" for="select-ip" data-i18n="configurator.fields.ip">IP Rating</label>
                                         <select id="select-ip" class="input input-sm">
-                                            <option value="0">Auto-detect</option>
+                                            <option value="0" data-i18n="configurator.staticOptions.autoDetect">Auto-detect</option>
                                             <option value="IP20">IP20</option>
                                             <option value="IP40">IP40</option>
                                             <option value="IP42">IP42</option>
@@ -369,14 +369,14 @@
                                         </select>
                                     </div>
                                     <div>
-                                        <label class="input-label ml-12" for="select-fixing">Fixing</label>
+                                        <label class="input-label ml-12" for="select-fixing" data-i18n="configurator.fields.fixing">Fixing</label>
                                         <select id="select-fixing" class="input input-sm">
-                                            <option value="0">None</option>
-                                            <option value="clip180">Fixed Metal Clip 180&deg;</option>
-                                            <option value="cliprotativo">Rotating Metal Clip</option>
-                                            <option value="clipmagnetico">Magnetic PC Clip</option>
-                                            <option value="suporte180">PVC Support 180&deg;</option>
-                                            <option value="suporte45">PVC Support 45&deg;</option>
+                                            <option value="0" data-i18n="configurator.staticOptions.none">None</option>
+                                            <option value="clip180" data-i18n="configurator.staticOptions.fixedMetalClip180">Fixed Metal Clip 180&deg;</option>
+                                            <option value="cliprotativo" data-i18n="configurator.staticOptions.rotatingMetalClip">Rotating Metal Clip</option>
+                                            <option value="clipmagnetico" data-i18n="configurator.staticOptions.magneticPcClip">Magnetic PC Clip</option>
+                                            <option value="suporte180" data-i18n="configurator.staticOptions.pvcSupport180">PVC Support 180&deg;</option>
+                                            <option value="suporte45" data-i18n="configurator.staticOptions.pvcSupport45">PVC Support 45&deg;</option>
                                         </select>
                                     </div>
                                 </div>
@@ -384,31 +384,31 @@
                                 <div class="divider"></div>
 
                                 <div class="flex flex-col gap-4 pt-16">
-                                    <h3 class="card-title">Power and Wiring</h3>
-                                    <p class="text-body-sm text-grey-primary max-w-readable">Set the power supply and the connection cable details used in the datasheet export.</p>
+                                    <h3 class="card-title" data-i18n="configurator.sections.powerTitle">Power and Wiring</h3>
+                                    <p class="text-body-sm text-grey-primary max-w-readable" data-i18n="configurator.sections.powerText">Set the power supply and the connection cable details used in the datasheet export.</p>
                                 </div>
                                 <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-24 items-start">
                                     <div>
-                                        <label class="input-label ml-12" for="select-power-supply">Power Supply</label>
+                                        <label class="input-label ml-12" for="select-power-supply" data-i18n="configurator.fields.powerSupply">Power Supply</label>
                                         <select id="select-power-supply" class="input input-sm">
-                                            <option value="0">None</option>
+                                            <option value="0" data-i18n="configurator.staticOptions.none">None</option>
                                             <option value="30w">30W</option>
                                         </select>
                                     </div>
                                     <div>
-                                        <label class="input-label ml-12" for="select-connection-cable">Connection Cable</label>
+                                        <label class="input-label ml-12" for="select-connection-cable" data-i18n="configurator.fields.connectionCable">Connection Cable</label>
                                         <select id="select-connection-cable" class="input input-sm">
-                                            <option value="0">None</option>
-                                            <option value="branco">White</option>
-                                            <option value="preto">Black</option>
-                                            <option value="cinzento">Grey</option>
-                                            <option value="transparente">Transparent</option>
+                                            <option value="0" data-i18n="configurator.staticOptions.none">None</option>
+                                            <option value="branco" data-i18n="configurator.staticOptions.white">White</option>
+                                            <option value="preto" data-i18n="configurator.staticOptions.black">Black</option>
+                                            <option value="cinzento" data-i18n="configurator.staticOptions.grey">Grey</option>
+                                            <option value="transparente" data-i18n="configurator.staticOptions.transparent">Transparent</option>
                                         </select>
                                     </div>
                                     <div>
-                                        <label class="input-label ml-12" for="select-connection-connector">Connection Connector</label>
+                                        <label class="input-label ml-12" for="select-connection-connector" data-i18n="configurator.fields.connectionConnector">Connection Connector</label>
                                         <select id="select-connection-connector" class="input input-sm">
-                                            <option value="0">None</option>
+                                            <option value="0" data-i18n="configurator.staticOptions.none">None</option>
                                             <option value="asqc2">ASQC2</option>
                                             <option value="c1m">C1M</option>
                                             <option value="dc24">DC24</option>
@@ -417,7 +417,7 @@
                                         </select>
                                     </div>
                                     <div>
-                                        <label class="input-label ml-12" for="input-connection-cable-length">Connection Cable Length (m)</label>
+                                        <label class="input-label ml-12" for="input-connection-cable-length" data-i18n="configurator.fields.connectionCableLength">Connection Cable Length (m)</label>
                                         <input type="number" id="input-connection-cable-length" class="input input-sm" value="0" min="0" step="0.01">
                                     </div>
                                 </div>
@@ -425,38 +425,38 @@
                                 <div class="divider"></div>
 
                                 <div class="flex flex-col gap-4 pt-16">
-                                    <h3 class="card-title">Datasheet Metadata</h3>
-                                    <p class="text-body-sm text-grey-primary max-w-readable">Choose the application context, branded export, and output language used in the PDF.</p>
+                                    <h3 class="card-title" data-i18n="configurator.sections.metadataTitle">Datasheet Metadata</h3>
+                                    <p class="text-body-sm text-grey-primary max-w-readable" data-i18n="configurator.sections.metadataText">Choose the application context, branded export, and output language used in the PDF.</p>
                                 </div>
                                 <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-24 items-start">
                                     <div>
-                                        <label class="input-label ml-12" for="select-purpose">Purpose</label>
+                                        <label class="input-label ml-12" for="select-purpose" data-i18n="configurator.fields.purpose">Purpose</label>
                                         <select id="select-purpose" class="input input-sm">
-                                            <option value="0">General</option>
-                                            <option value="retalho">Retail</option>
-                                            <option value="padaria">Bakery</option>
-                                            <option value="queijo">Cheese</option>
-                                            <option value="peixe">Fish</option>
-                                            <option value="talho">Meat</option>
-                                            <option value="talhoR9">Meat R9</option>
-                                            <option value="charcutaria">Deli</option>
-                                            <option value="murallacteo">Dairy Wall</option>
-                                            <option value="muralcongelados">Frozen Wall</option>
-                                            <option value="frutaslegumes">Fruits and Vegetables</option>
-                                            <option value="vinho">Wine</option>
+                                            <option value="0" data-i18n="configurator.staticOptions.general">General</option>
+                                            <option value="retalho" data-i18n="configurator.staticOptions.retail">Retail</option>
+                                            <option value="padaria" data-i18n="configurator.staticOptions.bakery">Bakery</option>
+                                            <option value="queijo" data-i18n="configurator.staticOptions.cheese">Cheese</option>
+                                            <option value="peixe" data-i18n="configurator.staticOptions.fish">Fish</option>
+                                            <option value="talho" data-i18n="configurator.staticOptions.meat">Meat</option>
+                                            <option value="talhoR9" data-i18n="configurator.staticOptions.meatR9">Meat R9</option>
+                                            <option value="charcutaria" data-i18n="configurator.staticOptions.deli">Deli</option>
+                                            <option value="murallacteo" data-i18n="configurator.staticOptions.dairyWall">Dairy Wall</option>
+                                            <option value="muralcongelados" data-i18n="configurator.staticOptions.frozenWall">Frozen Wall</option>
+                                            <option value="frutaslegumes" data-i18n="configurator.staticOptions.fruitsVegetables">Fruits and Vegetables</option>
+                                            <option value="vinho" data-i18n="configurator.staticOptions.wine">Wine</option>
                                         </select>
                                     </div>
                                     <div>
-                                        <label class="input-label ml-12" for="select-company">Company Logo</label>
+                                        <label class="input-label ml-12" for="select-company" data-i18n="configurator.fields.company">Company Logo</label>
                                         <select id="select-company" class="input input-sm">
-                                            <option value="0">None</option>
+                                            <option value="0" data-i18n="configurator.staticOptions.none">None</option>
                                             <option value="jordao">Jord&atilde;o</option>
                                             <option value="fricon">Fricon</option>
                                             <option value="tensai">Tensai</option>
                                         </select>
                                     </div>
                                     <div>
-                                        <label class="input-label ml-12" for="select-language">Language</label>
+                                        <label class="input-label ml-12" for="select-language" data-i18n="configurator.fields.language">Language</label>
                                         <select id="select-language" class="input input-sm">
                                             <option value="pt">PT</option>
                                             <option value="en">EN</option>
@@ -471,47 +471,47 @@
 
                 <div id="output-panel" class="card overflow-visible shrink-0 w-full lg:w-fit lg:sticky lg:top-56" data-reveal="section">
                     <div class="card-body p-24">
-                        <h3 class="card-title">Quick Actions</h3>
+                        <h3 class="card-title" data-i18n="configurator.quickActions.title">Quick Actions</h3>
 
                         <div class="flex flex-col gap-12 pt-16">
-                            <span class="input-label">Live Reference</span>
+                            <span class="input-label" data-i18n="configurator.quickActions.liveReference">Live Reference</span>
                             <div class="flex items-center gap-8 w-full">
                                 <input type="text" id="output-reference" class="input input-sm flex-1 min-w-0" readonly>
-                                <button type="button" class="btn btn-ghost btn-icon btn-xs shrink-0" data-copy-target="output-reference" aria-label="Copy reference">
+                                <button type="button" class="btn btn-ghost btn-icon btn-xs shrink-0" data-copy-target="output-reference" aria-label="Copy reference" data-i18n-aria-label="shared.actions.copyReference">
                                     <i class="ri-file-copy-line text-icon-xs" aria-hidden="true"></i>
                                 </button>
                             </div>
-                            <p class="input-hint">Built automatically from the selected manufacturing options.</p>
+                            <p class="input-hint" data-i18n="configurator.quickActions.liveReferenceHint">Built automatically from the selected manufacturing options.</p>
                         </div>
 
                         <div id="output-fields" class="hidden flex flex-col gap-12 pt-24">
-                            <label class="input-label" for="output-description">Description</label>
+                            <label class="input-label" for="output-description" data-i18n="configurator.quickActions.description">Description</label>
                             <input type="text" id="output-description" class="input input-sm w-full" readonly aria-describedby="descriptionHint">
-                            <p id="descriptionHint" class="input-hint">Generated from the current reference when data is available.</p>
+                            <p id="descriptionHint" class="input-hint" data-i18n="configurator.quickActions.descriptionHint">Generated from the current reference when data is available.</p>
                         </div>
 
                         <div class="flex flex-col gap-12 pt-24">
-                            <span class="input-label">Copy Output</span>
+                            <span class="input-label" data-i18n="configurator.quickActions.copyOutput">Copy Output</span>
                             <div class="flex flex-col gap-12 items-center">
-                                <button type="button" class="btn btn-ghost btn-xs" data-copy-target="output-reference">Copy Reference</button>
-                                <button type="button" class="btn btn-ghost btn-xs" data-copy-target="output-description">Copy Description</button>
+                                <button type="button" class="btn btn-ghost btn-xs" data-copy-target="output-reference" data-i18n="configurator.quickActions.copyReference">Copy Reference</button>
+                                <button type="button" class="btn btn-ghost btn-xs" data-copy-target="output-description" data-i18n="configurator.quickActions.copyDescription">Copy Description</button>
                             </div>
                         </div>
 
                         <div class="flex flex-col gap-12 pt-24">
-                            <span class="input-label">Export Target</span>
+                            <span class="input-label" data-i18n="configurator.quickActions.exportTarget">Export Target</span>
                             <div class="flex flex-wrap gap-16 justify-center items-center">
                                 <label class="radio-wrapper radio-md">
                                     <input type="radio" name="exportSurface" value="pdf" checked>
-                                    <span class="text-body-sm">PDF File</span>
+                                    <span class="text-body-sm" data-i18n="configurator.quickActions.pdfFile">PDF File</span>
                                 </label>
                                 <label class="radio-wrapper radio-md">
                                     <input type="radio" name="exportSurface" value="reference" disabled>
-                                    <span class="text-body-sm">Reference</span>
+                                    <span class="text-body-sm" data-i18n="configurator.quickActions.reference">Reference</span>
                                 </label>
                                 <label class="radio-wrapper radio-md">
                                     <input type="radio" name="exportSurface" value="description" disabled>
-                                    <span class="text-body-sm">Description</span>
+                                    <span class="text-body-sm" data-i18n="configurator.quickActions.descriptionLabel">Description</span>
                                 </label>
                             </div>
                         </div>
@@ -520,24 +520,27 @@
                             <div class="flex flex-wrap items-center justify-center gap-12">
                                 <button id="btn-generate" type="button" class="btn btn-primary btn-sm" disabled>
                                     <i class="ri-file-pdf-line text-icon-sm" aria-hidden="true"></i>
-                                    Generate PDF
+                                    <span data-i18n="configurator.quickActions.generatePdf">Generate PDF</span>
                                 </button>
-                                <button type="button" class="btn btn-secondary btn-icon btn-sm" data-copy-target="output-reference" aria-label="Copy reference">
+                                <button type="button" class="btn btn-secondary btn-icon btn-sm" data-copy-target="output-reference" aria-label="Copy reference" data-i18n-aria-label="shared.actions.copyReference">
                                     <i class="ri-file-copy-line text-icon-lg" aria-hidden="true"></i>
                                 </button>
-                                <button type="button" class="btn btn-secondary btn-icon btn-sm" id="reset-configurator-panel" aria-label="Reset configurator">
+                                <button type="button" class="btn btn-secondary btn-icon btn-sm" id="reset-configurator-panel" aria-label="Reset configurator" data-i18n-aria-label="shared.actions.resetConfigurator">
                                     <i class="ri-refresh-line text-icon-lg" aria-hidden="true"></i>
                                 </button>
                             </div>
                         </div>
 
-                        <p id="status-message" class="text-body-xs text-grey-primary min-h-16 text-center pt-16">Choose a family to begin.</p>
+                        <p id="status-message" class="text-body-xs text-grey-primary min-h-16 text-center pt-16" data-i18n="configurator.runtime.chooseFamilyToBegin">Choose a family to begin.</p>
                     </div>
                 </div>
             </div>
         </main>
     </div>
 
+    <script src="locales/en.js"></script>
+    <script src="locales/pt.js"></script>
+    <script src="i18n.js"></script>
     <script src="app-shell.js"></script>
     <script src="script.js"></script>
 </body>
