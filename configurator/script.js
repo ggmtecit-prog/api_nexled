@@ -65,6 +65,7 @@ let apiBadgeState = {
     key: "shared.badge.apiUnavailable",
     fallback: "API unavailable",
 };
+let hasSuccessfulApiContact = false;
 let apiHealthState = {
     checked: false,
     ok: false,
@@ -129,11 +130,20 @@ function setApiHealthState(nextState = {}) {
     syncGenerateButton();
 }
 
+function noteSuccessfulApiContact() {
+    hasSuccessfulApiContact = true;
+}
+
 function isDatasheetServiceAvailable() {
     return !apiHealthState.checked || apiHealthState.services.datasheet !== false;
 }
 
 function markApiUnavailable() {
+    if (hasSuccessfulApiContact) {
+        markApiDegraded();
+        return;
+    }
+
     setApiHealthState({
         checked: true,
         ok: false,
@@ -168,6 +178,7 @@ async function fetchApiHealth() {
     const response = await fetch(apiBase + "/?endpoint=health", {
         headers: { "X-API-Key": API_KEY },
     });
+    noteSuccessfulApiContact();
     const contentType = response.headers.get("content-type") || "";
     let data = {};
 
@@ -247,6 +258,15 @@ function getFamilyPlaceholderFallback(key) {
     };
 
     return fallbacks[key] || "";
+}
+
+function promptFamilySelectionFromList() {
+    setStatusKey(
+        "configurator.runtime.familySelectFromList",
+        "neutral",
+        {},
+        "Select a specific family from the list to continue."
+    );
 }
 
 function setupFamilyCombobox() {
@@ -332,6 +352,8 @@ function setupFamilyCombobox() {
     };
 
     const closePanel = (restoreSelection = false) => {
+        const shouldPromptSelection = restoreSelection && input.value.trim() !== "" && !valueField.value;
+
         combobox.classList.remove("is-open");
         panel.hidden = true;
         panel.setAttribute("aria-hidden", "true");
@@ -344,6 +366,10 @@ function setupFamilyCombobox() {
 
         updateFilter("");
         updateClearState();
+
+        if (shouldPromptSelection) {
+            promptFamilySelectionFromList();
+        }
     };
 
     const openPanel = () => {
@@ -444,6 +470,10 @@ function setupFamilyCombobox() {
     input.addEventListener("input", () => {
         if (valueField.value && input.value.trim() !== getSelectedLabel()) {
             clearSelection(true, false);
+        }
+
+        if (input.value.trim() !== "") {
+            promptFamilySelectionFromList();
         }
 
         openPanel();
@@ -1063,6 +1093,7 @@ async function apiFetch(path) {
         response = await fetch(apiBase + path, {
             headers: { "X-API-Key": API_KEY },
         });
+        noteSuccessfulApiContact();
     } catch (error) {
         markApiUnavailable();
         throw error;
@@ -1082,7 +1113,7 @@ async function apiPost(path, body) {
     const apiBase = await getApiBase();
 
     try {
-        return await fetch(apiBase + path, {
+        const response = await fetch(apiBase + path, {
             method: "POST",
             headers: {
                 "X-API-Key": API_KEY,
@@ -1090,6 +1121,8 @@ async function apiPost(path, body) {
             },
             body: JSON.stringify(body),
         });
+        noteSuccessfulApiContact();
+        return response;
     } catch (error) {
         markApiUnavailable();
         throw error;

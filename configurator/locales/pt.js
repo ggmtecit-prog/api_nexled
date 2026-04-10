@@ -170,6 +170,7 @@ window.NexLedLocales.pt = {
             familyLoading: "A carregar familias...",
             familySelect: "Selecione uma familia",
             chooseFamilyToBegin: "Selecione uma familia para comecar.",
+            familySelectFromList: "Selecione uma familia especifica da lista para continuar.",
             familyPlaceholderFile: "Nao foi possivel carregar familias a partir da API Railway",
             familyPlaceholderLocal: "Nao foi possivel carregar familias a partir da API Railway",
             familyPlaceholderRemote: "Nao foi possivel carregar familias a partir da API Railway",
