@@ -92,6 +92,14 @@ function getRuntimeDatabaseName(array $envKeys, array $fallbacks): string {
         return $value;
     }
 
+    if (getRuntimeEnvValue("DB_HOST") !== null) {
+        foreach ($fallbacks as $fallback) {
+            if (is_string($fallback) && trim($fallback) !== "") {
+                return $fallback;
+            }
+        }
+    }
+
     $defaultDatabaseName = getDefaultRuntimeDatabaseName();
 
     if ($defaultDatabaseName !== null && $defaultDatabaseName !== "") {
