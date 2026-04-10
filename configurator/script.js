@@ -7,6 +7,11 @@
 
 const API_KEY = "7b8edd27a16f60bf7a1c92b8ceb40cda474588d24491140c130418153053063b";
 const API_BASE_CANDIDATES = ["./api", "../api", "/api_nexled/api"];
+const API_LOCALHOST_CANDIDATES = [
+    "http://localhost/api_nexled/api",
+    "http://127.0.0.1/api_nexled/api",
+];
+const LOCAL_HOSTNAMES = new Set(["localhost", "127.0.0.1"]);
 
 const REF_LENGTHS = {
     size: 4,
@@ -73,7 +78,7 @@ async function getApiBase() {
 }
 
 async function resolveApiBase() {
-    for (const base of API_BASE_CANDIDATES) {
+    for (const base of getApiBaseCandidates()) {
         try {
             const response = await fetch(base + "/?endpoint=families", {
                 headers: { "X-API-Key": API_KEY },
@@ -88,6 +93,38 @@ async function resolveApiBase() {
     }
 
     throw new Error("Unable to resolve the NexLed API base URL.");
+}
+
+function getApiBaseCandidates() {
+    if (window.location.protocol === "file:") {
+        return API_LOCALHOST_CANDIDATES.concat(API_BASE_CANDIDATES);
+    }
+
+    return API_BASE_CANDIDATES;
+}
+
+function getApiFailureMessage() {
+    if (window.location.protocol === "file:") {
+        return "Start Apache/XAMPP. This page needs the PHP API at http://localhost/api_nexled/api.";
+    }
+
+    if (LOCAL_HOSTNAMES.has(window.location.hostname)) {
+        return "Start Apache/XAMPP. The local NexLed API is not responding.";
+    }
+
+    return "The NexLed API is not reachable from this page.";
+}
+
+function getFamilyPlaceholderMessage() {
+    if (window.location.protocol === "file:") {
+        return "Start localhost API to load families";
+    }
+
+    if (LOCAL_HOSTNAMES.has(window.location.hostname)) {
+        return "Start Apache to load families";
+    }
+
+    return "Unable to load families";
 }
 
 async function apiFetch(path) {
@@ -137,9 +174,9 @@ async function loadFamilies() {
         setApiBadge("success", "API ready");
         setStatus("Choose a family to begin.", "neutral");
     } catch (error) {
-        select.innerHTML = '<option value="">Unable to load families</option>';
+        select.innerHTML = '<option value="">' + getFamilyPlaceholderMessage() + "</option>";
         setApiBadge("error", "API unavailable");
-        setStatus("Unable to load product families.", "error");
+        setStatus(getApiFailureMessage(), "error");
         console.error(error);
     }
 }
