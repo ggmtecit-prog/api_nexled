@@ -19,15 +19,27 @@ defineCloudinaryEnvConstant("CLOUDINARY_API_SECRET");
 if (!function_exists("connectDBReferencias")) {
     if (hasRuntimeDatabaseConfig()) {
         function connectDBReferencias() {
-            return connectRuntimeDatabase(getRuntimeDatabaseName("REFERENCIAS_DB_NAME", "tecit_referencias"));
+            return connectRuntimeDatabase(
+                getRuntimeDatabaseName(["REFERENCIAS_DB_NAME", "DB_NAME_REF"], ["tecit_Referencias", "tecit_referencias"]),
+                ["DB_USER_REF", "MYSQLUSER"],
+                ["DB_PASS_REF", "MYSQLPASSWORD"]
+            );
         }
 
         function connectDBLampadas() {
-            return connectRuntimeDatabase(getRuntimeDatabaseName("LAMPADAS_DB_NAME", "tecit_lampadas"));
+            return connectRuntimeDatabase(
+                getRuntimeDatabaseName(["LAMPADAS_DB_NAME", "DB_NAME_LAMP"], ["tecit_lampadas"]),
+                ["DB_USER_LAMP", "MYSQLUSER"],
+                ["DB_PASS_LAMP", "MYSQLPASSWORD"]
+            );
         }
 
         function connectDBInf() {
-            return connectRuntimeDatabase(getRuntimeDatabaseName("INF_DB_NAME", "info_nexled_2024"));
+            return connectRuntimeDatabase(
+                getRuntimeDatabaseName(["INF_DB_NAME", "DB_NAME_INF"], ["info_nexled_2024"]),
+                ["DB_USER_INF", "MYSQLUSER"],
+                ["DB_PASS_INF", "MYSQLPASSWORD"]
+            );
         }
 
         function closeDB($con) {
@@ -64,20 +76,35 @@ if (!function_exists("str_contains")) {
 }
 
 function hasRuntimeDatabaseConfig(): bool {
-    return getRuntimeEnvValue("MYSQLHOST") !== null
+    return getRuntimeEnvValue("DB_HOST") !== null
+        || getRuntimeEnvValue("DB_USER_REF") !== null
+        || getRuntimeEnvValue("DB_USER_LAMP") !== null
+        || getRuntimeEnvValue("DB_USER_INF") !== null
+        || getRuntimeEnvValue("MYSQLHOST") !== null
         || getRuntimeEnvValue("MYSQL_URL") !== null
         || getRuntimeEnvValue("DATABASE_URL") !== null;
 }
 
-function getRuntimeDatabaseName(string $envKey, string $fallback): string {
-    $value = getRuntimeEnvValue($envKey);
+function getRuntimeDatabaseName(array $envKeys, array $fallbacks): string {
+    $value = getRuntimeEnvValueFromList($envKeys);
 
-    if ($value !== null) {
+    if ($value !== null && $value !== "") {
         return $value;
     }
 
     $defaultDatabaseName = getDefaultRuntimeDatabaseName();
-    return $defaultDatabaseName !== null ? $defaultDatabaseName : $fallback;
+
+    if ($defaultDatabaseName !== null && $defaultDatabaseName !== "") {
+        return $defaultDatabaseName;
+    }
+
+    foreach ($fallbacks as $fallback) {
+        if (is_string($fallback) && trim($fallback) !== "") {
+            return $fallback;
+        }
+    }
+
+    return "";
 }
 
 function getRuntimeEnvValue(string $key): ?string {
@@ -89,6 +116,18 @@ function getRuntimeEnvValue(string $key): ?string {
 
     $trimmedValue = trim($value);
     return $trimmedValue !== "" ? $trimmedValue : null;
+}
+
+function getRuntimeEnvValueFromList(array $keys): ?string {
+    foreach ($keys as $key) {
+        $value = getRuntimeEnvValue($key);
+
+        if ($value !== null) {
+            return $value;
+        }
+    }
+
+    return null;
 }
 
 function defineCloudinaryEnvConstant(string $name): void {
@@ -103,12 +142,12 @@ function defineCloudinaryEnvConstant(string $name): void {
     }
 }
 
-function connectRuntimeDatabase(string $databaseName) {
+function connectRuntimeDatabase(string $databaseName, array $userEnvKeys = ["MYSQLUSER"], array $passwordEnvKeys = ["MYSQLPASSWORD"]) {
     if (!function_exists("mysqli_init") || !function_exists("mysqli_real_connect")) {
         failRuntimeBootstrap("The MySQLi extension is not available.");
     }
 
-    $config = getRuntimeDatabaseConfig($databaseName);
+    $config = getRuntimeDatabaseConfig($databaseName, $userEnvKeys, $passwordEnvKeys);
     $connection = mysqli_init();
 
     if ($connection === false) {
@@ -135,7 +174,19 @@ function connectRuntimeDatabase(string $databaseName) {
     return $connection;
 }
 
-function getRuntimeDatabaseConfig(string $databaseName): array {
+function getRuntimeDatabaseConfig(string $databaseName, array $userEnvKeys, array $passwordEnvKeys): array {
+    $dbHost = getRuntimeEnvValue("DB_HOST");
+
+    if ($dbHost !== null) {
+        return [
+            "host" => $dbHost,
+            "user" => getRuntimeEnvValueFromList($userEnvKeys) ?? "root",
+            "password" => getRuntimeEnvValueFromList($passwordEnvKeys) ?? "",
+            "database" => $databaseName,
+            "port" => (int) (getRuntimeEnvValue("DB_PORT") ?? "3306"),
+        ];
+    }
+
     $databaseUrl = getRuntimeEnvValue("MYSQL_URL");
 
     if ($databaseUrl === null) {
@@ -148,8 +199,8 @@ function getRuntimeDatabaseConfig(string $databaseName): array {
         if (is_array($parsedUrl) && isset($parsedUrl["host"], $parsedUrl["user"])) {
             return [
                 "host" => $parsedUrl["host"],
-                "user" => $parsedUrl["user"],
-                "password" => $parsedUrl["pass"] ?? "",
+                "user" => getRuntimeEnvValueFromList($userEnvKeys) ?? $parsedUrl["user"],
+                "password" => getRuntimeEnvValueFromList($passwordEnvKeys) ?? ($parsedUrl["pass"] ?? ""),
                 "database" => $databaseName,
                 "port" => isset($parsedUrl["port"]) ? (int) $parsedUrl["port"] : 3306,
             ];
@@ -158,8 +209,8 @@ function getRuntimeDatabaseConfig(string $databaseName): array {
 
     return [
         "host" => getRuntimeEnvValue("MYSQLHOST") ?? "localhost",
-        "user" => getRuntimeEnvValue("MYSQLUSER") ?? "root",
-        "password" => getRuntimeEnvValue("MYSQLPASSWORD") ?? "",
+        "user" => getRuntimeEnvValueFromList($userEnvKeys) ?? "root",
+        "password" => getRuntimeEnvValueFromList($passwordEnvKeys) ?? "",
         "database" => $databaseName,
         "port" => (int) (getRuntimeEnvValue("MYSQLPORT") ?? "3306"),
     ];
