@@ -128,45 +128,13 @@
     <aside class="hidden lg:block shrink-0 sticky top-0 h-screen px-24 py-24">
         <div class="sidebar w-sidebar h-full">
             <div class="flex flex-col h-full gap-24 p-40">
-                <div class="flex flex-col gap-16">
-                    <a href="index.html" class="flex items-center justify-center gap-12 group">
-                        <img src="./nexled-project-icon.svg" alt="NexLed" class="w-64 h-64">
-                        <div class="flex flex-col">
-                            <span class="text-card-title leading-none tracking-tight text-black">NexLed</span>
-                            <span class="text-label text-black tracking-wider">API</span>
-                        </div>
-                    </a>
-
-                    <div class="flex flex-col gap-8">
-                        <span class="text-overline text-grey-primary">Language</span>
-                        <div class="language-selector language-selector-standard language-selector-xs has-value w-full" data-app-language-selector>
-                            <button type="button" class="language-selector-trigger" aria-haspopup="listbox" aria-expanded="false" aria-label="Current language: English">
-                                <span class="language-selector-current">
-                                    <img class="language-selector-flag" src="https://flagcdn.com/w40/gb.png" srcset="https://flagcdn.com/w80/gb.png 2x" alt="">
-                                    <span class="language-selector-value">English</span>
-                                </span>
-                                <i class="ri-arrow-down-s-line language-selector-arrow" aria-hidden="true"></i>
-                            </button>
-                            <ul class="language-selector-menu custom-scrollbar" role="listbox" aria-label="Application language options">
-                                <li class="language-selector-option" role="option" aria-selected="true" data-code="gb" data-app-lang="en">
-                                    <img class="language-selector-flag" src="https://flagcdn.com/w40/gb.png" srcset="https://flagcdn.com/w80/gb.png 2x" alt="">
-                                    <span>English</span>
-                                    <i class="ri-check-line language-selector-check" aria-hidden="true"></i>
-                                </li>
-                                <li class="language-selector-option" role="option" aria-selected="false" data-code="pt" data-app-lang="pt">
-                                    <img class="language-selector-flag" src="https://flagcdn.com/w40/pt.png" srcset="https://flagcdn.com/w80/pt.png 2x" alt="">
-                                    <span>Portuguese</span>
-                                    <i class="ri-check-line language-selector-check" aria-hidden="true"></i>
-                                </li>
-                                <li class="language-selector-option" role="option" aria-selected="false" data-code="es" data-app-lang="es">
-                                    <img class="language-selector-flag" src="https://flagcdn.com/w40/es.png" srcset="https://flagcdn.com/w80/es.png 2x" alt="">
-                                    <span>Spanish</span>
-                                    <i class="ri-check-line language-selector-check" aria-hidden="true"></i>
-                                </li>
-                            </ul>
-                        </div>
+                <a href="index.html" class="flex items-center justify-center gap-12 group">
+                    <img src="./nexled-project-icon.svg" alt="NexLed" class="w-64 h-64">
+                    <div class="flex flex-col">
+                        <span class="text-card-title leading-none tracking-tight text-black">NexLed</span>
+                        <span class="text-label text-black tracking-wider">API</span>
                     </div>
-                </div>
+                </a>
 
                 <nav class="flex flex-col gap-24">
                     <div class="dropdown dropdown-minimal dropdown-sm">
@@ -200,9 +168,38 @@
                     </div>
                 </nav>
 
-                <button type="button" class="badge badge-neutral badge-md self-center mt-auto">
-                    <span class="text-body-xs">DAM Preview</span>
-                </button>
+                <div class="flex flex-col gap-16 mt-auto">
+                    <div class="language-selector language-selector-standard language-selector-xs has-value w-full" data-app-language-selector>
+                        <button type="button" class="language-selector-trigger" aria-haspopup="listbox" aria-expanded="false" aria-label="Current language: English">
+                            <span class="language-selector-current">
+                                <img class="language-selector-flag" src="https://flagcdn.com/w40/gb.png" srcset="https://flagcdn.com/w80/gb.png 2x" alt="">
+                                <span class="language-selector-value">English</span>
+                            </span>
+                            <i class="ri-arrow-down-s-line language-selector-arrow" aria-hidden="true"></i>
+                        </button>
+                        <ul class="language-selector-menu custom-scrollbar" role="listbox" aria-label="Application language options">
+                            <li class="language-selector-option" role="option" aria-selected="true" data-code="gb" data-app-lang="en">
+                                <img class="language-selector-flag" src="https://flagcdn.com/w40/gb.png" srcset="https://flagcdn.com/w80/gb.png 2x" alt="">
+                                <span>English</span>
+                                <i class="ri-check-line language-selector-check" aria-hidden="true"></i>
+                            </li>
+                            <li class="language-selector-option" role="option" aria-selected="false" data-code="pt" data-app-lang="pt">
+                                <img class="language-selector-flag" src="https://flagcdn.com/w40/pt.png" srcset="https://flagcdn.com/w80/pt.png 2x" alt="">
+                                <span>Portuguese</span>
+                                <i class="ri-check-line language-selector-check" aria-hidden="true"></i>
+                            </li>
+                            <li class="language-selector-option" role="option" aria-selected="false" data-code="es" data-app-lang="es">
+                                <img class="language-selector-flag" src="https://flagcdn.com/w40/es.png" srcset="https://flagcdn.com/w80/es.png 2x" alt="">
+                                <span>Spanish</span>
+                                <i class="ri-check-line language-selector-check" aria-hidden="true"></i>
+                            </li>
+                        </ul>
+                    </div>
+
+                    <button type="button" class="badge badge-neutral badge-md self-center">
+                        <span class="text-body-xs">DAM Preview</span>
+                    </button>
+                </div>
             </div>
         </div>
     </aside>
