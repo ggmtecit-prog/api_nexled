@@ -430,12 +430,8 @@ function bindCopyButtons() {
 }
 
 function bindShellActions() {
-    const focusButton = document.getElementById("focus-family");
-    const resetTabButton = document.getElementById("reset-configurator");
     const resetPanelButton = document.getElementById("reset-configurator-panel");
 
-    focusButton?.addEventListener("click", focusFamilyField);
-    resetTabButton?.addEventListener("click", resetAllSelections);
     resetPanelButton?.addEventListener("click", resetAllSelections);
 
     NAV_GENERATE_IDS.forEach((id) => {

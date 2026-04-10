@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NexLed - Product Configurator</title>
+    <title>NexLed Workspace</title>
     <link rel="icon" type="image/svg+xml" href="./nexled-project-icon.svg">
 
     <!-- 1. Load Fonts -->
@@ -29,7 +29,7 @@
                     <img src="./nexled-project-icon.svg" alt="NexLed" class="w-40 h-40">
                     <div class="flex flex-col">
                         <span class="font-semibold text-body-lg leading-none tracking-tight text-black">NexLed</span>
-                        <span class="text-overline text-grey-primary">Configurator</span>
+                        <span class="text-overline text-grey-primary">Workspace</span>
                     </div>
                 </a>
                 <button type="button" class="btn btn-secondary btn-icon btn-xs" data-drawer-target="app-nav-drawer" aria-label="Open navigation">
@@ -46,7 +46,7 @@
                     <img src="./nexled-project-icon.svg" alt="NexLed" class="w-40 h-40">
                     <div class="flex flex-col">
                         <span class="font-semibold text-body-lg leading-none tracking-tight text-black">NexLed</span>
-                        <span class="text-overline text-grey-primary">Configurator</span>
+                        <span class="text-overline text-grey-primary">Workspace</span>
                     </div>
                 </div>
                 <button type="button" class="btn btn-secondary btn-icon btn-xs drawer-sheet-close" data-drawer-close data-drawer-initial-focus aria-label="Close navigation">
@@ -58,6 +58,15 @@
                     <nav class="flex flex-col gap-12">
                         <div class="dropdown dropdown-minimal dropdown-md">
                             <a href="index.html" class="dropdown-trigger" aria-current="page">
+                                <span class="flex items-center gap-8">
+                                    <i class="ri-home-5-line text-icon-md" aria-hidden="true"></i>
+                                    <span class="dropdown-value">Workspace Home</span>
+                                </span>
+                                <i class="ri-arrow-right-s-line dropdown-arrow" aria-hidden="true"></i>
+                            </a>
+                        </div>
+                        <div class="dropdown dropdown-minimal dropdown-md">
+                            <a href="configurator.html" class="dropdown-trigger">
                                 <span class="flex items-center gap-8">
                                     <i class="ri-file-list-3-line text-icon-md" aria-hidden="true"></i>
                                     <span class="dropdown-value">Configurator</span>
@@ -76,9 +85,8 @@
                         </div>
                     </nav>
 
-                    <button type="button" class="badge badge-neutral badge-md w-full min-w-0 justify-start" data-api-badge>
-                        <span class="w-8 h-8 rounded-full bg-red-primary shrink-0" data-api-badge-dot></span>
-                        <span class="truncate text-body-xs" data-api-badge-text>API unavailable</span>
+                    <button type="button" class="badge badge-neutral badge-md self-center">
+                        <span class="text-body-xs">Workspace Ready</span>
                     </button>
                 </div>
             </div>
@@ -92,13 +100,23 @@
                     <img src="./nexled-project-icon.svg" alt="NexLed" class="w-64 h-64">
                     <div class="flex flex-col">
                         <span class="text-card-title leading-none tracking-tight text-black">NexLed</span>
-                        <span class="text-label text-black tracking-wider">Configurator</span>
+                        <span class="text-label text-black tracking-wider">Workspace</span>
                     </div>
                 </a>
 
                 <nav class="flex flex-col gap-24 flex-1 justify-center">
                     <div class="dropdown dropdown-minimal dropdown-sm">
                         <a href="index.html" class="dropdown-trigger" aria-current="page">
+                            <span class="flex items-center gap-8">
+                                <i class="ri-home-5-line text-icon-md" aria-hidden="true"></i>
+                                <span class="dropdown-value">Workspace Home</span>
+                            </span>
+                            <i class="ri-arrow-right-s-line dropdown-arrow" aria-hidden="true"></i>
+                        </a>
+                    </div>
+
+                    <div class="dropdown dropdown-minimal dropdown-sm">
+                        <a href="configurator.html" class="dropdown-trigger">
                             <span class="flex items-center gap-8">
                                 <i class="ri-file-list-3-line text-icon-md" aria-hidden="true"></i>
                                 <span class="dropdown-value">Configurator</span>
@@ -118,396 +136,98 @@
                     </div>
                 </nav>
 
-                <button type="button" class="badge badge-neutral badge-md w-full min-w-0 justify-start" data-api-badge>
-                    <span class="w-8 h-8 rounded-full bg-red-primary shrink-0" data-api-badge-dot></span>
-                    <span class="truncate text-body-xs" data-api-badge-text>API unavailable</span>
+                <button type="button" class="badge badge-neutral badge-md self-center">
+                    <span class="text-body-xs">Workspace Ready</span>
                 </button>
             </div>
         </div>
     </aside>
 
     <div class="flex-1 min-w-0 flex flex-col lg:h-screen overflow-y-auto">
-        <main class="flex-1 px-16 pt-32 pb-32 sm:px-20 sm:pt-40 sm:pb-40 md:px-24 md:pt-48 md:pb-48 lg:px-32 lg:pt-64 lg:pb-64 w-full">
-            <h2 id="page-title" class="text-h1 font-medium text-black pb-24 pt-24" data-reveal="hero">
-                Build Product Configurator
-            </h2>
+        <main class="flex-1 px-16 pt-32 pb-32 sm:px-20 sm:pt-40 sm:pb-40 md:px-24 md:pt-48 md:pb-48 lg:px-32 lg:pt-64 lg:pb-64 max-w-standard mx-auto w-full">
 
-            <div class="flex flex-col lg:flex-row gap-48 items-start justify-center">
+            <header class="page-header-hero" data-reveal="hero">
+                <h1 class="text-hero-title text-black">All Product Tasks in One Workspace</h1>
+                <p class="text-hero-subtitle text-black max-w-readable">
+                    Launch the configurator, manage DAM assets, and keep the NexLed workflow organized from one landing page.
+                </p>
+            </header>
 
-                <div class="relative flex-1 w-full" data-reveal="section">
-                    <div class="tab-bar absolute inset-x-0 top-0 z-sticky" id="builderTabs" data-tabs role="tablist" aria-label="Configurator tab">
-                        <div class="tab-item is-active" role="tab" aria-selected="true" tabindex="0">
-                            <span class="tab-label">Configurator</span>
-                            <button type="button" class="tab-close" id="reset-configurator" aria-label="Reset configurator">
-                                <i class="ri-close-line" aria-hidden="true"></i>
+            <section class="-mt-24 sm:-mt-24 md:-mt-32 lg:-mt-40" data-reveal="section">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-32 max-w-4xl mx-auto">
+
+                    <div class="card max-w-md">
+                        <div class="card-body">
+                            <div class="card-header">
+                                <div class="card-icon">
+                                    <i class="ri-file-list-3-line text-icon-lg" aria-hidden="true"></i>
+                                </div>
+                                <h3 class="card-title">Product Configurator</h3>
+                            </div>
+                            <p class="card-text">
+                                Build references, validate manufacturing combinations, and generate product PDFs from one guided builder.
+                            </p>
+                            <a href="configurator.html" class="link link-md">
+                                <span class="link-label">Open Configurator</span>
+                            </a>
+                        </div>
+                    </div>
+
+                    <div class="card max-w-md">
+                        <div class="card-body">
+                            <div class="card-header">
+                                <div class="card-icon">
+                                    <i class="ri-folder-open-line text-icon-lg" aria-hidden="true"></i>
+                                </div>
+                                <h3 class="card-title">DAM Library</h3>
+                            </div>
+                            <p class="card-text">
+                                Browse brand assets, inspect folders, and keep campaign files and product visuals accessible in one place.
+                            </p>
+                            <a href="dam.html" class="link link-md">
+                                <span class="link-label">Open DAM</span>
+                            </a>
+                        </div>
+                    </div>
+
+                    <div class="card max-w-md opacity-40" aria-disabled="true">
+                        <div class="card-body">
+                            <div class="card-header">
+                                <div class="card-icon">
+                                    <i class="ri-database-2-line text-icon-lg" aria-hidden="true"></i>
+                                </div>
+                                <h3 class="card-title">Data Sync Center</h3>
+                            </div>
+                            <p class="card-text">
+                                Planned workflow. Connect central product data and reuse shared records across the internal workspace.
+                            </p>
+                            <button type="button" class="link link-md" disabled aria-disabled="true">
+                                <span class="link-label">Coming Soon</span>
                             </button>
                         </div>
-                        <div class="tab-add">
-                            <button type="button" class="btn btn-ghost btn-icon btn-xs" id="focus-family" aria-label="Focus family selector">
-                                <i class="ri-add-line text-icon-sm" aria-hidden="true"></i>
+                    </div>
+
+                    <div class="card max-w-md opacity-40" aria-disabled="true">
+                        <div class="card-body">
+                            <div class="card-header">
+                                <div class="card-icon">
+                                    <i class="ri-archive-stack-line text-icon-lg" aria-hidden="true"></i>
+                                </div>
+                                <h3 class="card-title">Bulk Operations</h3>
+                            </div>
+                            <p class="card-text">
+                                Planned workflow. Queue high-volume exports and reusable publishing actions once the automation layer is ready.
+                            </p>
+                            <button type="button" class="link link-md" disabled aria-disabled="true">
+                                <span class="link-label">Coming Soon</span>
                             </button>
                         </div>
                     </div>
 
-                    <div class="card overflow-visible" id="builder-card">
-                        <div class="card-body pt-64">
-                            <div id="builder" class="flex flex-col gap-4 pt-16">
-                                <h3 class="card-title">Reference Setup</h3>
-                                <p class="text-body-sm text-grey-primary max-w-readable">
-                                    Start with the product family, then complete the valid manufacturing options. The
-                                    live export state stays pinned on the right.
-                                </p>
-                            </div>
-
-                            <div class="grid grid-cols-1 md:grid-cols-3 gap-24 items-start pt-40">
-                                <div class="md:col-span-2">
-                                    <label class="input-label ml-12" for="select-family">Product Family *</label>
-                                    <select id="select-family" class="input input-sm">
-                                        <option value="">Loading families...</option>
-                                    </select>
-                                    <p class="input-hint ml-12">Select the family to unlock the valid option matrix.</p>
-                                </div>
-
-                                <div>
-                                    <label class="input-label ml-12">Builder Flow</label>
-                                    <div class="panel p-16 flex flex-col gap-8">
-                                        <p class="text-body-sm text-black">One central builder panel, one live action rail, and only valid combinations loaded from the API.</p>
-                                        <p class="text-body-xs text-grey-primary">The reference and description populate automatically after the family is active.</p>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div id="output-fields" class="hidden flex flex-col gap-24 pt-24">
-                                <div class="grid grid-cols-1 md:grid-cols-3 gap-24 items-start">
-                                    <div class="md:col-span-2">
-                                        <label class="input-label ml-12" for="output-reference">Live Reference</label>
-                                        <div class="text-field-shell text-field-shell-trailing-action">
-                                            <input type="text" id="output-reference" class="input input-sm" readonly>
-                                            <button type="button" class="btn btn-secondary btn-icon btn-xs text-field-shell-action" data-copy-target="output-reference" aria-label="Copy reference">
-                                                <i class="ri-file-copy-line text-icon-sm" aria-hidden="true"></i>
-                                            </button>
-                                        </div>
-                                        <p class="input-hint ml-12">Built automatically from the selected manufacturing options.</p>
-                                    </div>
-
-                                    <div>
-                                        <label class="input-label ml-12">Live Output</label>
-                                        <div class="panel p-16 flex flex-col gap-8">
-                                            <p class="text-body-sm text-black">The datasheet action stays synchronized with the current reference.</p>
-                                            <p class="text-body-xs text-grey-primary">Use Quick Actions to copy output or generate the PDF at any time.</p>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div>
-                                    <label class="input-label ml-12" for="output-description">Description</label>
-                                    <div class="text-field-shell text-field-shell-meta">
-                                        <textarea id="output-description" class="input input-sm" rows="2" readonly aria-describedby="descriptionHint"></textarea>
-                                        <span class="text-field-shell-meta-icon" aria-hidden="true">
-                                            <i class="ri-expand-diagonal-s-2-fill text-icon-sm"></i>
-                                        </span>
-                                    </div>
-                                    <p id="descriptionHint" class="input-hint ml-12">Generated from the current reference when data is available.</p>
-                                </div>
-                            </div>
-
-                            <div id="options-group" class="hidden flex flex-col gap-40 pt-40">
-                                <div class="divider"></div>
-
-                                <div class="flex flex-col gap-4 pt-16">
-                                    <h3 class="card-title">Dimensions</h3>
-                                    <p class="text-body-sm text-grey-primary max-w-readable">Set the size and any extra length required for the product build.</p>
-                                </div>
-                                <div class="grid grid-cols-1 md:grid-cols-2 gap-24 items-start">
-                                    <div>
-                                        <label class="input-label ml-12" for="select-size">Size</label>
-                                        <select id="select-size" class="input input-sm"></select>
-                                    </div>
-                                    <div>
-                                        <label class="input-label ml-12" for="input-extra-length">Extra Length (mm)</label>
-                                        <input type="number" id="input-extra-length" class="input input-sm" value="0" min="0" step="1">
-                                    </div>
-                                </div>
-
-                                <div class="divider"></div>
-
-                                <div class="flex flex-col gap-4 pt-16">
-                                    <h3 class="card-title">Light Source Configuration</h3>
-                                    <p class="text-body-sm text-grey-primary max-w-readable">Choose the light output, rendering profile, and compatible series code.</p>
-                                </div>
-                                <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-24 items-start">
-                                    <div>
-                                        <label class="input-label ml-12" for="select-color">Color</label>
-                                        <select id="select-color" class="input input-sm"></select>
-                                    </div>
-                                    <div>
-                                        <label class="input-label ml-12" for="select-cri">CRI</label>
-                                        <select id="select-cri" class="input input-sm"></select>
-                                    </div>
-                                    <div>
-                                        <label class="input-label ml-12" for="select-series">Series</label>
-                                        <select id="select-series" class="input input-sm"></select>
-                                    </div>
-                                </div>
-
-                                <div class="divider"></div>
-
-                                <div class="flex flex-col gap-4 pt-16">
-                                    <h3 class="card-title">Optics and Finish</h3>
-                                    <p class="text-body-sm text-grey-primary max-w-readable">Define the lens behavior, finishing code, end cap, and option bundle.</p>
-                                </div>
-                                <div class="grid grid-cols-1 md:grid-cols-2 gap-24 items-start">
-                                    <div>
-                                        <label class="input-label ml-12" for="select-lens">Lens</label>
-                                        <select id="select-lens" class="input input-sm"></select>
-                                    </div>
-                                    <div>
-                                        <label class="input-label ml-12" for="select-finish">Finish</label>
-                                        <select id="select-finish" class="input input-sm"></select>
-                                    </div>
-                                    <div>
-                                        <label class="input-label ml-12" for="select-cap">Cap</label>
-                                        <select id="select-cap" class="input input-sm"></select>
-                                    </div>
-                                    <div>
-                                        <label class="input-label ml-12" for="select-option">Option</label>
-                                        <select id="select-option" class="input input-sm"></select>
-                                    </div>
-                                </div>
-
-                                <div class="divider"></div>
-
-                                <div class="flex flex-col gap-4 pt-16">
-                                    <h3 class="card-title">Cable and Connectors</h3>
-                                    <p class="text-body-sm text-grey-primary max-w-readable">Configure the outgoing cable, connector family, and cable length used in the build.</p>
-                                </div>
-                                <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-24 items-start">
-                                    <div>
-                                        <label class="input-label ml-12" for="select-connector-cable">Cable Connector</label>
-                                        <select id="select-connector-cable" class="input input-sm">
-                                            <option value="0">None</option>
-                                            <option value="asqc2">ASQC2</option>
-                                            <option value="c1m">C1M</option>
-                                            <option value="dc24">DC24</option>
-                                            <option value="dcj">DCJ</option>
-                                            <option value="c2p">C2P</option>
-                                        </select>
-                                    </div>
-                                    <div>
-                                        <label class="input-label ml-12" for="select-cable-type">Cable Type</label>
-                                        <select id="select-cable-type" class="input input-sm">
-                                            <option value="branco">White</option>
-                                            <option value="preto">Black</option>
-                                            <option value="cinza">Grey</option>
-                                            <option value="fio">Wire</option>
-                                            <option value="transparente">Transparent</option>
-                                        </select>
-                                    </div>
-                                    <div>
-                                        <label class="input-label ml-12" for="input-cable-length">Cable Length (m)</label>
-                                        <input type="number" id="input-cable-length" class="input input-sm" value="0" min="0" step="0.01">
-                                    </div>
-                                </div>
-
-                                <div class="divider"></div>
-
-                                <div class="flex flex-col gap-4 pt-16">
-                                    <h3 class="card-title">Mounting and Protection</h3>
-                                    <p class="text-body-sm text-grey-primary max-w-readable">Control the end cap, gasket, IP rating, and mechanical fixing profile.</p>
-                                </div>
-                                <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-24 items-start">
-                                    <div>
-                                        <label class="input-label ml-12" for="select-end-cap">End Cap</label>
-                                        <select id="select-end-cap" class="input input-sm">
-                                            <option value="0">Standard</option>
-                                            <option value="1">Fricon</option>
-                                            <option value="2">Plate</option>
-                                        </select>
-                                    </div>
-                                    <div>
-                                        <label class="input-label ml-12" for="select-gasket">Gasket</label>
-                                        <select id="select-gasket" class="input input-sm">
-                                            <option value="5">5 mm</option>
-                                            <option value="0.5">0.5 mm</option>
-                                        </select>
-                                    </div>
-                                    <div>
-                                        <label class="input-label ml-12" for="select-ip">IP Rating</label>
-                                        <select id="select-ip" class="input input-sm">
-                                            <option value="0">Auto-detect</option>
-                                            <option value="IP20">IP20</option>
-                                            <option value="IP40">IP40</option>
-                                            <option value="IP42">IP42</option>
-                                            <option value="IP45">IP45</option>
-                                            <option value="IP60">IP60</option>
-                                            <option value="IP64">IP64</option>
-                                            <option value="IP65">IP65</option>
-                                            <option value="IP66">IP66</option>
-                                            <option value="IP67">IP67</option>
-                                        </select>
-                                    </div>
-                                    <div>
-                                        <label class="input-label ml-12" for="select-fixing">Fixing</label>
-                                        <select id="select-fixing" class="input input-sm">
-                                            <option value="0">None</option>
-                                            <option value="clip180">Fixed Metal Clip 180&deg;</option>
-                                            <option value="cliprotativo">Rotating Metal Clip</option>
-                                            <option value="clipmagnetico">Magnetic PC Clip</option>
-                                            <option value="suporte180">PVC Support 180&deg;</option>
-                                            <option value="suporte45">PVC Support 45&deg;</option>
-                                        </select>
-                                    </div>
-                                </div>
-
-                                <div class="divider"></div>
-
-                                <div class="flex flex-col gap-4 pt-16">
-                                    <h3 class="card-title">Power and Wiring</h3>
-                                    <p class="text-body-sm text-grey-primary max-w-readable">Set the power supply and the connection cable details used in the datasheet export.</p>
-                                </div>
-                                <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-24 items-start">
-                                    <div>
-                                        <label class="input-label ml-12" for="select-power-supply">Power Supply</label>
-                                        <select id="select-power-supply" class="input input-sm">
-                                            <option value="0">None</option>
-                                            <option value="30w">30W</option>
-                                        </select>
-                                    </div>
-                                    <div>
-                                        <label class="input-label ml-12" for="select-connection-cable">Connection Cable</label>
-                                        <select id="select-connection-cable" class="input input-sm">
-                                            <option value="0">None</option>
-                                            <option value="branco">White</option>
-                                            <option value="preto">Black</option>
-                                            <option value="cinzento">Grey</option>
-                                            <option value="transparente">Transparent</option>
-                                        </select>
-                                    </div>
-                                    <div>
-                                        <label class="input-label ml-12" for="select-connection-connector">Connection Connector</label>
-                                        <select id="select-connection-connector" class="input input-sm">
-                                            <option value="0">None</option>
-                                            <option value="asqc2">ASQC2</option>
-                                            <option value="c1m">C1M</option>
-                                            <option value="dc24">DC24</option>
-                                            <option value="c2p">C2P</option>
-                                            <option value="dcj">DCJ</option>
-                                        </select>
-                                    </div>
-                                    <div>
-                                        <label class="input-label ml-12" for="input-connection-cable-length">Connection Cable Length (m)</label>
-                                        <input type="number" id="input-connection-cable-length" class="input input-sm" value="0" min="0" step="0.01">
-                                    </div>
-                                </div>
-
-                                <div class="divider"></div>
-
-                                <div class="flex flex-col gap-4 pt-16">
-                                    <h3 class="card-title">Datasheet Metadata</h3>
-                                    <p class="text-body-sm text-grey-primary max-w-readable">Choose the application context, branded export, and output language used in the PDF.</p>
-                                </div>
-                                <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-24 items-start">
-                                    <div>
-                                        <label class="input-label ml-12" for="select-purpose">Purpose</label>
-                                        <select id="select-purpose" class="input input-sm">
-                                            <option value="0">General</option>
-                                            <option value="retalho">Retail</option>
-                                            <option value="padaria">Bakery</option>
-                                            <option value="queijo">Cheese</option>
-                                            <option value="peixe">Fish</option>
-                                            <option value="talho">Meat</option>
-                                            <option value="talhoR9">Meat R9</option>
-                                            <option value="charcutaria">Deli</option>
-                                            <option value="murallacteo">Dairy Wall</option>
-                                            <option value="muralcongelados">Frozen Wall</option>
-                                            <option value="frutaslegumes">Fruits and Vegetables</option>
-                                            <option value="vinho">Wine</option>
-                                        </select>
-                                    </div>
-                                    <div>
-                                        <label class="input-label ml-12" for="select-company">Company Logo</label>
-                                        <select id="select-company" class="input input-sm">
-                                            <option value="0">None</option>
-                                            <option value="jordao">Jord&atilde;o</option>
-                                            <option value="fricon">Fricon</option>
-                                            <option value="tensai">Tensai</option>
-                                        </select>
-                                    </div>
-                                    <div>
-                                        <label class="input-label ml-12" for="select-language">Language</label>
-                                        <select id="select-language" class="input input-sm">
-                                            <option value="pt">PT</option>
-                                            <option value="en">EN</option>
-                                            <option value="es">ES</option>
-                                        </select>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
                 </div>
+            </section>
 
-                <div id="output-panel" class="card overflow-visible shrink-0 w-full lg:w-fit lg:sticky lg:top-56" data-reveal="section">
-                    <div class="card-body p-24">
-                        <h3 class="card-title">Quick Actions</h3>
-
-                        <div class="flex flex-col gap-12 pt-16">
-                            <span class="input-label">Current State</span>
-                            <div class="flex flex-col gap-4">
-                                <span id="config-step" class="text-overline text-green-primary">Step 1</span>
-                                <p id="output-title" class="text-body-lg text-black">Start with a family</p>
-                                <p id="output-subtitle" class="text-body-sm text-grey-primary max-w-readable">Select a family to unlock the valid option set.</p>
-                            </div>
-                        </div>
-
-                        <div class="flex flex-col gap-12 pt-24">
-                            <span class="input-label">Copy Output</span>
-                            <div class="flex flex-col gap-12 items-center">
-                                <button type="button" class="btn btn-ghost btn-xs" data-copy-target="output-reference">Copy Reference</button>
-                                <button type="button" class="btn btn-ghost btn-xs" data-copy-target="output-description">Copy Description</button>
-                            </div>
-                        </div>
-
-                        <div class="flex flex-col gap-12 pt-24">
-                            <span class="input-label">Export Target</span>
-                            <div class="flex flex-wrap gap-16 justify-center items-center">
-                                <label class="radio-wrapper radio-md">
-                                    <input type="radio" name="exportSurface" value="pdf" checked>
-                                    <span class="text-body-sm">PDF File</span>
-                                </label>
-                                <label class="radio-wrapper radio-md">
-                                    <input type="radio" name="exportSurface" value="reference" disabled>
-                                    <span class="text-body-sm">Reference</span>
-                                </label>
-                                <label class="radio-wrapper radio-md">
-                                    <input type="radio" name="exportSurface" value="description" disabled>
-                                    <span class="text-body-sm">Description</span>
-                                </label>
-                            </div>
-                        </div>
-
-                        <div class="flex flex-col gap-12 pt-32 items-center">
-                            <div class="flex flex-wrap items-center justify-center gap-12">
-                                <button id="btn-generate" type="button" class="btn btn-primary btn-sm" disabled>
-                                    <i class="ri-file-pdf-line text-icon-sm" aria-hidden="true"></i>
-                                    Generate PDF
-                                </button>
-                                <button type="button" class="btn btn-secondary btn-icon btn-sm" data-copy-target="output-reference" aria-label="Copy reference">
-                                    <i class="ri-file-copy-line text-icon-lg" aria-hidden="true"></i>
-                                </button>
-                                <button type="button" class="btn btn-secondary btn-icon btn-sm" id="reset-configurator-panel" aria-label="Reset configurator">
-                                    <i class="ri-refresh-line text-icon-lg" aria-hidden="true"></i>
-                                </button>
-                            </div>
-                        </div>
-
-                        <p id="status-message" class="text-body-xs text-grey-primary min-h-16 text-center pt-16">Choose a family to begin.</p>
-                    </div>
-                </div>
-            </div>
         </main>
     </div>
-
-    <script src="script.js"></script>
 </body>
 </html>
