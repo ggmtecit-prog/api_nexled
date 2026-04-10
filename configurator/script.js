@@ -6,12 +6,7 @@
  */
 
 const API_KEY = "7b8edd27a16f60bf7a1c92b8ceb40cda474588d24491140c130418153053063b";
-const API_BASE_CANDIDATES = ["./api", "../api", "/api_nexled/api"];
-const API_LOCALHOST_CANDIDATES = [
-    "http://localhost/api_nexled/api",
-    "http://127.0.0.1/api_nexled/api",
-];
-const LOCAL_HOSTNAMES = new Set(["localhost", "127.0.0.1"]);
+const DEFAULT_API_BASE = "https://apinexled-production.up.railway.app/api";
 
 const REF_LENGTHS = {
     size: 4,
@@ -104,77 +99,39 @@ document.addEventListener("DOMContentLoaded", () => {
 
 async function getApiBase() {
     if (!apiBasePromise) {
-        apiBasePromise = resolveApiBase();
+        apiBasePromise = Promise.resolve(resolveApiBase());
     }
 
     return apiBasePromise;
 }
 
-async function resolveApiBase() {
-    for (const base of getApiBaseCandidates()) {
-        try {
-            const response = await fetch(base + "/?endpoint=families", {
-                headers: { "X-API-Key": API_KEY },
-            });
-
-            if (response.status !== 404) {
-                return base;
-            }
-        } catch (error) {
-            console.warn("API base probe failed for", base, error);
-        }
-    }
-
-    throw new Error("Unable to resolve the NexLed API base URL.");
-}
-
-function getApiBaseCandidates() {
-    if (window.location.protocol === "file:") {
-        return API_LOCALHOST_CANDIDATES.concat(API_BASE_CANDIDATES);
-    }
-
-    return API_BASE_CANDIDATES;
+function resolveApiBase() {
+    return DEFAULT_API_BASE.replace(/\/+$/, "");
 }
 
 function getApiFailureMessageKey() {
-    if (window.location.protocol === "file:") {
-        return "configurator.runtime.apiFailureFile";
-    }
-
-    if (LOCAL_HOSTNAMES.has(window.location.hostname)) {
-        return "configurator.runtime.apiFailureLocal";
-    }
-
     return "configurator.runtime.apiFailureRemote";
 }
 
 function getApiFailureFallback(key) {
     const fallbacks = {
-        "configurator.runtime.apiFailureFile": "Start Apache/XAMPP. This page needs the PHP API at http://localhost/api_nexled/api.",
-        "configurator.runtime.apiFailureLocal": "Start Apache/XAMPP. The local NexLed API is not responding.",
-        "configurator.runtime.apiFailureRemote": "The NexLed API is not reachable from this page.",
+        "configurator.runtime.apiFailureFile": "The NexLed Railway API is not responding.",
+        "configurator.runtime.apiFailureLocal": "The NexLed Railway API is not responding.",
+        "configurator.runtime.apiFailureRemote": "The NexLed Railway API is not reachable from this page.",
     };
 
     return fallbacks[key] || "";
 }
 
 function getFamilyPlaceholderMessageKey() {
-    if (window.location.protocol === "file:") {
-        return "configurator.runtime.familyPlaceholderFile";
-    }
-
-    if (LOCAL_HOSTNAMES.has(window.location.hostname)) {
-        return "configurator.runtime.familyPlaceholderLocal";
-    }
-
     return "configurator.runtime.familyPlaceholderRemote";
 }
 
 function getFamilyPlaceholderFallback(key) {
     const fallbacks = {
-        "configurator.runtime.familyPlaceholderFile": "Start localhost API to load families",
-        "configurator.runtime.familyPlaceholderLocal": "Start Apache to load families",
-        "configurator.runtime.familyPlaceholderRemote": "Unable to load families",
+        "configurator.runtime.familyPlaceholderFile": "Unable to load families from the Railway API",
+        "configurator.runtime.familyPlaceholderLocal": "Unable to load families from the Railway API",
+        "configurator.runtime.familyPlaceholderRemote": "Unable to load families from the Railway API",
     };
 
     return fallbacks[key] || "";
