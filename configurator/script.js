@@ -57,8 +57,10 @@ const NAV_GENERATE_IDS = ["nav-generate-desktop", "nav-generate-mobile"];
 
 let descriptionRequestToken = 0;
 let apiBasePromise = null;
+let familyCombobox = null;
 
 document.addEventListener("DOMContentLoaded", () => {
+    familyCombobox = setupFamilyCombobox();
     document.getElementById("select-family").addEventListener("change", handleFamilyChange);
     document.getElementById("btn-generate").addEventListener("click", generateDatasheet);
 
@@ -127,6 +129,284 @@ function getFamilyPlaceholderMessage() {
     return "Unable to load families";
 }
 
+function setupFamilyCombobox() {
+    const combobox = document.getElementById("family-combobox");
+    const input = document.getElementById("family-combobox-input");
+    const clearButton = document.getElementById("family-combobox-clear");
+    const panel = document.getElementById("family-combobox-panel");
+    const list = document.getElementById("family-combobox-list");
+    const emptyState = document.getElementById("family-combobox-empty");
+    const valueField = document.getElementById("select-family");
+
+    if (!combobox || !input || !clearButton || !panel || !list || !emptyState || !valueField) {
+        return null;
+    }
+
+    let activeOption = null;
+
+    input.setAttribute("role", "combobox");
+    input.setAttribute("aria-controls", list.id);
+    input.setAttribute("aria-expanded", "false");
+    input.setAttribute("aria-autocomplete", "list");
+    list.setAttribute("role", "listbox");
+
+    const getOptions = () => Array.from(list.querySelectorAll("[data-family-option]"));
+
+    const getVisibleOptions = () => getOptions().filter((option) => !option.hidden);
+
+    const getSelectedOption = () => {
+        const currentValue = valueField.value;
+        return getOptions().find((option) => option.dataset.value === currentValue) || null;
+    };
+
+    const getSelectedLabel = () => {
+        const option = getSelectedOption();
+        return option ? option.dataset.label : "";
+    };
+
+    const setActiveOption = (option) => {
+        activeOption = option;
+
+        getOptions().forEach((currentOption) => {
+            currentOption.classList.toggle("is-active", currentOption === option && !currentOption.hidden);
+        });
+
+        if (option && !option.hidden) {
+            input.setAttribute("aria-activedescendant", option.id);
+            option.scrollIntoView({ block: "nearest" });
+            return;
+        }
+
+        input.removeAttribute("aria-activedescendant");
+    };
+
+    const updateClearState = () => {
+        const shouldShowClear = !input.disabled && input.value.trim() !== "";
+        clearButton.hidden = !shouldShowClear;
+        clearButton.disabled = !shouldShowClear;
+        clearButton.setAttribute("aria-hidden", shouldShowClear ? "false" : "true");
+    };
+
+    const syncSelectedState = () => {
+        const currentValue = valueField.value;
+
+        getOptions().forEach((option) => {
+            option.setAttribute("aria-selected", option.dataset.value === currentValue ? "true" : "false");
+        });
+
+        combobox.classList.toggle("has-value", Boolean(currentValue));
+        updateClearState();
+    };
+
+    const updateFilter = (query) => {
+        const normalizedQuery = query.trim().toLowerCase();
+
+        getOptions().forEach((option) => {
+            const matches = normalizedQuery === "" || option.dataset.label.toLowerCase().includes(normalizedQuery);
+            option.hidden = !matches;
+        });
+
+        const visibleOptions = getVisibleOptions();
+        emptyState.hidden = visibleOptions.length !== 0;
+        setActiveOption(visibleOptions[0] || null);
+    };
+
+    const closePanel = (restoreSelection = false) => {
+        combobox.classList.remove("is-open");
+        panel.hidden = true;
+        panel.setAttribute("aria-hidden", "true");
+        input.setAttribute("aria-expanded", "false");
+        setActiveOption(null);
+
+        if (restoreSelection) {
+            input.value = getSelectedLabel();
+        }
+
+        updateFilter("");
+        updateClearState();
+    };
+
+    const openPanel = () => {
+        if (input.disabled) {
+            return;
+        }
+
+        combobox.classList.add("is-open");
+        panel.hidden = false;
+        panel.setAttribute("aria-hidden", "false");
+        input.setAttribute("aria-expanded", "true");
+        updateFilter(valueField.value && input.value.trim() === getSelectedLabel() ? "" : input.value.trim());
+    };
+
+    const dispatchFamilyChange = () => {
+        valueField.dispatchEvent(new Event("change", { bubbles: true }));
+    };
+
+    const setSelection = (value, label, shouldTrigger = true) => {
+        const previousValue = valueField.value;
+
+        valueField.value = value;
+        input.value = label;
+        syncSelectedState();
+        closePanel(false);
+
+        if (shouldTrigger && previousValue !== value) {
+            dispatchFamilyChange();
+        }
+    };
+
+    const clearSelection = (shouldTrigger = true, clearInput = true) => {
+        const previousValue = valueField.value;
+
+        valueField.value = "";
+
+        if (clearInput) {
+            input.value = "";
+        }
+
+        syncSelectedState();
+        updateFilter(input.value.trim());
+
+        if (shouldTrigger && previousValue !== "") {
+            dispatchFamilyChange();
+        }
+    };
+
+    const renderOptions = (items) => {
+        list.innerHTML = "";
+
+        items.forEach((item, index) => {
+            const option = document.createElement("button");
+            const label = document.createElement("span");
+            const check = document.createElement("i");
+
+            option.type = "button";
+            option.className = "combobox-option";
+            option.id = "family-combobox-option-" + (index + 1);
+            option.dataset.familyOption = "true";
+            option.dataset.value = item.value;
+            option.dataset.label = item.label;
+            option.setAttribute("role", "option");
+            option.setAttribute("aria-selected", "false");
+
+            label.className = "combobox-option-label";
+            label.textContent = item.label;
+
+            check.className = "ri-check-line combobox-option-check";
+            check.setAttribute("aria-hidden", "true");
+
+            option.append(label, check);
+            option.addEventListener("click", () => {
+                setSelection(item.value, item.label, true);
+                input.focus();
+            });
+
+            list.append(option);
+        });
+
+        syncSelectedState();
+        updateFilter(input.value.trim());
+    };
+
+    const setDisabled = (isDisabled) => {
+        input.disabled = isDisabled;
+        input.setAttribute("aria-disabled", String(isDisabled));
+        combobox.setAttribute("aria-disabled", String(isDisabled));
+
+        if (isDisabled) {
+            closePanel(true);
+        }
+    };
+
+    input.addEventListener("focus", openPanel);
+    input.addEventListener("click", openPanel);
+
+    input.addEventListener("input", () => {
+        if (valueField.value && input.value.trim() !== getSelectedLabel()) {
+            clearSelection(true, false);
+        }
+
+        openPanel();
+        updateFilter(input.value.trim());
+        updateClearState();
+    });
+
+    input.addEventListener("keydown", (event) => {
+        const visibleOptions = getVisibleOptions();
+
+        if (event.key === "ArrowDown") {
+            event.preventDefault();
+            openPanel();
+
+            if (visibleOptions.length === 0) {
+                return;
+            }
+
+            const currentIndex = visibleOptions.indexOf(activeOption);
+            const nextIndex = currentIndex === -1 ? 0 : (currentIndex + 1) % visibleOptions.length;
+            setActiveOption(visibleOptions[nextIndex]);
+        }
+
+        if (event.key === "ArrowUp") {
+            event.preventDefault();
+            openPanel();
+
+            if (visibleOptions.length === 0) {
+                return;
+            }
+
+            const currentIndex = visibleOptions.indexOf(activeOption);
+            const nextIndex = currentIndex === -1 ? visibleOptions.length - 1 : (currentIndex - 1 + visibleOptions.length) % visibleOptions.length;
+            setActiveOption(visibleOptions[nextIndex]);
+        }
+
+        if (event.key === "Enter") {
+            if (!combobox.classList.contains("is-open") || !activeOption) {
+                return;
+            }
+
+            event.preventDefault();
+            setSelection(activeOption.dataset.value, activeOption.dataset.label, true);
+        }
+
+        if (event.key === "Escape") {
+            event.preventDefault();
+            closePanel(true);
+        }
+
+        if (event.key === "Tab") {
+            closePanel(true);
+        }
+    });
+
+    clearButton.addEventListener("click", (event) => {
+        event.preventDefault();
+        clearSelection(true, true);
+        input.focus();
+    });
+
+    document.addEventListener("click", (event) => {
+        if (combobox.contains(event.target)) {
+            return;
+        }
+
+        closePanel(true);
+    });
+
+    syncSelectedState();
+    updateFilter("");
+
+    return {
+        clearSelection,
+        getSelectedLabel,
+        renderOptions,
+        setDisabled,
+        setPlaceholder(text) {
+            input.placeholder = text;
+        },
+    };
+}
+
 async function apiFetch(path) {
     const apiBase = await getApiBase();
     const response = await fetch(apiBase + path, {
@@ -154,27 +434,28 @@ async function apiPost(path, body) {
 }
 
 async function loadFamilies() {
-    const select = document.getElementById("select-family");
-
     setApiBadge("loading", "Connecting to API");
     setStatus("Loading families...", "loading");
+    familyCombobox?.setDisabled(true);
+    familyCombobox?.setPlaceholder("Loading families...");
 
     try {
         const data = await apiFetch("/?endpoint=families");
-
-        select.innerHTML = '<option value="">Select a family</option>';
-
-        data.forEach((family) => {
-            const option = document.createElement("option");
-            option.value = family.codigo;
-            option.textContent = family.nome;
-            select.appendChild(option);
-        });
+        familyCombobox?.renderOptions(
+            data.map((family) => ({
+                value: family.codigo,
+                label: family.nome,
+            }))
+        );
+        familyCombobox?.setDisabled(false);
+        familyCombobox?.setPlaceholder("Select a family");
 
         setApiBadge("success", "API ready");
         setStatus("Choose a family to begin.", "neutral");
     } catch (error) {
-        select.innerHTML = '<option value="">' + getFamilyPlaceholderMessage() + "</option>";
+        familyCombobox?.renderOptions([]);
+        familyCombobox?.setDisabled(true);
+        familyCombobox?.setPlaceholder(getFamilyPlaceholderMessage());
         setApiBadge("error", "API unavailable");
         setStatus(getApiFailureMessage(), "error");
         console.error(error);
@@ -555,10 +836,18 @@ function get(id) {
 }
 
 function getDisplayText(id) {
+    if (id === "select-family") {
+        return familyCombobox?.getSelectedLabel() || "";
+    }
+
     const element = document.getElementById(id);
 
     if (!element) {
         return "";
+    }
+
+    if (element.tagName !== "SELECT") {
+        return element.value || "";
     }
 
     return element.options[element.selectedIndex]?.text || "";
@@ -575,7 +864,7 @@ function pad(value, length) {
 }
 
 function focusFamilyField() {
-    const field = document.getElementById("select-family");
+    const field = document.getElementById("family-combobox-input") || document.getElementById("select-family");
 
     if (!field) {
         return;
@@ -592,6 +881,7 @@ function resetAllSelections() {
         return;
     }
 
+    familyCombobox?.clearSelection(false, true);
     familySelect.value = "";
 
     document.querySelectorAll("#options-group select").forEach((element) => {

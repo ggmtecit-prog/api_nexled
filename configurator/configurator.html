@@ -166,10 +166,23 @@
 
                             <div class="pt-40">
                                 <div>
-                                    <label class="input-label ml-12" for="select-family">Product Family *</label>
-                                    <select id="select-family" class="input input-sm">
-                                        <option value="">Loading families...</option>
-                                    </select>
+                                    <label class="input-label ml-12" for="family-combobox-input">Product Family *</label>
+                                    <div id="family-combobox" class="combobox combobox-md">
+                                        <div class="combobox-control">
+                                            <span class="input-icon-area" aria-hidden="true">
+                                                <i class="ri-search-line"></i>
+                                            </span>
+                                            <input type="text" id="family-combobox-input" class="combobox-input" placeholder="Loading families..." aria-label="Product family" autocomplete="off">
+                                            <button type="button" id="family-combobox-clear" class="btn btn-ghost btn-icon btn-xs combobox-clear" aria-label="Clear product family" hidden disabled>
+                                                <i class="ri-close-line text-icon-sm" aria-hidden="true"></i>
+                                            </button>
+                                        </div>
+                                        <input type="hidden" id="select-family" value="">
+                                        <div class="combobox-panel" id="family-combobox-panel" hidden aria-hidden="true">
+                                            <div class="combobox-list" id="family-combobox-list"></div>
+                                            <p class="combobox-empty" id="family-combobox-empty" hidden>No matching families</p>
+                                        </div>
+                                    </div>
                                     <p class="input-hint ml-12">Select the family to unlock the valid option matrix.</p>
                                 </div>
                             </div>
