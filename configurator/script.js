@@ -807,9 +807,17 @@ function syncCopyButtons() {
 }
 
 function setSummaryState(step, title, subtitle) {
-    document.getElementById("config-step").textContent = step;
-    document.getElementById("output-title").textContent = title;
-    document.getElementById("output-subtitle").textContent = subtitle;
+    const stepElement = document.getElementById("config-step");
+    const titleElement = document.getElementById("output-title");
+    const subtitleElement = document.getElementById("output-subtitle");
+
+    if (!stepElement || !titleElement || !subtitleElement) {
+        return;
+    }
+
+    stepElement.textContent = step;
+    titleElement.textContent = title;
+    subtitleElement.textContent = subtitle;
 }
 
 function setHidden(id, shouldHide) {
