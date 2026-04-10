@@ -11,11 +11,6 @@ const APP_SHELL_LANGUAGES = {
         code: "pt",
         label: "Portuguese",
     },
-    es: {
-        app: "es",
-        code: "es",
-        label: "Spanish",
-    },
 };
 
 (function () {
@@ -24,7 +19,7 @@ const APP_SHELL_LANGUAGES = {
     function normalizeLanguage(value) {
         const normalized = String(value || "").trim().toLowerCase();
 
-        if (normalized === "pt" || normalized === "es") {
+        if (normalized === "pt") {
             return normalized;
         }
 
