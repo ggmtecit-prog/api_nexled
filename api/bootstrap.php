@@ -8,6 +8,10 @@ if (!defined("BASE_URL")) {
     define("BASE_URL", "/");
 }
 
+if (function_exists("mysqli_report")) {
+    mysqli_report(MYSQLI_REPORT_OFF);
+}
+
 defineCloudinaryEnvConstant("CLOUDINARY_CLOUD_NAME");
 defineCloudinaryEnvConstant("CLOUDINARY_API_KEY");
 defineCloudinaryEnvConstant("CLOUDINARY_API_SECRET");
@@ -100,6 +104,10 @@ function defineCloudinaryEnvConstant(string $name): void {
 }
 
 function connectRuntimeDatabase(string $databaseName) {
+    if (!function_exists("mysqli_init") || !function_exists("mysqli_real_connect")) {
+        failRuntimeBootstrap("The MySQLi extension is not available.");
+    }
+
     $config = getRuntimeDatabaseConfig($databaseName);
     $connection = mysqli_init();
 
