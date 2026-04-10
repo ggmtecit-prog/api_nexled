@@ -54,13 +54,20 @@ const API_BADGE_TONE_CLASS = {
     error: "bg-red-primary",
 };
 const NAV_GENERATE_IDS = ["nav-generate-desktop", "nav-generate-mobile"];
+const APP_LANGUAGE_EVENT = "nexled:app-language-change";
 
 let descriptionRequestToken = 0;
 let apiBasePromise = null;
 let familyCombobox = null;
+let selectDropdowns = new Map();
+let activeSelectDropdown = null;
+let selectDropdownEventsBound = false;
+let syncConfiguredLanguageSelect = null;
 
 document.addEventListener("DOMContentLoaded", () => {
     familyCombobox = setupFamilyCombobox();
+    setupSelectDropdowns();
+    bindDocumentLanguageControls();
     document.getElementById("select-family").addEventListener("change", handleFamilyChange);
     document.getElementById("btn-generate").addEventListener("click", generateDatasheet);
 
@@ -407,6 +414,392 @@ function setupFamilyCombobox() {
     };
 }
 
+function setupSelectDropdowns() {
+    const selects = Array.from(document.querySelectorAll("select[id]")).filter((select) => select.id !== "select-family");
+
+    selects.forEach((select) => {
+        if (selectDropdowns.has(select.id)) {
+            return;
+        }
+
+        const dropdown = createSelectDropdown(select);
+
+        if (dropdown) {
+            selectDropdowns.set(select.id, dropdown);
+        }
+    });
+
+    bindSelectDropdownDocumentEvents();
+}
+
+function createSelectDropdown(select) {
+    const label = document.querySelector('label[for="' + select.id + '"]');
+    const labelText = label ? label.textContent.replace(/\*/g, "").trim() : "Options";
+    const root = document.createElement("div");
+    const trigger = document.createElement("button");
+    const valueDisplay = document.createElement("span");
+    const arrow = document.createElement("i");
+    const menu = document.createElement("ul");
+    let itemElements = [];
+
+    if (label && !label.id) {
+        label.id = select.id + "-label";
+    }
+
+    root.className = "dropdown dropdown-md w-full";
+    root.dataset.selectDropdown = select.id;
+
+    valueDisplay.className = "dropdown-value";
+    valueDisplay.id = select.id + "-dropdown-value";
+
+    trigger.type = "button";
+    trigger.className = "dropdown-trigger";
+    trigger.id = select.id + "-dropdown-trigger";
+    trigger.setAttribute("aria-haspopup", "listbox");
+    trigger.setAttribute("aria-expanded", "false");
+
+    if (label?.id) {
+        trigger.setAttribute("aria-labelledby", label.id + " " + valueDisplay.id);
+    } else {
+        trigger.setAttribute("aria-label", labelText);
+    }
+
+    arrow.className = "ri-arrow-down-s-line dropdown-arrow";
+    arrow.setAttribute("aria-hidden", "true");
+
+    trigger.append(valueDisplay, arrow);
+
+    menu.className = "dropdown-menu custom-scrollbar";
+    menu.setAttribute("role", "listbox");
+    menu.setAttribute("aria-label", labelText + " options");
+
+    root.append(trigger, menu);
+    select.insertAdjacentElement("afterend", root);
+
+    select.hidden = true;
+    select.setAttribute("aria-hidden", "true");
+    select.tabIndex = -1;
+
+    function getEnabledItems() {
+        return itemElements.filter((item) => item.getAttribute("aria-disabled") !== "true");
+    }
+
+    function getSelectedItem() {
+        return itemElements.find((item) => item.getAttribute("aria-selected") === "true") || null;
+    }
+
+    function updateValueDisplay(text, hasValue = true) {
+        valueDisplay.textContent = text;
+        root.classList.toggle("has-value", hasValue);
+    }
+
+    function closeDropdown({ restoreFocus = false } = {}) {
+        root.classList.remove("is-open");
+        trigger.setAttribute("aria-expanded", "false");
+
+        if (activeSelectDropdown === api) {
+            activeSelectDropdown = null;
+        }
+
+        if (restoreFocus) {
+            trigger.focus();
+        }
+    }
+
+    function openDropdown() {
+        if (trigger.disabled) {
+            return;
+        }
+
+        if (activeSelectDropdown && activeSelectDropdown !== api) {
+            activeSelectDropdown.close();
+        }
+
+        root.classList.add("is-open");
+        trigger.setAttribute("aria-expanded", "true");
+        activeSelectDropdown = api;
+    }
+
+    function syncFromSelect() {
+        const selectedOption = select.options[select.selectedIndex] || null;
+        const hasSelection = Boolean(selectedOption && !selectedOption.disabled && selectedOption.value !== "");
+
+        itemElements.forEach((item) => {
+            item.setAttribute(
+                "aria-selected",
+                String(selectedOption && item.dataset.value === selectedOption.value)
+            );
+        });
+
+        if (selectedOption) {
+            updateValueDisplay(selectedOption.textContent || "", hasSelection);
+        } else {
+            updateValueDisplay("No options available", false);
+        }
+
+        const isDisabled = select.disabled || getEnabledItems().length === 0;
+        trigger.disabled = isDisabled;
+        trigger.setAttribute("aria-disabled", String(isDisabled));
+        root.setAttribute("aria-disabled", String(isDisabled));
+
+        if (isDisabled) {
+            closeDropdown();
+        }
+    }
+
+    function selectItem(item, shouldDispatch = true) {
+        const nextValue = item.dataset.value || "";
+        const previousValue = select.value;
+
+        select.value = nextValue;
+        syncFromSelect();
+        closeDropdown({ restoreFocus: true });
+
+        if (shouldDispatch && previousValue !== nextValue) {
+            select.dispatchEvent(new Event("change", { bubbles: true }));
+        }
+    }
+
+    function focusItem(item) {
+        if (!item || item.getAttribute("aria-disabled") === "true") {
+            return;
+        }
+
+        item.focus();
+    }
+
+    function bindItem(item) {
+        item.addEventListener("focus", () => {
+            item.scrollIntoView({ block: "nearest" });
+        });
+
+        item.addEventListener("click", () => {
+            if (item.getAttribute("aria-disabled") === "true") {
+                return;
+            }
+
+            selectItem(item, true);
+        });
+
+        item.addEventListener("keydown", (event) => {
+            const enabledItems = getEnabledItems();
+            const currentIndex = enabledItems.indexOf(item);
+
+            if (enabledItems.length === 0) {
+                return;
+            }
+
+            if (event.key === "ArrowDown") {
+                event.preventDefault();
+                focusItem(enabledItems[(currentIndex + 1) % enabledItems.length] || null);
+            }
+
+            if (event.key === "ArrowUp") {
+                event.preventDefault();
+                focusItem(enabledItems[(currentIndex - 1 + enabledItems.length) % enabledItems.length] || null);
+            }
+
+            if (event.key === "Home") {
+                event.preventDefault();
+                focusItem(enabledItems[0] || null);
+            }
+
+            if (event.key === "End") {
+                event.preventDefault();
+                focusItem(enabledItems[enabledItems.length - 1] || null);
+            }
+
+            if (event.key === "Enter" || event.key === " ") {
+                event.preventDefault();
+                item.click();
+            }
+
+            if (event.key === "Escape") {
+                event.preventDefault();
+                closeDropdown({ restoreFocus: true });
+            }
+
+            if (event.key === "Tab") {
+                closeDropdown();
+            }
+        });
+    }
+
+    function refreshOptions() {
+        menu.innerHTML = "";
+        itemElements = [];
+
+        Array.from(select.options).forEach((option) => {
+            const item = document.createElement("li");
+            const text = document.createElement("span");
+            const check = document.createElement("i");
+
+            item.className = "dropdown-item";
+            item.setAttribute("role", "option");
+            item.setAttribute("tabindex", "-1");
+            item.dataset.value = option.value;
+            item.setAttribute("aria-selected", String(option.selected));
+
+            if (option.disabled) {
+                item.setAttribute("aria-disabled", "true");
+            }
+
+            if (option.title) {
+                item.title = option.title;
+            }
+
+            text.textContent = option.textContent || "";
+
+            check.className = "ri-check-line dropdown-item-check";
+            check.setAttribute("aria-hidden", "true");
+
+            item.append(text, check);
+            bindItem(item);
+            menu.append(item);
+            itemElements.push(item);
+        });
+
+        syncFromSelect();
+    }
+
+    trigger.addEventListener("click", () => {
+        if (trigger.disabled) {
+            return;
+        }
+
+        if (root.classList.contains("is-open")) {
+            closeDropdown();
+            return;
+        }
+
+        openDropdown();
+    });
+
+    trigger.addEventListener("keydown", (event) => {
+        const enabledItems = getEnabledItems();
+
+        if (enabledItems.length === 0 || trigger.disabled) {
+            return;
+        }
+
+        if (event.key === "ArrowDown" || event.key === "Enter" || event.key === " ") {
+            event.preventDefault();
+            openDropdown();
+            focusItem(getSelectedItem() || enabledItems[0]);
+        }
+
+        if (event.key === "ArrowUp") {
+            event.preventDefault();
+            openDropdown();
+            focusItem(getSelectedItem() || enabledItems[enabledItems.length - 1]);
+        }
+
+        if (event.key === "Escape") {
+            event.preventDefault();
+            closeDropdown();
+        }
+    });
+
+    select.addEventListener("change", syncFromSelect);
+
+    const api = {
+        close: () => closeDropdown(),
+        refreshOptions,
+        root,
+        syncFromSelect,
+    };
+
+    refreshOptions();
+
+    return api;
+}
+
+function bindSelectDropdownDocumentEvents() {
+    if (selectDropdownEventsBound) {
+        return;
+    }
+
+    selectDropdownEventsBound = true;
+
+    document.addEventListener("click", (event) => {
+        if (!activeSelectDropdown) {
+            return;
+        }
+
+        if (activeSelectDropdown.root.contains(event.target)) {
+            return;
+        }
+
+        activeSelectDropdown.close();
+    });
+
+    document.addEventListener("keydown", (event) => {
+        if (event.key !== "Escape" || !activeSelectDropdown) {
+            return;
+        }
+
+        activeSelectDropdown.close();
+    });
+}
+
+function normalizeAppLanguage(value) {
+    const language = String(value || "").trim().toLowerCase();
+
+    if (language === "pt" || language === "es") {
+        return language;
+    }
+
+    return "en";
+}
+
+function getCurrentAppLanguage() {
+    return normalizeAppLanguage(window.NexLedAppShell?.getLanguage?.() || "en");
+}
+
+function bindDocumentLanguageControls() {
+    const languageSelect = document.getElementById("select-language");
+
+    if (!languageSelect) {
+        return;
+    }
+
+    syncConfiguredLanguageSelect = (language, shouldDispatch = false) => {
+        const normalizedLanguage = normalizeAppLanguage(language);
+        const nextOption = Array.from(languageSelect.options).find((option) => {
+            return normalizeAppLanguage(option.value) === normalizedLanguage;
+        });
+
+        if (!nextOption) {
+            return;
+        }
+
+        const previousValue = languageSelect.value;
+
+        languageSelect.value = nextOption.value;
+        selectDropdowns.get("select-language")?.syncFromSelect();
+
+        if (shouldDispatch && previousValue !== nextOption.value) {
+            languageSelect.dispatchEvent(new Event("change", { bubbles: true }));
+        }
+    };
+
+    syncConfiguredLanguageSelect(getCurrentAppLanguage(), false);
+
+    languageSelect.addEventListener("change", () => {
+        selectDropdowns.get("select-language")?.syncFromSelect();
+
+        const nextLanguage = normalizeAppLanguage(languageSelect.value);
+
+        if (window.NexLedAppShell?.getLanguage?.() !== nextLanguage) {
+            window.NexLedAppShell?.setLanguage?.(nextLanguage);
+        }
+    });
+
+    window.addEventListener(APP_LANGUAGE_EVENT, (event) => {
+        syncConfiguredLanguageSelect?.(event.detail?.language, false);
+    });
+}
+
 async function apiFetch(path) {
     const apiBase = await getApiBase();
     const response = await fetch(apiBase + path, {
@@ -521,6 +914,7 @@ function fillSelect(id, items, isArray) {
         emptyOption.value = "";
         emptyOption.textContent = "No options available";
         select.appendChild(emptyOption);
+        selectDropdowns.get(id)?.refreshOptions();
         return;
     }
 
@@ -541,6 +935,8 @@ function fillSelect(id, items, isArray) {
 
         select.appendChild(option);
     });
+
+    selectDropdowns.get(id)?.refreshOptions();
 }
 
 function bindReferenceListeners() {
@@ -901,6 +1297,11 @@ function resetAllSelections() {
     document.querySelectorAll('#options-group input[type="number"]').forEach((element) => {
         element.value = "0";
     });
+
+    selectDropdowns.forEach((dropdown) => {
+        dropdown.syncFromSelect();
+    });
+    syncConfiguredLanguageSelect?.(getCurrentAppLanguage(), false);
 
     resetConfiguratorState();
     focusFamilyField();
