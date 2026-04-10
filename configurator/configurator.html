@@ -189,19 +189,6 @@
 
                             <div id="output-fields" class="hidden flex flex-col gap-24 pt-24">
                                 <div>
-                                    <div>
-                                        <label class="input-label ml-12" for="output-reference">Live Reference</label>
-                                        <div class="text-field-shell text-field-shell-trailing-action">
-                                            <input type="text" id="output-reference" class="input input-sm" readonly>
-                                            <button type="button" class="btn btn-secondary btn-icon btn-xs text-field-shell-action" data-copy-target="output-reference" aria-label="Copy reference">
-                                                <i class="ri-file-copy-line text-icon-sm" aria-hidden="true"></i>
-                                            </button>
-                                        </div>
-                                        <p class="input-hint ml-12">Built automatically from the selected manufacturing options.</p>
-                                    </div>
-                                </div>
-
-                                <div>
                                     <label class="input-label ml-12" for="output-description">Description</label>
                                     <div class="text-field-shell text-field-shell-meta">
                                         <textarea id="output-description" class="input input-sm" rows="2" readonly aria-describedby="descriptionHint"></textarea>
@@ -452,6 +439,17 @@
                 <div id="output-panel" class="card overflow-visible shrink-0 w-full lg:w-fit lg:sticky lg:top-56" data-reveal="section">
                     <div class="card-body p-24">
                         <h3 class="card-title">Quick Actions</h3>
+
+                        <div class="flex flex-col gap-12 pt-16">
+                            <span class="input-label">Live Reference</span>
+                            <div class="text-field-shell text-field-shell-trailing-action">
+                                <input type="text" id="output-reference" class="input input-sm" readonly>
+                                <button type="button" class="btn btn-secondary btn-icon btn-xs text-field-shell-action" data-copy-target="output-reference" aria-label="Copy reference">
+                                    <i class="ri-file-copy-line text-icon-sm" aria-hidden="true"></i>
+                                </button>
+                            </div>
+                            <p class="input-hint">Built automatically from the selected manufacturing options.</p>
+                        </div>
 
                         <div class="flex flex-col gap-12 pt-24">
                             <span class="input-label">Copy Output</span>
