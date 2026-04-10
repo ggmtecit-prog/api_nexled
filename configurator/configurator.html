@@ -238,19 +238,6 @@
                                 </div>
                             </div>
 
-                            <div id="output-fields" class="hidden flex flex-col gap-24 pt-24">
-                                <div>
-                                    <label class="input-label ml-12" for="output-description">Description</label>
-                                    <div class="text-field-shell text-field-shell-meta">
-                                        <textarea id="output-description" class="input input-sm" rows="2" readonly aria-describedby="descriptionHint"></textarea>
-                                        <span class="text-field-shell-meta-icon" aria-hidden="true">
-                                            <i class="ri-expand-diagonal-s-2-fill text-icon-sm"></i>
-                                        </span>
-                                    </div>
-                                    <p id="descriptionHint" class="input-hint ml-12">Generated from the current reference when data is available.</p>
-                                </div>
-                            </div>
-
                             <div id="options-group" class="hidden flex flex-col gap-40 pt-40">
                                 <div class="divider"></div>
 
@@ -500,6 +487,12 @@
                                 </button>
                             </div>
                             <p class="input-hint">Built automatically from the selected manufacturing options.</p>
+                        </div>
+
+                        <div id="output-fields" class="hidden flex flex-col gap-12 pt-24">
+                            <label class="input-label" for="output-description">Description</label>
+                            <input type="text" id="output-description" class="input input-sm w-full" readonly aria-describedby="descriptionHint">
+                            <p id="descriptionHint" class="input-hint">Generated from the current reference when data is available.</p>
                         </div>
 
                         <div class="flex flex-col gap-12 pt-24">
