@@ -10,13 +10,14 @@ const DEFAULT_API_BASE = "https://apinexled-production.up.railway.app/api";
 
 const REF_LENGTHS = {
     size: 4,
-    color: 3,
-    cri: 2,
+    // The live API and legacy PDF engine use [color 2][cri 1].
+    color: 2,
+    cri: 1,
     series: 1,
     lens: 1,
     finish: 2,
     cap: 2,
-    option: 5,
+    option: 2,
 };
 
 const REFERENCE_INPUT_IDS = [
