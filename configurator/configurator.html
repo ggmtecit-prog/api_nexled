@@ -154,7 +154,7 @@
                     </ul>
                 </div>
 
-                <nav class="flex flex-col gap-24">
+                <nav class="flex flex-col gap-24 flex-1 justify-center">
                     <div class="dropdown dropdown-minimal dropdown-sm">
                         <a href="index.html" class="dropdown-trigger">
                             <span class="flex items-center gap-8">
@@ -491,9 +491,9 @@
 
                         <div class="flex flex-col gap-12 pt-16">
                             <span class="input-label">Live Reference</span>
-                            <div class="text-field-shell text-field-shell-trailing-action w-full">
-                                <input type="text" id="output-reference" class="input input-sm" readonly>
-                                <button type="button" class="text-field-shell-action btn btn-ghost btn-icon btn-xs" data-copy-target="output-reference" aria-label="Copy reference">
+                            <div class="flex items-center gap-8 w-full">
+                                <input type="text" id="output-reference" class="input input-sm flex-1 min-w-0" readonly>
+                                <button type="button" class="btn btn-ghost btn-icon btn-xs shrink-0" data-copy-target="output-reference" aria-label="Copy reference">
                                     <i class="ri-file-copy-line text-icon-xs" aria-hidden="true"></i>
                                 </button>
                             </div>
