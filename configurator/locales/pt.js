@@ -26,6 +26,7 @@ window.NexLedLocales.pt = {
             damPreview: "Pre-visualizacao DAM",
             apiConnecting: "A ligar a API",
             apiReady: "API pronta",
+            apiDegraded: "API degradada",
             apiUnavailable: "API indisponivel",
         },
         actions: {
@@ -185,6 +186,8 @@ window.NexLedLocales.pt = {
             loadingValidOptionsSubtitle: "A obter a matriz de fabrico permitida para a familia selecionada.",
             loadingOptions: "A carregar opcoes...",
             unableToLoadOptions: "Nao foi possivel carregar as opcoes para esta familia.",
+            apiDegraded: "Alguns servicos da API estao atualmente indisponiveis.",
+            datasheetServiceUnavailable: "Os dados de referencia foram carregados, mas a geracao da ficha tecnica esta atualmente indisponivel.",
             referenceBuilderActive: "Construtor de referencia ativo",
             referenceBuilderSubtitle: "Ajuste a configuracao. A saida em tempo real a direita atualiza automaticamente.",
             optionsLoaded: "Opcoes carregadas. A referencia atualiza automaticamente.",

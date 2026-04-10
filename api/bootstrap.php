@@ -224,6 +224,88 @@ function getRuntimeDatabaseConfig(string $databaseName, array $userEnvKeys, arra
     ];
 }
 
+function probeRuntimeDatabase(string $databaseName, array $userEnvKeys, array $passwordEnvKeys): array {
+    if (!function_exists("mysqli_init") || !function_exists("mysqli_real_connect")) {
+        return [
+            "ok" => false,
+            "database" => $databaseName,
+            "message" => "The MySQLi extension is not available.",
+        ];
+    }
+
+    $config = getRuntimeDatabaseConfig($databaseName, $userEnvKeys, $passwordEnvKeys);
+    $connection = mysqli_init();
+
+    if ($connection === false) {
+        return [
+            "ok" => false,
+            "database" => $databaseName,
+            "message" => "Unable to initialize MySQLi.",
+        ];
+    }
+
+    mysqli_options($connection, MYSQLI_OPT_CONNECT_TIMEOUT, 10);
+
+    $connected = @mysqli_real_connect(
+        $connection,
+        $config["host"],
+        $config["user"],
+        $config["password"],
+        $config["database"],
+        $config["port"]
+    );
+
+    if (!$connected) {
+        return [
+            "ok" => false,
+            "database" => $databaseName,
+            "message" => mysqli_connect_error() ?: "Unable to connect to the database.",
+        ];
+    }
+
+    mysqli_close($connection);
+
+    return [
+        "ok" => true,
+        "database" => $databaseName,
+    ];
+}
+
+function getApiHealthSnapshot(): array {
+    $references = probeRuntimeDatabase(
+        getRuntimeDatabaseName(["REFERENCIAS_DB_NAME", "DB_NAME_REF"], ["tecit_Referencias", "tecit_referencias"]),
+        ["DB_USER_REF", "MYSQLUSER"],
+        ["DB_PASS_REF", "MYSQLPASSWORD"]
+    );
+    $lampadas = probeRuntimeDatabase(
+        getRuntimeDatabaseName(["LAMPADAS_DB_NAME", "DB_NAME_LAMP"], ["tecit_lampadas"]),
+        ["DB_USER_LAMP", "MYSQLUSER"],
+        ["DB_PASS_LAMP", "MYSQLPASSWORD"]
+    );
+    $info = probeRuntimeDatabase(
+        getRuntimeDatabaseName(["INF_DB_NAME", "DB_NAME_INF"], ["info_nexled_2024"]),
+        ["DB_USER_INF", "MYSQLUSER"],
+        ["DB_PASS_INF", "MYSQLPASSWORD"]
+    );
+
+    $services = [
+        "families" => $references["ok"],
+        "options" => $references["ok"],
+        "reference" => $lampadas["ok"],
+        "datasheet" => $references["ok"] && $lampadas["ok"] && $info["ok"],
+    ];
+
+    return [
+        "ok" => $services["families"] && $services["reference"] && $services["datasheet"],
+        "services" => $services,
+        "databases" => [
+            "references" => $references,
+            "lampadas" => $lampadas,
+            "info" => $info,
+        ],
+    ];
+}
+
 function getDefaultRuntimeDatabaseName(): ?string {
     $databaseName = getRuntimeEnvValue("MYSQLDATABASE");
 

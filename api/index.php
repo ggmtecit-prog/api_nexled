@@ -18,6 +18,7 @@ require_once "./lib/validate.php";
 // Route: /api/?endpoint=options&family=11
 // Route: /api/?endpoint=reference&ref=...
 // Route: /api/?endpoint=datasheet (POST)
+// Route: /api/?endpoint=health
 // Route: /api/?endpoint=assets&action=get|upload|delete
 
 $endpoint = $_GET["endpoint"] ?? null;
@@ -40,6 +41,9 @@ switch ($endpoint) {
         break;
     case "datasheet":
         require "./endpoints/datasheet.php";
+        break;
+    case "health":
+        require "./endpoints/health.php";
         break;
     case "assets":
         require "./endpoints/assets.php";

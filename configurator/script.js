@@ -48,6 +48,7 @@ const API_BADGE_TONE_CLASS = {
     success: "bg-green-primary",
     error: "bg-red-primary",
 };
+const API_SERVICE_FAILURE_STATUSES = new Set([401, 403]);
 const NAV_GENERATE_IDS = ["nav-generate-desktop", "nav-generate-mobile"];
 const APP_I18N_EVENT = "nexled:i18n-applied";
 
@@ -62,6 +63,13 @@ let apiBadgeState = {
     tone: "error",
     key: "shared.badge.apiUnavailable",
     fallback: "API unavailable",
+};
+let apiHealthState = {
+    checked: false,
+    ok: false,
+    services: {
+        datasheet: true,
+    },
 };
 let statusState = {
     tone: "neutral",
@@ -107,6 +115,109 @@ async function getApiBase() {
 
 function resolveApiBase() {
     return DEFAULT_API_BASE.replace(/\/+$/, "");
+}
+
+function setApiHealthState(nextState = {}) {
+    apiHealthState = {
+        checked: Boolean(nextState.checked),
+        ok: Boolean(nextState.ok),
+        services: {
+            datasheet: nextState.services?.datasheet !== false,
+        },
+    };
+    syncGenerateButton();
+}
+
+function isDatasheetServiceAvailable() {
+    return !apiHealthState.checked || apiHealthState.services.datasheet !== false;
+}
+
+function markApiUnavailable() {
+    setApiHealthState({
+        checked: true,
+        ok: false,
+        services: apiHealthState.services,
+    });
+    setApiBadgeKey("error", "shared.badge.apiUnavailable", "API unavailable");
+}
+
+function markApiDegraded(serviceName = "") {
+    const nextServices = {
+        ...apiHealthState.services,
+    };
+
+    if (serviceName) {
+        nextServices[serviceName] = false;
+    }
+
+    setApiHealthState({
+        checked: true,
+        ok: false,
+        services: nextServices,
+    });
+    setApiBadgeKey("error", "shared.badge.apiDegraded", "API degraded");
+}
+
+function isApiServiceFailureStatus(status) {
+    return status >= 500 || API_SERVICE_FAILURE_STATUSES.has(status);
+}
+
+async function fetchApiHealth() {
+    const apiBase = await getApiBase();
+    const response = await fetch(apiBase + "/?endpoint=health", {
+        headers: { "X-API-Key": API_KEY },
+    });
+    const contentType = response.headers.get("content-type") || "";
+    let data = {};
+
+    if (contentType.includes("application/json")) {
+        data = await response.json();
+    }
+
+    return {
+        ok: response.ok && data.ok !== false,
+        status: response.status,
+        data,
+    };
+}
+
+function getApiHealthStatusMeta(health) {
+    const services = health?.data?.services || {};
+
+    if (services.families && services.reference && services.datasheet === false) {
+        return {
+            key: "configurator.runtime.datasheetServiceUnavailable",
+            fallback: "Reference data loaded, but datasheet generation is currently unavailable.",
+        };
+    }
+
+    return {
+        key: "configurator.runtime.apiDegraded",
+        fallback: "Some API services are currently unavailable.",
+    };
+}
+
+function applyApiHealthResult(health) {
+    if (!health) {
+        return;
+    }
+
+    if (health.ok) {
+        setApiHealthState({
+            checked: true,
+            ok: true,
+            services: health.data?.services || {},
+        });
+        setApiBadgeKey("success", "shared.badge.apiReady", "API ready");
+        return;
+    }
+
+    markApiDegraded();
+    setApiHealthState({
+        checked: true,
+        ok: false,
+        services: health.data?.services || {},
+    });
 }
 
 function getApiFailureMessageKey() {
@@ -945,11 +1056,21 @@ function bindDocumentLanguageControls() {
 
 async function apiFetch(path) {
     const apiBase = await getApiBase();
-    const response = await fetch(apiBase + path, {
-        headers: { "X-API-Key": API_KEY },
-    });
+    let response;
+
+    try {
+        response = await fetch(apiBase + path, {
+            headers: { "X-API-Key": API_KEY },
+        });
+    } catch (error) {
+        markApiUnavailable();
+        throw error;
+    }
 
     if (!response.ok) {
+        if (isApiServiceFailureStatus(response.status)) {
+            markApiDegraded();
+        }
         throw new Error("Request failed with status " + response.status);
     }
 
@@ -959,14 +1080,19 @@ async function apiFetch(path) {
 async function apiPost(path, body) {
     const apiBase = await getApiBase();
 
-    return fetch(apiBase + path, {
-        method: "POST",
-        headers: {
-            "X-API-Key": API_KEY,
-            "Content-Type": "application/json",
-        },
-        body: JSON.stringify(body),
-    });
+    try {
+        return await fetch(apiBase + path, {
+            method: "POST",
+            headers: {
+                "X-API-Key": API_KEY,
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify(body),
+        });
+    } catch (error) {
+        markApiUnavailable();
+        throw error;
+    }
 }
 
 async function loadFamilies() {
@@ -975,8 +1101,17 @@ async function loadFamilies() {
     familyCombobox?.setDisabled(true);
     setFamilyPlaceholderKey("configurator.runtime.familyLoading", "Loading families...");
 
+    const [healthResult, familiesResult] = await Promise.allSettled([
+        fetchApiHealth(),
+        apiFetch("/?endpoint=families"),
+    ]);
+
     try {
-        const data = await apiFetch("/?endpoint=families");
+        if (familiesResult.status !== "fulfilled") {
+            throw familiesResult.reason;
+        }
+
+        const data = familiesResult.value;
         familyCombobox?.renderOptions(
             data.map((family) => ({
                 value: family.codigo,
@@ -986,13 +1121,25 @@ async function loadFamilies() {
         familyCombobox?.setDisabled(false);
         setFamilyPlaceholderKey("configurator.runtime.familySelect", "Select a family");
 
-        setApiBadgeKey("success", "shared.badge.apiReady", "API ready");
+        if (healthResult.status === "fulfilled") {
+            applyApiHealthResult(healthResult.value);
+
+            if (!healthResult.value.ok) {
+                const healthStatus = getApiHealthStatusMeta(healthResult.value);
+                setStatusKey(healthStatus.key, "error", {}, healthStatus.fallback);
+                return;
+            }
+        } else {
+            setApiBadgeKey("success", "shared.badge.apiReady", "API ready");
+            console.error(healthResult.reason);
+        }
+
         setStatusKey("configurator.runtime.chooseFamilyToBegin", "neutral", {}, "Choose a family to begin.");
     } catch (error) {
         familyCombobox?.renderOptions([]);
         familyCombobox?.setDisabled(true);
         setFamilyPlaceholderKey(getFamilyPlaceholderMessageKey(), getFamilyPlaceholderFallback(getFamilyPlaceholderMessageKey()));
-        setApiBadgeKey("error", "shared.badge.apiUnavailable", "API unavailable");
+        markApiUnavailable();
         setStatusKey(getApiFailureMessageKey(), "error", {}, getApiFailureFallback(getApiFailureMessageKey()));
         console.error(error);
     }
@@ -1197,6 +1344,16 @@ async function generateDatasheet() {
     const reference = document.getElementById("output-reference").value;
     const description = document.getElementById("output-description").value;
 
+    if (!isDatasheetServiceAvailable()) {
+        setStatusKey(
+            "configurator.runtime.datasheetServiceUnavailable",
+            "error",
+            {},
+            "Reference data loaded, but datasheet generation is currently unavailable."
+        );
+        return;
+    }
+
     if (!reference) {
         setStatusKey("configurator.runtime.completeConfiguration", "error", {}, "Complete the configuration before generating the datasheet.");
         return;
@@ -1236,6 +1393,10 @@ async function generateDatasheet() {
         if (!response.ok) {
             const contentType = response.headers.get("content-type") || "";
             let message = t("configurator.runtime.unknownError", {}, "Unknown error");
+
+            if (isApiServiceFailureStatus(response.status)) {
+                markApiDegraded("datasheet");
+            }
 
             if (contentType.includes("application/json")) {
                 const error = await response.json();
@@ -1347,8 +1508,9 @@ function clearOutputValues() {
 function syncGenerateButton() {
     const button = document.getElementById("btn-generate");
     const hasReference = document.getElementById("output-reference").value.length > 0;
+    const isDisabled = !hasReference || !isDatasheetServiceAvailable();
 
-    button.disabled = !hasReference;
+    button.disabled = isDisabled;
 
     NAV_GENERATE_IDS.forEach((id) => {
         const navButton = document.getElementById(id);
@@ -1357,8 +1519,8 @@ function syncGenerateButton() {
             return;
         }
 
-        navButton.disabled = !hasReference;
-        navButton.setAttribute("aria-disabled", String(!hasReference));
+        navButton.disabled = isDisabled;
+        navButton.setAttribute("aria-disabled", String(isDisabled));
     });
 }
 

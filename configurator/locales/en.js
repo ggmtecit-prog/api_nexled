@@ -26,6 +26,7 @@ window.NexLedLocales.en = {
             damPreview: "DAM Preview",
             apiConnecting: "Connecting to API",
             apiReady: "API ready",
+            apiDegraded: "API degraded",
             apiUnavailable: "API unavailable",
         },
         actions: {
@@ -185,6 +186,8 @@ window.NexLedLocales.en = {
             loadingValidOptionsSubtitle: "Pulling the allowed manufacturing matrix for the selected family.",
             loadingOptions: "Loading options...",
             unableToLoadOptions: "Unable to load options for this family.",
+            apiDegraded: "Some API services are currently unavailable.",
+            datasheetServiceUnavailable: "Reference data loaded, but datasheet generation is currently unavailable.",
             referenceBuilderActive: "Reference builder active",
             referenceBuilderSubtitle: "Adjust the configuration. The live output on the right updates automatically.",
             optionsLoaded: "Options loaded. The reference now updates automatically.",
