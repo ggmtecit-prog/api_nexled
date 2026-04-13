@@ -29,12 +29,16 @@ function toPdfAssetSrc(string $path): string {
 
     $resolved = realpath($path) ?: $path;
     $normalized = str_replace("\\", "/", $resolved);
+    $extension = strtolower(pathinfo($resolved, PATHINFO_EXTENSION));
+
+    if ($extension === "svg") {
+        return $resolved;
+    }
 
     if (is_file($resolved)) {
         $contents = file_get_contents($resolved);
 
         if ($contents !== false) {
-            $extension = strtolower(pathinfo($resolved, PATHINFO_EXTENSION));
             $mime = match ($extension) {
                 "svg"  => "image/svg+xml",
                 "png"  => "image/png",

@@ -269,6 +269,7 @@ function generateDatasheet(): void {
     $pdf->SetLeftMargin(10);
     $pdf->SetRightMargin(10);
     $pdf->AddPage();
+    $pdf->setRasterizeVectorImages(true);
     $pdf->setFontSubsetting(true);
     $pdf->SetFont("helvetica", "", 10, "", true);
     $pdf->writeHTML($html, true, false, true, false, "");
