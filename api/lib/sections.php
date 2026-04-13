@@ -22,6 +22,22 @@ if (!defined("FINISH_PLACEHOLDER_PATH")) {
     define("FINISH_PLACEHOLDER_PATH", IMAGES_BASE_PATH . "/img/placeholders/finish-missing");
 }
 
+if (!defined("COLOR_GRAPH_ALIASES")) {
+    define("COLOR_GRAPH_ALIASES", [
+        "3528PINK"   => "2835PINK",
+        "3528XN"     => "WW303",
+        "CW503HE"    => "CW503",
+        "CW503HEPRO" => "CW503",
+        "CW573HEPRO" => "CW573HE",
+        "CW653HE"    => "CW653",
+        "CW653HEPRO" => "CW653",
+        "NW353HEPRO" => "NW353HE",
+        "NW403E1"    => "NW403",
+        "WW303E1"    => "WW303",
+        "WW303HETHR" => "WW303HEPRO",
+    ]);
+}
+
 function getFinishPlaceholderImage(): ?string {
     $placeholder = findImage(FINISH_PLACEHOLDER_PATH);
 
@@ -30,6 +46,22 @@ function getFinishPlaceholderImage(): ?string {
     }
 
     return findImage(IMAGES_BASE_PATH . "/img/logos/nexled");
+}
+
+function resolveColorGraphAlias(string $ledId): string {
+    return COLOR_GRAPH_ALIASES[$ledId] ?? $ledId;
+}
+
+function getColorGraphLabel(string $ledId, string $lang, object $json): string {
+    foreach ($json->leds as $led) {
+        foreach ($led->led as $id) {
+            if ($id === $ledId) {
+                return $led->$lang ?? "";
+            }
+        }
+    }
+
+    return "";
 }
 
 
@@ -50,15 +82,11 @@ function getFinishPlaceholderImage(): ?string {
  */
 function getColorGraph(string $ledId, string $lang): ?array {
     $json  = json_decode(file_get_contents(JSON_PATH . "/descricao/leds.json"));
-    $label = "";
+    $aliasLedId = resolveColorGraphAlias($ledId);
+    $label      = getColorGraphLabel($ledId, $lang, $json);
 
-    foreach ($json->leds as $led) {
-        foreach ($led->led as $id) {
-            if ($id === $ledId) {
-                $label = $led->$lang ?? "";
-                break 2;
-            }
-        }
+    if ($label === "" && $aliasLedId !== $ledId) {
+        $label = getColorGraphLabel($aliasLedId, $lang, $json);
     }
 
     if ($label === "") {
@@ -66,6 +94,10 @@ function getColorGraph(string $ledId, string $lang): ?array {
     }
 
     $image = findImage(IMAGES_BASE_PATH . "/img/temperaturas/" . $ledId);
+
+    if ($image === null && $aliasLedId !== $ledId) {
+        $image = findImage(IMAGES_BASE_PATH . "/img/temperaturas/" . $aliasLedId);
+    }
 
     if ($image === null) {
         return null;
@@ -100,6 +132,11 @@ function getLensDiagram(string $productId, string $reference): ?array {
     $parts  = decodeReference($reference);
     $family = $parts["family"];
     $lens   = $parts["lens"];
+
+    // Lens code 0 means no dedicated optic/lens. Official behaviour: hide this section.
+    if ($lens === "" || $lens === "0") {
+        return null;
+    }
 
     if ($family === "48") {
         $subtype = explode("/", $productId)[1];

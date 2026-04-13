@@ -3890,7 +3890,7 @@
      fit-margin-right="0"
      fit-margin-bottom="0"
      inkscape:zoom="1"
-     inkscape:cx="416"
+     inkscape:cx="453"
      inkscape:cy="120"
      inkscape:window-x="-8"
      inkscape:window-y="-8"
@@ -3906,7 +3906,106 @@
      transform="matrix(1.25,0,0,-1.25,-5.731482,574.60848)"><g
        clip-path="none"
        id="g2059"
-       transform="matrix(0.87540812,0,0,-0.87540812,303.14417,464.09052)"><polyline
+       transform="matrix(0.87540812,0,0,-0.87540812,303.14417,464.09052)"><g
+         font-size="12px"
+         font-style="normal"
+         xml:space="preserve"
+         transform="translate(85.773,271.908)"
+         font-weight="normal"
+         font-family="FreeSans"
+         id="g1149">
+    
+   </g><g
+         font-size="12px"
+         font-style="normal"
+         xml:space="preserve"
+         transform="translate(192.209,271.908)"
+         font-weight="normal"
+         font-family="FreeSans"
+         id="g1153">
+    
+   </g><g
+         font-size="12px"
+         font-style="normal"
+         xml:space="preserve"
+         transform="translate(298.645,271.908)"
+         font-weight="normal"
+         font-family="FreeSans"
+         id="g1157">
+    
+   </g><g
+         font-size="12px"
+         font-style="normal"
+         xml:space="preserve"
+         transform="translate(405.081,271.908)"
+         font-weight="normal"
+         font-family="FreeSans"
+         id="g1161">
+    
+   </g><g
+         font-size="12px"
+         font-style="normal"
+         xml:space="preserve"
+         transform="translate(511.517,271.908)"
+         font-weight="normal"
+         font-family="FreeSans"
+         id="g1165">
+    
+   </g><g
+         font-size="12px"
+         font-style="normal"
+         xml:space="preserve"
+         transform="translate(61.9854,257.911)"
+         font-weight="normal"
+         font-family="FreeSans"
+         id="g1181">
+    
+   </g><g
+         font-size="12px"
+         font-style="normal"
+         xml:space="preserve"
+         transform="translate(51.9854,212.129)"
+         font-weight="normal"
+         font-family="FreeSans"
+         id="g1185">
+    
+   </g><g
+         font-size="12px"
+         font-style="normal"
+         xml:space="preserve"
+         transform="translate(51.9854,166.347)"
+         font-weight="normal"
+         font-family="FreeSans"
+         id="g1189">
+    
+   </g><g
+         font-size="12px"
+         font-style="normal"
+         xml:space="preserve"
+         transform="translate(51.9854,120.565)"
+         font-weight="normal"
+         font-family="FreeSans"
+         id="g1193">
+    
+   </g><g
+         font-size="12px"
+         font-style="normal"
+         xml:space="preserve"
+         transform="translate(51.9854,74.7823)"
+         font-weight="normal"
+         font-family="FreeSans"
+         id="g1197">
+    
+   </g><g
+         font-size="13.2px"
+         font-style="normal"
+         xml:space="preserve"
+         transform="rotate(-90,119.2207,72.235295)"
+         font-weight="normal"
+         font-family="FreeSans"
+         id="g1213">
+    
+   </g><polyline
          stroke-linecap="butt"
          points="76.0503,252.911 76.0503,252.674"
          fill="none"

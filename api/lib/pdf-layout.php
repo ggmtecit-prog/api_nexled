@@ -32,6 +32,11 @@ function toPdfAssetSrc(?string $path): string {
     }
 
     $resolved = realpath($path) ?: $path;
+
+    if (function_exists("getPdfRenderableImagePath")) {
+        $resolved = getPdfRenderableImagePath($resolved);
+    }
+
     $normalized = str_replace("\\", "/", $resolved);
     $extension = strtolower(pathinfo($resolved, PATHINFO_EXTENSION));
 

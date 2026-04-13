@@ -1,2 +1,5 @@
+[phases.setup]
+aptPkgs = ["librsvg2-bin"]
+
 [start]
 cmd = "php -S 0.0.0.0:$PORT -t api"
