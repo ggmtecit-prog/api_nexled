@@ -29,6 +29,10 @@
  * @return array  Keys: "beam" and "field", both nullable strings
  */
 function getLensAngles(string $family, string $lens): array {
+    if (!canReadInfoLensAngles()) {
+        return ["beam" => null, "field" => null];
+    }
+
     $con = connectDBInf();
 
     $queryBeam  = mysqli_query($con, "SELECT beam FROM angulos_lente WHERE familia = '$family' AND lente = '$lens'");
@@ -40,6 +44,43 @@ function getLensAngles(string $family, string $lens): array {
     $field = mysqli_num_rows($queryField) > 0 ? mysqli_fetch_assoc($queryField)["field"] : null;
 
     return ["beam" => $beam, "field" => $field];
+}
+
+function canReadInfoLensAngles(): bool {
+    static $available = null;
+
+    if ($available !== null) {
+        return $available;
+    }
+
+    if (
+        !function_exists("probeRuntimeDatabase")
+        || !function_exists("getRuntimeDatabaseName")
+        || !function_exists("hasRuntimeDatabaseConfig")
+        || !hasRuntimeDatabaseConfig()
+    ) {
+        $available = true;
+        return $available;
+    }
+
+    $probe = probeRuntimeDatabase(
+        getRuntimeDatabaseName(["INF_DB_NAME", "DB_NAME_INF"], ["info_nexled_2024"]),
+        ["DB_USER_INF"],
+        ["DB_PASS_INF", "MYSQLPASSWORD"],
+        [
+            [["MYSQLUSER"], ["MYSQLPASSWORD"]],
+            [["DB_USER_LAMP"], ["DB_PASS_LAMP"]],
+            [["DB_USER_REF"], ["DB_PASS_REF"]],
+        ]
+    );
+
+    $available = !empty($probe["ok"]);
+
+    if (!$available) {
+        error_log("NexLed datasheet: info_nexled_2024 unavailable, using fallback lens angles.");
+    }
+
+    return $available;
 }
 
 
