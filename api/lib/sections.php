@@ -18,6 +18,20 @@
 
 define("JSON_PATH",  dirname(__FILE__, 2) . "/json");
 
+if (!defined("FINISH_PLACEHOLDER_PATH")) {
+    define("FINISH_PLACEHOLDER_PATH", IMAGES_BASE_PATH . "/img/placeholders/finish-missing");
+}
+
+function getFinishPlaceholderImage(): ?string {
+    $placeholder = findImage(FINISH_PLACEHOLDER_PATH);
+
+    if ($placeholder !== null) {
+        return $placeholder;
+    }
+
+    return findImage(IMAGES_BASE_PATH . "/img/logos/nexled");
+}
+
 
 
 // ---------------------------------------------------------------------------
@@ -195,7 +209,20 @@ function getFinishAndLens(string $productType, string $productId, string $refere
     }
 
     if ($image === null) {
-        return null;
+        $image = getFinishPlaceholderImage();
+
+        if ($image === null) {
+            return null;
+        }
+
+        error_log(
+            "NexLed datasheet: missing finish image, using placeholder. " .
+            "reference={$reference}; folder={$folder}; candidates=" . implode(",", $candidates)
+        );
+
+        if ($finishName === "") {
+            $finishName = "Finish preview unavailable";
+        }
     }
 
     return [
