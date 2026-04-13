@@ -51,7 +51,7 @@ const API_BADGE_TONE_CLASS = {
 };
 const API_SERVICE_FAILURE_STATUSES = new Set([401, 403]);
 const NAV_GENERATE_IDS = ["nav-generate-desktop", "nav-generate-mobile"];
-const APP_I18N_EVENT = "nexled:i18n-applied";
+const CONFIGURATOR_I18N_EVENT = "nexled:i18n-applied";
 
 let descriptionRequestToken = 0;
 let apiBasePromise = null;
@@ -94,6 +94,14 @@ let familyPlaceholderState = {
 };
 
 document.addEventListener("DOMContentLoaded", () => {
+    try {
+        initializeConfigurator();
+    } catch (error) {
+        handleConfiguratorInitError(error);
+    }
+});
+
+function initializeConfigurator() {
     familyCombobox = setupFamilyCombobox();
     setupSelectDropdowns();
     bindDocumentLanguageControls();
@@ -105,7 +113,21 @@ document.addEventListener("DOMContentLoaded", () => {
     bindCopyButtons();
     resetConfiguratorState();
     loadFamilies();
-});
+}
+
+function handleConfiguratorInitError(error) {
+    const message = error && error.message ? error.message : String(error);
+    document.documentElement.dataset.configuratorInit = "failed";
+    document.documentElement.dataset.configuratorInitError = message;
+
+    const statusElement = document.getElementById("status-message");
+
+    if (statusElement) {
+        applyStatusText("Configurator init failed: " + message, "error");
+    }
+
+    console.error("Configurator init failed.", error);
+}
 
 async function getApiBase() {
     if (!apiBasePromise) {
@@ -1049,7 +1071,7 @@ function refreshLocalizedControls() {
     applyApiBadgeState();
 }
 
-window.addEventListener(APP_I18N_EVENT, refreshLocalizedControls);
+window.addEventListener(CONFIGURATOR_I18N_EVENT, refreshLocalizedControls);
 
 function bindDocumentLanguageControls() {
     const languageSelect = document.getElementById("select-language");
