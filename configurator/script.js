@@ -1674,8 +1674,8 @@ async function generateDatasheet() {
         descricao: description,
         idioma: get("select-language"),
         empresa: get("select-company"),
-        lente: getDisplayText("select-lens"),
-        acabamento: get("select-finish"),
+        lente: getSelectedOptionHint("select-lens"),
+        acabamento: getSelectedOptionHint("select-finish"),
         opcao: get("select-option"),
         conectorcabo: get("select-connector-cable"),
         tipocabo: get("select-cable-type"),
@@ -1917,6 +1917,22 @@ function getDisplayText(id) {
     }
 
     return element.options[element.selectedIndex]?.text || "";
+}
+
+function getSelectedOptionHint(id) {
+    const element = document.getElementById(id);
+
+    if (!element || element.tagName !== "SELECT") {
+        return "";
+    }
+
+    const option = element.options[element.selectedIndex] || null;
+
+    if (!option) {
+        return "";
+    }
+
+    return option.title || option.text || option.value || "";
 }
 
 function pad(value, length) {
