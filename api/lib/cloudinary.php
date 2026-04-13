@@ -45,37 +45,83 @@ function cloudinaryAdminCredentials(): array {
  * @param  string $filePath     Temp path of the file (e.g. $_FILES["file"]["tmp_name"])
  * @param  string $publicId     Cloudinary public ID  (e.g. "nexled/photo/product/filename")
  * @param  string $resourceType "image" | "raw"
+ * @param  array  $options      Extra signed upload parameters (e.g. asset_folder, display_name, overwrite)
  * @return array|null           Cloudinary response, or null on failure
  */
-function cloudinaryUpload(string $filePath, string $publicId, string $resourceType): ?array {
+function cloudinaryUpload(string $filePath, string $publicId, string $resourceType, array $options = []): ?array {
+    $result = cloudinaryUploadDetailed($filePath, $publicId, $resourceType, $options);
+    return $result["ok"] ? ($result["data"] ?? null) : null;
+}
+
+/**
+ * Upload a local file to Cloudinary and return diagnostic data on failure.
+ *
+ * @param  string $filePath
+ * @param  string $publicId
+ * @param  string $resourceType
+ * @param  array  $options
+ * @return array{ok:bool,data?:array,http_code:int,error?:string,response?:array|null,raw_response?:string|null}
+ */
+function cloudinaryUploadDetailed(string $filePath, string $publicId, string $resourceType, array $options = []): array {
     $credentials = cloudinaryUploadCredentials();
     $timestamp = time();
 
-    $params  = ["public_id" => $publicId, "timestamp" => $timestamp];
-    ksort($params);
-    $signStr   = implode("&", array_map(fn($k, $v) => "$k=$v", array_keys($params), array_values($params)));
-    $signature = sha1($signStr . $credentials["api_secret"]);
+    $params = array_merge($options, [
+        "public_id" => $publicId,
+        "timestamp" => $timestamp,
+    ]);
+    $signature = cloudinaryBuildSignature($params, $credentials["api_secret"]);
 
     $url = "https://api.cloudinary.com/v1_1/" . CLOUDINARY_CLOUD_NAME . "/$resourceType/upload";
 
-    $ch = curl_init($url);
-    curl_setopt($ch, CURLOPT_POST,           true);
-    curl_setopt($ch, CURLOPT_POSTFIELDS,     [
-        "file"      => new CURLFile($filePath),
+    $postFields = array_merge($options, [
+        "file" => new CURLFile($filePath),
         "public_id" => $publicId,
-        "api_key"   => $credentials["api_key"],
+        "api_key" => $credentials["api_key"],
         "timestamp" => $timestamp,
         "signature" => $signature,
     ]);
+
+    $ch = curl_init($url);
+    curl_setopt($ch, CURLOPT_POST,           true);
+    curl_setopt($ch, CURLOPT_POSTFIELDS,     $postFields);
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
     $response = curl_exec($ch);
+    $curlError = curl_error($ch);
     $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
     curl_close($ch);
 
-    if ($httpCode !== 200) return null;
+    $data = is_string($response) ? json_decode($response, true) : null;
 
-    $data = json_decode($response, true);
-    return isset($data["secure_url"]) ? $data : null;
+    if ($httpCode === 200 && is_array($data) && isset($data["secure_url"])) {
+        return [
+            "ok" => true,
+            "data" => $data,
+            "http_code" => $httpCode,
+        ];
+    }
+
+    $errorMessage = "";
+
+    if (is_array($data) && isset($data["error"]["message"])) {
+        $errorMessage = (string) $data["error"]["message"];
+    } elseif ($curlError !== "") {
+        $errorMessage = $curlError;
+    } elseif (is_string($response) && trim($response) !== "") {
+        $errorMessage = trim($response);
+    } elseif ($httpCode > 0) {
+        $errorMessage = "Upload API returned HTTP " . $httpCode . ".";
+    } else {
+        $errorMessage = "Cloudinary upload failed.";
+    }
+
+    return [
+        "ok" => false,
+        "http_code" => $httpCode,
+        "error" => $errorMessage,
+        "response" => is_array($data) ? $data : null,
+        "raw_response" => is_string($response) ? $response : null,
+    ];
 }
 
 
@@ -104,4 +150,34 @@ function cloudinaryDelete(string $publicId, string $resourceType): bool {
     if ($httpCode !== 200) return false;
     $data = json_decode($response, true);
     return ($data["deleted"][$publicId] ?? "") === "deleted";
+}
+
+function cloudinaryBuildSignature(array $params, string $apiSecret): string {
+    $signatureParams = [];
+
+    foreach ($params as $key => $value) {
+        if ($value === null || $value === "" || $key === "file") {
+            continue;
+        }
+
+        $signatureParams[$key] = cloudinaryStringifyValue($value);
+    }
+
+    ksort($signatureParams);
+
+    $parts = [];
+
+    foreach ($signatureParams as $key => $value) {
+        $parts[] = $key . "=" . $value;
+    }
+
+    return sha1(implode("&", $parts) . $apiSecret);
+}
+
+function cloudinaryStringifyValue($value): string {
+    if (is_bool($value)) {
+        return $value ? "true" : "false";
+    }
+
+    return (string) $value;
 }

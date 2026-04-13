@@ -3,12 +3,52 @@
 /**
  * Reference Code Decoder
  *
- * A product reference is a string where each segment of characters
- * encodes a specific product attribute.
+ * Live Tecit format used by configurator and product lookup:
+ * [Family 2][Size 4][Color 2][CRI 1][Series 1][Lens 1][Finish 2][Cap 2][Option 2]
  *
- * Structure: [Family 2][Size 4][Color 3][Series 1][Lens 1][Finish 2][Cap 2][Option 5]
- * Example:    11        0375    811      1         0       01        01     00
+ * Example:
+ * 11 0375 81 1 1 0 01 01 00
+ * 11037581110010100
  */
+
+const REFERENCE_LENGTH_FAMILY = 2;
+const REFERENCE_LENGTH_SIZE = 4;
+const REFERENCE_LENGTH_COLOR = 2;
+const REFERENCE_LENGTH_CRI = 1;
+const REFERENCE_LENGTH_SERIES = 1;
+const REFERENCE_LENGTH_LENS = 1;
+const REFERENCE_LENGTH_FINISH = 2;
+const REFERENCE_LENGTH_CAP = 2;
+const REFERENCE_LENGTH_OPTION = 2;
+const REFERENCE_LENGTH_IDENTITY = 10;
+const REFERENCE_LENGTH_FULL = 17;
+
+
+
+/**
+ * Returns first 10 chars used by Luminos identity lookup.
+ *
+ * Structure:
+ * [Family 2][Size 4][Color 2][CRI 1][Series 1]
+ *
+ * @param  string $reference  Full product reference code
+ * @return string  Identity fragment used by the database lookup
+ */
+function getReferenceIdentity(string $reference): string {
+    return substr($reference, 0, REFERENCE_LENGTH_IDENTITY);
+}
+
+
+
+/**
+ * Returns whether a reference has the expected full live length.
+ *
+ * @param  string $reference  Full product reference code
+ * @return bool  True when the code matches the live 17-char format
+ */
+function hasFullReferenceLength(string $reference): bool {
+    return strlen($reference) === REFERENCE_LENGTH_FULL;
+}
 
 
 
@@ -16,18 +56,23 @@
  * Splits a reference code into its individual parts.
  *
  * @param  string $reference  Full product reference code (e.g. "11037581110010100")
- * @return array  Associative array with keys: family, size, color, series, lens, finish, cap, option
+ * @return array  Associative array with normalized live-format keys
  */
 function decodeReference(string $reference): array {
     return [
-        "family"  => substr($reference, 0, 2),   // e.g. "11" = Barra 24V
-        "size"    => substr($reference, 2, 4),   // e.g. "0375" = 375mm
-        "color"   => substr($reference, 6, 3),   // e.g. "811" or "WWW"
-        "series"  => substr($reference, 9, 1),   // e.g. "1"
-        "lens"    => substr($reference, 10, 1),  // e.g. "0" = none
-        "finish"  => substr($reference, 11, 2),  // e.g. "01" = aluminium
-        "cap"     => substr($reference, 13, 2),  // e.g. "01" = standard
-        "option"  => substr($reference, 15, 5),  // e.g. "00" = none
+        "raw"          => $reference,
+        "length"       => strlen($reference),
+        "identity"     => getReferenceIdentity($reference),
+        "family"       => substr($reference, 0, REFERENCE_LENGTH_FAMILY),
+        "size"         => substr($reference, REFERENCE_LENGTH_FAMILY, REFERENCE_LENGTH_SIZE),
+        "color"        => substr($reference, 6, REFERENCE_LENGTH_COLOR),
+        "cri"          => substr($reference, 8, REFERENCE_LENGTH_CRI),
+        "led_segment"  => substr($reference, 6, REFERENCE_LENGTH_COLOR + REFERENCE_LENGTH_CRI),
+        "series"       => substr($reference, 9, REFERENCE_LENGTH_SERIES),
+        "lens"         => substr($reference, 10, REFERENCE_LENGTH_LENS),
+        "finish"       => substr($reference, 11, REFERENCE_LENGTH_FINISH),
+        "cap"          => substr($reference, 13, REFERENCE_LENGTH_CAP),
+        "option"       => substr($reference, 15, REFERENCE_LENGTH_OPTION),
     ];
 }
 
@@ -104,7 +149,7 @@ function getBarSizesFile(string $reference): ?string {
  * @return string|null  Product ID, or null if not found
  */
 function getProductIdDynamic(string $reference, string $cap): ?string {
-    $ref     = substr($reference, 0, 10);
+    $ref     = getReferenceIdentity($reference);
     $subtype = ($cap === "1") ? "campanulas" : "projetores";
 
     $con   = connectDBLampadas();
@@ -129,7 +174,7 @@ function getProductIdDynamic(string $reference, string $cap): ?string {
  * @return string|null  Product ID (e.g. "48/recessed/01"), or null if not found
  */
 function getProductId(string $reference): ?string {
-    $ref = substr($reference, 0, 10);
+    $ref = getReferenceIdentity($reference);
 
     $con = connectDBLampadas();
     $query = mysqli_query($con, "SELECT ID FROM Luminos WHERE ref = '$ref'");

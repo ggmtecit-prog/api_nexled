@@ -76,6 +76,35 @@ if (!function_exists("connectDBReferencias")) {
     }
 }
 
+if (!function_exists("connectDBDam")) {
+    function connectDBDam() {
+        $databaseName = getRuntimeDatabaseName(["DAM_DB_NAME"], ["nexled_dam"]);
+
+        if (!hasDamRuntimeDatabaseConfig() && !hasRuntimeDatabaseConfig()) {
+            if (!function_exists("mysqli_connect")) {
+                failRuntimeBootstrap("The MySQLi extension is not available.");
+            }
+
+            $connection = mysqli_connect("localhost", "root", "", $databaseName);
+
+            if ($connection === false || mysqli_connect_errno()) {
+                failRuntimeDatabaseConnection($databaseName, mysqli_connect_error() ?: "Unable to connect to the database.");
+            }
+
+            mysqli_set_charset($connection, "utf8");
+            return $connection;
+        }
+
+        return connectDedicatedRuntimeDatabase(
+            $databaseName,
+            ["DAM_DB_USER", "MYSQLUSER"],
+            ["DAM_DB_PASS", "MYSQLPASSWORD"],
+            ["DAM_DB_HOST", "DB_HOST", "MYSQLHOST"],
+            ["DAM_DB_PORT", "DB_PORT", "MYSQLPORT"]
+        );
+    }
+}
+
 if (!function_exists("str_contains")) {
     function str_contains($haystack, $needle) {
         return strpos($haystack, $needle) !== false;
@@ -90,6 +119,14 @@ function hasRuntimeDatabaseConfig(): bool {
         || getRuntimeEnvValue("MYSQLHOST") !== null
         || getRuntimeEnvValue("MYSQL_URL") !== null
         || getRuntimeEnvValue("DATABASE_URL") !== null;
+}
+
+function hasDamRuntimeDatabaseConfig(): bool {
+    return getRuntimeEnvValue("DAM_DB_HOST") !== null
+        || getRuntimeEnvValue("DAM_DB_PORT") !== null
+        || getRuntimeEnvValue("DAM_DB_NAME") !== null
+        || getRuntimeEnvValue("DAM_DB_USER") !== null
+        || getRuntimeEnvValue("DAM_DB_PASS") !== null;
 }
 
 function getRuntimeDatabaseName(array $envKeys, array $fallbacks): string {
@@ -186,6 +223,43 @@ function connectRuntimeDatabase(
     failRuntimeDatabaseConnection($databaseName, $lastError);
 }
 
+function connectDedicatedRuntimeDatabase(
+    string $databaseName,
+    array $userEnvKeys,
+    array $passwordEnvKeys,
+    array $hostEnvKeys,
+    array $portEnvKeys,
+    array $fallbackCredentialSets = []
+) {
+    if (!function_exists("mysqli_init") || !function_exists("mysqli_real_connect")) {
+        failRuntimeBootstrap("The MySQLi extension is not available.");
+    }
+
+    $lastError = "Unable to connect to the database.";
+
+    foreach (resolveRuntimeCredentialCandidates($userEnvKeys, $passwordEnvKeys, $fallbackCredentialSets) as $credentials) {
+        $config = getDedicatedRuntimeDatabaseConfig(
+            $databaseName,
+            $credentials["user"],
+            $credentials["password"],
+            $hostEnvKeys,
+            $portEnvKeys
+        );
+        [$connection, $errorMessage] = openRuntimeDatabaseConnection($config, false);
+
+        if ($connection !== null) {
+            mysqli_set_charset($connection, "utf8");
+            return $connection;
+        }
+
+        if ($errorMessage !== "") {
+            $lastError = $errorMessage;
+        }
+    }
+
+    failRuntimeDatabaseConnection($databaseName, $lastError);
+}
+
 function getRuntimeDatabaseConfig(string $databaseName, string $user, string $password): array {
     $dbHost = getRuntimeEnvValue("DB_HOST");
 
@@ -196,6 +270,55 @@ function getRuntimeDatabaseConfig(string $databaseName, string $user, string $pa
             "password" => $password,
             "database" => $databaseName,
             "port" => (int) (getRuntimeEnvValue("DB_PORT") ?? "3306"),
+        ];
+    }
+
+    $databaseUrl = getRuntimeEnvValue("MYSQL_URL");
+
+    if ($databaseUrl === null) {
+        $databaseUrl = getRuntimeEnvValue("DATABASE_URL");
+    }
+
+    if ($databaseUrl !== null) {
+        $parsedUrl = parse_url($databaseUrl);
+
+        if (is_array($parsedUrl) && isset($parsedUrl["host"], $parsedUrl["user"])) {
+            return [
+                "host" => $parsedUrl["host"],
+                "user" => $user,
+                "password" => $password,
+                "database" => $databaseName,
+                "port" => isset($parsedUrl["port"]) ? (int) $parsedUrl["port"] : 3306,
+            ];
+        }
+    }
+
+    return [
+        "host" => getRuntimeEnvValue("MYSQLHOST") ?? "localhost",
+        "user" => $user,
+        "password" => $password,
+        "database" => $databaseName,
+        "port" => (int) (getRuntimeEnvValue("MYSQLPORT") ?? "3306"),
+    ];
+}
+
+function getDedicatedRuntimeDatabaseConfig(
+    string $databaseName,
+    string $user,
+    string $password,
+    array $hostEnvKeys,
+    array $portEnvKeys
+): array {
+    $dbHost = getRuntimeEnvValueFromList($hostEnvKeys);
+    $dbPort = getRuntimeEnvValueFromList($portEnvKeys);
+
+    if ($dbHost !== null) {
+        return [
+            "host" => $dbHost,
+            "user" => $user,
+            "password" => $password,
+            "database" => $databaseName,
+            "port" => (int) ($dbPort ?? "3306"),
         ];
     }
 
@@ -374,6 +497,54 @@ function probeRuntimeDatabase(
     ];
 }
 
+function probeDedicatedRuntimeDatabase(
+    string $databaseName,
+    array $userEnvKeys,
+    array $passwordEnvKeys,
+    array $hostEnvKeys,
+    array $portEnvKeys,
+    array $fallbackCredentialSets = []
+): array {
+    if (!function_exists("mysqli_init") || !function_exists("mysqli_real_connect")) {
+        return [
+            "ok" => false,
+            "database" => $databaseName,
+            "message" => "The MySQLi extension is not available.",
+        ];
+    }
+
+    $lastError = "Unable to connect to the database.";
+
+    foreach (resolveRuntimeCredentialCandidates($userEnvKeys, $passwordEnvKeys, $fallbackCredentialSets) as $credentials) {
+        $config = getDedicatedRuntimeDatabaseConfig(
+            $databaseName,
+            $credentials["user"],
+            $credentials["password"],
+            $hostEnvKeys,
+            $portEnvKeys
+        );
+        [$connection, $errorMessage] = openRuntimeDatabaseConnection($config, true);
+
+        if ($connection !== null) {
+            mysqli_close($connection);
+            return [
+                "ok" => true,
+                "database" => $databaseName,
+            ];
+        }
+
+        if ($errorMessage !== "") {
+            $lastError = $errorMessage;
+        }
+    }
+
+    return [
+        "ok" => false,
+        "database" => $databaseName,
+        "message" => $lastError,
+    ];
+}
+
 function getApiHealthSnapshot(): array {
     $references = probeRuntimeDatabase(
         getRuntimeDatabaseName(["REFERENCIAS_DB_NAME", "DB_NAME_REF"], ["tecit_Referencias", "tecit_referencias"]),
@@ -395,6 +566,13 @@ function getApiHealthSnapshot(): array {
             [["DB_USER_REF"], ["DB_PASS_REF"]],
         ]
     );
+    $dam = probeDedicatedRuntimeDatabase(
+        getRuntimeDatabaseName(["DAM_DB_NAME"], ["nexled_dam"]),
+        ["DAM_DB_USER", "MYSQLUSER"],
+        ["DAM_DB_PASS", "MYSQLPASSWORD"],
+        ["DAM_DB_HOST", "DB_HOST", "MYSQLHOST"],
+        ["DAM_DB_PORT", "DB_PORT", "MYSQLPORT"]
+    );
 
     $services = [
         "families"  => $references["ok"],
@@ -402,7 +580,7 @@ function getApiHealthSnapshot(): array {
         "reference" => $lampadas["ok"],
         // PDF generation only needs references + lampadas — info is used by DAM only
         "datasheet" => $references["ok"] && $lampadas["ok"],
-        "dam"       => $info["ok"],
+        "dam"       => $dam["ok"],
     ];
 
     return [
@@ -412,6 +590,7 @@ function getApiHealthSnapshot(): array {
             "references" => $references,
             "lampadas" => $lampadas,
             "info" => $info,
+            "dam" => $dam,
         ],
     ];
 }
