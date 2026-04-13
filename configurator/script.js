@@ -1714,7 +1714,13 @@ async function generateDatasheet() {
             if (contentType.includes("application/json") && rawError.trim() !== "") {
                 try {
                     const error = JSON.parse(rawError);
-                    message = error.error || cleanError || message;
+                    const errorParts = [
+                        error.error || "",
+                        error.stage ? "stage: " + error.stage : "",
+                        error.detail || "",
+                    ].filter(Boolean);
+
+                    message = errorParts.join(" - ") || cleanError || message;
                 } catch (_parseError) {
                     message = cleanError || message;
                 }

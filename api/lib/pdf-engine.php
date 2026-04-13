@@ -91,6 +91,19 @@ function getLensName(string $reference, string $lens, string $lang): string {
     return $lens;
 }
 
+function respondDatasheetJsonError(int $statusCode, array $payload): void {
+    while (ob_get_level() > 0) {
+        ob_end_clean();
+    }
+
+    if (!headers_sent()) {
+        header("Content-Type: application/json");
+    }
+
+    http_response_code($statusCode);
+    echo json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+}
+
 
 
 // ---------------------------------------------------------------------------
@@ -108,10 +121,15 @@ function generateDatasheet(): void {
     $input = json_decode(file_get_contents("php://input"), true);
 
     if (!$input) {
-        http_response_code(400);
-        echo json_encode(["error" => "Invalid or missing JSON body"]);
+        respondDatasheetJsonError(400, ["error" => "Invalid or missing JSON body"]);
         return;
     }
+
+    $reference = "";
+    $productId = "";
+    $stage = "parse_input";
+
+    try {
 
     // --- Parse and validate inputs ---
     $reference      = validateReference($input["referencia"]         ?? "");
@@ -137,22 +155,22 @@ function generateDatasheet(): void {
     $purpose        = preg_replace("/[^a-zA-Z0-9]/", "", $input["finalidade"]    ?? "0");
 
     if (strlen($reference) < 10) {
-        http_response_code(400);
-        echo json_encode(["error" => "Invalid or missing reference code"]);
+        respondDatasheetJsonError(400, ["error" => "Invalid or missing reference code"]);
         return;
     }
 
     // --- Decode reference and determine product type ---
+    $stage       = "decode_reference";
     $parts       = decodeReference($reference);
     $productType = getProductType($reference);
 
     if ($productType === null) {
-        http_response_code(422);
-        echo json_encode(["error" => "Unknown product family in reference: $reference"]);
+        respondDatasheetJsonError(422, ["error" => "Unknown product family in reference: $reference"]);
         return;
     }
 
     // --- Get product ID from the database ---
+    $stage = "resolve_product_id";
     if ($productType === "dynamic") {
         $productId = getProductIdDynamic($reference, $parts["cap"]);
     } else {
@@ -160,8 +178,7 @@ function generateDatasheet(): void {
     }
 
     if ($productId === null) {
-        http_response_code(404);
-        echo json_encode(["error" => "Product not found in database for reference: $reference"]);
+        respondDatasheetJsonError(404, ["error" => "Product not found in database for reference: $reference"]);
         return;
     }
 
@@ -181,14 +198,15 @@ function generateDatasheet(): void {
     ];
 
     // --- Fetch all section data ---
+    $stage = "fetch_luminotechnical";
     $lumino = getLuminotechnicalData($productId, $reference, $lang);
 
     if ($lumino === null) {
-        http_response_code(422);
-        echo json_encode(["error" => "Luminotechnical data not found for product: $productId"]);
+        respondDatasheetJsonError(422, ["error" => "Luminotechnical data not found for product: $productId"]);
         return;
     }
 
+    $stage     = "fetch_sections";
     $ledId     = $lumino["led_id"];
     $lensName  = getLensName($reference, $lens, $lang);
     $ipRating  = getIpRating($productId, $ipOverride) ?? "";
@@ -215,13 +233,11 @@ function generateDatasheet(): void {
     // --- Validate required sections ---
     // color_graph and lens_diagram are optional — not all products have them
     if ($characteristics === null) {
-        http_response_code(422);
-        echo json_encode(["error" => "Missing required data: characteristics"]);
+        respondDatasheetJsonError(422, ["error" => "Missing required data: characteristics"]);
         return;
     }
     if ($finishData === null) {
-        http_response_code(422);
-        echo json_encode(["error" => "Missing required data: finish image"]);
+        respondDatasheetJsonError(422, ["error" => "Missing required data: finish image"]);
         return;
     }
 
@@ -247,6 +263,7 @@ function generateDatasheet(): void {
     if ($connectionCable !== null) $data["connection_cable"] = $connectionCable;
 
     // --- Build HTML ---
+    $stage = "build_layout";
     $css  = "<style>" . file_get_contents(APP_CSS_PATH) . "</style>";
     $html = $css . buildPdfLayout($data);
 
@@ -259,6 +276,7 @@ function generateDatasheet(): void {
     $GLOBALS["lang"]   = $lang;  // NEXLEDPDF::Footer() reads the global $lang
 
     // --- Generate PDF ---
+    $stage = "render_pdf";
     set_time_limit(0);
     ini_set("memory_limit", "640M");
 
@@ -278,4 +296,17 @@ function generateDatasheet(): void {
     ob_end_clean();
 
     $pdf->Output("", "D");
+    } catch (\Throwable $error) {
+        error_log(
+            "NexLed datasheet fatal: stage={$stage}; reference={$reference}; productId={$productId}; " .
+            "message=" . $error->getMessage()
+        );
+
+        respondDatasheetJsonError(500, [
+            "error" => "Datasheet internal error",
+            "stage" => $stage,
+            "detail" => $error->getMessage(),
+            "reference" => $reference,
+        ]);
+    }
 }
