@@ -397,10 +397,12 @@ function getApiHealthSnapshot(): array {
     );
 
     $services = [
-        "families" => $references["ok"],
-        "options" => $references["ok"],
+        "families"  => $references["ok"],
+        "options"   => $references["ok"],
         "reference" => $lampadas["ok"],
-        "datasheet" => $references["ok"] && $lampadas["ok"] && $info["ok"],
+        // PDF generation only needs references + lampadas — info is used by DAM only
+        "datasheet" => $references["ok"] && $lampadas["ok"],
+        "dam"       => $info["ok"],
     ];
 
     return [
