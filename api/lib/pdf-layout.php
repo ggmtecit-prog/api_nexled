@@ -18,12 +18,16 @@ define("DATASHEET_JSON_PATH", dirname(__FILE__, 2) . "/json/datasheet.json");
 define("ICONS_PATH",          dirname(__FILE__, 3) . "/appdatasheets/img/icones/");
 define("ENERGY_CLASS_PATH",   dirname(__FILE__, 3) . "/appdatasheets/img/classe-energetica/");
 
-function toPdfAssetSrc(string $path): string {
-    if ($path === "") {
+function toPdfAssetSrc(?string $path): string {
+    if (!is_string($path) || trim($path) === "") {
         return "";
     }
 
-    if (preg_match("#^(https?:)?//#i", $path) || str_starts_with($path, "data:")) {
+    if (
+        preg_match("#^(https?:)?//#i", $path) ||
+        str_starts_with($path, "data:") ||
+        str_starts_with($path, "file://")
+    ) {
         return $path;
     }
 
@@ -72,6 +76,21 @@ function toPdfAssetSrc(string $path): string {
     return $normalized;
 }
 
+function buildPdfImageTag(?string $path, string $attributes = ""): string {
+    $src = toPdfAssetSrc($path);
+
+    if ($src === "") {
+        return "";
+    }
+
+    $attrs = trim($attributes);
+    if ($attrs !== "") {
+        $attrs .= " ";
+    }
+
+    return "<img {$attrs}src=\"{$src}\">";
+}
+
 
 
 // ---------------------------------------------------------------------------
@@ -87,15 +106,16 @@ function toPdfAssetSrc(string $path): string {
  */
 function buildHeader(array $header, string $energyClass): string {
     $energyClassImg = toPdfAssetSrc(ENERGY_CLASS_PATH . $energyClass . ".svg");
-    $productImage = toPdfAssetSrc($header["image"]);
+    $productImageTag = buildPdfImageTag($header["image"] ?? null);
+    $energyClassTag = buildPdfImageTag($energyClassImg, "width=\"40\"");
 
     return
     "<table nobr=\"true\">" .
         "<tr>" .
             "<td colspan=\"9\" style=\"text-align: right;\">" .
-                "<img src=\"{$productImage}\">" .
+                $productImageTag .
                 "<br>" .
-                "<img width=\"40\" src=\"{$energyClassImg}\">" .
+                $energyClassTag .
             "</td>" .
             "<td colspan=\"1\"></td>" .
             "<td colspan=\"15\">" .
@@ -220,7 +240,7 @@ function buildLuminotechnicalNotes(string $reference, string $ipRating, object $
         $current = -($cols - count($symbolFiles) - $i);
         $symbols .= "<td colspan=\"5\" style=\"text-align:right;\">";
         if (isset($symbolFiles[$current])) {
-            $symbols .= "<img width=\"30\" src=\"" . toPdfAssetSrc(ICONS_PATH . $symbolFiles[$current]) . "\">";
+            $symbols .= buildPdfImageTag(ICONS_PATH . $symbolFiles[$current], "width=\"30\"");
         }
         $symbols .= "</td>";
     }
@@ -266,7 +286,7 @@ function buildTechnicalDrawing(array $drawing, string $lang): string {
     return
     "<table nobr=\"true\">" .
         "<tr><td colspan=\"$colCount\"><h2>$title</h2></td></tr>" .
-        "<tr><td colspan=\"$colCount\"><img src=\"$image\"></td></tr>" .
+        "<tr><td colspan=\"$colCount\">" . buildPdfImageTag($image) . "</td></tr>" .
         "<tr><td colspan=\"$colCount\"></td></tr>" .
         "<tr>$headerCells</tr>" .
         "<tr>$valueCells</tr>" .
@@ -305,7 +325,7 @@ function buildColorGraph(array $graph, string $reference, string $lang): string 
     "<table nobr=\"true\">" .
         "<tr><td colspan=\"5\"><h2>$title</h2></td></tr>" .
         "<tr><td colspan=\"5\"><p><b>{$graph["label"]}</b></p></td></tr>" .
-        "<tr><td colspan=\"4\"><img src=\"" . toPdfAssetSrc($graph["image"]) . "\"></td></tr>" .
+        "<tr><td colspan=\"4\">" . buildPdfImageTag($graph["image"] ?? null) . "</td></tr>" .
         "<tr><td colspan=\"5\"><p>$sdcm</p></td></tr>" .
         "<tr><td></td></tr>" .
         "<tr><td></td></tr>" .
@@ -332,7 +352,7 @@ function buildLensDiagram(array $diagram, string $lensName, string $lang): strin
 
     $illuminanceCell = "";
     if ($diagram["illuminance"] !== null) {
-        $illuminanceCell = "<img height=\"210\" src=\"" . toPdfAssetSrc($diagram["illuminance"]) . "\">";
+        $illuminanceCell = buildPdfImageTag($diagram["illuminance"], "height=\"210\"");
     }
 
     return
@@ -340,7 +360,7 @@ function buildLensDiagram(array $diagram, string $lensName, string $lang): strin
         "<tr><td colspan=\"2\"><h2>$title</h2></td></tr>" .
         "<tr><td colspan=\"2\"><p><b>$lensName</b></p></td></tr>" .
         "<tr>" .
-            "<td colspan=\"1\"><img height=\"210\" src=\"" . toPdfAssetSrc($diagram["diagram"]) . "\"></td>" .
+            "<td colspan=\"1\">" . buildPdfImageTag($diagram["diagram"] ?? null, "height=\"210\"") . "</td>" .
             "<td colspan=\"1\">$illuminanceCell</td>" .
         "</tr>" .
         "<tr><td></td></tr>" .
@@ -389,7 +409,7 @@ function buildFinishAndLens(array $finishData, string $lensName, string $referen
         "<tr><td colspan=\"3\"><h2>$title</h2></td></tr>" .
         "<tr><td colspan=\"3\"><p><b>$bodyLabel:</b> {$finishData["finish_name"]}<br><b>$lensLabel:</b> $lensName</p></td></tr>" .
         "<tr><td></td></tr>" .
-        "<tr><td colspan=\"1\"><img src=\"" . toPdfAssetSrc($finishData["image"]) . "\"></td></tr>" .
+        "<tr><td colspan=\"1\">" . buildPdfImageTag($finishData["image"] ?? null) . "</td></tr>" .
         "<tr><td></td></tr>" .
         "<tr><td></td></tr>" .
     "</table>";
@@ -432,8 +452,8 @@ function buildFixing(array $fixing, string $reference, string $lang): string {
         "<tr><td colspan=\"3\"><p><b>{$fixing["name"]}</b></p></td></tr>" .
         "<tr><td></td></tr>" .
         "<tr>" .
-            "<td colspan=\"2\"><img src=\"" . toPdfAssetSrc($fixing["image"]) . "\"></td>" .
-            "<td colspan=\"1\" style=\"text-align:right;\"><img width=\"150\" src=\"" . toPdfAssetSrc($fixing["render"]) . "\"></td>" .
+            "<td colspan=\"2\">" . buildPdfImageTag($fixing["image"] ?? null) . "</td>" .
+            "<td colspan=\"1\" style=\"text-align:right;\">" . buildPdfImageTag($fixing["render"] ?? null, "width=\"150\"") . "</td>" .
         "</tr>" .
         "<tr><td></td></tr>" .
         "<tr><td colspan=\"3\"><p>$noteMeasures</p></td></tr>" .
@@ -467,8 +487,8 @@ function buildPowerSupply(array $supply, string $lang): string {
         "<tr><td colspan=\"3\"><p>{$supply["description"]}</p></td></tr>" .
         "<tr><td></td></tr>" .
         "<tr>" .
-            "<td colspan=\"2\"><img src=\"" . toPdfAssetSrc($supply["drawing"]) . "\"></td>" .
-            "<td colspan=\"1\"><img height=\"210\" src=\"" . toPdfAssetSrc($supply["image"]) . "\"></td>" .
+            "<td colspan=\"2\">" . buildPdfImageTag($supply["drawing"] ?? null) . "</td>" .
+            "<td colspan=\"1\">" . buildPdfImageTag($supply["image"] ?? null, "height=\"210\"") . "</td>" .
         "</tr>" .
         "<tr><td colspan=\"3\"><p>$note</p></td></tr>" .
         "<tr><td></td></tr>" .
@@ -499,7 +519,7 @@ function buildConnectionCable(array $cable, string $lang): string {
         "<tr><td colspan=\"4\"><h2>$title</h2></td></tr>" .
         "<tr><td colspan=\"4\"><p>{$cable["description"]}</p></td></tr>" .
         "<tr><td></td></tr>" .
-        "<tr><td colspan=\"2\"><img height=\"210\" src=\"" . toPdfAssetSrc($cable["image"]) . "\"></td></tr>" .
+        "<tr><td colspan=\"2\">" . buildPdfImageTag($cable["image"] ?? null, "height=\"210\"") . "</td></tr>" .
         "<tr><td></td></tr>" .
         "<tr><td colspan=\"4\"><p>$note</p></td></tr>" .
     "</table>";
