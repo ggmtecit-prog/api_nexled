@@ -1,5 +1,8 @@
 [phases.setup]
-aptPkgs = ["librsvg2-bin"]
+aptPkgs = ["...", "librsvg2-bin"]
+
+[phases.build]
+cmds = ["bash ./scripts/rasterize-pdf-assets.sh"]
 
 [start]
 cmd = "php -S 0.0.0.0:$PORT -t api"
