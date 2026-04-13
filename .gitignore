@@ -2,6 +2,7 @@
 api/auth.php
 .env.railway
 .env
+.env.local
 
 # Zip/backups
 *.zip

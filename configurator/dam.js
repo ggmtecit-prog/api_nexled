@@ -58,6 +58,9 @@ function getDamElements() {
     const uploadTrigger = document.querySelector("[data-dam-upload-trigger]");
     const uploadInput = document.querySelector("[data-dam-upload-input]");
     const uploadStatus = document.querySelector("[data-dam-upload-status]");
+    const assetModal = document.querySelector("[data-dam-asset-modal]");
+    const assetModalPanel = document.querySelector("[data-dam-asset-modal-panel]");
+    const closeAssetModalButton = document.querySelector("[data-dam-close-asset-modal]");
     const assetPreview = document.querySelector("[data-dam-asset-preview]");
     const emptyAsset = document.querySelector("[data-dam-empty-asset]");
     const assetName = document.querySelector("[data-dam-asset-name]");
@@ -69,7 +72,7 @@ function getDamElements() {
     const copyAssetUrlButton = document.querySelector("[data-dam-copy-asset-url]");
     const assetStatus = document.querySelector("[data-dam-asset-status]");
 
-    if (!fileGrid || !emptyState || !searchInput || !folderTree || !refreshTreeButton || !treeStatus || !listStatus || !currentFolder || !currentPath || !selectedFolder || !createFolderInput || !createFolderButton || !folderActionStatus || !uploadTrigger || !uploadInput || !uploadStatus || !assetPreview || !emptyAsset || !assetName || !assetType || !assetSize || !assetFormat || !assetFolder || !openAssetButton || !copyAssetUrlButton || !assetStatus) {
+    if (!fileGrid || !emptyState || !searchInput || !folderTree || !refreshTreeButton || !treeStatus || !listStatus || !currentFolder || !currentPath || !selectedFolder || !createFolderInput || !createFolderButton || !folderActionStatus || !uploadTrigger || !uploadInput || !uploadStatus || !assetModal || !assetModalPanel || !closeAssetModalButton || !assetPreview || !emptyAsset || !assetName || !assetType || !assetSize || !assetFormat || !assetFolder || !openAssetButton || !copyAssetUrlButton || !assetStatus) {
         return null;
     }
 
@@ -90,6 +93,9 @@ function getDamElements() {
         uploadTrigger,
         uploadInput,
         uploadStatus,
+        assetModal,
+        assetModalPanel,
+        closeAssetModalButton,
         assetPreview,
         emptyAsset,
         assetName,
@@ -104,6 +110,8 @@ function getDamElements() {
 }
 
 function bindDamEvents() {
+    damElements.assetModal.inert = true;
+
     damElements.refreshTreeButton.addEventListener("click", () => {
         loadDamTree(true);
     });
@@ -135,6 +143,15 @@ function bindDamEvents() {
     });
 
     damElements.uploadInput.addEventListener("change", handleUploadAsset);
+    damElements.closeAssetModalButton.addEventListener("click", () => {
+        closeAssetDetailsModal(true);
+    });
+
+    damElements.assetModal.addEventListener("click", (event) => {
+        if (event.target === damElements.assetModal) {
+            closeAssetDetailsModal(true);
+        }
+    });
 
     damElements.openAssetButton.addEventListener("click", () => {
         if (damState.selectedAsset?.secure_url) {
@@ -153,6 +170,21 @@ function bindDamEvents() {
         } catch (error) {
             console.error(error);
             setAssetStatus(t("dam.copyAssetUrlFailed", "Unable to copy asset URL."));
+        }
+    });
+
+    document.addEventListener("keydown", (event) => {
+        if (!isAssetModalOpen()) {
+            return;
+        }
+
+        if (event.key === "Escape") {
+            closeAssetDetailsModal(true);
+            return;
+        }
+
+        if (event.key === "Tab") {
+            trapAssetModalFocus(event);
         }
     });
 }
@@ -213,6 +245,7 @@ async function loadDamTree(preserveSelection = true) {
 
 async function loadDamFolder(folderId) {
     const requestToken = ++listRequestToken;
+    closeAssetDetailsModal(false);
     damState.currentFolderId = folderId;
     damState.selectedAssetId = null;
     damState.selectedAsset = null;
@@ -564,10 +597,12 @@ function createAssetCard(asset) {
     overlay.appendChild(createAssetActionButton("ri-download-line", t("dam.assetAction.download", "Download"), () => {
         window.open(asset.secure_url, "_blank", "noopener");
     }));
-    overlay.appendChild(createAssetActionButton("ri-eye-line", t("dam.assetAction.preview", "Preview"), () => {
+    overlay.appendChild(createAssetActionButton("ri-external-link-line", t("dam.openInNewTab", "Open in New Tab"), () => {
         window.open(asset.secure_url, "_blank", "noopener");
     }));
-    overlay.appendChild(createAssetActionButton("ri-archive-line", t("dam.assetAction.archive", "Archive"), null, true));
+    overlay.appendChild(createAssetActionButton("ri-information-line", t("dam.seeDetails", "See Details"), (triggerButton) => {
+        openAssetDetailsModal(asset.id, triggerButton);
+    }));
 
     wrapper.appendChild(icon);
     wrapper.appendChild(name);
@@ -590,7 +625,7 @@ function createAssetActionButton(iconClass, label, handler, disabled = false) {
             return;
         }
 
-        handler();
+        handler(button);
     });
 
     if (disabled) {
@@ -622,6 +657,89 @@ function clearSelectedAsset() {
     damState.selectedAssetId = null;
     damState.selectedAsset = null;
     renderSelectedAsset();
+}
+
+function openAssetDetailsModal(assetId, triggerElement = null) {
+    if (!damElements) {
+        return;
+    }
+
+    selectAssetById(assetId);
+    damElements.assetModal._lastTrigger = triggerElement || document.activeElement || null;
+    damElements.assetModal.inert = false;
+    damElements.assetModal.classList.add("is-open");
+    damElements.assetModal.setAttribute("aria-hidden", "false");
+    syncModalBodyLock();
+
+    window.requestAnimationFrame(() => {
+        const initialFocus = damElements.closeAssetModalButton || getFocusableElements(damElements.assetModalPanel)[0] || damElements.assetModalPanel;
+        initialFocus?.focus({ preventScroll: true });
+    });
+}
+
+function closeAssetDetailsModal(restoreFocus) {
+    if (!damElements) {
+        return;
+    }
+
+    if (!damElements.assetModal.classList.contains("is-open")) {
+        return;
+    }
+
+    const lastTrigger = damElements.assetModal._lastTrigger || null;
+    damElements.assetModal.classList.remove("is-open");
+    damElements.assetModal.setAttribute("aria-hidden", "true");
+    damElements.assetModal.inert = true;
+    syncModalBodyLock();
+
+    if (restoreFocus && lastTrigger && typeof lastTrigger.focus === "function") {
+        lastTrigger.focus({ preventScroll: true });
+    }
+}
+
+function isAssetModalOpen() {
+    return Boolean(damElements?.assetModal?.classList.contains("is-open"));
+}
+
+function syncModalBodyLock() {
+    document.body.classList.toggle("modal-open", Boolean(document.querySelector(".modal-overlay.is-open")));
+}
+
+function trapAssetModalFocus(event) {
+    if (!damElements) {
+        return;
+    }
+
+    const focusable = getFocusableElements(damElements.assetModalPanel);
+
+    if (focusable.length === 0) {
+        event.preventDefault();
+        damElements.assetModalPanel.focus({ preventScroll: true });
+        return;
+    }
+
+    const first = focusable[0];
+    const last = focusable[focusable.length - 1];
+
+    if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus({ preventScroll: true });
+        return;
+    }
+
+    if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus({ preventScroll: true });
+    }
+}
+
+function getFocusableElements(root) {
+    if (!root) {
+        return [];
+    }
+
+    return Array.from(root.querySelectorAll("a[href], button:not([disabled]), textarea:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex='-1'])"))
+        .filter((element) => !element.hasAttribute("inert") && !element.closest("[inert]") && !element.hidden && element.getAttribute("aria-hidden") !== "true");
 }
 
 function renderSelectedAsset() {

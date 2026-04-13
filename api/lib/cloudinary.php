@@ -16,8 +16,8 @@
  */
 function cloudinaryUploadCredentials(): array {
     return [
-        "api_key" => CLOUDINARY_API_KEY,
-        "api_secret" => CLOUDINARY_API_SECRET,
+        "api_key" => cloudinaryConfigValue("CLOUDINARY_API_KEY"),
+        "api_secret" => cloudinaryConfigValue("CLOUDINARY_API_SECRET"),
     ];
 }
 
@@ -31,9 +31,12 @@ function cloudinaryUploadCredentials(): array {
  * @return array{api_key:string,api_secret:string}
  */
 function cloudinaryAdminCredentials(): array {
+    $adminApiKey = cloudinaryConfigValue("CLOUDINARY_ADMIN_API_KEY");
+    $adminApiSecret = cloudinaryConfigValue("CLOUDINARY_ADMIN_API_SECRET");
+
     return [
-        "api_key" => defined("CLOUDINARY_ADMIN_API_KEY") ? CLOUDINARY_ADMIN_API_KEY : CLOUDINARY_API_KEY,
-        "api_secret" => defined("CLOUDINARY_ADMIN_API_SECRET") ? CLOUDINARY_ADMIN_API_SECRET : CLOUDINARY_API_SECRET,
+        "api_key" => $adminApiKey !== "" ? $adminApiKey : cloudinaryConfigValue("CLOUDINARY_API_KEY"),
+        "api_secret" => $adminApiSecret !== "" ? $adminApiSecret : cloudinaryConfigValue("CLOUDINARY_API_SECRET"),
     ];
 }
 
@@ -63,6 +66,18 @@ function cloudinaryUpload(string $filePath, string $publicId, string $resourceTy
  * @return array{ok:bool,data?:array,http_code:int,error?:string,response?:array|null,raw_response?:string|null}
  */
 function cloudinaryUploadDetailed(string $filePath, string $publicId, string $resourceType, array $options = []): array {
+    $missingConfig = cloudinaryMissingUploadConfig();
+
+    if ($missingConfig !== []) {
+        return [
+            "ok" => false,
+            "http_code" => 0,
+            "error" => "Cloudinary upload is not configured. Missing: " . implode(", ", $missingConfig),
+            "response" => null,
+            "raw_response" => null,
+        ];
+    }
+
     $credentials = cloudinaryUploadCredentials();
     $timestamp = time();
 
@@ -72,7 +87,7 @@ function cloudinaryUploadDetailed(string $filePath, string $publicId, string $re
     ]);
     $signature = cloudinaryBuildSignature($params, $credentials["api_secret"]);
 
-    $url = "https://api.cloudinary.com/v1_1/" . CLOUDINARY_CLOUD_NAME . "/$resourceType/upload";
+    $url = "https://api.cloudinary.com/v1_1/" . cloudinaryConfigValue("CLOUDINARY_CLOUD_NAME") . "/$resourceType/upload";
 
     $postFields = array_merge($options, [
         "file" => new CURLFile($filePath),
@@ -134,8 +149,12 @@ function cloudinaryUploadDetailed(string $filePath, string $publicId, string $re
  * @return bool
  */
 function cloudinaryDelete(string $publicId, string $resourceType): bool {
+    if (cloudinaryMissingAdminConfig() !== []) {
+        return false;
+    }
+
     $credentials = cloudinaryAdminCredentials();
-    $url  = "https://api.cloudinary.com/v1_1/" . CLOUDINARY_CLOUD_NAME
+    $url  = "https://api.cloudinary.com/v1_1/" . cloudinaryConfigValue("CLOUDINARY_CLOUD_NAME")
           . "/resources/$resourceType/upload?public_ids[]=" . urlencode($publicId);
     $auth = base64_encode($credentials["api_key"] . ":" . $credentials["api_secret"]);
 
@@ -150,6 +169,205 @@ function cloudinaryDelete(string $publicId, string $resourceType): bool {
     if ($httpCode !== 200) return false;
     $data = json_decode($response, true);
     return ($data["deleted"][$publicId] ?? "") === "deleted";
+}
+
+/**
+ * Create a folder in Cloudinary and treat existing folders as success.
+ *
+ * @param  string $folderPath
+ * @return array{ok:bool,created:bool,already_exists:bool,http_code:int,error?:string,response?:array|null,raw_response?:string|null}
+ */
+function cloudinaryCreateFolderDetailed(string $folderPath): array {
+    if (cloudinaryMissingAdminConfig() !== []) {
+        return [
+            "ok" => false,
+            "created" => false,
+            "already_exists" => false,
+            "http_code" => 0,
+            "error" => "Cloudinary admin API is not configured.",
+            "response" => null,
+            "raw_response" => null,
+        ];
+    }
+
+    $normalizedFolderPath = trim($folderPath, "/");
+
+    if ($normalizedFolderPath === "") {
+        return [
+            "ok" => false,
+            "created" => false,
+            "already_exists" => false,
+            "http_code" => 0,
+            "error" => "Folder path is required.",
+            "response" => null,
+            "raw_response" => null,
+        ];
+    }
+
+    $credentials = cloudinaryAdminCredentials();
+    $encodedFolderPath = cloudinaryEncodeFolderPath($normalizedFolderPath);
+    $url = "https://api.cloudinary.com/v1_1/" . cloudinaryConfigValue("CLOUDINARY_CLOUD_NAME") . "/folders/" . $encodedFolderPath;
+    $auth = base64_encode($credentials["api_key"] . ":" . $credentials["api_secret"]);
+
+    $ch = curl_init($url);
+    curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "POST");
+    curl_setopt($ch, CURLOPT_HTTPHEADER, ["Authorization: Basic $auth"]);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    $response = curl_exec($ch);
+    $curlError = curl_error($ch);
+    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    curl_close($ch);
+
+    $data = is_string($response) ? json_decode($response, true) : null;
+    $errorMessage = "";
+
+    if (is_array($data) && isset($data["error"]["message"])) {
+        $errorMessage = (string) $data["error"]["message"];
+    } elseif ($curlError !== "") {
+        $errorMessage = $curlError;
+    } elseif (is_string($response) && trim($response) !== "") {
+        $errorMessage = trim($response);
+    }
+
+    if ($httpCode === 200 || $httpCode === 201) {
+        return [
+            "ok" => true,
+            "created" => true,
+            "already_exists" => false,
+            "http_code" => $httpCode,
+            "response" => is_array($data) ? $data : null,
+            "raw_response" => is_string($response) ? $response : null,
+        ];
+    }
+
+    if ($httpCode === 409 || stripos($errorMessage, "already exists") !== false) {
+        return [
+            "ok" => true,
+            "created" => false,
+            "already_exists" => true,
+            "http_code" => $httpCode,
+            "response" => is_array($data) ? $data : null,
+            "raw_response" => is_string($response) ? $response : null,
+        ];
+    }
+
+    if ($errorMessage === "") {
+        $errorMessage = $httpCode > 0
+            ? "Folder API returned HTTP " . $httpCode . "."
+            : "Cloudinary folder creation failed.";
+    }
+
+    return [
+        "ok" => false,
+        "created" => false,
+        "already_exists" => false,
+        "http_code" => $httpCode,
+        "error" => $errorMessage,
+        "response" => is_array($data) ? $data : null,
+        "raw_response" => is_string($response) ? $response : null,
+    ];
+}
+
+function cloudinaryCreateFolder(string $folderPath): bool {
+    $result = cloudinaryCreateFolderDetailed($folderPath);
+    return $result["ok"] ?? false;
+}
+
+/**
+ * Delete a folder in Cloudinary and treat missing folders as success.
+ *
+ * @param  string $folderPath
+ * @return array{ok:bool,deleted:bool,already_missing:bool,http_code:int,error?:string,response?:array|null,raw_response?:string|null}
+ */
+function cloudinaryDeleteFolderDetailed(string $folderPath): array {
+    if (cloudinaryMissingAdminConfig() !== []) {
+        return [
+            "ok" => false,
+            "deleted" => false,
+            "already_missing" => false,
+            "http_code" => 0,
+            "error" => "Cloudinary admin API is not configured.",
+            "response" => null,
+            "raw_response" => null,
+        ];
+    }
+
+    $normalizedFolderPath = trim($folderPath, "/");
+
+    if ($normalizedFolderPath === "") {
+        return [
+            "ok" => false,
+            "deleted" => false,
+            "already_missing" => false,
+            "http_code" => 0,
+            "error" => "Folder path is required.",
+            "response" => null,
+            "raw_response" => null,
+        ];
+    }
+
+    $credentials = cloudinaryAdminCredentials();
+    $encodedFolderPath = cloudinaryEncodeFolderPath($normalizedFolderPath);
+    $url = "https://api.cloudinary.com/v1_1/" . cloudinaryConfigValue("CLOUDINARY_CLOUD_NAME") . "/folders/" . $encodedFolderPath;
+    $auth = base64_encode($credentials["api_key"] . ":" . $credentials["api_secret"]);
+
+    $ch = curl_init($url);
+    curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "DELETE");
+    curl_setopt($ch, CURLOPT_HTTPHEADER, ["Authorization: Basic $auth"]);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    $response = curl_exec($ch);
+    $curlError = curl_error($ch);
+    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    curl_close($ch);
+
+    $data = is_string($response) ? json_decode($response, true) : null;
+    $errorMessage = "";
+
+    if (is_array($data) && isset($data["error"]["message"])) {
+        $errorMessage = (string) $data["error"]["message"];
+    } elseif ($curlError !== "") {
+        $errorMessage = $curlError;
+    } elseif (is_string($response) && trim($response) !== "") {
+        $errorMessage = trim($response);
+    }
+
+    if ($httpCode === 200) {
+        return [
+            "ok" => true,
+            "deleted" => true,
+            "already_missing" => false,
+            "http_code" => $httpCode,
+            "response" => is_array($data) ? $data : null,
+            "raw_response" => is_string($response) ? $response : null,
+        ];
+    }
+
+    if ($httpCode === 404 || stripos($errorMessage, "not found") !== false || stripos($errorMessage, "can't find folder") !== false) {
+        return [
+            "ok" => true,
+            "deleted" => false,
+            "already_missing" => true,
+            "http_code" => $httpCode,
+            "response" => is_array($data) ? $data : null,
+            "raw_response" => is_string($response) ? $response : null,
+        ];
+    }
+
+    if ($errorMessage === "") {
+        $errorMessage = $httpCode > 0
+            ? "Folder API returned HTTP " . $httpCode . "."
+            : "Cloudinary folder deletion failed.";
+    }
+
+    return [
+        "ok" => false,
+        "deleted" => false,
+        "already_missing" => false,
+        "http_code" => $httpCode,
+        "error" => $errorMessage,
+        "response" => is_array($data) ? $data : null,
+        "raw_response" => is_string($response) ? $response : null,
+    ];
 }
 
 function cloudinaryBuildSignature(array $params, string $apiSecret): string {
@@ -180,4 +398,50 @@ function cloudinaryStringifyValue($value): string {
     }
 
     return (string) $value;
+}
+
+function cloudinaryConfigValue(string $name): string {
+    if (!defined($name)) {
+        return "";
+    }
+
+    return trim((string) constant($name));
+}
+
+function cloudinaryEncodeFolderPath(string $folderPath): string {
+    $segments = array_filter(explode("/", trim($folderPath, "/")), static function ($segment) {
+        return $segment !== "";
+    });
+
+    return implode("/", array_map("rawurlencode", $segments));
+}
+
+function cloudinaryMissingUploadConfig(): array {
+    $missing = [];
+
+    foreach (["CLOUDINARY_CLOUD_NAME", "CLOUDINARY_API_KEY", "CLOUDINARY_API_SECRET"] as $name) {
+        if (cloudinaryConfigValue($name) === "") {
+            $missing[] = $name;
+        }
+    }
+
+    return $missing;
+}
+
+function cloudinaryMissingAdminConfig(): array {
+    $missing = [];
+
+    if (cloudinaryConfigValue("CLOUDINARY_CLOUD_NAME") === "") {
+        $missing[] = "CLOUDINARY_CLOUD_NAME";
+    }
+
+    if (cloudinaryConfigValue("CLOUDINARY_ADMIN_API_KEY") === "" && cloudinaryConfigValue("CLOUDINARY_API_KEY") === "") {
+        $missing[] = "CLOUDINARY_ADMIN_API_KEY";
+    }
+
+    if (cloudinaryConfigValue("CLOUDINARY_ADMIN_API_SECRET") === "" && cloudinaryConfigValue("CLOUDINARY_API_SECRET") === "") {
+        $missing[] = "CLOUDINARY_ADMIN_API_SECRET";
+    }
+
+    return $missing;
 }

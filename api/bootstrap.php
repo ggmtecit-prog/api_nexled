@@ -12,11 +12,12 @@ if (function_exists("mysqli_report")) {
     mysqli_report(MYSQLI_REPORT_OFF);
 }
 
-defineCloudinaryEnvConstant("CLOUDINARY_CLOUD_NAME");
-defineCloudinaryEnvConstant("CLOUDINARY_API_KEY");
-defineCloudinaryEnvConstant("CLOUDINARY_API_SECRET");
-defineCloudinaryEnvConstant("CLOUDINARY_ADMIN_API_KEY");
-defineCloudinaryEnvConstant("CLOUDINARY_ADMIN_API_SECRET");
+loadLocalEnvFiles([
+    dirname(__DIR__) . "/.env.local",
+    dirname(__DIR__) . "/.env",
+]);
+
+defineCloudinaryConfigConstants();
 
 if (!function_exists("connectDBReferencias")) {
     if (hasRuntimeDatabaseConfig()) {
@@ -182,16 +183,125 @@ function getRuntimeEnvValueFromList(array $keys): ?string {
     return null;
 }
 
-function defineCloudinaryEnvConstant(string $name): void {
+function loadLocalEnvFiles(array $paths): void {
+    foreach ($paths as $path) {
+        loadLocalEnvFile($path);
+    }
+}
+
+function loadLocalEnvFile(string $path): void {
+    if (!is_file($path) || !is_readable($path)) {
+        return;
+    }
+
+    $lines = @file($path, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+
+    if (!is_array($lines)) {
+        return;
+    }
+
+    foreach ($lines as $line) {
+        $trimmedLine = trim($line);
+
+        if ($trimmedLine === "" || substr($trimmedLine, 0, 1) === "#") {
+            continue;
+        }
+
+        $separatorIndex = strpos($trimmedLine, "=");
+
+        if ($separatorIndex === false) {
+            continue;
+        }
+
+        $key = trim(substr($trimmedLine, 0, $separatorIndex));
+        $value = trim(substr($trimmedLine, $separatorIndex + 1));
+
+        if ($key === "" || getenv($key) !== false) {
+            continue;
+        }
+
+        $normalizedValue = trim($value, " \t\n\r\0\x0B\"'");
+        putenv($key . "=" . $normalizedValue);
+        $_ENV[$key] = $normalizedValue;
+        $_SERVER[$key] = $normalizedValue;
+    }
+}
+
+function defineCloudinaryConfigConstants(): void {
+    $uploadConfig = parseCloudinaryConfigUrl(
+        getRuntimeEnvValue("DAM_CLOUDINARY_URL") ?? getRuntimeEnvValue("CLOUDINARY_URL")
+    );
+    $adminConfig = parseCloudinaryConfigUrl(
+        getRuntimeEnvValue("DAM_CLOUDINARY_ADMIN_URL") ?? getRuntimeEnvValue("CLOUDINARY_ADMIN_URL")
+    );
+
+    defineCloudinaryConfigConstant(
+        "CLOUDINARY_CLOUD_NAME",
+        ["DAM_CLOUDINARY_CLOUD_NAME", "CLOUDINARY_CLOUD_NAME"],
+        $uploadConfig["cloud_name"] ?? null
+    );
+    defineCloudinaryConfigConstant(
+        "CLOUDINARY_API_KEY",
+        ["DAM_CLOUDINARY_API_KEY", "CLOUDINARY_API_KEY"],
+        $uploadConfig["api_key"] ?? null
+    );
+    defineCloudinaryConfigConstant(
+        "CLOUDINARY_API_SECRET",
+        ["DAM_CLOUDINARY_API_SECRET", "CLOUDINARY_API_SECRET"],
+        $uploadConfig["api_secret"] ?? null
+    );
+    defineCloudinaryConfigConstant(
+        "CLOUDINARY_ADMIN_API_KEY",
+        ["DAM_CLOUDINARY_ADMIN_API_KEY", "CLOUDINARY_ADMIN_API_KEY"],
+        $adminConfig["api_key"] ?? null
+    );
+    defineCloudinaryConfigConstant(
+        "CLOUDINARY_ADMIN_API_SECRET",
+        ["DAM_CLOUDINARY_ADMIN_API_SECRET", "CLOUDINARY_ADMIN_API_SECRET"],
+        $adminConfig["api_secret"] ?? null
+    );
+}
+
+function defineCloudinaryConfigConstant(string $name, array $envKeys, ?string $fallback = null): void {
     if (defined($name)) {
         return;
     }
 
-    $value = getRuntimeEnvValue($name);
+    $value = getRuntimeEnvValueFromList($envKeys);
 
-    if ($value !== null) {
+    if ($value === null || $value === "") {
+        $value = is_string($fallback) ? trim($fallback) : null;
+    }
+
+    if ($value !== null && $value !== "") {
         define($name, $value);
     }
+}
+
+function parseCloudinaryConfigUrl(?string $value): array {
+    if (!is_string($value) || trim($value) === "") {
+        return [];
+    }
+
+    $parsedUrl = parse_url(trim($value));
+
+    if (!is_array($parsedUrl) || ($parsedUrl["scheme"] ?? "") !== "cloudinary") {
+        return [];
+    }
+
+    $host = isset($parsedUrl["host"]) ? trim((string) $parsedUrl["host"]) : "";
+    $user = isset($parsedUrl["user"]) ? trim((string) $parsedUrl["user"]) : "";
+    $pass = isset($parsedUrl["pass"]) ? trim((string) $parsedUrl["pass"]) : "";
+
+    if ($host === "" || $user === "" || $pass === "") {
+        return [];
+    }
+
+    return [
+        "cloud_name" => urldecode($host),
+        "api_key" => urldecode($user),
+        "api_secret" => urldecode($pass),
+    ];
 }
 
 function connectRuntimeDatabase(

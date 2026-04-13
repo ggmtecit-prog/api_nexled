@@ -101,12 +101,7 @@ INSERT INTO `dam_folders` (
 ) VALUES
     ('nexled/00_brand', 'nexled', '00_brand', 'nexled/00_brand', 'brand', 'system', 1, 0, 1, 10),
     ('nexled/10_products', 'nexled', '10_products', 'nexled/10_products', 'products', 'system', 1, 0, 1, 20),
-    ('nexled/20_support', 'nexled', '20_support', 'nexled/20_support', 'support', 'system', 1, 0, 1, 30),
-    ('nexled/30_store', 'nexled', '30_store', 'nexled/30_store', 'store', 'system', 1, 0, 1, 40),
-    ('nexled/40_website', 'nexled', '40_website', 'nexled/40_website', 'website', 'system', 1, 0, 1, 50),
-    ('nexled/50_eprel', 'nexled', '50_eprel', 'nexled/50_eprel', 'eprel', 'system', 1, 0, 1, 60),
-    ('nexled/60_configurator', 'nexled', '60_configurator', 'nexled/60_configurator', 'configurator', 'system', 1, 0, 1, 70),
-    ('nexled/90_archive', 'nexled', '90_archive', 'nexled/90_archive', 'archive', 'system', 1, 0, 1, 90)
+    ('nexled/60_configurator', 'nexled', '60_configurator', 'nexled/60_configurator', 'configurator', 'system', 1, 0, 1, 70)
 ON DUPLICATE KEY UPDATE
     `parent_id` = VALUES(`parent_id`),
     `name` = VALUES(`name`),
@@ -122,33 +117,11 @@ INSERT INTO `dam_folders` (
     `folder_id`, `parent_id`, `name`, `path`, `scope`, `kind`, `is_system`, `can_upload`, `can_create_children`, `sort_order`
 ) VALUES
     ('nexled/00_brand/logos', 'nexled/00_brand', 'logos', 'nexled/00_brand/logos', 'brand', 'system', 1, 1, 0, 10),
-    ('nexled/00_brand/guidelines', 'nexled/00_brand', 'guidelines', 'nexled/00_brand/guidelines', 'brand', 'system', 1, 1, 0, 20),
-    ('nexled/00_brand/presentations', 'nexled/00_brand', 'presentations', 'nexled/00_brand/presentations', 'brand', 'system', 1, 1, 0, 30),
-    ('nexled/00_brand/campaigns', 'nexled/00_brand', 'campaigns', 'nexled/00_brand/campaigns', 'brand', 'system', 1, 1, 1, 40),
-    ('nexled/00_brand/ui-system', 'nexled/00_brand', 'ui-system', 'nexled/00_brand/ui-system', 'brand', 'system', 1, 1, 0, 50),
     ('nexled/10_products/shared', 'nexled/10_products', 'shared', 'nexled/10_products/shared', 'products', 'system', 1, 0, 1, 10),
     ('nexled/10_products/families', 'nexled/10_products', 'families', 'nexled/10_products/families', 'products', 'system', 1, 0, 1, 20),
-    ('nexled/20_support/repair-guides', 'nexled/20_support', 'repair-guides', 'nexled/20_support/repair-guides', 'support', 'system', 1, 0, 1, 10),
-    ('nexled/20_support/page-assets', 'nexled/20_support', 'page-assets', 'nexled/20_support/page-assets', 'support', 'system', 1, 1, 0, 20),
-    ('nexled/20_support/faq-warranty', 'nexled/20_support', 'faq-warranty', 'nexled/20_support/faq-warranty', 'support', 'system', 1, 1, 0, 30),
-    ('nexled/20_support/contact', 'nexled/20_support', 'contact', 'nexled/20_support/contact', 'support', 'system', 1, 1, 0, 40),
-    ('nexled/30_store/hero', 'nexled/30_store', 'hero', 'nexled/30_store/hero', 'store', 'system', 1, 1, 0, 10),
-    ('nexled/30_store/categories', 'nexled/30_store', 'categories', 'nexled/30_store/categories', 'store', 'system', 1, 1, 1, 20),
-    ('nexled/30_store/collections', 'nexled/30_store', 'collections', 'nexled/30_store/collections', 'store', 'system', 1, 0, 1, 30),
-    ('nexled/30_store/merchandising', 'nexled/30_store', 'merchandising', 'nexled/30_store/merchandising', 'store', 'system', 1, 1, 1, 40),
-    ('nexled/30_store/campaigns', 'nexled/30_store', 'campaigns', 'nexled/30_store/campaigns', 'store', 'system', 1, 1, 1, 50),
-    ('nexled/40_website/hub', 'nexled/40_website', 'hub', 'nexled/40_website/hub', 'website', 'system', 1, 1, 1, 10),
-    ('nexled/40_website/landing-pages', 'nexled/40_website', 'landing-pages', 'nexled/40_website/landing-pages', 'website', 'system', 1, 0, 1, 20),
-    ('nexled/40_website/campaigns', 'nexled/40_website', 'campaigns', 'nexled/40_website/campaigns', 'website', 'system', 1, 1, 1, 30),
-    ('nexled/50_eprel/labels', 'nexled/50_eprel', 'labels', 'nexled/50_eprel/labels', 'eprel', 'system', 1, 0, 1, 10),
-    ('nexled/50_eprel/fiches', 'nexled/50_eprel', 'fiches', 'nexled/50_eprel/fiches', 'eprel', 'system', 1, 0, 1, 20),
-    ('nexled/50_eprel/zip-packages', 'nexled/50_eprel', 'zip-packages', 'nexled/50_eprel/zip-packages', 'eprel', 'system', 1, 0, 1, 30),
     ('nexled/60_configurator/ui-assets', 'nexled/60_configurator', 'ui-assets', 'nexled/60_configurator/ui-assets', 'configurator', 'system', 1, 1, 0, 10),
     ('nexled/60_configurator/placeholders', 'nexled/60_configurator', 'placeholders', 'nexled/60_configurator/placeholders', 'configurator', 'system', 1, 1, 0, 20),
-    ('nexled/60_configurator/imports', 'nexled/60_configurator', 'imports', 'nexled/60_configurator/imports', 'configurator', 'system', 1, 1, 0, 30),
-    ('nexled/90_archive/legacy-imports', 'nexled/90_archive', 'legacy-imports', 'nexled/90_archive/legacy-imports', 'archive', 'system', 1, 0, 1, 10),
-    ('nexled/90_archive/replaced-assets', 'nexled/90_archive', 'replaced-assets', 'nexled/90_archive/replaced-assets', 'archive', 'system', 1, 1, 1, 20),
-    ('nexled/90_archive/retired-campaigns', 'nexled/90_archive', 'retired-campaigns', 'nexled/90_archive/retired-campaigns', 'archive', 'system', 1, 1, 1, 30)
+    ('nexled/60_configurator/imports', 'nexled/60_configurator', 'imports', 'nexled/60_configurator/imports', 'configurator', 'system', 1, 1, 0, 30)
 ON DUPLICATE KEY UPDATE
     `parent_id` = VALUES(`parent_id`),
     `name` = VALUES(`name`),

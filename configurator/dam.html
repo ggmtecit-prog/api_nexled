@@ -269,58 +269,12 @@
                                     <i class="ri-upload-2-line text-icon-sm" aria-hidden="true"></i>
                                     <span data-i18n="dam.uploadAssets">Upload Assets</span>
                                 </button>
+                                <button type="button" class="btn btn-secondary btn-sm" data-modal-target="damFolderPolicyModal">
+                                    <i class="ri-information-line text-icon-sm" aria-hidden="true"></i>
+                                    <span data-i18n="dam.folderPolicyButton">Folder Policy</span>
+                                </button>
                                 <span class="text-body-xs text-grey-primary min-h-16" data-dam-upload-status></span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="card overflow-visible">
-                        <div class="card-body p-24">
-                            <h3 class="card-title" data-i18n="dam.assetDetails">Asset Details</h3>
-
-                            <div class="flex flex-col gap-16 pt-24">
-                                <div class="panel panel-sm flex min-h-160 items-center justify-center overflow-hidden" data-dam-asset-preview>
-                                    <div class="flex flex-col items-center gap-12 text-center" data-dam-empty-asset>
-                                        <i class="ri-file-search-line text-icon-xxl text-grey-quaternary" aria-hidden="true"></i>
-                                        <span class="text-body-sm text-grey-primary" data-i18n="dam.noAssetSelected">Select an asset to inspect details.</span>
-                                    </div>
-                                </div>
-
-                                <div class="flex flex-col gap-8">
-                                    <div class="flex flex-col gap-2">
-                                        <span class="input-label" data-i18n="dam.assetName">Asset Name</span>
-                                        <span class="text-body-sm text-black break-all" data-dam-asset-name>-</span>
-                                    </div>
-                                    <div class="flex flex-col gap-2">
-                                        <span class="input-label" data-i18n="dam.assetType">Asset Type</span>
-                                        <span class="text-body-sm text-black break-all" data-dam-asset-type>-</span>
-                                    </div>
-                                    <div class="flex flex-col gap-2">
-                                        <span class="input-label" data-i18n="dam.assetSize">File Size</span>
-                                        <span class="text-body-sm text-black break-all" data-dam-asset-size>-</span>
-                                    </div>
-                                    <div class="flex flex-col gap-2">
-                                        <span class="input-label" data-i18n="dam.assetFormat">Format</span>
-                                        <span class="text-body-sm text-black break-all" data-dam-asset-format>-</span>
-                                    </div>
-                                    <div class="flex flex-col gap-2">
-                                        <span class="input-label" data-i18n="dam.assetFolderPath">Folder Path</span>
-                                        <span class="text-body-sm text-black break-all" data-dam-asset-folder>-</span>
-                                    </div>
-                                </div>
-
-                                <div class="flex flex-wrap gap-12">
-                                    <button type="button" class="btn btn-secondary btn-sm" data-dam-open-asset disabled>
-                                        <i class="ri-eye-line text-icon-sm" aria-hidden="true"></i>
-                                        <span data-i18n="dam.assetAction.preview">Preview</span>
-                                    </button>
-                                    <button type="button" class="btn btn-secondary btn-sm" data-dam-copy-asset-url disabled>
-                                        <i class="ri-link text-icon-sm" aria-hidden="true"></i>
-                                        <span data-i18n="dam.copyAssetUrl">Copy Asset URL</span>
-                                    </button>
-                                </div>
-
-                                <span class="text-body-xs text-grey-primary min-h-16" data-dam-asset-status></span>
+                                <span class="text-body-xs text-grey-primary" data-i18n="dam.legacyStorageNote">Legacy assets stay in appdatasheets/img until the PDF generator is migrated.</span>
                             </div>
                         </div>
                     </div>
@@ -328,10 +282,111 @@
             </div>
         </main>
     </div>
-    <script src="locales/en.js?v=20260410-api-health"></script>
-    <script src="locales/pt.js?v=20260410-api-health"></script>
+
+    <div class="modal-overlay" id="damAssetDetailsModal" aria-hidden="true" data-dam-asset-modal>
+        <div class="modal" role="dialog" aria-modal="true" aria-labelledby="damAssetDetailsTitle" aria-describedby="damAssetDetailsBody" tabindex="-1" data-dam-asset-modal-panel>
+            <div class="modal-header">
+                <div>
+                    <h2 id="damAssetDetailsTitle" class="modal-title" data-i18n="dam.assetDetails">Asset Details</h2>
+                </div>
+                <button type="button" class="btn btn-secondary btn-icon btn-xs" aria-label="Close asset details" data-i18n-aria-label="dam.closeAssetDetails" data-dam-close-asset-modal>
+                    <i class="ri-close-line text-icon-md" aria-hidden="true"></i>
+                </button>
+            </div>
+
+            <div id="damAssetDetailsBody" class="modal-body">
+                <div class="flex flex-col gap-16">
+                    <div class="panel panel-sm flex min-h-160 items-center justify-center overflow-hidden" data-dam-asset-preview>
+                        <div class="flex flex-col items-center gap-12 text-center" data-dam-empty-asset>
+                            <i class="ri-file-search-line text-icon-xxl text-grey-quaternary" aria-hidden="true"></i>
+                            <span class="text-body-sm text-grey-primary" data-i18n="dam.noAssetSelected">Select an asset to inspect details.</span>
+                        </div>
+                    </div>
+
+                    <div class="flex flex-col gap-8">
+                        <div class="flex flex-col gap-2">
+                            <span class="input-label" data-i18n="dam.assetName">Asset Name</span>
+                            <span class="text-body-sm text-black break-all" data-dam-asset-name>-</span>
+                        </div>
+                        <div class="flex flex-col gap-2">
+                            <span class="input-label" data-i18n="dam.assetType">Asset Type</span>
+                            <span class="text-body-sm text-black break-all" data-dam-asset-type>-</span>
+                        </div>
+                        <div class="flex flex-col gap-2">
+                            <span class="input-label" data-i18n="dam.assetSize">File Size</span>
+                            <span class="text-body-sm text-black break-all" data-dam-asset-size>-</span>
+                        </div>
+                        <div class="flex flex-col gap-2">
+                            <span class="input-label" data-i18n="dam.assetFormat">Format</span>
+                            <span class="text-body-sm text-black break-all" data-dam-asset-format>-</span>
+                        </div>
+                        <div class="flex flex-col gap-2">
+                            <span class="input-label" data-i18n="dam.assetFolderPath">Folder Path</span>
+                            <span class="text-body-sm text-black break-all" data-dam-asset-folder>-</span>
+                        </div>
+                    </div>
+
+                    <div class="flex flex-wrap gap-12">
+                        <button type="button" class="btn btn-secondary btn-sm" data-dam-open-asset disabled>
+                            <i class="ri-eye-line text-icon-sm" aria-hidden="true"></i>
+                            <span data-i18n="dam.assetAction.preview">Preview</span>
+                        </button>
+                        <button type="button" class="btn btn-secondary btn-sm" data-dam-copy-asset-url disabled>
+                            <i class="ri-link text-icon-sm" aria-hidden="true"></i>
+                            <span data-i18n="dam.copyAssetUrl">Copy Asset URL</span>
+                        </button>
+                    </div>
+
+                    <span class="text-body-xs text-grey-primary min-h-16" data-dam-asset-status></span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="damFolderPolicyModal" aria-hidden="true">
+        <div class="modal" role="dialog" aria-modal="true" aria-labelledby="damFolderPolicyTitle" aria-describedby="damFolderPolicyBody">
+            <div class="modal-header">
+                <div>
+                    <h2 id="damFolderPolicyTitle" class="modal-title" data-i18n="dam.folderPolicyTitle">Current DAM Folder Policy</h2>
+                </div>
+                <button type="button" class="btn btn-secondary btn-icon btn-xs" aria-label="Close folder policy" data-i18n-aria-label="dam.folderPolicyClose" data-close-modal>
+                    <i class="ri-close-line text-icon-md" aria-hidden="true"></i>
+                </button>
+            </div>
+
+            <div id="damFolderPolicyBody" class="modal-body">
+                <div class="flex flex-col gap-16">
+                    <p class="text-body-sm text-grey-primary" data-i18n="dam.folderPolicyIntro">The DAM folder tree is ready in cloud storage, but legacy local assets remain in place until the PDF pipeline is moved.</p>
+
+                    <div class="flex flex-col gap-4">
+                        <span class="input-label" data-i18n="dam.folderPolicyKeepTitle">Active Cloud Folders Now</span>
+                        <p class="text-body-sm text-black" data-i18n="dam.folderPolicyKeepBody">Keep `00_brand/logos`, `10_products/shared`, `10_products/families`, and `60_configurator` active in the DAM.</p>
+                    </div>
+
+                    <div class="flex flex-col gap-4">
+                        <span class="input-label" data-i18n="dam.folderPolicyLaterTitle">Deferred Until Later</span>
+                        <p class="text-body-sm text-black" data-i18n="dam.folderPolicyLaterBody">Support, store, website, EPREL, and archive branches stay out of the live DAM for now.</p>
+                    </div>
+
+                    <div class="flex flex-col gap-4">
+                        <span class="input-label" data-i18n="dam.folderPolicyLocalTitle">Local Asset Rule</span>
+                        <p class="text-body-sm text-black" data-i18n="dam.folderPolicyLocalBody">Do not move or delete the existing files in `appdatasheets/img` yet. They still back the current PDF generator.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary btn-sm" data-close-modal data-modal-initial-focus>
+                    <span data-i18n="dam.folderPolicyCloseAction">Close</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script src="locales/en.js?v=20260413-dam-policy"></script>
+    <script src="locales/pt.js?v=20260413-dam-policy"></script>
     <script src="i18n.js?v=20260410-api-health"></script>
     <script src="app-shell.js?v=20260410-api-health"></script>
-    <script src="dam.js?v=20260413-dam-actions"></script>
+    <script src="dam.js?v=20260413-dam-details-modal"></script>
 </body>
 </html>

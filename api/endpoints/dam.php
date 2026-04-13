@@ -73,6 +73,14 @@ switch ($action) {
         damRequireMethod(["POST"]);
         damCreateFolder();
         break;
+    case "sync-folders":
+        damRequireMethod(["POST"]);
+        damSyncFolders();
+        break;
+    case "prune-folders":
+        damRequireMethod(["POST"]);
+        damPruneFolders();
+        break;
     case "resolve-target":
         damRequireMethod(["POST"]);
         damResolveTarget();
@@ -244,11 +252,177 @@ function damCreateFolder(): void {
         1,
         damNextFolderSortOrder($con, $parent["id"])
     );
+
+    $syncResult = cloudinaryCreateFolderDetailed($folder["path"]);
+
+    if (!($syncResult["ok"] ?? false)) {
+        damDeleteFolderRecord($con, $folder["id"]);
+        closeDB($con);
+        damRespondError(
+            502,
+            "cloudinary_folder_failed",
+            (string) ($syncResult["error"] ?? "Cloudinary folder creation failed."),
+            [
+                "folder_id" => $folder["id"],
+                "http_code" => $syncResult["http_code"] ?? null,
+            ]
+        );
+    }
+
     closeDB($con);
 
     damRespondSuccess([
         "folder" => $folder,
+        "cloudinary" => [
+            "created" => (bool) ($syncResult["created"] ?? false),
+            "already_exists" => (bool) ($syncResult["already_exists"] ?? false),
+        ],
     ], 201);
+}
+
+function damSyncFolders(): void {
+    $body = damGetJsonBody();
+    $rootId = damValidateFolderId($body["root_id"] ?? DAM_ROOT_FOLDER_ID);
+
+    if ($rootId === null) {
+        damRespondError(400, "invalid_folder", "Invalid root_id.");
+    }
+
+    $con = connectDBDam();
+    $rootFolder = damFetchFolderById($con, $rootId);
+
+    if ($rootFolder === null) {
+        closeDB($con);
+        damRespondError(404, "folder_not_found", "Folder not found.", ["id" => $rootId]);
+    }
+
+    $folders = damFetchFoldersForCloudinarySync($con, $rootId);
+    closeDB($con);
+
+    $results = [];
+    $createdCount = 0;
+    $existingCount = 0;
+    $failedCount = 0;
+
+    foreach ($folders as $folder) {
+        $syncResult = cloudinaryCreateFolderDetailed($folder["path"]);
+
+        if ($syncResult["ok"] ?? false) {
+            if ($syncResult["created"] ?? false) {
+                $createdCount += 1;
+            } else {
+                $existingCount += 1;
+            }
+        } else {
+            $failedCount += 1;
+        }
+
+        $results[] = [
+            "folder_id" => $folder["id"],
+            "path" => $folder["path"],
+            "ok" => (bool) ($syncResult["ok"] ?? false),
+            "created" => (bool) ($syncResult["created"] ?? false),
+            "already_exists" => (bool) ($syncResult["already_exists"] ?? false),
+            "http_code" => $syncResult["http_code"] ?? null,
+            "error" => $syncResult["error"] ?? null,
+        ];
+    }
+
+    damRespondSuccess([
+        "root_id" => $rootId,
+        "summary" => [
+            "total" => count($results),
+            "created" => $createdCount,
+            "already_exists" => $existingCount,
+            "failed" => $failedCount,
+        ],
+        "folders" => $results,
+    ]);
+}
+
+function damPruneFolders(): void {
+    $body = damGetJsonBody();
+    $rootId = damValidateFolderId($body["root_id"] ?? DAM_ROOT_FOLDER_ID);
+    $dryRun = !empty($body["dry_run"]);
+
+    if ($rootId === null) {
+        damRespondError(400, "invalid_folder", "Invalid root_id.");
+    }
+
+    $con = connectDBDam();
+    $rootFolder = damFetchFolderById($con, $rootId);
+
+    if ($rootFolder === null) {
+        closeDB($con);
+        damRespondError(404, "folder_not_found", "Folder not found.", ["id" => $rootId]);
+    }
+
+    $folderRows = damFetchFoldersForPrune($con, $rootId);
+    $analysis = damAnalyzePruneFolders($folderRows, damCurrentFolderKeepSet());
+
+    if ($dryRun) {
+        closeDB($con);
+        damRespondSuccess([
+            "root_id" => $rootId,
+            "dry_run" => true,
+            "keep" => $analysis["keep"],
+            "delete" => $analysis["delete"],
+            "blocked" => $analysis["blocked"],
+            "summary" => damBuildPruneSummary($analysis["delete"], $analysis["blocked"], 0, 0, 0),
+        ]);
+    }
+
+    $results = [];
+    $deletedCount = 0;
+    $cloudinaryDeletedCount = 0;
+    $cloudinaryMissingCount = 0;
+
+    foreach ($analysis["delete"] as $folder) {
+        $cloudinaryResult = cloudinaryDeleteFolderDetailed($folder["path"]);
+
+        if (!($cloudinaryResult["ok"] ?? false)) {
+            $results[] = [
+                "folder_id" => $folder["id"],
+                "path" => $folder["path"],
+                "deleted" => false,
+                "cloudinary_deleted" => false,
+                "cloudinary_missing" => false,
+                "error" => $cloudinaryResult["error"] ?? "Cloudinary folder deletion failed.",
+                "http_code" => $cloudinaryResult["http_code"] ?? null,
+            ];
+            continue;
+        }
+
+        if ($cloudinaryResult["deleted"] ?? false) {
+            $cloudinaryDeletedCount += 1;
+        } elseif ($cloudinaryResult["already_missing"] ?? false) {
+            $cloudinaryMissingCount += 1;
+        }
+
+        damDeleteFolderRecord($con, $folder["id"]);
+        $deletedCount += 1;
+
+        $results[] = [
+            "folder_id" => $folder["id"],
+            "path" => $folder["path"],
+            "deleted" => true,
+            "cloudinary_deleted" => (bool) ($cloudinaryResult["deleted"] ?? false),
+            "cloudinary_missing" => (bool) ($cloudinaryResult["already_missing"] ?? false),
+            "error" => null,
+            "http_code" => $cloudinaryResult["http_code"] ?? null,
+        ];
+    }
+
+    closeDB($con);
+
+    damRespondSuccess([
+        "root_id" => $rootId,
+        "dry_run" => false,
+        "keep" => $analysis["keep"],
+        "delete" => $results,
+        "blocked" => $analysis["blocked"],
+        "summary" => damBuildPruneSummary($analysis["delete"], $analysis["blocked"], $deletedCount, $cloudinaryDeletedCount, $cloudinaryMissingCount),
+    ]);
 }
 
 function damResolveTarget(): void {
@@ -958,6 +1132,81 @@ function damFetchChildFolders($con, string $parentId): array {
     return $folders;
 }
 
+function damFetchFoldersForCloudinarySync($con, string $rootId): array {
+    $likePath = $rootId . "/%";
+    $stmt = damPrepareOrFail(
+        $con,
+        "SELECT
+            `folder_id`,
+            `parent_id`,
+            `name`,
+            `path`,
+            `scope`,
+            `kind`,
+            `can_upload`,
+            `can_create_children`,
+            `created_at`,
+            `updated_at`,
+            0 AS `folder_count`,
+            0 AS `asset_count`
+        FROM `dam_folders`
+        WHERE `folder_id` = ? OR `path` LIKE ?
+        ORDER BY LENGTH(`path`) ASC, `path` ASC"
+    );
+    $params = [$rootId, $likePath];
+    damBindParams($stmt, "ss", $params);
+    damExecuteOrFail($stmt, $con);
+    $result = mysqli_stmt_get_result($stmt);
+    $folders = [];
+
+    if ($result) {
+        while ($row = mysqli_fetch_assoc($result)) {
+            $folders[] = damMapFolderRow($row);
+        }
+    }
+
+    mysqli_stmt_close($stmt);
+    return $folders;
+}
+
+function damFetchFoldersForPrune($con, string $rootId): array {
+    $stmt = damPrepareOrFail(
+        $con,
+        "SELECT
+            `folder_id`,
+            `parent_id`,
+            `name`,
+            `path`,
+            `scope`,
+            `kind`,
+            `is_system`,
+            `can_upload`,
+            `can_create_children`,
+            `created_at`,
+            `updated_at`,
+            (SELECT COUNT(*) FROM `dam_folders` AS `children` WHERE `children`.`parent_id` = `dam_folders`.`folder_id`) AS `folder_count`,
+            (SELECT COUNT(*) FROM `dam_assets` AS `assets` WHERE `assets`.`folder_id` = `dam_folders`.`folder_id`) AS `asset_count`
+        FROM `dam_folders`
+        WHERE `folder_id` = ?
+           OR `folder_id` LIKE CONCAT(?, '/%')
+        ORDER BY LENGTH(`path`) DESC, `path` ASC"
+    );
+    $params = [$rootId, $rootId];
+    damBindParams($stmt, "ss", $params);
+    damExecuteOrFail($stmt, $con);
+    $result = mysqli_stmt_get_result($stmt);
+    $folders = [];
+
+    if ($result) {
+        while ($row = mysqli_fetch_assoc($result)) {
+            $folders[] = damMapFolderRow($row);
+        }
+    }
+
+    mysqli_stmt_close($stmt);
+    return $folders;
+}
+
 function damBuildFolderTree($con, string $parentId, int $depth): array {
     $children = damFetchChildFolders($con, $parentId);
 
@@ -1166,6 +1415,125 @@ function damNextFolderSortOrder($con, string $parentId): int {
     mysqli_stmt_close($stmt);
 
     return isset($row["next_sort_order"]) ? (int) $row["next_sort_order"] : 10;
+}
+
+function damDeleteFolderRecord($con, string $folderId): void {
+    $stmt = damPrepareOrFail($con, "DELETE FROM `dam_folders` WHERE `folder_id` = ? LIMIT 1");
+    $params = [$folderId];
+    damBindParams($stmt, "s", $params);
+    damExecuteOrFail($stmt, $con);
+    mysqli_stmt_close($stmt);
+}
+
+function damCurrentFolderKeepSet(): array {
+    return [
+        "nexled",
+        "nexled/00_brand",
+        "nexled/00_brand/logos",
+        "nexled/10_products",
+        "nexled/10_products/shared",
+        "nexled/10_products/shared/temperatures",
+        "nexled/10_products/shared/icons",
+        "nexled/10_products/shared/power-supplies",
+        "nexled/10_products/shared/energy-labels",
+        "nexled/10_products/families",
+        "nexled/10_products/families/11_barra-t5",
+        "nexled/10_products/families/29_downlight",
+        "nexled/10_products/families/30_downlight",
+        "nexled/10_products/families/32_barra-bt",
+        "nexled/10_products/families/48_dynamic",
+        "nexled/10_products/families/55_barra",
+        "nexled/10_products/families/58_barra-hot",
+        "nexled/60_configurator",
+        "nexled/60_configurator/ui-assets",
+        "nexled/60_configurator/placeholders",
+        "nexled/60_configurator/imports",
+    ];
+}
+
+function damAnalyzePruneFolders(array $folders, array $keepSet): array {
+    $foldersById = [];
+    $childrenByParent = [];
+
+    foreach ($folders as $folder) {
+        $foldersById[$folder["id"]] = $folder;
+        $parentId = $folder["parent_id"] ?? "";
+
+        if (!isset($childrenByParent[$parentId])) {
+            $childrenByParent[$parentId] = [];
+        }
+
+        $childrenByParent[$parentId][] = $folder["id"];
+    }
+
+    $subtreeAssetCounts = [];
+    $computeSubtreeAssets = function (string $folderId) use (&$computeSubtreeAssets, &$subtreeAssetCounts, $foldersById, $childrenByParent): int {
+        if (isset($subtreeAssetCounts[$folderId])) {
+            return $subtreeAssetCounts[$folderId];
+        }
+
+        $assetCount = (int) ($foldersById[$folderId]["asset_count"] ?? 0);
+
+        foreach ($childrenByParent[$folderId] ?? [] as $childId) {
+            $assetCount += $computeSubtreeAssets($childId);
+        }
+
+        $subtreeAssetCounts[$folderId] = $assetCount;
+        return $assetCount;
+    };
+
+    foreach (array_keys($foldersById) as $folderId) {
+        $computeSubtreeAssets($folderId);
+    }
+
+    $keep = [];
+    $delete = [];
+    $blocked = [];
+
+    foreach ($folders as $folder) {
+        if (in_array($folder["id"], $keepSet, true)) {
+            $keep[] = [
+                "folder_id" => $folder["id"],
+                "path" => $folder["path"],
+                "reason" => "keep_set",
+            ];
+            continue;
+        }
+
+        $subtreeAssetCount = $subtreeAssetCounts[$folder["id"]] ?? 0;
+
+        if ($subtreeAssetCount > 0) {
+            $blocked[] = [
+                "folder_id" => $folder["id"],
+                "path" => $folder["path"],
+                "reason" => "subtree_has_assets",
+                "asset_count" => $subtreeAssetCount,
+            ];
+            continue;
+        }
+
+        $delete[] = [
+            "id" => $folder["id"],
+            "path" => $folder["path"],
+            "reason" => "outside_keep_set",
+        ];
+    }
+
+    return [
+        "keep" => $keep,
+        "delete" => $delete,
+        "blocked" => $blocked,
+    ];
+}
+
+function damBuildPruneSummary(array $deleteList, array $blockedList, int $deletedCount, int $cloudinaryDeletedCount, int $cloudinaryMissingCount): array {
+    return [
+        "delete_candidates" => count($deleteList),
+        "blocked" => count($blockedList),
+        "deleted" => $deletedCount,
+        "cloudinary_deleted" => $cloudinaryDeletedCount,
+        "cloudinary_missing" => $cloudinaryMissingCount,
+    ];
 }
 
 function damInsertFolder($con, string $parentId, string $name, string $scope, string $kind, int $isSystem, int $canUpload, int $canCreateChildren, int $sortOrder): array {
