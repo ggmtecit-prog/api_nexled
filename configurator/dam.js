@@ -34,7 +34,7 @@ window.addEventListener(DAM_I18N_EVENT, () => {
         return;
     }
 
-    renderFolderTree();
+    renderRootDropdown();
     renderDamList();
     updateFolderSummary();
     renderSelectedAsset();
@@ -45,12 +45,11 @@ function getDamElements() {
     const fileGrid = document.getElementById("fileGrid");
     const emptyState = document.getElementById("emptyState");
     const searchInput = document.getElementById("searchInput");
-    const folderTree = document.querySelector("[data-dam-folder-tree]");
+    const breadcrumb = document.querySelector("[data-dam-breadcrumb]");
+    const rootDropdown = document.querySelector("[data-dam-root-dropdown]");
+    const rootValue = document.querySelector("[data-dam-root-value]");
+    const rootMenu = document.querySelector("[data-dam-root-menu]");
     const refreshTreeButton = document.querySelector("[data-dam-refresh-tree]");
-    const treeStatus = document.querySelector("[data-dam-tree-status]");
-    const listStatus = document.querySelector("[data-dam-list-status]");
-    const currentFolder = document.querySelector("[data-dam-current-folder]");
-    const currentPath = document.querySelector("[data-dam-current-path]");
     const selectedFolder = document.querySelector("[data-dam-selected-folder]");
     const createFolderInput = document.getElementById("dam-create-folder-name");
     const createFolderButton = document.querySelector("[data-dam-create-folder]");
@@ -72,7 +71,7 @@ function getDamElements() {
     const copyAssetUrlButton = document.querySelector("[data-dam-copy-asset-url]");
     const assetStatus = document.querySelector("[data-dam-asset-status]");
 
-    if (!fileGrid || !emptyState || !searchInput || !folderTree || !refreshTreeButton || !treeStatus || !listStatus || !currentFolder || !currentPath || !selectedFolder || !createFolderInput || !createFolderButton || !folderActionStatus || !uploadTrigger || !uploadInput || !uploadStatus || !assetModal || !assetModalPanel || !closeAssetModalButton || !assetPreview || !emptyAsset || !assetName || !assetType || !assetSize || !assetFormat || !assetFolder || !openAssetButton || !copyAssetUrlButton || !assetStatus) {
+    if (!fileGrid || !emptyState || !searchInput || !breadcrumb || !rootDropdown || !rootValue || !rootMenu || !refreshTreeButton || !selectedFolder || !createFolderInput || !createFolderButton || !folderActionStatus || !uploadTrigger || !uploadInput || !uploadStatus || !assetModal || !assetModalPanel || !closeAssetModalButton || !assetPreview || !emptyAsset || !assetName || !assetType || !assetSize || !assetFormat || !assetFolder || !openAssetButton || !copyAssetUrlButton || !assetStatus) {
         return null;
     }
 
@@ -80,12 +79,11 @@ function getDamElements() {
         fileGrid,
         emptyState,
         searchInput,
-        folderTree,
+        breadcrumb,
+        rootDropdown,
+        rootValue,
+        rootMenu,
         refreshTreeButton,
-        treeStatus,
-        listStatus,
-        currentFolder,
-        currentPath,
         selectedFolder,
         createFolderInput,
         createFolderButton,
@@ -191,7 +189,6 @@ function bindDamEvents() {
 
 async function loadDamTree(preserveSelection = true) {
     const requestToken = ++treeRequestToken;
-    setTreeStatus(t("dam.loadingFolders", "Loading folders..."));
 
     try {
         const response = await fetchDamGet("tree", {
@@ -203,7 +200,7 @@ async function loadDamTree(preserveSelection = true) {
         }
 
         damState.tree = Array.isArray(response?.data?.folders) ? response.data.folders : [];
-        renderFolderTree();
+        renderRootDropdown();
 
         const nextFolderId = resolveInitialFolderId(preserveSelection);
 
@@ -220,7 +217,6 @@ async function loadDamTree(preserveSelection = true) {
         updateFolderSummary();
         renderDamList();
         syncFolderActionButtons();
-        setTreeStatus(t("dam.loadFailed", "Unable to load DAM data."));
     } catch (error) {
         console.error(error);
 
@@ -234,12 +230,10 @@ async function loadDamTree(preserveSelection = true) {
         damState.folders = [];
         damState.assets = [];
         clearSelectedAsset();
-        renderFolderTree();
+        renderRootDropdown();
         renderDamList();
         updateFolderSummary();
         syncFolderActionButtons();
-        setTreeStatus(t("dam.loadFailed", "Unable to load DAM data."));
-        setListStatus(t("dam.loadFailed", "Unable to load DAM data."));
     }
 }
 
@@ -250,10 +244,9 @@ async function loadDamFolder(folderId) {
     damState.selectedAssetId = null;
     damState.selectedAsset = null;
     updateFolderSummary();
-    renderFolderTree();
+    renderRootDropdown();
     renderSelectedAsset();
     syncFolderActionButtons();
-    setListStatus(t("dam.loadingAssets", "Loading assets..."));
 
     try {
         const response = await fetchDamGet("list", {
@@ -269,10 +262,9 @@ async function loadDamFolder(folderId) {
         damState.folders = Array.isArray(response?.data?.folders) ? response.data.folders : [];
         damState.assets = Array.isArray(response?.data?.assets) ? response.data.assets : [];
         updateFolderSummary();
-        renderFolderTree();
+        renderRootDropdown();
         renderDamList();
         syncFolderActionButtons();
-        setListStatus(buildListSummaryText());
     } catch (error) {
         console.error(error);
 
@@ -291,10 +283,9 @@ async function loadDamFolder(folderId) {
         damState.folders = [];
         damState.assets = [];
         updateFolderSummary();
-        renderFolderTree();
+        renderRootDropdown();
         renderDamList();
         syncFolderActionButtons();
-        setListStatus(t("dam.loadFailed", "Unable to load DAM data."));
     }
 }
 
@@ -464,61 +455,66 @@ function flattenFolderTree(folders, depth = 0, items = []) {
     return items;
 }
 
-function renderFolderTree() {
+function renderRootDropdown() {
     if (!damElements) {
         return;
     }
 
-    const flatFolders = flattenFolderTree(damState.tree);
-    damElements.folderTree.innerHTML = "";
+    const rootFolders = getRootFolders();
+    damElements.rootMenu.innerHTML = "";
 
-    if (flatFolders.length === 0) {
+    if (rootFolders.length === 0) {
+        damElements.rootValue.textContent = t("dam.loadingFolders", "Loading folders...");
+        damElements.rootDropdown.classList.remove("has-value");
         return;
     }
 
+    const activeRoot = resolveActiveRootFolder();
     const fragment = document.createDocumentFragment();
 
-    flatFolders.forEach((folder) => {
-        const button = document.createElement("button");
-        button.type = "button";
-        button.className = [
-            "btn",
-            folder.id === damState.currentFolderId ? "btn-primary" : "btn-secondary",
-            "btn-sm",
-            "w-full",
-            "justify-between",
-            getTreeIndentClass(folder.depth),
-        ].filter(Boolean).join(" ");
-        button.setAttribute("aria-label", t("dam.openFolder", "Open folder") + ": " + folder.name);
-        button.addEventListener("click", () => {
-            loadDamFolder(folder.id);
-        });
+    rootFolders.forEach((folder) => {
+        const item = document.createElement("li");
+        item.className = "dropdown-item";
+        item.setAttribute("role", "option");
+        item.setAttribute("aria-selected", String(activeRoot?.id === folder.id));
+        item.dataset.value = folder.id;
+        item.tabIndex = 0;
 
         const label = document.createElement("span");
-        label.className = "flex min-w-0 items-center gap-8";
+        label.textContent = formatRootFolderLabel(folder);
 
-        const icon = document.createElement("i");
-        icon.className = (folder.id === damState.currentFolderId ? "ri-folder-open-line" : "ri-folder-3-line") + " text-icon-sm";
-        icon.setAttribute("aria-hidden", "true");
+        const check = document.createElement("i");
+        check.className = "ri-check-line dropdown-item-check";
+        check.setAttribute("aria-hidden", "true");
 
-        const text = document.createElement("span");
-        text.className = "truncate";
-        text.textContent = folder.name;
-
-        label.appendChild(icon);
-        label.appendChild(text);
-
-        const count = document.createElement("span");
-        count.className = "text-body-xs";
-        count.textContent = String(folder.asset_count || 0);
-
-        button.appendChild(label);
-        button.appendChild(count);
-        fragment.appendChild(button);
+        item.appendChild(label);
+        item.appendChild(check);
+        item.addEventListener("click", () => {
+            handleRootDropdownSelect(folder);
+        });
+        item.addEventListener("keydown", (event) => {
+            if (event.key === "Enter" || event.key === " ") {
+                event.preventDefault();
+                handleRootDropdownSelect(folder);
+            }
+        });
+        fragment.appendChild(item);
     });
 
-    damElements.folderTree.appendChild(fragment);
-    setTreeStatus(buildTreeSummaryText(flatFolders.length));
+    damElements.rootMenu.appendChild(fragment);
+    damElements.rootValue.textContent = formatRootFolderLabel(activeRoot || rootFolders[0]);
+    damElements.rootDropdown.classList.add("has-value");
+}
+
+function handleRootDropdownSelect(folder) {
+    if (!folder || !damElements) {
+        return;
+    }
+
+    syncRootDropdownSelection(folder.id);
+    damElements.rootValue.textContent = formatRootFolderLabel(folder);
+    closeRootDropdown();
+    loadDamFolder(folder.id);
 }
 
 function renderDamList() {
@@ -565,13 +561,8 @@ function createFolderCard(folder) {
     name.className = "text-body-sm text-center leading-tight text-grey-primary break-all";
     name.textContent = folder.name;
 
-    const meta = document.createElement("span");
-    meta.className = "text-body-xs text-center text-grey-secondary";
-    meta.textContent = buildFolderMeta(folder);
-
     button.appendChild(icon);
     button.appendChild(name);
-    button.appendChild(meta);
     return button;
 }
 
@@ -768,7 +759,7 @@ function renderSelectedAsset() {
         const image = document.createElement("img");
         image.src = asset.secure_url;
         image.alt = asset.display_name || asset.filename || "Asset preview";
-        image.className = "max-h-160 w-full rounded-8 object-contain";
+        image.className = "h-full max-h-full w-full max-w-full rounded-8 object-contain";
         damElements.assetPreview.appendChild(image);
     } else {
         const fallback = document.createElement("div");
@@ -802,12 +793,9 @@ function updateFolderSummary() {
         return;
     }
 
-    const folderName = damState.currentFolder?.name || damState.currentFolderId || "nexled";
     const folderPath = damState.currentFolder?.path || damState.currentFolderId || "nexled";
-
-    damElements.currentFolder.textContent = folderName;
-    damElements.currentPath.textContent = folderPath;
     damElements.selectedFolder.textContent = folderPath;
+    renderBreadcrumbs();
 }
 
 function syncFolderActionButtons() {
@@ -831,18 +819,6 @@ function syncFolderActionButtons() {
         damElements.uploadTrigger.title = t("dam.uploadActionBlocked", "Selected folder does not allow uploads.");
     } else {
         damElements.uploadTrigger.removeAttribute("title");
-    }
-}
-
-function setTreeStatus(message) {
-    if (damElements) {
-        damElements.treeStatus.textContent = message;
-    }
-}
-
-function setListStatus(message) {
-    if (damElements) {
-        damElements.listStatus.textContent = message;
     }
 }
 
@@ -872,42 +848,175 @@ function getDamErrorMessage(error, fallback) {
     return fallback;
 }
 
-function buildTreeSummaryText(folderCount) {
-    return t("dam.foldersLabel", "{count} folders", { count: folderCount });
-}
-
-function buildListSummaryText() {
-    const folderText = t("dam.foldersLabel", "{count} folders", { count: damState.folders.length });
-    const assetText = t("dam.assetsLabel", "{count} assets", { count: damState.assets.length });
-    return folderText + " . " + assetText;
-}
-
-function buildFolderMeta(folder) {
-    const folderText = t("dam.foldersLabel", "{count} folders", { count: folder.folder_count || 0 });
-    const assetText = t("dam.assetsLabel", "{count} assets", { count: folder.asset_count || 0 });
-    return folderText + " . " + assetText;
-}
-
 function buildAssetTitle(asset) {
     const name = asset.display_name || asset.filename || "";
     const size = formatBytes(asset.bytes || 0);
     return size ? name + "\n" + size : name;
 }
 
-function getTreeIndentClass(depth) {
-    if (depth <= 0) {
-        return "";
+function renderBreadcrumbs() {
+    if (!damElements) {
+        return;
     }
 
-    if (depth === 1) {
-        return "pl-20";
+    damElements.breadcrumb.innerHTML = "";
+
+    const folderIds = buildBreadcrumbFolderIds();
+
+    if (folderIds.length === 0) {
+        return;
     }
 
-    if (depth === 2) {
-        return "pl-32";
+    const folderMap = buildFolderLookup();
+    const fragment = document.createDocumentFragment();
+
+    folderIds.forEach((folderId, index) => {
+        const isCurrent = index === folderIds.length - 1;
+        const item = document.createElement("li");
+        item.className = "breadcrumb-item";
+
+        const link = document.createElement("a");
+        link.href = "#";
+        link.className = "breadcrumb-link link-navigation link-xs";
+
+        if (isCurrent) {
+            link.setAttribute("aria-current", "page");
+        } else {
+            link.addEventListener("click", (event) => {
+                event.preventDefault();
+                loadDamFolder(folderId);
+            });
+        }
+
+        const label = document.createElement("span");
+        label.className = "link-label";
+        label.textContent = resolveBreadcrumbLabel(folderId, folderMap, index === 0);
+
+        link.appendChild(label);
+        item.appendChild(link);
+        fragment.appendChild(item);
+
+        if (!isCurrent) {
+            const separator = document.createElement("li");
+            separator.className = "breadcrumb-separator";
+
+            const icon = document.createElement("i");
+            icon.className = "ri-arrow-right-s-line icon icon-xs";
+            icon.setAttribute("aria-hidden", "true");
+
+            separator.appendChild(icon);
+            fragment.appendChild(separator);
+        }
+    });
+
+    damElements.breadcrumb.appendChild(fragment);
+}
+
+function buildBreadcrumbFolderIds() {
+    const currentPath = damState.currentFolder?.path || damState.currentFolderId || "";
+
+    if (!currentPath) {
+        return [];
     }
 
-    return "pl-40";
+    const segments = currentPath.split("/").filter(Boolean);
+
+    if (segments[0] === DAM_ROOT_FOLDER_ID) {
+        segments.shift();
+    }
+
+    if (segments.length === 0) {
+        return [];
+    }
+
+    let currentId = DAM_ROOT_FOLDER_ID;
+
+    return segments.map((segment) => {
+        currentId += "/" + segment;
+        return currentId;
+    });
+}
+
+function buildFolderLookup() {
+    const folderMap = new Map();
+
+    flattenFolderTree(damState.tree).forEach((folder) => {
+        folderMap.set(folder.id, folder);
+    });
+
+    if (damState.currentFolder?.id) {
+        folderMap.set(damState.currentFolder.id, damState.currentFolder);
+    }
+
+    damState.folders.forEach((folder) => {
+        folderMap.set(folder.id, folder);
+    });
+
+    return folderMap;
+}
+
+function resolveBreadcrumbLabel(folderId, folderMap, isRoot) {
+    const folder = folderMap.get(folderId) || null;
+
+    if (folder) {
+        return isRoot ? formatRootFolderLabel(folder) : folder.name;
+    }
+
+    const fallback = folderId.split("/").filter(Boolean).pop() || folderId;
+    return isRoot ? fallback.replace(/^\d+_/, "").replace(/-/g, " ") : fallback;
+}
+
+function getRootFolders() {
+    return Array.isArray(damState.tree) ? damState.tree : [];
+}
+
+function resolveActiveRootFolder() {
+    const rootFolders = getRootFolders();
+
+    if (rootFolders.length === 0) {
+        return null;
+    }
+
+    const currentId = damState.currentFolder?.id || damState.currentFolderId || "";
+    return rootFolders.find((folder) => currentId === folder.id || currentId.startsWith(folder.id + "/")) || rootFolders[0] || null;
+}
+
+function formatRootFolderLabel(folder) {
+    if (!folder) {
+        return t("dam.loadingFolders", "Loading folders...");
+    }
+
+    const scopeLabels = {
+        brand: t("dam.root.brand", "Brand"),
+        products: t("dam.root.products", "Products"),
+        configurator: t("dam.root.configurator", "Configurator"),
+        support: t("dam.root.support", "Support"),
+        store: t("dam.root.store", "Store"),
+        website: t("dam.root.website", "Website"),
+        eprel: t("dam.root.eprel", "EPREL"),
+        archive: t("dam.root.archive", "Archive"),
+    };
+
+    return scopeLabels[folder.scope] || folder.name.replace(/^\d+_/, "").replace(/-/g, " ");
+}
+
+function syncRootDropdownSelection(folderId) {
+    if (!damElements) {
+        return;
+    }
+
+    damElements.rootMenu.querySelectorAll(".dropdown-item").forEach((item) => {
+        item.setAttribute("aria-selected", String(item.dataset.value === folderId));
+    });
+}
+
+function closeRootDropdown() {
+    if (!damElements) {
+        return;
+    }
+
+    damElements.rootDropdown.classList.remove("is-open");
+    damElements.rootDropdown.querySelector(".dropdown-trigger")?.setAttribute("aria-expanded", "false");
 }
 
 function getAssetIconClass(asset) {
