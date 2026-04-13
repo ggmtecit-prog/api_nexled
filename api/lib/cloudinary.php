@@ -10,6 +10,36 @@
 
 
 /**
+ * Returns the credential pair used for Upload API calls.
+ *
+ * @return array{api_key:string,api_secret:string}
+ */
+function cloudinaryUploadCredentials(): array {
+    return [
+        "api_key" => CLOUDINARY_API_KEY,
+        "api_secret" => CLOUDINARY_API_SECRET,
+    ];
+}
+
+
+
+/**
+ * Returns the credential pair used for Admin API calls.
+ * Falls back to the default Cloudinary credentials when dedicated
+ * admin credentials are not configured.
+ *
+ * @return array{api_key:string,api_secret:string}
+ */
+function cloudinaryAdminCredentials(): array {
+    return [
+        "api_key" => defined("CLOUDINARY_ADMIN_API_KEY") ? CLOUDINARY_ADMIN_API_KEY : CLOUDINARY_API_KEY,
+        "api_secret" => defined("CLOUDINARY_ADMIN_API_SECRET") ? CLOUDINARY_ADMIN_API_SECRET : CLOUDINARY_API_SECRET,
+    ];
+}
+
+
+
+/**
  * Upload a local file to Cloudinary.
  *
  * @param  string $filePath     Temp path of the file (e.g. $_FILES["file"]["tmp_name"])
@@ -18,12 +48,13 @@
  * @return array|null           Cloudinary response, or null on failure
  */
 function cloudinaryUpload(string $filePath, string $publicId, string $resourceType): ?array {
+    $credentials = cloudinaryUploadCredentials();
     $timestamp = time();
 
     $params  = ["public_id" => $publicId, "timestamp" => $timestamp];
     ksort($params);
     $signStr   = implode("&", array_map(fn($k, $v) => "$k=$v", array_keys($params), array_values($params)));
-    $signature = sha1($signStr . CLOUDINARY_API_SECRET);
+    $signature = sha1($signStr . $credentials["api_secret"]);
 
     $url = "https://api.cloudinary.com/v1_1/" . CLOUDINARY_CLOUD_NAME . "/$resourceType/upload";
 
@@ -32,7 +63,7 @@ function cloudinaryUpload(string $filePath, string $publicId, string $resourceTy
     curl_setopt($ch, CURLOPT_POSTFIELDS,     [
         "file"      => new CURLFile($filePath),
         "public_id" => $publicId,
-        "api_key"   => CLOUDINARY_API_KEY,
+        "api_key"   => $credentials["api_key"],
         "timestamp" => $timestamp,
         "signature" => $signature,
     ]);
@@ -57,9 +88,10 @@ function cloudinaryUpload(string $filePath, string $publicId, string $resourceTy
  * @return bool
  */
 function cloudinaryDelete(string $publicId, string $resourceType): bool {
+    $credentials = cloudinaryAdminCredentials();
     $url  = "https://api.cloudinary.com/v1_1/" . CLOUDINARY_CLOUD_NAME
           . "/resources/$resourceType/upload?public_ids[]=" . urlencode($publicId);
-    $auth = base64_encode(CLOUDINARY_API_KEY . ":" . CLOUDINARY_API_SECRET);
+    $auth = base64_encode($credentials["api_key"] . ":" . $credentials["api_secret"]);
 
     $ch = curl_init($url);
     curl_setopt($ch, CURLOPT_CUSTOMREQUEST,  "DELETE");

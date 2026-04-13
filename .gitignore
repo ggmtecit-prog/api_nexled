@@ -1,5 +1,7 @@
 # Credentials
 api/auth.php
+.env.railway
+.env
 
 # Zip/backups
 *.zip
@@ -16,6 +18,10 @@ Thumbs.db
 
 # Claude Code memory
 .claude/
+
+# Composer / dependencies
+vendor/
+composer.lock
 
 # Logs
 *.log

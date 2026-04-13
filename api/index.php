@@ -1,5 +1,9 @@
 <?php
 
+// Ensure requires resolve relative to this file regardless of the web server's CWD.
+// FrankenPHP (Railway) sets CWD to the document root (/app), not to /app/api/.
+chdir(__DIR__);
+
 header("Content-Type: application/json");
 header("Access-Control-Allow-Origin: *");
 header("Access-Control-Allow-Methods: GET, POST, DELETE, OPTIONS");
