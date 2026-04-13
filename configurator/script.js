@@ -20,6 +20,17 @@ const REF_LENGTHS = {
     option: 2,
 };
 
+const DECODED_SEGMENT_FIELDS = {
+    size: { id: "select-size", length: REF_LENGTHS.size, labelKey: "configurator.fields.size", fallback: "Size" },
+    color: { id: "select-color", length: REF_LENGTHS.color, labelKey: "configurator.fields.color", fallback: "Color" },
+    cri: { id: "select-cri", length: REF_LENGTHS.cri, labelKey: "configurator.fields.cri", fallback: "CRI" },
+    series: { id: "select-series", length: REF_LENGTHS.series, labelKey: "configurator.fields.series", fallback: "Series" },
+    lens: { id: "select-lens", length: REF_LENGTHS.lens, labelKey: "configurator.fields.lens", fallback: "Lens" },
+    finish: { id: "select-finish", length: REF_LENGTHS.finish, labelKey: "configurator.fields.finish", fallback: "Finish" },
+    cap: { id: "select-cap", length: REF_LENGTHS.cap, labelKey: "configurator.fields.cap", fallback: "Cap" },
+    option: { id: "select-option", length: REF_LENGTHS.option, labelKey: "configurator.fields.option", fallback: "Option" },
+};
+
 const REFERENCE_INPUT_IDS = [
     "select-size",
     "select-color",
@@ -105,6 +116,7 @@ function initializeConfigurator() {
     familyCombobox = setupFamilyCombobox();
     setupSelectDropdowns();
     bindDocumentLanguageControls();
+    bindTecitCodeLoader();
     document.getElementById("select-family").addEventListener("change", handleFamilyChange);
     document.getElementById("btn-generate").addEventListener("click", generateDatasheet);
 
@@ -572,6 +584,16 @@ function setupFamilyCombobox() {
         clearSelection,
         getSelectedLabel,
         renderOptions,
+        selectByValue(value, shouldTrigger = true) {
+            const option = getOptions().find((item) => item.dataset.value === value);
+
+            if (!option) {
+                return false;
+            }
+
+            setSelection(option.dataset.value, option.dataset.label, shouldTrigger);
+            return true;
+        },
         setDisabled,
         setPlaceholder(text) {
             input.placeholder = text;
@@ -1262,6 +1284,238 @@ async function loadOptions(familyCode) {
     setStatusKey("configurator.runtime.optionsLoaded", "success", {}, "Options loaded. The reference now updates automatically.");
 }
 
+function bindTecitCodeLoader() {
+    const input = document.getElementById("input-tecit-code");
+    const button = document.getElementById("btn-load-tecit-code");
+
+    if (!input || !button || input.dataset.tecitBound === "true") {
+        return;
+    }
+
+    input.addEventListener("input", () => {
+        input.value = sanitizeTecitCode(input.value);
+    });
+
+    input.addEventListener("keydown", (event) => {
+        if (event.key !== "Enter") {
+            return;
+        }
+
+        event.preventDefault();
+        loadTecitCodeIntoForm();
+    });
+
+    button.addEventListener("click", loadTecitCodeIntoForm);
+
+    input.dataset.tecitBound = "true";
+}
+
+function sanitizeTecitCode(value) {
+    return String(value || "")
+        .toUpperCase()
+        .replace(/[^A-Z0-9]/g, "");
+}
+
+function setTecitCodeControlsDisabled(isDisabled) {
+    const input = document.getElementById("input-tecit-code");
+    const button = document.getElementById("btn-load-tecit-code");
+
+    if (input) {
+        input.disabled = isDisabled;
+    }
+
+    if (button) {
+        button.disabled = isDisabled;
+    }
+}
+
+function hasLoadedFamilyOptions() {
+    return document.querySelectorAll("#family-combobox-list [data-family-option]").length > 0;
+}
+
+function normalizeCodeValue(value) {
+    const text = String(value ?? "").trim();
+
+    if (text === "") {
+        return "";
+    }
+
+    const normalized = text.replace(/^0+(?=\d)/, "");
+    return normalized === "" ? "0" : normalized;
+}
+
+function resolveSelectValueFromSegment(select, segment, length) {
+    const target = String(segment ?? "").trim();
+    const options = Array.from(select?.options || []);
+
+    if (!target || options.length === 0) {
+        return null;
+    }
+
+    const exactMatch = options.find((option) => option.value === target);
+
+    if (exactMatch) {
+        return exactMatch.value;
+    }
+
+    const normalizedTarget = normalizeCodeValue(target);
+    const paddedMatch = options.find((option) => {
+        const optionValue = String(option.value || "");
+        return normalizeCodeValue(optionValue) === normalizedTarget || pad(optionValue, length) === target;
+    });
+
+    return paddedMatch ? paddedMatch.value : null;
+}
+
+function applyDecodedSegmentsToForm(segments) {
+    const unresolved = [];
+
+    Object.entries(DECODED_SEGMENT_FIELDS).forEach(([key, meta]) => {
+        const select = document.getElementById(meta.id);
+        const resolvedValue = resolveSelectValueFromSegment(select, segments?.[key], meta.length);
+
+        if (!select || resolvedValue === null) {
+            unresolved.push(t(meta.labelKey, {}, meta.fallback));
+            return;
+        }
+
+        select.value = resolvedValue;
+        selectDropdowns.get(meta.id)?.syncFromSelect();
+    });
+
+    return unresolved;
+}
+
+async function applyDecodedReferenceToForm(data) {
+    const familyCode = data?.segments?.family || "";
+    const familyMatched = familyCombobox?.selectByValue(familyCode, false) || false;
+
+    if (!familyMatched) {
+        return {
+            familyMatched: false,
+            unresolved: [],
+            reference: "",
+        };
+    }
+
+    await loadOptions(familyCode);
+
+    const unresolved = applyDecodedSegmentsToForm(data.segments || {});
+    const extraLengthField = document.getElementById("input-extra-length");
+
+    if (extraLengthField) {
+        extraLengthField.value = "0";
+    }
+
+    buildReference();
+
+    return {
+        familyMatched: true,
+        unresolved,
+        reference: get("output-reference"),
+    };
+}
+
+async function loadTecitCodeIntoForm() {
+    const input = document.getElementById("input-tecit-code");
+    const reference = sanitizeTecitCode(input?.value || "");
+
+    if (!input) {
+        return;
+    }
+
+    input.value = reference;
+
+    if (!reference) {
+        setStatusKey("configurator.runtime.tecitCodeMissing", "error", {}, "Enter a Tecit code first.");
+        input.focus();
+        return;
+    }
+
+    setTecitCodeControlsDisabled(true);
+    setSummaryStateKeys(
+        "configurator.runtime.step2",
+        "configurator.runtime.decodingTecitCode",
+        "configurator.runtime.decodingTecitCodeSubtitle",
+        {},
+        {
+            step: "Step 2",
+            title: "Decoding Tecit code",
+            subtitle: "Checking code structure and loading matching manufacturing options.",
+        }
+    );
+    setStatusKey("configurator.runtime.decodingTecitCode", "loading", {}, "Decoding Tecit code...");
+
+    try {
+        if (!hasLoadedFamilyOptions()) {
+            await loadFamilies();
+            setSummaryStateKeys(
+                "configurator.runtime.step2",
+                "configurator.runtime.decodingTecitCode",
+                "configurator.runtime.decodingTecitCodeSubtitle",
+                {},
+                {
+                    step: "Step 2",
+                    title: "Decoding Tecit code",
+                    subtitle: "Checking code structure and loading matching manufacturing options.",
+                }
+            );
+            setStatusKey("configurator.runtime.decodingTecitCode", "loading", {}, "Decoding Tecit code...");
+        }
+
+        const data = await apiFetch("/?endpoint=decode-reference&ref=" + encodeURIComponent(reference));
+
+        if (Number(data?.length) !== Number(data?.expected_length)) {
+            setStatusKey("configurator.runtime.tecitCodeInvalid", "error", {}, "This Tecit code cannot be applied. Check family and length.");
+            return;
+        }
+
+        if (data?.warnings?.includes("unknown_family") || !data?.segments?.family) {
+            setStatusKey("configurator.runtime.tecitCodeFamilyMissing", "error", {}, "This Tecit code uses a family that is not available in the configurator.");
+            return;
+        }
+
+        const result = await applyDecodedReferenceToForm(data);
+
+        if (!result.familyMatched) {
+            setStatusKey("configurator.runtime.tecitCodeFamilyMissing", "error", {}, "This Tecit code uses a family that is not available in the configurator.");
+            return;
+        }
+
+        if (result.unresolved.length > 0) {
+            setStatusKey(
+                "configurator.runtime.tecitCodeFieldsMissing",
+                "error",
+                { fields: result.unresolved.join(", ") },
+                "Tecit code loaded, but these fields could not be matched: " + result.unresolved.join(", ")
+            );
+            return;
+        }
+
+        if (result.reference !== data.reference) {
+            setStatusKey(
+                "configurator.runtime.tecitCodeMismatch",
+                "error",
+                { reference: result.reference },
+                "Tecit code loaded, but rebuilt reference differs: " + result.reference
+            );
+            return;
+        }
+
+        if (Array.isArray(data.warnings) && data.warnings.includes("product_not_found")) {
+            setStatusKey("configurator.runtime.tecitCodeAppliedWithWarning", "success", {}, "Tecit code loaded. Description may be unavailable.");
+            return;
+        }
+
+        setStatusKey("configurator.runtime.tecitCodeApplied", "success", {}, "Tecit code loaded. Manufacturing fields were filled.");
+    } catch (error) {
+        setStatusKey("configurator.runtime.tecitCodeApplyFailed", "error", {}, "Unable to decode Tecit code right now.");
+        console.error(error);
+    } finally {
+        setTecitCodeControlsDisabled(false);
+    }
+}
+
 function fillSelect(id, items, isArray) {
     const select = document.getElementById(id);
 
@@ -1688,6 +1942,7 @@ function focusFamilyField() {
 
 function resetAllSelections() {
     const familySelect = document.getElementById("select-family");
+    const tecitInput = document.getElementById("input-tecit-code");
 
     if (!familySelect) {
         return;
@@ -1705,6 +1960,10 @@ function resetAllSelections() {
     document.querySelectorAll('#options-group input[type="number"]').forEach((element) => {
         element.value = "0";
     });
+
+    if (tecitInput) {
+        tecitInput.value = "";
+    }
 
     selectDropdowns.forEach((dropdown) => {
         dropdown.syncFromSelect();

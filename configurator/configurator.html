@@ -211,6 +211,20 @@
                             </div>
 
                             <div class="pt-40">
+                                <div class="flex flex-col md:flex-row gap-16 items-end">
+                                    <div class="flex-1 w-full">
+                                        <label class="input-label ml-12" for="input-tecit-code" data-i18n="configurator.tecitCodeLabel">Load Tecit Code</label>
+                                        <input type="text" id="input-tecit-code" class="input input-sm" placeholder="11037581110010100" maxlength="20" autocomplete="off" spellcheck="false" data-i18n-placeholder="configurator.tecitCodePlaceholder">
+                                        <p class="input-hint ml-12" data-i18n="configurator.tecitCodeHint">Paste full Tecit code to prefill family, size, light, optics, and finish fields.</p>
+                                    </div>
+                                    <button type="button" id="btn-load-tecit-code" class="btn btn-secondary btn-sm shrink-0">
+                                        <i class="ri-scan-line text-icon-sm" aria-hidden="true"></i>
+                                        <span data-i18n="configurator.loadTecitCode">Load Code</span>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div class="pt-40">
                                 <div>
                                     <label class="input-label ml-12" for="family-combobox-input" data-i18n="configurator.familyLabel">Product Family *</label>
                                     <div id="family-combobox" class="combobox combobox-md">
@@ -538,10 +552,10 @@
         </main>
     </div>
 
-    <script src="locales/en.js?v=20260410-configurator-state-fix"></script>
-    <script src="locales/pt.js?v=20260410-configurator-state-fix"></script>
+    <script src="locales/en.js?v=20260413-configurator-tecit-prefill"></script>
+    <script src="locales/pt.js?v=20260413-configurator-tecit-prefill"></script>
     <script src="i18n.js?v=20260410-configurator-state-fix"></script>
     <script src="app-shell.js?v=20260410-configurator-state-fix"></script>
-    <script src="script.js?v=20260413-configurator-api-fix"></script>
+    <script src="script.js?v=20260413-configurator-tecit-prefill"></script>
 </body>
 </html>
