@@ -1722,6 +1722,17 @@ async function generateDatasheet() {
             return;
         }
 
+        const successContentType = response.headers.get("content-type") || "";
+
+        if (successContentType.includes("application/json") || successContentType.includes("text/html")) {
+            const rawMessage = await response.text();
+            const cleanMessage = rawMessage.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
+
+            if (cleanMessage !== "") {
+                throw new Error(cleanMessage);
+            }
+        }
+
         const blob = await response.blob();
         const url = URL.createObjectURL(blob);
         const link = document.createElement("a");
@@ -1735,6 +1746,19 @@ async function generateDatasheet() {
     } catch (error) {
         setGenerateControlsDisabled(false);
         syncGenerateButton();
+        const message = error && error.message ? error.message : "";
+
+        if (message !== "") {
+            setStatusKey(
+                "configurator.runtime.datasheetFailedWithMessage",
+                "error",
+                { message },
+                "Datasheet generation failed: " + message
+            );
+            console.error(error);
+            return;
+        }
+
         setStatusKey("configurator.runtime.datasheetFailed", "error", {}, "Datasheet generation failed.");
         console.error(error);
     }

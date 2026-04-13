@@ -30,6 +30,25 @@ function toPdfAssetSrc(string $path): string {
     $resolved = realpath($path) ?: $path;
     $normalized = str_replace("\\", "/", $resolved);
 
+    if (is_file($resolved)) {
+        $contents = file_get_contents($resolved);
+
+        if ($contents !== false) {
+            $extension = strtolower(pathinfo($resolved, PATHINFO_EXTENSION));
+            $mime = match ($extension) {
+                "svg"  => "image/svg+xml",
+                "png"  => "image/png",
+                "jpg", "jpeg" => "image/jpeg",
+                "gif"  => "image/gif",
+                default => function_exists("mime_content_type")
+                    ? (mime_content_type($resolved) ?: "application/octet-stream")
+                    : "application/octet-stream",
+            };
+
+            return "data:" . $mime . ";base64," . base64_encode($contents);
+        }
+    }
+
     if (preg_match("/^[A-Za-z]:\\//", $normalized)) {
         return "file:///" . $normalized;
     }
