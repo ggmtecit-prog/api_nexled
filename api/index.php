@@ -4,7 +4,12 @@
 // FrankenPHP (Railway) sets CWD to the document root (/app), not to /app/api/.
 chdir(__DIR__);
 
-header("Content-Type: application/json");
+$endpoint = $_GET["endpoint"] ?? null;
+
+if ($endpoint !== "datasheet") {
+    header("Content-Type: application/json");
+}
+
 header("Access-Control-Allow-Origin: *");
 header("Access-Control-Allow-Methods: GET, POST, PATCH, DELETE, OPTIONS");
 header("Access-Control-Allow-Headers: Content-Type, X-API-Key");
@@ -26,8 +31,6 @@ require_once "./lib/validate.php";
 // Route: /api/?endpoint=health
 // Route: /api/?endpoint=assets&action=get|upload|delete
 // Route: /api/?endpoint=dam&action=tree|list|asset|create-folder|resolve-target|upload
-
-$endpoint = $_GET["endpoint"] ?? null;
 
 if (!$endpoint) {
     http_response_code(400);

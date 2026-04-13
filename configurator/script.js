@@ -1708,9 +1708,20 @@ async function generateDatasheet() {
                 markApiDegraded("datasheet");
             }
 
-            if (contentType.includes("application/json")) {
-                const error = await response.json();
-                message = error.error || message;
+            const rawError = await response.text();
+            const cleanError = extractResponseMessage(rawError);
+
+            if (contentType.includes("application/json") && rawError.trim() !== "") {
+                try {
+                    const error = JSON.parse(rawError);
+                    message = error.error || cleanError || message;
+                } catch (_parseError) {
+                    message = cleanError || message;
+                }
+            } else if (cleanError !== "") {
+                message = cleanError;
+            } else {
+                message = "Request failed with status " + response.status;
             }
 
             setStatusKey(
@@ -1726,14 +1737,17 @@ async function generateDatasheet() {
 
         if (successContentType.includes("application/json") || successContentType.includes("text/html")) {
             const rawMessage = await response.text();
-            const cleanMessage = rawMessage.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
+            const cleanMessage = extractResponseMessage(rawMessage);
 
-            if (cleanMessage !== "") {
-                throw new Error(cleanMessage);
-            }
+            throw new Error(cleanMessage || "Datasheet endpoint returned a non-PDF response.");
         }
 
         const blob = await response.blob();
+
+        if (blob.size === 0) {
+            throw new Error("Datasheet endpoint returned an empty PDF response.");
+        }
+
         const url = URL.createObjectURL(blob);
         const link = document.createElement("a");
 
@@ -1957,6 +1971,12 @@ function getSelectedOptionHint(id) {
     }
 
     return option.title || option.text || option.value || "";
+}
+
+function extractResponseMessage(rawValue) {
+    const raw = typeof rawValue === "string" ? rawValue : "";
+
+    return raw.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
 }
 
 function pad(value, length) {
