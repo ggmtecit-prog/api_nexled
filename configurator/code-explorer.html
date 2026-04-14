@@ -330,19 +330,22 @@
                                         <p class="text-body-sm text-grey-primary" data-i18n="codeExplorer.runtime.noRows">No rows yet. Select one family and refresh.</p>
                                     </div>
 
-                                    <div class="flex flex-col gap-12 sm:flex-row sm:items-center sm:justify-between">
-                                        <p id="explorer-pagination-meta" class="text-body-sm text-grey-primary">0-0 / 0</p>
-                                        <div class="flex items-center gap-12">
-                                            <button id="explorer-prev" type="button" class="btn btn-secondary btn-sm" disabled>
-                                                <i class="ri-arrow-left-s-line text-icon-sm" aria-hidden="true"></i>
-                                                <span data-i18n="codeExplorer.paginationPrev">Previous</span>
+                                    <div class="flex justify-end">
+                                        <nav id="explorer-pagination" class="pagination" data-pagination aria-label="Results pagination">
+                                            <button id="explorer-prev" type="button" class="pagination-link pagination-prev" data-pagination-prev aria-label="Previous page" disabled>
+                                                <i class="ri-arrow-left-s-line text-icon-md" aria-hidden="true"></i>
+                                                <span data-i18n="codeExplorer.paginationPrev">Prev</span>
                                             </button>
-                                            <span id="explorer-page-indicator" class="text-body-sm text-grey-primary">1 / 1</span>
-                                            <button id="explorer-next" type="button" class="btn btn-secondary btn-sm" disabled>
+                                            <ol id="explorer-pagination-list" class="pagination-list">
+                                                <li class="pagination-item">
+                                                    <button type="button" class="pagination-link" data-page="1" aria-current="page">1</button>
+                                                </li>
+                                            </ol>
+                                            <button id="explorer-next" type="button" class="pagination-link pagination-next" data-pagination-next aria-label="Next page" disabled>
                                                 <span data-i18n="codeExplorer.paginationNext">Next</span>
-                                                <i class="ri-arrow-right-s-line text-icon-sm" aria-hidden="true"></i>
+                                                <i class="ri-arrow-right-s-line text-icon-md" aria-hidden="true"></i>
                                             </button>
-                                        </div>
+                                        </nav>
                                     </div>
                                 </div>
                             </div>

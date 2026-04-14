@@ -70,6 +70,7 @@ function initializeCodeExplorer() {
     renderSummary(null);
     renderTable();
     renderDetail();
+    renderPagination();
     loadFamilies();
     checkApiHealth();
 }
@@ -101,6 +102,8 @@ function bindControls() {
             renderSummary(null);
             renderTable();
             renderDetail();
+            renderResultsMeta();
+            renderPagination();
             return;
         }
 
@@ -150,6 +153,23 @@ function bindControls() {
         }
 
         explorerState.controls.page = explorerState.data.pagination.page + 1;
+        loadExplorerData();
+    });
+
+    document.getElementById("explorer-pagination-list").addEventListener("click", (event) => {
+        const trigger = event.target.closest("[data-page]");
+
+        if (!trigger) {
+            return;
+        }
+
+        const nextPage = Number.parseInt(trigger.dataset.page || "", 10);
+
+        if (!Number.isFinite(nextPage) || nextPage < 1 || explorerState.controls.page === nextPage) {
+            return;
+        }
+
+        explorerState.controls.page = nextPage;
         loadExplorerData();
     });
 
@@ -519,30 +539,37 @@ function renderResultsMeta() {
 }
 
 function renderPagination() {
-    const meta = document.getElementById("explorer-pagination-meta");
-    const indicator = document.getElementById("explorer-page-indicator");
+    const list = document.getElementById("explorer-pagination-list");
     const prev = document.getElementById("explorer-prev");
     const next = document.getElementById("explorer-next");
 
+    if (!list || !prev || !next) {
+        return;
+    }
+
     if (!explorerState.data) {
-        meta.textContent = "0-0 / 0";
-        indicator.textContent = "1 / 1";
+        list.innerHTML = [
+            '<li class="pagination-item">',
+            '<button type="button" class="pagination-link" data-page="1" aria-current="page">1</button>',
+            "</li>",
+        ].join("");
         prev.disabled = true;
         next.disabled = true;
         return;
     }
 
-    const { page, page_size: pageSize, total_pages: totalPages, total_rows: totalRows } = explorerState.data.pagination;
-    const rows = explorerState.data.rows || [];
-    const start = totalRows === 0 ? 0 : ((page - 1) * pageSize) + 1;
-    const end = totalRows === 0 ? 0 : (start + rows.length - 1);
+    const { page, total_pages: totalPages } = explorerState.data.pagination;
 
-    meta.textContent = t("codeExplorer.paginationRange", {
-        start,
-        end,
-        total: totalRows,
-    }, `${start}-${end} / ${totalRows}`);
-    indicator.textContent = `${page} / ${totalPages}`;
+    list.innerHTML = Array.from({ length: Math.max(totalPages, 1) }, (_, index) => {
+        const pageNumber = index + 1;
+        const current = pageNumber === page ? ' aria-current="page"' : "";
+
+        return [
+            '<li class="pagination-item">',
+            `<button type="button" class="pagination-link" data-page="${pageNumber}"${current}>${pageNumber}</button>`,
+            "</li>",
+        ].join("");
+    }).join("");
     prev.disabled = page <= 1;
     next.disabled = page >= totalPages;
 }

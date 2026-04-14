@@ -195,7 +195,7 @@ window.NexLedLocales.en = {
         closeDetailAria: "Close code detail",
         detailsSegments: "Decoded Segments",
         detailsStatuses: "Statuses",
-        paginationPrev: "Previous",
+        paginationPrev: "Prev",
         paginationNext: "Next",
         paginationRange: "{start}-{end} / {total}",
         segmentFamily: "Family",
