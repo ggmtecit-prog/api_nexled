@@ -1,5 +1,5 @@
 [phases.setup]
-aptPkgs = ["...", "librsvg2-bin"]
+aptPkgs = ["librsvg2-bin"]
 
 [phases.build]
 cmds = ["bash ./scripts/rasterize-pdf-assets.sh"]
