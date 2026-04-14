@@ -220,10 +220,25 @@ function getFinishAndLens(string $productType, string $productId, string $refere
             $folder = ($lens === "clear")
                 ? "/img/$family/acabamentos/$lens/$series/"
                 : "/img/$family/acabamentos/$lens/";
-            $candidates = [
-                str_replace("+", "_", "{$finish}_{$cap}"),
-                str_replace("+", "_", "{$finish}_{$endCap}"),
-            ];
+
+            if ($family === "32") {
+                $finishToken = ltrim($finishCode, "0");
+                if ($finishToken === "") {
+                    $finishToken = "0";
+                }
+
+                $candidates = [
+                    "{$finishToken}_{$endCap}",
+                    "{$finishToken}_{$cap}",
+                    str_replace("+", "_", "{$finish}_{$endCap}"),
+                    str_replace("+", "_", "{$finish}_{$cap}"),
+                ];
+            } else {
+                $candidates = [
+                    str_replace("+", "_", "{$finish}_{$cap}"),
+                    str_replace("+", "_", "{$finish}_{$endCap}"),
+                ];
+            }
             break;
 
         case "dynamic":

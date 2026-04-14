@@ -187,3 +187,106 @@ function getProductId(string $reference): ?string {
     $row = mysqli_fetch_row($query);
     return $row[0];
 }
+
+function getFamilyCapDescription(string $familyCode, string $capCode): string {
+    if ($familyCode === "" || $capCode === "") {
+        return "";
+    }
+
+    $con = connectDBReferencias();
+    $stmt = mysqli_prepare(
+        $con,
+        "SELECT Cap.desc
+         FROM Cap, Familias
+         WHERE Cap.familia = Familias.cap
+           AND Familias.codigo = ?
+           AND Cap.codigo = ?
+         LIMIT 1"
+    );
+
+    if (!$stmt) {
+        closeDB($con);
+        return "";
+    }
+
+    $familyInt = intval($familyCode);
+    $stmtCapCode = ltrim($capCode, "0");
+    if ($stmtCapCode === "") {
+        $stmtCapCode = "0";
+    }
+
+    mysqli_stmt_bind_param($stmt, "is", $familyInt, $stmtCapCode);
+    mysqli_stmt_execute($stmt);
+    $result = mysqli_stmt_get_result($stmt);
+    $description = "";
+
+    if ($result && ($row = mysqli_fetch_assoc($result))) {
+        $description = (string) ($row["desc"] ?? "");
+    }
+
+    mysqli_stmt_close($stmt);
+    closeDB($con);
+
+    return $description;
+}
+
+function inferFamily32ConnectorCable(string $capDescription, string $fallback = "0"): string {
+    $normalized = strtolower(trim($capDescription));
+
+    if ($normalized === "") {
+        return $fallback;
+    }
+
+    return match (true) {
+        str_contains($normalized, "dc24")  => "dc24",
+        str_contains($normalized, "dcj")   => "dcj",
+        str_contains($normalized, "c1m")   => "c1m",
+        str_contains($normalized, "asqc2"),
+        str_contains($normalized, "asqc")  => "asqc2",
+        default                            => $fallback,
+    };
+}
+
+function inferFamily32CableType(string $capDescription, string $fallback = "branco"): string {
+    $normalized = strtolower(preg_replace("/\s+/", "", $capDescription));
+
+    if ($normalized === "") {
+        return $fallback;
+    }
+
+    if (str_ends_with($normalized, "p")) {
+        return "preto";
+    }
+
+    return $fallback;
+}
+
+function normalizeBarAssetConfig(string $reference, array $config): array {
+    $parts = decodeReference($reference);
+
+    if (($parts["family"] ?? "") !== "32") {
+        return $config;
+    }
+
+    $connectorCable = strtolower(trim((string) ($config["connector_cable"] ?? "0")));
+    $cableType = strtolower(trim((string) ($config["cable_type"] ?? "branco")));
+
+    if ($connectorCable !== "" && $connectorCable !== "0") {
+        return $config;
+    }
+
+    $capDescription = getFamilyCapDescription($parts["family"], $parts["cap"]);
+    $inferredConnector = inferFamily32ConnectorCable($capDescription, $connectorCable === "" ? "0" : $connectorCable);
+
+    if ($inferredConnector === "" || $inferredConnector === "0") {
+        return $config;
+    }
+
+    $config["connector_cable"] = $inferredConnector;
+    $config["cable_type"] = inferFamily32CableType(
+        $capDescription,
+        $cableType === "" || $cableType === "0" ? "branco" : $cableType
+    );
+
+    return $config;
+}

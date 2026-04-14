@@ -37,6 +37,10 @@ define("JSON_DESC_PATH", dirname(__FILE__, 2) . "/json/descricao");
  * @return string|null  Full image path, or null if no image found
  */
 function getProductImage(string $productType, string $productId, array $parts, array $config): ?string {
+    if ($productType === "barra") {
+        $config = normalizeBarAssetConfig($parts["raw"] ?? "", $config);
+    }
+
     $family  = $parts["family"];
     $size    = $parts["size"];
     $series  = $parts["series"];

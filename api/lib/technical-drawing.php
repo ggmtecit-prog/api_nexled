@@ -45,6 +45,8 @@ define("SIZES_JSON_PATH", dirname(__FILE__, 3) . "/appdatasheets/json/tamanhos")
  * @return array  Keys: drawing (path|null), A–J (dimension values, "0" means not shown)
  */
 function getBarDrawing(string $reference, string $sizesFile, array $config): array {
+    $config = normalizeBarAssetConfig($reference, $config);
+
     $parts          = decodeReference($reference);
     $family         = $parts["family"];
     $pcbSize        = ltrim($parts["size"], "0"); // strip leading zeros (e.g. "0375" → "375")
