@@ -145,17 +145,17 @@ function getLensDiagram(string $productId, string $reference): ?array {
         $base = IMAGES_BASE_PATH . "/img/$family/diagramas/";
     }
 
-    $diagramPath = $base . "$lens.svg";
+    $diagramPath = findImage($base . $lens);
 
-    if (!file_exists($diagramPath)) {
+    if ($diagramPath === null) {
         return null;
     }
 
-    $illuminancePath = $base . "i/$lens.svg";
+    $illuminancePath = findImage($base . "i/$lens");
 
     return [
         "diagram"     => $diagramPath,
-        "illuminance" => file_exists($illuminancePath) ? $illuminancePath : null,
+        "illuminance" => $illuminancePath,
     ];
 }
 
