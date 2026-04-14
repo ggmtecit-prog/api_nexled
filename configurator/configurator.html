@@ -106,10 +106,9 @@
                                 </li>
                             </ul>
                         </div>
-                        <button type="button" class="badge badge-neutral badge-md shrink-0" data-api-badge>
-                            <span class="w-8 h-8 rounded-full bg-red-primary shrink-0" data-api-badge-dot></span>
-                            <span class="truncate text-body-xs" data-api-badge-text data-i18n="shared.badge.apiUnavailable">API unavailable</span>
-                        </button>
+                        <span class="badge badge-danger badge-md shrink-0" data-api-badge>
+                            <span data-api-badge-text data-i18n="shared.badge.apiUnavailable">API unavailable</span>
+                        </span>
                     </div>
                 </div>
             </div>
@@ -182,10 +181,9 @@
                             </li>
                         </ul>
                     </div>
-                    <button type="button" class="badge badge-neutral badge-md shrink-0" data-api-badge>
-                        <span class="w-8 h-8 rounded-full bg-red-primary shrink-0" data-api-badge-dot></span>
-                        <span class="truncate text-body-xs" data-api-badge-text data-i18n="shared.badge.apiUnavailable">API unavailable</span>
-                    </button>
+                    <span class="badge badge-danger badge-md shrink-0" data-api-badge>
+                        <span data-api-badge-text data-i18n="shared.badge.apiUnavailable">API unavailable</span>
+                    </span>
                 </div>
             </div>
         </div>
@@ -211,17 +209,17 @@
                             </div>
 
                             <div class="pt-40">
-                                <div class="flex flex-col md:flex-row gap-16 items-end">
+                                <label class="input-label ml-12" for="input-tecit-code" data-i18n="configurator.tecitCodeLabel">Load Tecit Code</label>
+                                <div class="flex flex-col md:flex-row gap-16 md:items-center">
                                     <div class="flex-1 w-full">
-                                        <label class="input-label ml-12" for="input-tecit-code" data-i18n="configurator.tecitCodeLabel">Load Tecit Code</label>
                                         <input type="text" id="input-tecit-code" class="input input-sm" placeholder="11037581110010100" maxlength="20" autocomplete="off" spellcheck="false" data-i18n-placeholder="configurator.tecitCodePlaceholder">
-                                        <p class="input-hint ml-12" data-i18n="configurator.tecitCodeHint">Paste full Tecit code to prefill family, size, light, optics, and finish fields.</p>
                                     </div>
                                     <button type="button" id="btn-load-tecit-code" class="btn btn-secondary btn-sm shrink-0">
                                         <i class="ri-scan-line text-icon-sm" aria-hidden="true"></i>
                                         <span data-i18n="configurator.loadTecitCode">Load Code</span>
                                     </button>
                                 </div>
+                                <p class="input-hint ml-12" data-i18n="configurator.tecitCodeHint">Paste full Tecit code to prefill family, size, light, optics, and finish fields.</p>
                             </div>
 
                             <div class="pt-40">
@@ -491,25 +489,32 @@
                             <span class="input-label" data-i18n="configurator.quickActions.liveReference">Live Reference</span>
                             <div class="flex items-center gap-8 w-full">
                                 <input type="text" id="output-reference" class="input input-sm flex-1 min-w-0" readonly>
-                                <button type="button" class="btn btn-ghost btn-icon btn-xs shrink-0" data-copy-target="output-reference" aria-label="Copy reference" data-i18n-aria-label="shared.actions.copyReference">
-                                    <i class="ri-file-copy-line text-icon-xs" aria-hidden="true"></i>
-                                </button>
+                                <span class="tooltip-wrapper shrink-0">
+                                    <button type="button" class="btn btn-ghost btn-icon btn-xs shrink-0" data-copy-target="output-reference" aria-label="Copy reference" data-i18n-aria-label="shared.actions.copyReference">
+                                        <i class="ri-file-copy-line text-icon-xs" aria-hidden="true"></i>
+                                    </button>
+                                    <div class="tooltip tooltip-black tooltip-xs">
+                                        <span data-i18n="configurator.quickActions.copyReference">Copy Reference</span>
+                                    </div>
+                                </span>
                             </div>
                             <p class="input-hint" data-i18n="configurator.quickActions.liveReferenceHint">Built automatically from the selected manufacturing options.</p>
                         </div>
 
                         <div id="output-fields" class="hidden flex flex-col gap-12 pt-24">
                             <label class="input-label" for="output-description" data-i18n="configurator.quickActions.description">Description</label>
-                            <input type="text" id="output-description" class="input input-sm w-full" readonly aria-describedby="descriptionHint">
-                            <p id="descriptionHint" class="input-hint" data-i18n="configurator.quickActions.descriptionHint">Generated from the current reference when data is available.</p>
-                        </div>
-
-                        <div class="flex flex-col gap-12 pt-24">
-                            <span class="input-label" data-i18n="configurator.quickActions.copyOutput">Copy Output</span>
-                            <div class="flex flex-col gap-12 items-center">
-                                <button type="button" class="btn btn-ghost btn-xs" data-copy-target="output-reference" data-i18n="configurator.quickActions.copyReference">Copy Reference</button>
-                                <button type="button" class="btn btn-ghost btn-xs" data-copy-target="output-description" data-i18n="configurator.quickActions.copyDescription">Copy Description</button>
+                            <div class="flex items-center gap-8 w-full">
+                                <input type="text" id="output-description" class="input input-sm flex-1 min-w-0" readonly aria-describedby="descriptionHint">
+                                <span class="tooltip-wrapper shrink-0">
+                                    <button type="button" class="btn btn-ghost btn-icon btn-xs shrink-0" data-copy-target="output-description" aria-label="Copy description" data-i18n-aria-label="configurator.quickActions.copyDescription">
+                                        <i class="ri-file-copy-line text-icon-xs" aria-hidden="true"></i>
+                                    </button>
+                                    <div class="tooltip tooltip-black tooltip-xs">
+                                        <span data-i18n="configurator.quickActions.copyDescription">Copy Description</span>
+                                    </div>
+                                </span>
                             </div>
+                            <p id="descriptionHint" class="input-hint" data-i18n="configurator.quickActions.descriptionHint">Generated from the current reference when data is available.</p>
                         </div>
 
                         <div class="flex flex-col gap-12 pt-24">
@@ -545,11 +550,26 @@
                             </div>
                         </div>
 
-                        <p id="status-message" class="text-body-xs text-grey-primary min-h-16 text-center pt-16" data-i18n="configurator.runtime.chooseFamilyToBegin">Choose a family to begin.</p>
                     </div>
                 </div>
             </div>
         </main>
+    </div>
+
+    <div class="toast-viewport" aria-live="polite" aria-atomic="false">
+        <div id="status-message" class="toast toast-info toast-sm" role="status" aria-hidden="true" hidden inert>
+            <span class="toast-icon">
+                <i id="status-message-icon" class="ri-information-line text-icon-lg" aria-hidden="true"></i>
+            </span>
+            <div class="toast-copy">
+                <p id="status-message-copy" class="toast-title" data-i18n="configurator.runtime.chooseFamilyToBegin">Choose a family to begin.</p>
+            </div>
+            <div class="toast-actions">
+                <button type="button" id="status-message-close" class="btn btn-ghost btn-icon btn-xs" aria-label="Close notification">
+                    <i class="ri-close-line text-icon-md" aria-hidden="true"></i>
+                </button>
+            </div>
+        </div>
     </div>
 
     <script src="locales/en.js?v=20260413-configurator-tecit-prefill"></script>

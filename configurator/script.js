@@ -48,17 +48,22 @@ const COPY_LABEL_KEYS = {
     "output-description": "shared.actions.description",
 };
 
-const STATUS_BASE_CLASS = "text-body-xs min-h-16 text-center pt-16";
-const STATUS_TONE_CLASS = {
-    neutral: "text-grey-primary",
-    loading: "text-blue-primary",
-    success: "text-green-primary",
-    error: "text-red-primary",
+const STATUS_TOAST_BASE_CLASS = "toast toast-sm";
+const STATUS_TOAST_AUTOHIDE_DELAY = 4000;
+const STATUS_TOAST_HIDE_DELAY = 320;
+const STATUS_TOAST_VARIANT = {
+    neutral: { className: "toast-info", iconClass: "ri-information-line", role: "status", autoHide: true },
+    loading: { className: "toast-info", iconClass: "ri-information-line", role: "status", autoHide: false },
+    success: { className: "toast-success", iconClass: "ri-checkbox-circle-line", role: "status", autoHide: true },
+    error: { className: "toast-danger", iconClass: "ri-close-circle-line", role: "alert", autoHide: true },
 };
-const API_BADGE_TONE_CLASS = {
-    loading: "bg-blue-primary",
-    success: "bg-green-primary",
-    error: "bg-red-primary",
+const API_BADGE_BASE_CLASS = "badge badge-md shrink-0";
+const API_BADGE_VARIANT_CLASS = {
+    neutral: "badge-neutral",
+    loading: "badge-info",
+    success: "badge-success",
+    warning: "badge-warning",
+    error: "badge-danger",
 };
 const API_SERVICE_FAILURE_STATUSES = new Set([401, 403]);
 const NAV_GENERATE_IDS = ["nav-generate-desktop", "nav-generate-mobile"];
@@ -103,6 +108,10 @@ let familyPlaceholderState = {
     key: "configurator.runtime.familyLoading",
     fallback: "Loading families...",
 };
+let statusToastTimers = {
+    dismiss: null,
+    hide: null,
+};
 
 document.addEventListener("DOMContentLoaded", () => {
     try {
@@ -117,6 +126,7 @@ function initializeConfigurator() {
     setupSelectDropdowns();
     bindDocumentLanguageControls();
     bindTecitCodeLoader();
+    bindStatusToast();
     document.getElementById("select-family").addEventListener("change", handleFamilyChange);
     document.getElementById("btn-generate").addEventListener("click", generateDatasheet);
 
@@ -200,7 +210,7 @@ function markApiDegraded(serviceName = "") {
         ok: false,
         services: nextServices,
     });
-    setApiBadgeKey("error", "shared.badge.apiDegraded", "API degraded");
+    setApiBadgeKey("warning", "shared.badge.apiDegraded", "API degraded");
 }
 
 function isApiServiceFailureStatus(status) {
@@ -1009,12 +1019,13 @@ function applyStatusState() {
     if (statusState.key) {
         applyStatusText(
             t(statusState.key, resolveTranslatedVariables(statusState), statusState.fallback),
-            statusState.tone
+            statusState.tone,
+            statusState.key
         );
         return;
     }
 
-    applyStatusText(statusState.text || "", statusState.tone);
+    applyStatusText(statusState.text || "", statusState.tone, "");
 }
 
 function setSummaryStateKeys(stepKey, titleKey, subtitleKey, variables = {}, fallbacks = {}) {
@@ -1064,18 +1075,13 @@ function applyApiBadgeState() {
         return;
     }
 
-    const dotClass = API_BADGE_TONE_CLASS[apiBadgeState.tone] || API_BADGE_TONE_CLASS.error;
+    const badgeClass = API_BADGE_VARIANT_CLASS[apiBadgeState.tone] || API_BADGE_VARIANT_CLASS.error;
     const text = apiBadgeState.key
         ? t(apiBadgeState.key, resolveTranslatedVariables(apiBadgeState), apiBadgeState.fallback)
         : apiBadgeState.text || "";
 
-    document.querySelectorAll("[data-api-badge-dot]").forEach((dot) => {
-        dot.classList.remove(
-            API_BADGE_TONE_CLASS.loading,
-            API_BADGE_TONE_CLASS.success,
-            API_BADGE_TONE_CLASS.error
-        );
-        dot.classList.add(dotClass);
+    document.querySelectorAll("[data-api-badge]").forEach((badge) => {
+        badge.className = API_BADGE_BASE_CLASS + " " + badgeClass;
     });
 
     document.querySelectorAll("[data-api-badge-text]").forEach((label) => {
@@ -1853,6 +1859,19 @@ function bindShellActions() {
     });
 }
 
+function bindStatusToast() {
+    const closeButton = document.getElementById("status-message-close");
+
+    if (!closeButton || closeButton.dataset.bound === "true") {
+        return;
+    }
+
+    closeButton.dataset.bound = "true";
+    closeButton.addEventListener("click", () => {
+        hideStatusToast();
+    });
+}
+
 async function copyField(button) {
     const targetId = button.getAttribute("data-copy-target");
     const field = targetId ? document.getElementById(targetId) : null;
@@ -1973,16 +1992,87 @@ function setStatus(message, tone = "neutral") {
     applyStatusState();
 }
 
-function applyStatusText(message, tone = "neutral") {
-    const element = document.getElementById("status-message");
-    const toneClass = STATUS_TONE_CLASS[tone] || STATUS_TONE_CLASS.neutral;
+function applyStatusText(message, tone = "neutral", key = "") {
+    const toast = document.getElementById("status-message");
+    const copy = document.getElementById("status-message-copy");
+    const icon = document.getElementById("status-message-icon");
+    const variant = STATUS_TOAST_VARIANT[tone] || STATUS_TOAST_VARIANT.neutral;
+    const shouldHide = !message || (tone === "neutral" && key === "configurator.runtime.chooseFamilyToBegin");
 
-    if (!element) {
+    if (!toast || !copy || !icon) {
         return;
     }
 
-    element.textContent = message;
-    element.className = STATUS_BASE_CLASS + " " + toneClass;
+    copy.textContent = message;
+    toast.className = STATUS_TOAST_BASE_CLASS + " " + variant.className;
+    toast.setAttribute("role", variant.role);
+    icon.className = variant.iconClass + " text-icon-lg";
+
+    if (shouldHide) {
+        hideStatusToast(true);
+        return;
+    }
+
+    showStatusToast(variant.autoHide ? STATUS_TOAST_AUTOHIDE_DELAY : 0);
+}
+
+function showStatusToast(dismissDelay = 0) {
+    const toast = document.getElementById("status-message");
+
+    if (!toast) {
+        return;
+    }
+
+    clearStatusToastTimers();
+    toast.hidden = false;
+    toast.inert = false;
+    toast.setAttribute("aria-hidden", "false");
+
+    requestAnimationFrame(() => {
+        toast.classList.add("is-visible");
+    });
+
+    if (dismissDelay > 0) {
+        statusToastTimers.dismiss = setTimeout(() => {
+            hideStatusToast();
+        }, dismissDelay);
+    }
+}
+
+function hideStatusToast(immediate = false) {
+    const toast = document.getElementById("status-message");
+
+    if (!toast) {
+        return;
+    }
+
+    clearStatusToastTimers();
+    toast.classList.remove("is-visible");
+    toast.setAttribute("aria-hidden", "true");
+
+    if (immediate) {
+        toast.hidden = true;
+        toast.inert = true;
+        return;
+    }
+
+    statusToastTimers.hide = setTimeout(() => {
+        toast.hidden = true;
+        toast.inert = true;
+        statusToastTimers.hide = null;
+    }, STATUS_TOAST_HIDE_DELAY);
+}
+
+function clearStatusToastTimers() {
+    if (statusToastTimers.dismiss) {
+        clearTimeout(statusToastTimers.dismiss);
+        statusToastTimers.dismiss = null;
+    }
+
+    if (statusToastTimers.hide) {
+        clearTimeout(statusToastTimers.hide);
+        statusToastTimers.hide = null;
+    }
 }
 
 function get(id) {
