@@ -211,58 +211,7 @@
             </header>
 
             <section class="grid grid-cols-1 xl:grid-cols-3 gap-24 items-start" data-reveal="section">
-                <div class="card xl:col-span-2">
-                    <div class="card-body flex flex-col gap-20">
-                        <div class="flex flex-col gap-4">
-                            <h2 class="card-title" data-i18n="codeExplorer.logicTitle">Tecit Code Logic</h2>
-                            <p class="text-body-sm text-grey-primary" data-i18n="configurator.tecitCodeLogicIntro">Live Tecit references use a fixed 17-character structure. Each segment maps to one manufacturing field in the configurator.</p>
-                        </div>
-
-                        <div class="panel panel-sm flex flex-col gap-8">
-                            <span class="input-label" data-i18n="configurator.tecitCodeLogicPatternLabel">Reference Pattern</span>
-                            <code class="text-body-lg font-mono text-black break-all" data-i18n="configurator.tecitCodeLogicPattern">11 | 0375 | 81 | 1 | 1 | 0 | 01 | 01 | 00</code>
-                        </div>
-
-                        <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-12">
-                            <div class="panel panel-sm flex items-start justify-between gap-16"><code class="text-body-sm font-mono text-black shrink-0">11</code><span class="text-body-sm text-black text-right" data-i18n="configurator.tecitCodeLogicFamily">Family (2 chars)</span></div>
-                            <div class="panel panel-sm flex items-start justify-between gap-16"><code class="text-body-sm font-mono text-black shrink-0">0375</code><span class="text-body-sm text-black text-right" data-i18n="configurator.tecitCodeLogicSize">Size (4 chars)</span></div>
-                            <div class="panel panel-sm flex items-start justify-between gap-16"><code class="text-body-sm font-mono text-black shrink-0">81</code><span class="text-body-sm text-black text-right" data-i18n="configurator.tecitCodeLogicColor">Color (2 chars)</span></div>
-                            <div class="panel panel-sm flex items-start justify-between gap-16"><code class="text-body-sm font-mono text-black shrink-0">1</code><span class="text-body-sm text-black text-right" data-i18n="configurator.tecitCodeLogicCri">CRI (1 char)</span></div>
-                            <div class="panel panel-sm flex items-start justify-between gap-16"><code class="text-body-sm font-mono text-black shrink-0">1</code><span class="text-body-sm text-black text-right" data-i18n="configurator.tecitCodeLogicSeries">Series (1 char)</span></div>
-                            <div class="panel panel-sm flex items-start justify-between gap-16"><code class="text-body-sm font-mono text-black shrink-0">0</code><span class="text-body-sm text-black text-right" data-i18n="configurator.tecitCodeLogicLens">Lens (1 char)</span></div>
-                            <div class="panel panel-sm flex items-start justify-between gap-16"><code class="text-body-sm font-mono text-black shrink-0">01</code><span class="text-body-sm text-black text-right" data-i18n="configurator.tecitCodeLogicFinish">Finish (2 chars)</span></div>
-                            <div class="panel panel-sm flex items-start justify-between gap-16"><code class="text-body-sm font-mono text-black shrink-0">01</code><span class="text-body-sm text-black text-right" data-i18n="configurator.tecitCodeLogicCap">Cap (2 chars)</span></div>
-                            <div class="panel panel-sm flex items-start justify-between gap-16"><code class="text-body-sm font-mono text-black shrink-0">00</code><span class="text-body-sm text-black text-right" data-i18n="configurator.tecitCodeLogicOption">Option (2 chars)</span></div>
-                        </div>
-
-                        <div class="grid grid-cols-1 lg:grid-cols-2 gap-12">
-                            <div class="panel panel-sm flex flex-col gap-6">
-                                <span class="input-label" data-i18n="configurator.tecitCodeLogicIdentityTitle">Luminos Validation</span>
-                                <p class="text-body-sm text-black" data-i18n="configurator.tecitCodeLogicIdentityBody">First 10 characters (family + size + color + CRI + series) form identity checked against the Luminos view.</p>
-                            </div>
-                            <div class="panel panel-sm flex flex-col gap-6">
-                                <span class="input-label" data-i18n="codeExplorer.defaultContextTitle">Datasheet Ready Context</span>
-                                <p class="text-body-sm text-black" data-i18n="codeExplorer.defaultContextBody">Readiness check uses default export context: Portuguese output, purpose 0, no fixing, no driver, no connection cable, cable connector 0, cable type branco, end cap 0, and gasket 5.</p>
-                            </div>
-                        </div>
-
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-12">
-                            <div class="panel panel-sm flex flex-col gap-4"><span class="text-body-sm text-black" data-i18n="configurator.tecitCodeLogicExampleBarra">Barra sample</span><code class="text-body-sm font-mono text-black break-all">11037581110010100</code></div>
-                            <div class="panel panel-sm flex flex-col gap-4"><span class="text-body-sm text-black" data-i18n="configurator.tecitCodeLogicExampleBarraLens">Barra sample with lens</span><code class="text-body-sm font-mono text-black break-all">11007502111010100</code></div>
-                            <div class="panel panel-sm flex flex-col gap-4"><span class="text-body-sm text-black" data-i18n="configurator.tecitCodeLogicExampleDownlight">Downlight sample</span><code class="text-body-sm font-mono text-black break-all">29012022191010000</code></div>
-                            <div class="panel panel-sm flex flex-col gap-4"><span class="text-body-sm text-black" data-i18n="configurator.tecitCodeLogicExampleDynamic">Dynamic sample</span><code class="text-body-sm font-mono text-black break-all">48007002110010000</code></div>
-                        </div>
-
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-12">
-                            <div class="panel panel-sm flex flex-col gap-4"><span class="text-body-sm text-black" data-i18n="configurator.tecitCodeLogicSourceValidationTitle">Tecit code + Luminos validation</span><p class="text-body-sm text-grey-primary" data-i18n="configurator.tecitCodeLogicSourceValidationBody">First 10 characters validate family, size, color, CRI, and series against the Luminos view. That lookup also defines the internal product ID used by the API.</p></div>
-                            <div class="panel panel-sm flex flex-col gap-4"><span class="text-body-sm text-black" data-i18n="configurator.tecitCodeLogicSourceCharacteristicsTitle">Database characteristics</span><p class="text-body-sm text-grey-primary" data-i18n="configurator.tecitCodeLogicSourceCharacteristicsBody">Technical characteristics, electrical data, dimensions, and product descriptions come from the MySQL data used by the NexLed API.</p></div>
-                            <div class="panel panel-sm flex flex-col gap-4"><span class="text-body-sm text-black" data-i18n="configurator.tecitCodeLogicSourceAssetsTitle">Local PDF assets</span><p class="text-body-sm text-grey-primary" data-i18n="configurator.tecitCodeLogicSourceAssetsBody">Product images, technical drawings, color spectrum files, lens diagrams, icons, and accessory graphics still come from local assets in appdatasheets/img. Current PDF does not use DAM assets yet.</p></div>
-                            <div class="panel panel-sm flex flex-col gap-4"><span class="text-body-sm text-black" data-i18n="configurator.tecitCodeLogicSourceFormTitle">Live configurator selections</span><p class="text-body-sm text-grey-primary" data-i18n="configurator.tecitCodeLogicSourceFormBody">Language, company logo, fixing, power supply, cable, purpose, and other optional fields come from the current form state before the API generates the PDF.</p></div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="card">
+                <div class="card xl:col-start-3">
                     <div class="card-body flex flex-col gap-20">
                         <div class="flex flex-col gap-4">
                             <h2 class="card-title" data-i18n="codeExplorer.filtersTitle">Explorer Filters</h2>
@@ -285,6 +234,7 @@
                                 <select id="explorer-status" class="input input-sm">
                                     <option value="all" data-i18n="codeExplorer.statusAll">All</option>
                                     <option value="configurator_valid" data-i18n="codeExplorer.statusConfiguratorValid">Configurator valid</option>
+                                    <option value="configurator_invalid" data-i18n="codeExplorer.statusConfiguratorInvalid">Configurator invalid</option>
                                     <option value="datasheet_ready" data-i18n="codeExplorer.statusDatasheetReady">Datasheet ready</option>
                                     <option value="datasheet_blocked" data-i18n="codeExplorer.statusDatasheetBlocked">Datasheet blocked</option>
                                 </select>
@@ -303,6 +253,17 @@
                             </button>
                         </form>
 
+                        <div class="panel panel-sm flex flex-col gap-12">
+                            <div class="flex flex-col gap-4">
+                                <span class="input-label" data-i18n="codeExplorer.logicTitle">Tecit Code Logic</span>
+                                <p class="text-body-sm text-grey-primary" data-i18n="configurator.tecitCodeLogicIntro">Live Tecit references use a fixed 17-character structure. Each segment maps to one manufacturing field in the configurator.</p>
+                            </div>
+                            <button type="button" class="btn btn-ghost btn-sm justify-center w-full" data-modal-target="codeExplorerTecitCodeLogicModal">
+                                <i class="ri-information-line text-icon-sm" aria-hidden="true"></i>
+                                <span data-i18n="configurator.tecitCodeLogicButton">View Tecit Code Logic</span>
+                            </button>
+                        </div>
+
                         <div class="panel panel-sm flex flex-col gap-6">
                             <span class="input-label" data-i18n="codeExplorer.readinessNoteTitle">Readiness Note</span>
                             <p class="text-body-sm text-grey-primary" data-i18n="codeExplorer.readinessNoteBody">Datasheet-ready here means base PDF data and required assets exist for default context. It does not render a PDF and does not test optional fixing, driver, or connection cable selections.</p>
@@ -316,9 +277,10 @@
                 </div>
             </section>
 
-            <section class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-16 pt-24" data-reveal="section">
+            <section class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-16 pt-24" data-reveal="section">
                 <div class="card"><div class="card-body flex flex-col gap-6"><span class="text-overline text-grey-primary" data-i18n="codeExplorer.summaryTotal">Total codes</span><span id="summary-total" class="text-h3 font-medium text-black">0</span></div></div>
                 <div class="card"><div class="card-body flex flex-col gap-6"><span class="text-overline text-grey-primary" data-i18n="codeExplorer.summaryConfigurator">Configurator valid</span><span id="summary-configurator" class="text-h3 font-medium text-black">0</span></div></div>
+                <div class="card"><div class="card-body flex flex-col gap-6"><span class="text-overline text-grey-primary" data-i18n="codeExplorer.summaryInvalid">Configurator invalid</span><span id="summary-invalid" class="text-h3 font-medium text-black">0</span></div></div>
                 <div class="card"><div class="card-body flex flex-col gap-6"><span class="text-overline text-grey-primary" data-i18n="codeExplorer.summaryReady">Datasheet ready</span><span id="summary-ready" class="text-h3 font-medium text-black">0</span></div></div>
                 <div class="card"><div class="card-body flex flex-col gap-6"><span class="text-overline text-grey-primary" data-i18n="codeExplorer.summaryBlocked">Datasheet blocked</span><span id="summary-blocked" class="text-h3 font-medium text-black">0</span></div></div>
             </section>
@@ -417,6 +379,76 @@
                 </div>
             </section>
         </main>
+    </div>
+
+    <div class="modal-overlay" id="codeExplorerTecitCodeLogicModal" aria-hidden="true">
+        <div class="modal" role="dialog" aria-modal="true" aria-labelledby="codeExplorerTecitCodeLogicTitle" aria-describedby="codeExplorerTecitCodeLogicBody">
+            <div class="modal-header">
+                <div>
+                    <h2 id="codeExplorerTecitCodeLogicTitle" class="modal-title" data-i18n="codeExplorer.logicTitle">Tecit Code Logic</h2>
+                </div>
+                <button type="button" class="btn btn-secondary btn-icon btn-xs" aria-label="Close Tecit code logic" data-i18n-aria-label="configurator.tecitCodeLogicCloseAria" data-close-modal>
+                    <i class="ri-close-line text-icon-md" aria-hidden="true"></i>
+                </button>
+            </div>
+
+            <div id="codeExplorerTecitCodeLogicBody" class="modal-body overflow-y-auto">
+                <div class="flex flex-col gap-20">
+                    <p class="text-body-sm text-grey-primary" data-i18n="configurator.tecitCodeLogicIntro">Live Tecit references use a fixed 17-character structure. Each segment maps to one manufacturing field in the configurator.</p>
+
+                    <div class="panel panel-sm flex flex-col gap-8">
+                        <span class="input-label" data-i18n="configurator.tecitCodeLogicPatternLabel">Reference Pattern</span>
+                        <code class="text-body-lg font-mono text-black break-all" data-i18n="configurator.tecitCodeLogicPattern">11 | 0375 | 81 | 1 | 1 | 0 | 01 | 01 | 00</code>
+                    </div>
+
+                    <div class="flex flex-col gap-8">
+                        <span class="input-label" data-i18n="configurator.tecitCodeLogicLegendLabel">Segment Legend</span>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-12">
+                            <div class="panel panel-sm flex items-start justify-between gap-16"><code class="text-body-sm font-mono text-black shrink-0">11</code><span class="text-body-sm text-black text-right" data-i18n="configurator.tecitCodeLogicFamily">Family (2 chars)</span></div>
+                            <div class="panel panel-sm flex items-start justify-between gap-16"><code class="text-body-sm font-mono text-black shrink-0">0375</code><span class="text-body-sm text-black text-right" data-i18n="configurator.tecitCodeLogicSize">Size (4 chars)</span></div>
+                            <div class="panel panel-sm flex items-start justify-between gap-16"><code class="text-body-sm font-mono text-black shrink-0">81</code><span class="text-body-sm text-black text-right" data-i18n="configurator.tecitCodeLogicColor">Color (2 chars)</span></div>
+                            <div class="panel panel-sm flex items-start justify-between gap-16"><code class="text-body-sm font-mono text-black shrink-0">1</code><span class="text-body-sm text-black text-right" data-i18n="configurator.tecitCodeLogicCri">CRI (1 char)</span></div>
+                            <div class="panel panel-sm flex items-start justify-between gap-16"><code class="text-body-sm font-mono text-black shrink-0">1</code><span class="text-body-sm text-black text-right" data-i18n="configurator.tecitCodeLogicSeries">Series (1 char)</span></div>
+                            <div class="panel panel-sm flex items-start justify-between gap-16"><code class="text-body-sm font-mono text-black shrink-0">0</code><span class="text-body-sm text-black text-right" data-i18n="configurator.tecitCodeLogicLens">Lens (1 char)</span></div>
+                            <div class="panel panel-sm flex items-start justify-between gap-16"><code class="text-body-sm font-mono text-black shrink-0">01</code><span class="text-body-sm text-black text-right" data-i18n="configurator.tecitCodeLogicFinish">Finish (2 chars)</span></div>
+                            <div class="panel panel-sm flex items-start justify-between gap-16"><code class="text-body-sm font-mono text-black shrink-0">01</code><span class="text-body-sm text-black text-right" data-i18n="configurator.tecitCodeLogicCap">Cap (2 chars)</span></div>
+                            <div class="panel panel-sm flex items-start justify-between gap-16"><code class="text-body-sm font-mono text-black shrink-0">00</code><span class="text-body-sm text-black text-right" data-i18n="configurator.tecitCodeLogicOption">Option (2 chars)</span></div>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-12">
+                        <div class="panel panel-sm flex flex-col gap-6">
+                            <span class="input-label" data-i18n="configurator.tecitCodeLogicIdentityTitle">Luminos Validation</span>
+                            <p class="text-body-sm text-black" data-i18n="configurator.tecitCodeLogicIdentityBody">First 10 characters (family + size + color + CRI + series) form identity checked against the Luminos view.</p>
+                        </div>
+                        <div class="panel panel-sm flex flex-col gap-6">
+                            <span class="input-label" data-i18n="codeExplorer.defaultContextTitle">Datasheet Ready Context</span>
+                            <p class="text-body-sm text-black" data-i18n="codeExplorer.defaultContextBody">Readiness check uses default export context: Portuguese output, purpose 0, no fixing, no driver, no connection cable, cable connector 0, cable type branco, end cap 0, and gasket 5.</p>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-12">
+                        <div class="panel panel-sm flex flex-col gap-4"><span class="text-body-sm text-black" data-i18n="configurator.tecitCodeLogicExampleBarra">Barra sample</span><code class="text-body-sm font-mono text-black break-all">11037581110010100</code></div>
+                        <div class="panel panel-sm flex flex-col gap-4"><span class="text-body-sm text-black" data-i18n="configurator.tecitCodeLogicExampleBarraLens">Barra sample with lens</span><code class="text-body-sm font-mono text-black break-all">11007502111010100</code></div>
+                        <div class="panel panel-sm flex flex-col gap-4"><span class="text-body-sm text-black" data-i18n="configurator.tecitCodeLogicExampleDownlight">Downlight sample</span><code class="text-body-sm font-mono text-black break-all">29012022191010000</code></div>
+                        <div class="panel panel-sm flex flex-col gap-4"><span class="text-body-sm text-black" data-i18n="configurator.tecitCodeLogicExampleDynamic">Dynamic sample</span><code class="text-body-sm font-mono text-black break-all">48007002110010000</code></div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-12">
+                        <div class="panel panel-sm flex flex-col gap-4"><span class="text-body-sm text-black" data-i18n="configurator.tecitCodeLogicSourceValidationTitle">Tecit code + Luminos validation</span><p class="text-body-sm text-grey-primary" data-i18n="configurator.tecitCodeLogicSourceValidationBody">First 10 characters validate family, size, color, CRI, and series against the Luminos view. That lookup also defines the internal product ID used by the API.</p></div>
+                        <div class="panel panel-sm flex flex-col gap-4"><span class="text-body-sm text-black" data-i18n="configurator.tecitCodeLogicSourceCharacteristicsTitle">Database characteristics</span><p class="text-body-sm text-grey-primary" data-i18n="configurator.tecitCodeLogicSourceCharacteristicsBody">Technical characteristics, electrical data, dimensions, and product descriptions come from the MySQL data used by the NexLed API.</p></div>
+                        <div class="panel panel-sm flex flex-col gap-4"><span class="text-body-sm text-black" data-i18n="configurator.tecitCodeLogicSourceAssetsTitle">Local PDF assets</span><p class="text-body-sm text-grey-primary" data-i18n="configurator.tecitCodeLogicSourceAssetsBody">Product images, technical drawings, color spectrum files, lens diagrams, icons, and accessory graphics still come from local assets in appdatasheets/img. Current PDF does not use DAM assets yet.</p></div>
+                        <div class="panel panel-sm flex flex-col gap-4"><span class="text-body-sm text-black" data-i18n="configurator.tecitCodeLogicSourceFormTitle">Live configurator selections</span><p class="text-body-sm text-grey-primary" data-i18n="configurator.tecitCodeLogicSourceFormBody">Language, company logo, fixing, power supply, cable, purpose, and other optional fields come from the current form state before the API generates the PDF.</p></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary btn-sm" data-close-modal data-modal-initial-focus>
+                    <span data-i18n="configurator.tecitCodeLogicClose">Close</span>
+                </button>
+            </div>
+        </div>
     </div>
 
     <script src="locales/en.js?v=20260414-code-explorer"></script>

@@ -325,12 +325,14 @@ function renderSummary(data) {
     const summary = data?.summary || {
         total_codes: 0,
         configurator_valid: 0,
+        configurator_invalid: 0,
         datasheet_ready: 0,
         datasheet_blocked: 0,
     };
 
     document.getElementById("summary-total").textContent = formatNumber(summary.total_codes);
     document.getElementById("summary-configurator").textContent = formatNumber(summary.configurator_valid);
+    document.getElementById("summary-invalid").textContent = formatNumber(summary.configurator_invalid);
     document.getElementById("summary-ready").textContent = formatNumber(summary.datasheet_ready);
     document.getElementById("summary-blocked").textContent = formatNumber(summary.datasheet_blocked);
 }
@@ -350,6 +352,9 @@ function renderTable() {
     body.innerHTML = rows.map((row) => {
         const selected = row.reference === explorerState.selectedReference;
         const rowClass = selected ? "bg-green-quaternary/40" : "";
+        const datasheetStatus = row.configurator_valid
+            ? buildStatusBadge(row.datasheet_ready, t("codeExplorer.statusReadyShort", {}, "Ready"), t("codeExplorer.statusBlockedShort", {}, "Blocked"))
+            : buildNeutralBadge(t("codeExplorer.statusNotApplicableShort", {}, "N/A"));
 
         return `
             <tr class="border-b border-grey-quaternary/40 align-top ${rowClass}">
@@ -362,8 +367,8 @@ function renderTable() {
                 <td class="py-12 pr-16">${escapeHtml(row.description || "—")}</td>
                 <td class="py-12 pr-16">${escapeHtml(row.product_type || "—")}</td>
                 <td class="py-12 pr-16 break-all">${escapeHtml(row.product_id || "—")}</td>
-                <td class="py-12 pr-16">${buildStatusBadge(row.configurator_valid, t("codeExplorer.statusConfiguratorValidShort", {}, "Valid"), t("codeExplorer.statusBlockedShort", {}, "Blocked"))}</td>
-                <td class="py-12 pr-16">${buildStatusBadge(row.datasheet_ready, t("codeExplorer.statusReadyShort", {}, "Ready"), t("codeExplorer.statusBlockedShort", {}, "Blocked"))}</td>
+                <td class="py-12 pr-16">${buildStatusBadge(row.configurator_valid, t("codeExplorer.statusConfiguratorValidShort", {}, "Valid"), t("codeExplorer.statusConfiguratorInvalidShort", {}, "Invalid"))}</td>
+                <td class="py-12 pr-16">${datasheetStatus}</td>
                 <td class="py-12">${escapeHtml(getFailureReasonText(row.failure_reason))}</td>
             </tr>
         `;
@@ -400,8 +405,10 @@ function renderDetail() {
     }).join("");
 
     document.getElementById("detail-statuses").innerHTML = [
-        buildStatusBadge(row.configurator_valid, t("codeExplorer.statusConfiguratorValid", {}, "Configurator valid"), t("codeExplorer.statusBlockedShort", {}, "Blocked")),
-        buildStatusBadge(row.datasheet_ready, t("codeExplorer.statusDatasheetReady", {}, "Datasheet ready"), t("codeExplorer.statusDatasheetBlocked", {}, "Datasheet blocked")),
+        buildStatusBadge(row.configurator_valid, t("codeExplorer.statusConfiguratorValid", {}, "Configurator valid"), t("codeExplorer.statusConfiguratorInvalid", {}, "Configurator invalid")),
+        row.configurator_valid
+            ? buildStatusBadge(row.datasheet_ready, t("codeExplorer.statusDatasheetReady", {}, "Datasheet ready"), t("codeExplorer.statusDatasheetBlocked", {}, "Datasheet blocked"))
+            : buildNeutralBadge(t("codeExplorer.statusNotApplicable", {}, "Not applicable")),
     ].join("");
 
     document.getElementById("detail-failure").textContent = row.failure_reason
@@ -490,6 +497,10 @@ function buildStatusBadge(isPositive, positiveLabel, negativeLabel) {
     const toneClass = isPositive ? "badge-success" : "badge-warning";
     const label = isPositive ? positiveLabel : negativeLabel;
     return `<span class="badge ${toneClass} badge-sm">${escapeHtml(label)}</span>`;
+}
+
+function buildNeutralBadge(label) {
+    return `<span class="badge badge-neutral badge-sm">${escapeHtml(label)}</span>`;
 }
 
 function setApiBadge(tone, key, fallback) {

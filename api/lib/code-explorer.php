@@ -13,6 +13,7 @@ const CODE_EXPLORER_DEFAULT_PAGE_SIZE = 100;
 const CODE_EXPLORER_MAX_PAGE_SIZE = 250;
 const CODE_EXPLORER_STATUS_ALL = "all";
 const CODE_EXPLORER_STATUS_CONFIGURATOR_VALID = "configurator_valid";
+const CODE_EXPLORER_STATUS_CONFIGURATOR_INVALID = "configurator_invalid";
 const CODE_EXPLORER_STATUS_DATASHEET_READY = "datasheet_ready";
 const CODE_EXPLORER_STATUS_DATASHEET_BLOCKED = "datasheet_blocked";
 const CODE_EXPLORER_DEFAULT_LANG = "pt";
@@ -22,6 +23,7 @@ function getCodeExplorerStatusFilter(string $value): string {
     $allowed = [
         CODE_EXPLORER_STATUS_ALL,
         CODE_EXPLORER_STATUS_CONFIGURATOR_VALID,
+        CODE_EXPLORER_STATUS_CONFIGURATOR_INVALID,
         CODE_EXPLORER_STATUS_DATASHEET_READY,
         CODE_EXPLORER_STATUS_DATASHEET_BLOCKED,
     ];
@@ -83,6 +85,10 @@ function getCodeExplorerFamilyOptions(int $family): array {
     $con = connectDBReferencias();
 
     $options = [
+        "size" => [],
+        "color" => [],
+        "cri" => [],
+        "series" => [],
         "lens" => [],
         "finish" => [],
         "cap" => [],
@@ -90,6 +96,10 @@ function getCodeExplorerFamilyOptions(int $family): array {
     ];
 
     $queries = [
+        "size" => "SELECT Tamanhos.tamanho FROM Tamanhos, Familias WHERE Tamanhos.familia = Familias.tamanhos AND Familias.codigo = $family ORDER BY tamanho",
+        "color" => "SELECT Cor.cor, Cor.codigo FROM Cor, Familias WHERE Cor.familia = Familias.cor AND Familias.codigo = $family ORDER BY Cor.codigo",
+        "cri" => "SELECT cri, codigo FROM CRI ORDER BY codigo",
+        "series" => "SELECT Series.series, Series.codigo FROM Series, Familias WHERE Series.familia = Familias.series AND Familias.codigo = $family ORDER BY codigo",
         "lens" => "SELECT Acrilico.acrilico, Acrilico.codigo, Acrilico.desc FROM Acrilico, Familias WHERE Acrilico.familia = Familias.acrilico AND Familias.codigo = $family ORDER BY codigo",
         "finish" => "SELECT Acabamento.acabamento, Acabamento.codigo, Acabamento.desc FROM Acabamento, Familias WHERE Acabamento.familia = Familias.acabamento AND Familias.codigo = $family ORDER BY codigo",
         "cap" => "SELECT Cap.cap, Cap.codigo, Cap.desc FROM Cap, Familias WHERE Cap.familia = Familias.cap AND Familias.codigo = $family ORDER BY codigo",
@@ -106,7 +116,15 @@ function getCodeExplorerFamilyOptions(int $family): array {
         while ($row = mysqli_fetch_assoc($result)) {
             $label = "";
 
-            if ($key === "lens") {
+            if ($key === "size") {
+                $label = (string) ($row["tamanho"] ?? "");
+            } elseif ($key === "color") {
+                $label = (string) ($row["cor"] ?: $row["codigo"]);
+            } elseif ($key === "cri") {
+                $label = (string) ($row["cri"] ?: $row["codigo"]);
+            } elseif ($key === "series") {
+                $label = (string) ($row["series"] ?: $row["codigo"]);
+            } elseif ($key === "lens") {
                 $label = (string) ($row["desc"] ?: $row["acrilico"] ?: $row["codigo"]);
             } elseif ($key === "finish") {
                 $label = (string) ($row["desc"] ?: $row["acabamento"] ?: $row["codigo"]);
@@ -117,7 +135,7 @@ function getCodeExplorerFamilyOptions(int $family): array {
             }
 
             $options[$key][] = [
-                "code" => str_pad((string) ($row["codigo"] ?? ""), getCodeExplorerSegmentLength($key), "0", STR_PAD_LEFT),
+                "code" => str_pad((string) ($row["codigo"] ?? $row["tamanho"] ?? ""), getCodeExplorerSegmentLength($key), "0", STR_PAD_LEFT),
                 "label" => $label,
             ];
         }
@@ -130,6 +148,10 @@ function getCodeExplorerFamilyOptions(int $family): array {
 
 function getCodeExplorerSegmentLength(string $segment): int {
     return match ($segment) {
+        "size" => REFERENCE_LENGTH_SIZE,
+        "color" => REFERENCE_LENGTH_COLOR,
+        "cri" => REFERENCE_LENGTH_CRI,
+        "series" => REFERENCE_LENGTH_SERIES,
         "lens" => REFERENCE_LENGTH_LENS,
         "finish" => REFERENCE_LENGTH_FINISH,
         "cap" => REFERENCE_LENGTH_CAP,
@@ -196,98 +218,132 @@ function buildCodeExplorerResponse(string $familyCode, string $familyName, array
     $summary = [
         "total_codes" => 0,
         "configurator_valid" => 0,
+        "configurator_invalid" => 0,
         "datasheet_ready" => 0,
         "datasheet_blocked" => 0,
     ];
-    $rows = [];
     $validatorCache = [];
     $optionCount = max(1, count($options["option"]));
     $defaultOptionCode = $options["option"][0]["code"] ?? str_repeat("0", REFERENCE_LENGTH_OPTION);
+    $identityMap = [];
+    $filteredTotal = 0;
+    $pageRows = [];
+    $requestedPage = max($page, 1);
+    $offset = ($requestedPage - 1) * $pageSize;
+    $limit = $offset + $pageSize;
+    $defaultProductType = getProductType($familyCode . str_repeat("0", REFERENCE_LENGTH_FULL - REFERENCE_LENGTH_FAMILY));
 
     foreach ($identities as $identityData) {
-        $identity = $identityData["identity"];
-        $segments = decodeReference($identity . str_repeat("0", REFERENCE_LENGTH_FULL - REFERENCE_LENGTH_IDENTITY));
+        $identityMap[$identityData["identity"]] = $identityData;
+    }
 
-        foreach ($options["lens"] as $lens) {
-            foreach ($options["finish"] as $finish) {
-                foreach ($options["cap"] as $cap) {
-                    $productId = resolveCodeExplorerProductId($familyCode, $identityData, $cap["code"]);
+    foreach ($options["size"] as $size) {
+        foreach ($options["color"] as $color) {
+            foreach ($options["cri"] as $cri) {
+                foreach ($options["series"] as $series) {
+                    $identity = $familyCode . $size["code"] . $color["code"] . $cri["code"] . $series["code"];
+                    $identityData = $identityMap[$identity] ?? null;
+                    $isConfiguratorValidIdentity = $identityData !== null;
 
-                    if ($productId === null || $productId === "") {
-                        continue;
-                    }
+                    foreach ($options["lens"] as $lens) {
+                        foreach ($options["finish"] as $finish) {
+                            foreach ($options["cap"] as $cap) {
+                                $productId = $isConfiguratorValidIdentity
+                                    ? resolveCodeExplorerProductId($familyCode, $identityData, $cap["code"])
+                                    : null;
+                                $isConfiguratorValid = $isConfiguratorValidIdentity && $productId !== null && $productId !== "";
+                                $productType = $isConfiguratorValidIdentity
+                                    ? ($identityData["product_type"] ?? $defaultProductType)
+                                    : $defaultProductType;
+                                $description = $identityData["description"] ?? "";
+                                $readiness = [
+                                    "datasheet_ready" => false,
+                                    "failure_reason" => "invalid_luminos_combination",
+                                ];
 
-                    $summary["total_codes"] += $optionCount;
-                    $summary["configurator_valid"] += $optionCount;
+                                if ($isConfiguratorValid) {
+                                    $validationReference = $identity . $lens["code"] . $finish["code"] . $cap["code"] . $defaultOptionCode;
+                                    $readiness = getCodeExplorerDatasheetReadiness(
+                                        $validationReference,
+                                        $productId,
+                                        $productType,
+                                        $description,
+                                        $options,
+                                        $validatorCache
+                                    );
+                                }
 
-                    $validationReference = $identity . $lens["code"] . $finish["code"] . $cap["code"] . $defaultOptionCode;
-                    $readiness = getCodeExplorerDatasheetReadiness(
-                        $validationReference,
-                        $productId,
-                        $identityData["product_type"],
-                        $identityData["description"],
-                        $options,
-                        $validatorCache
-                    );
+                                $summary["total_codes"] += $optionCount;
 
-                    if ($readiness["datasheet_ready"]) {
-                        $summary["datasheet_ready"] += $optionCount;
-                    } else {
-                        $summary["datasheet_blocked"] += $optionCount;
-                    }
+                                if ($isConfiguratorValid) {
+                                    $summary["configurator_valid"] += $optionCount;
 
-                    foreach ($options["option"] as $option) {
-                        $reference = $identity . $lens["code"] . $finish["code"] . $cap["code"] . $option["code"];
-                        $row = [
-                            "reference" => $reference,
-                            "identity" => $identity,
-                            "description" => $identityData["description"],
-                            "product_type" => $identityData["product_type"],
-                            "product_id" => $productId,
-                            "segments" => [
-                                "family" => $segments["family"],
-                                "size" => $segments["size"],
-                                "color" => $segments["color"],
-                                "cri" => $segments["cri"],
-                                "series" => $segments["series"],
-                                "lens" => $lens["code"],
-                                "finish" => $finish["code"],
-                                "cap" => $cap["code"],
-                                "option" => $option["code"],
-                            ],
-                            "segment_labels" => [
-                                "lens" => $lens["label"],
-                                "finish" => $finish["label"],
-                                "cap" => $cap["label"],
-                                "option" => $option["label"],
-                            ],
-                            "configurator_valid" => true,
-                            "datasheet_ready" => $readiness["datasheet_ready"],
-                            "failure_reason" => $readiness["failure_reason"],
-                        ];
+                                    if ($readiness["datasheet_ready"]) {
+                                        $summary["datasheet_ready"] += $optionCount;
+                                    } else {
+                                        $summary["datasheet_blocked"] += $optionCount;
+                                    }
+                                } else {
+                                    $summary["configurator_invalid"] += $optionCount;
+                                }
 
-                        if (!matchesCodeExplorerSearch($row, $search)) {
-                            continue;
+                                foreach ($options["option"] as $option) {
+                                    $reference = $identity . $lens["code"] . $finish["code"] . $cap["code"] . $option["code"];
+                                    $row = [
+                                        "reference" => $reference,
+                                        "identity" => $identity,
+                                        "description" => $description,
+                                        "product_type" => $productType,
+                                        "product_id" => $productId,
+                                        "segments" => [
+                                            "family" => $familyCode,
+                                            "size" => $size["code"],
+                                            "color" => $color["code"],
+                                            "cri" => $cri["code"],
+                                            "series" => $series["code"],
+                                            "lens" => $lens["code"],
+                                            "finish" => $finish["code"],
+                                            "cap" => $cap["code"],
+                                            "option" => $option["code"],
+                                        ],
+                                        "segment_labels" => [
+                                            "size" => $size["label"],
+                                            "color" => $color["label"],
+                                            "cri" => $cri["label"],
+                                            "series" => $series["label"],
+                                            "lens" => $lens["label"],
+                                            "finish" => $finish["label"],
+                                            "cap" => $cap["label"],
+                                            "option" => $option["label"],
+                                        ],
+                                        "configurator_valid" => $isConfiguratorValid,
+                                        "datasheet_ready" => $isConfiguratorValid ? $readiness["datasheet_ready"] : false,
+                                        "failure_reason" => $isConfiguratorValid ? $readiness["failure_reason"] : "invalid_luminos_combination",
+                                    ];
+
+                                    if (!matchesCodeExplorerSearch($row, $search)) {
+                                        continue;
+                                    }
+
+                                    if (!matchesCodeExplorerStatusFilter($row, $statusFilter)) {
+                                        continue;
+                                    }
+
+                                    if ($filteredTotal >= $offset && $filteredTotal < $limit) {
+                                        $pageRows[] = $row;
+                                    }
+
+                                    $filteredTotal++;
+                                }
+                            }
                         }
-
-                        if (!matchesCodeExplorerStatusFilter($row, $statusFilter)) {
-                            continue;
-                        }
-
-                        $rows[] = $row;
                     }
                 }
             }
         }
     }
-
-    usort($rows, fn(array $a, array $b): int => strcmp($a["reference"], $b["reference"]));
-
-    $filteredTotal = count($rows);
     $totalPages = max(1, (int) ceil($filteredTotal / $pageSize));
-    $safePage = min(max($page, 1), $totalPages);
-    $offset = ($safePage - 1) * $pageSize;
-    $pagedRows = array_slice($rows, $offset, $pageSize);
+    $safePage = min($requestedPage, $totalPages);
 
     return [
         "family" => [
@@ -305,7 +361,7 @@ function buildCodeExplorerResponse(string $familyCode, string $familyName, array
             "total_pages" => $totalPages,
             "total_rows" => $filteredTotal,
         ],
-        "rows" => $pagedRows,
+        "rows" => $pageRows,
     ];
 }
 
@@ -345,8 +401,9 @@ function matchesCodeExplorerSearch(array $row, string $search): bool {
 function matchesCodeExplorerStatusFilter(array $row, string $statusFilter): bool {
     return match ($statusFilter) {
         CODE_EXPLORER_STATUS_CONFIGURATOR_VALID => $row["configurator_valid"] === true,
+        CODE_EXPLORER_STATUS_CONFIGURATOR_INVALID => $row["configurator_valid"] === false,
         CODE_EXPLORER_STATUS_DATASHEET_READY => $row["datasheet_ready"] === true,
-        CODE_EXPLORER_STATUS_DATASHEET_BLOCKED => $row["datasheet_ready"] === false,
+        CODE_EXPLORER_STATUS_DATASHEET_BLOCKED => $row["configurator_valid"] === true && $row["datasheet_ready"] === false,
         default => true,
     };
 }
