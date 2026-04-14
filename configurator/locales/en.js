@@ -188,6 +188,8 @@ window.NexLedLocales.en = {
         detailsTitle: "Code Detail",
         detailsHint: "Pick one row to inspect full segment breakdown and readiness result.",
         detailsEmpty: "No code selected yet.",
+        closeDetail: "Close",
+        closeDetailAria: "Close code detail",
         detailsSegments: "Decoded Segments",
         detailsStatuses: "Statuses",
         paginationPrev: "Previous",

@@ -149,6 +149,7 @@ function bindControls() {
         explorerState.selectedReference = trigger.dataset.reference || "";
         renderTable();
         renderDetail();
+        openCodeDetailModal(trigger);
     });
 }
 
@@ -414,6 +415,43 @@ function renderDetail() {
     document.getElementById("detail-failure").textContent = row.failure_reason
         ? getFailureReasonText(row.failure_reason)
         : t("codeExplorer.failure.none", {}, "No blocking reason.");
+}
+
+function openCodeDetailModal(trigger) {
+    const overlay = document.getElementById("codeExplorerDetailModal");
+
+    if (!overlay || !getSelectedRow()) {
+        return;
+    }
+
+    document.querySelectorAll(".modal-overlay").forEach((otherOverlay) => {
+        if (otherOverlay === overlay) {
+            return;
+        }
+
+        otherOverlay.classList.remove("is-open");
+        otherOverlay.classList.remove("is-visible");
+        otherOverlay.setAttribute("aria-hidden", "true");
+        otherOverlay.inert = true;
+    });
+
+    overlay.inert = false;
+    overlay.classList.add("is-open");
+    overlay.classList.remove("is-visible");
+    overlay.setAttribute("aria-hidden", "false");
+    overlay._lastTrigger = trigger || null;
+
+    document.body.classList.toggle(
+        "modal-open",
+        Array.from(document.querySelectorAll(".modal-overlay")).some((item) => item.classList.contains("is-open"))
+    );
+
+    requestAnimationFrame(() => {
+        const initialFocus = overlay.querySelector("[data-modal-initial-focus]")
+            || overlay.querySelector(".modal");
+
+        initialFocus?.focus({ preventScroll: true });
+    });
 }
 
 function renderResultsMeta() {

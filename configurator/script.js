@@ -76,6 +76,7 @@ let selectDropdowns = new Map();
 let activeSelectDropdown = null;
 let selectDropdownEventsBound = false;
 let syncConfiguredLanguageSelect = null;
+let liveReferenceDraftDirty = false;
 let apiBadgeState = {
     tone: "error",
     key: "shared.badge.apiUnavailable",
@@ -125,7 +126,7 @@ function initializeConfigurator() {
     familyCombobox = setupFamilyCombobox();
     setupSelectDropdowns();
     bindDocumentLanguageControls();
-    bindTecitCodeLoader();
+    bindLiveReferenceLoader();
     bindStatusToast();
     document.getElementById("select-family").addEventListener("change", handleFamilyChange);
     document.getElementById("btn-generate").addEventListener("click", generateDatasheet);
@@ -1315,16 +1316,21 @@ async function loadOptions(familyCode) {
     setStatusKey("configurator.runtime.optionsLoaded", "success", {}, "Options loaded. The reference now updates automatically.");
 }
 
-function bindTecitCodeLoader() {
-    const input = document.getElementById("input-tecit-code");
-    const button = document.getElementById("btn-load-tecit-code");
+function bindLiveReferenceLoader() {
+    const input = document.getElementById("output-reference");
+    const button = document.getElementById("btn-load-output-reference");
 
-    if (!input || !button || input.dataset.tecitBound === "true") {
+    if (!input || !button || input.dataset.liveReferenceBound === "true") {
         return;
     }
 
     input.addEventListener("input", () => {
         input.value = sanitizeTecitCode(input.value);
+        liveReferenceDraftDirty = true;
+        descriptionRequestToken += 1;
+        document.getElementById("output-description").value = "";
+        syncGenerateButton();
+        syncCopyButtons();
     });
 
     input.addEventListener("keydown", (event) => {
@@ -1333,12 +1339,12 @@ function bindTecitCodeLoader() {
         }
 
         event.preventDefault();
-        loadTecitCodeIntoForm();
+        loadTecitCodeIntoForm("output-reference");
     });
 
-    button.addEventListener("click", loadTecitCodeIntoForm);
+    button.addEventListener("click", () => loadTecitCodeIntoForm("output-reference"));
 
-    input.dataset.tecitBound = "true";
+    input.dataset.liveReferenceBound = "true";
 }
 
 function sanitizeTecitCode(value) {
@@ -1348,8 +1354,8 @@ function sanitizeTecitCode(value) {
 }
 
 function setTecitCodeControlsDisabled(isDisabled) {
-    const input = document.getElementById("input-tecit-code");
-    const button = document.getElementById("btn-load-tecit-code");
+    const input = document.getElementById("output-reference");
+    const button = document.getElementById("btn-load-output-reference");
 
     if (input) {
         input.disabled = isDisabled;
@@ -1447,8 +1453,8 @@ async function applyDecodedReferenceToForm(data) {
     };
 }
 
-async function loadTecitCodeIntoForm() {
-    const input = document.getElementById("input-tecit-code");
+async function loadTecitCodeIntoForm(sourceInputId = "output-reference") {
+    const input = document.getElementById(sourceInputId);
     const reference = sanitizeTecitCode(input?.value || "");
 
     if (!input) {
@@ -1456,6 +1462,9 @@ async function loadTecitCodeIntoForm() {
     }
 
     input.value = reference;
+
+    liveReferenceDraftDirty = true;
+    syncCopyButtons();
 
     if (!reference) {
         setStatusKey("configurator.runtime.tecitCodeMissing", "error", {}, "Enter a Tecit code first.");
@@ -1634,6 +1643,7 @@ function buildReference() {
 
     const reference = family + size + color + cri + series + lens + finish + cap + option;
 
+    liveReferenceDraftDirty = false;
     document.getElementById("output-reference").value = reference;
 
     syncGenerateButton();
@@ -1743,6 +1753,7 @@ async function generateDatasheet() {
     };
 
     setGenerateControlsDisabled(true);
+    setPdfLoadingOverlayOpen(true);
     setStatusKey("configurator.runtime.generatingDatasheet", "loading", {}, "Generating datasheet...");
 
     try {
@@ -1832,6 +1843,8 @@ async function generateDatasheet() {
 
         setStatusKey("configurator.runtime.datasheetFailed", "error", {}, "Datasheet generation failed.");
         console.error(error);
+    } finally {
+        setPdfLoadingOverlayOpen(false);
     }
 }
 
@@ -1919,6 +1932,7 @@ function resetConfiguratorState() {
 }
 
 function clearOutputValues() {
+    liveReferenceDraftDirty = false;
     document.getElementById("output-reference").value = "";
     document.getElementById("output-description").value = "";
 }
@@ -1926,7 +1940,7 @@ function clearOutputValues() {
 function syncGenerateButton() {
     const button = document.getElementById("btn-generate");
     const hasReference = document.getElementById("output-reference").value.length > 0;
-    const isDisabled = !hasReference || !isDatasheetServiceAvailable();
+    const isDisabled = !hasReference || liveReferenceDraftDirty || !isDatasheetServiceAvailable();
 
     button.disabled = isDisabled;
 
@@ -1959,6 +1973,23 @@ function setGenerateControlsDisabled(isDisabled) {
         navButton.disabled = isDisabled;
         navButton.setAttribute("aria-disabled", String(isDisabled));
     });
+}
+
+function setPdfLoadingOverlayOpen(isOpen) {
+    const overlay = document.getElementById("pdf-loading-overlay");
+
+    if (!overlay) {
+        return;
+    }
+
+    overlay.classList.toggle("is-open", isOpen);
+    overlay.setAttribute("aria-hidden", String(!isOpen));
+    overlay.inert = !isOpen;
+
+    document.body.classList.toggle(
+        "modal-open",
+        Array.from(document.querySelectorAll(".modal-overlay")).some((item) => item.classList.contains("is-open"))
+    );
 }
 
 function syncCopyButtons() {
@@ -2143,7 +2174,6 @@ function focusFamilyField() {
 
 function resetAllSelections() {
     const familySelect = document.getElementById("select-family");
-    const tecitInput = document.getElementById("input-tecit-code");
 
     if (!familySelect) {
         return;
@@ -2161,10 +2191,6 @@ function resetAllSelections() {
     document.querySelectorAll('#options-group input[type="number"]').forEach((element) => {
         element.value = "0";
     });
-
-    if (tecitInput) {
-        tecitInput.value = "";
-    }
 
     selectDropdowns.forEach((dropdown) => {
         dropdown.syncFromSelect();

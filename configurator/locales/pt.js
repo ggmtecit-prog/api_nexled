@@ -188,6 +188,8 @@ window.NexLedLocales.pt = {
         detailsTitle: "Detalhe do Codigo",
         detailsHint: "Escolha uma linha para ver os segmentos completos e o resultado da prontidao.",
         detailsEmpty: "Nenhum codigo selecionado ainda.",
+        closeDetail: "Fechar",
+        closeDetailAria: "Fechar detalhe do codigo",
         detailsSegments: "Segmentos Descodificados",
         detailsStatuses: "Estados",
         paginationPrev: "Anterior",

@@ -205,9 +205,6 @@
         <main class="flex-1 px-16 pt-32 pb-32 sm:px-20 sm:pt-40 sm:pb-40 md:px-24 md:pt-48 md:pb-48 lg:px-32 lg:pt-64 lg:pb-64 w-full">
             <header class="flex flex-col gap-12 pb-32" data-reveal="hero">
                 <h1 class="text-h1 font-medium text-black" data-i18n="codeExplorer.heading">Explore Valid Tecit Codes</h1>
-                <p class="text-body-md text-grey-primary max-w-readable" data-i18n="codeExplorer.subtitle">
-                    Separate internal page. Inspect full 17-character codes allowed by current system, then compare configurator validity against datasheet readiness.
-                </p>
             </header>
 
             <section class="grid grid-cols-1 xl:grid-cols-3 gap-24 items-start" data-reveal="section">
@@ -286,7 +283,7 @@
                     </section>
 
                     <section class="grid grid-cols-1 xl:grid-cols-12 gap-24">
-                        <div class="xl:col-span-8">
+                        <div class="xl:col-span-12">
                             <div class="card overflow-hidden">
                                 <div class="card-body flex flex-col gap-16">
                                     <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -339,49 +336,63 @@
                                 </div>
                             </div>
                         </div>
-
-                        <div class="xl:col-span-4">
-                            <div class="card">
-                                <div class="card-body flex flex-col gap-16">
-                                    <div>
-                                        <h2 class="card-title" data-i18n="codeExplorer.detailsTitle">Code Detail</h2>
-                                        <p class="text-body-sm text-grey-primary" data-i18n="codeExplorer.detailsHint">Pick one row to inspect full segment breakdown and readiness result.</p>
-                                    </div>
-
-                                    <div id="explorer-detail-empty" class="panel panel-sm">
-                                        <p class="text-body-sm text-grey-primary" data-i18n="codeExplorer.detailsEmpty">No code selected yet.</p>
-                                    </div>
-
-                                    <div id="explorer-detail" class="hidden flex flex-col gap-16">
-                                        <div class="panel panel-sm flex flex-col gap-8">
-                                            <div class="flex flex-col gap-2"><span class="input-label" data-i18n="codeExplorer.tableReference">Reference</span><code id="detail-reference" class="text-body-sm font-mono text-black break-all"></code></div>
-                                            <div class="flex flex-col gap-2"><span class="input-label" data-i18n="codeExplorer.tableIdentity">Identity</span><code id="detail-identity" class="text-body-sm font-mono text-black break-all"></code></div>
-                                            <div class="flex flex-col gap-2"><span class="input-label" data-i18n="codeExplorer.tableDescription">Description</span><p id="detail-description" class="text-body-sm text-black"></p></div>
-                                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-8">
-                                                <div class="flex flex-col gap-2"><span class="input-label" data-i18n="codeExplorer.tableType">Type</span><p id="detail-type" class="text-body-sm text-black"></p></div>
-                                                <div class="flex flex-col gap-2"><span class="input-label" data-i18n="codeExplorer.tableProductId">Product ID</span><p id="detail-product-id" class="text-body-sm text-black break-all"></p></div>
-                                            </div>
-                                        </div>
-
-                                        <div class="panel panel-sm flex flex-col gap-8">
-                                            <span class="input-label" data-i18n="codeExplorer.detailsSegments">Decoded Segments</span>
-                                            <div id="detail-segments" class="grid grid-cols-1 sm:grid-cols-2 gap-8"></div>
-                                        </div>
-
-                                        <div class="panel panel-sm flex flex-col gap-8">
-                                            <span class="input-label" data-i18n="codeExplorer.detailsStatuses">Statuses</span>
-                                            <div class="flex flex-wrap gap-8" id="detail-statuses"></div>
-                                            <p id="detail-failure" class="text-body-sm text-grey-primary"></p>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
                     </section>
                 </div>
             </section>
 
         </main>
+    </div>
+
+    <div class="modal-overlay" id="codeExplorerDetailModal" aria-hidden="true">
+        <div class="modal" role="dialog" aria-modal="true" aria-labelledby="codeExplorerDetailModalTitle" aria-describedby="codeExplorerDetailModalBody">
+            <div class="modal-header">
+                <div>
+                    <h2 id="codeExplorerDetailModalTitle" class="modal-title" data-i18n="codeExplorer.detailsTitle">Code Detail</h2>
+                </div>
+                <button type="button" class="btn btn-secondary btn-icon btn-xs" aria-label="Close code detail" data-i18n-aria-label="codeExplorer.closeDetailAria" data-close-modal>
+                    <i class="ri-close-line text-icon-md" aria-hidden="true"></i>
+                </button>
+            </div>
+
+            <div id="codeExplorerDetailModalBody" class="modal-body overflow-y-auto">
+                <div class="flex flex-col gap-16">
+                    <p class="text-body-sm text-grey-primary" data-i18n="codeExplorer.detailsHint">Pick one row to inspect full segment breakdown and readiness result.</p>
+
+                    <div id="explorer-detail-empty" class="panel panel-sm">
+                        <p class="text-body-sm text-grey-primary" data-i18n="codeExplorer.detailsEmpty">No code selected yet.</p>
+                    </div>
+
+                    <div id="explorer-detail" class="hidden flex flex-col gap-16">
+                        <div class="panel panel-sm flex flex-col gap-8">
+                            <div class="flex flex-col gap-2"><span class="input-label" data-i18n="codeExplorer.tableReference">Reference</span><code id="detail-reference" class="text-body-sm font-mono text-black break-all"></code></div>
+                            <div class="flex flex-col gap-2"><span class="input-label" data-i18n="codeExplorer.tableIdentity">Identity</span><code id="detail-identity" class="text-body-sm font-mono text-black break-all"></code></div>
+                            <div class="flex flex-col gap-2"><span class="input-label" data-i18n="codeExplorer.tableDescription">Description</span><p id="detail-description" class="text-body-sm text-black"></p></div>
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-8">
+                                <div class="flex flex-col gap-2"><span class="input-label" data-i18n="codeExplorer.tableType">Type</span><p id="detail-type" class="text-body-sm text-black"></p></div>
+                                <div class="flex flex-col gap-2"><span class="input-label" data-i18n="codeExplorer.tableProductId">Product ID</span><p id="detail-product-id" class="text-body-sm text-black break-all"></p></div>
+                            </div>
+                        </div>
+
+                        <div class="panel panel-sm flex flex-col gap-8">
+                            <span class="input-label" data-i18n="codeExplorer.detailsSegments">Decoded Segments</span>
+                            <div id="detail-segments" class="grid grid-cols-1 sm:grid-cols-2 gap-8"></div>
+                        </div>
+
+                        <div class="panel panel-sm flex flex-col gap-8">
+                            <span class="input-label" data-i18n="codeExplorer.detailsStatuses">Statuses</span>
+                            <div class="flex flex-wrap gap-8" id="detail-statuses"></div>
+                            <p id="detail-failure" class="text-body-sm text-grey-primary"></p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary btn-sm" data-close-modal data-modal-initial-focus>
+                    <span data-i18n="codeExplorer.closeDetail">Close</span>
+                </button>
+            </div>
+        </div>
     </div>
 
     <div class="modal-overlay" id="codeExplorerTecitCodeLogicModal" aria-hidden="true">
@@ -454,10 +465,10 @@
         </div>
     </div>
 
-    <script src="locales/en.js?v=20260414-code-explorer"></script>
-    <script src="locales/pt.js?v=20260414-code-explorer"></script>
+    <script src="locales/en.js?v=20260414-code-explorer-detail-modal"></script>
+    <script src="locales/pt.js?v=20260414-code-explorer-detail-modal"></script>
     <script src="i18n.js?v=20260414-code-explorer"></script>
     <script src="app-shell.js?v=20260414-code-explorer"></script>
-    <script src="code-explorer.js?v=20260414-code-explorer"></script>
+    <script src="code-explorer.js?v=20260414-code-explorer-detail-modal"></script>
 </body>
 </html>
