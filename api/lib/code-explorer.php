@@ -201,6 +201,8 @@ function buildCodeExplorerResponse(string $familyCode, string $familyName, array
     ];
     $rows = [];
     $validatorCache = [];
+    $optionCount = max(1, count($options["option"]));
+    $defaultOptionCode = $options["option"][0]["code"] ?? str_repeat("0", REFERENCE_LENGTH_OPTION);
 
     foreach ($identities as $identityData) {
         $identity = $identityData["identity"];
@@ -209,32 +211,33 @@ function buildCodeExplorerResponse(string $familyCode, string $familyName, array
         foreach ($options["lens"] as $lens) {
             foreach ($options["finish"] as $finish) {
                 foreach ($options["cap"] as $cap) {
+                    $productId = resolveCodeExplorerProductId($familyCode, $identityData, $cap["code"]);
+
+                    if ($productId === null || $productId === "") {
+                        continue;
+                    }
+
+                    $summary["total_codes"] += $optionCount;
+                    $summary["configurator_valid"] += $optionCount;
+
+                    $validationReference = $identity . $lens["code"] . $finish["code"] . $cap["code"] . $defaultOptionCode;
+                    $readiness = getCodeExplorerDatasheetReadiness(
+                        $validationReference,
+                        $productId,
+                        $identityData["product_type"],
+                        $identityData["description"],
+                        $options,
+                        $validatorCache
+                    );
+
+                    if ($readiness["datasheet_ready"]) {
+                        $summary["datasheet_ready"] += $optionCount;
+                    } else {
+                        $summary["datasheet_blocked"] += $optionCount;
+                    }
+
                     foreach ($options["option"] as $option) {
                         $reference = $identity . $lens["code"] . $finish["code"] . $cap["code"] . $option["code"];
-                        $productId = resolveCodeExplorerProductId($familyCode, $identityData, $cap["code"]);
-
-                        if ($productId === null || $productId === "") {
-                            continue;
-                        }
-
-                        $summary["total_codes"]++;
-                        $summary["configurator_valid"]++;
-
-                        $readiness = getCodeExplorerDatasheetReadiness(
-                            $reference,
-                            $productId,
-                            $identityData["product_type"],
-                            $identityData["description"],
-                            $options,
-                            $validatorCache
-                        );
-
-                        if ($readiness["datasheet_ready"]) {
-                            $summary["datasheet_ready"]++;
-                        } else {
-                            $summary["datasheet_blocked"]++;
-                        }
-
                         $row = [
                             "reference" => $reference,
                             "identity" => $identity,
