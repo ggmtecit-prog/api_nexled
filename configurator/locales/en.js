@@ -408,6 +408,8 @@ window.NexLedLocales.en = {
             completeConfiguration: "Complete the configuration before generating the datasheet.",
             generatingDatasheet: "Generating datasheet...",
             creatingPdf: "Creating PDF",
+            pdfReady: "PDF ready",
+            pdfReadyHint: "The download has started in your browser.",
             unknownError: "Unknown error",
             datasheetFailedWithMessage: "Datasheet generation failed: {message}",
             datasheetReady: "Datasheet ready. The PDF download has started.",

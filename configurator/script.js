@@ -7,6 +7,7 @@
 
 const API_KEY = "7b8edd27a16f60bf7a1c92b8ceb40cda474588d24491140c130418153053063b";
 const DEFAULT_API_BASE = "https://apinexled-production.up.railway.app/api";
+const PDF_LOADING_SUCCESS_HOLD_MS = 2800;
 
 const REF_LENGTHS = {
     size: 4,
@@ -1752,7 +1753,10 @@ async function generateDatasheet() {
         finalidade: get("select-purpose"),
     };
 
+    let holdSuccessState = false;
+
     setGenerateControlsDisabled(true);
+    setPdfLoadingOverlayState("loading");
     setPdfLoadingOverlayOpen(true);
     setStatusKey("configurator.runtime.generatingDatasheet", "loading", {}, "Generating datasheet...");
 
@@ -1824,6 +1828,8 @@ async function generateDatasheet() {
         link.click();
 
         URL.revokeObjectURL(url);
+        holdSuccessState = true;
+        setPdfLoadingOverlayState("success");
         setStatusKey("configurator.runtime.datasheetReady", "success", {}, "Datasheet ready. The PDF download has started.");
     } catch (error) {
         setGenerateControlsDisabled(false);
@@ -1844,7 +1850,13 @@ async function generateDatasheet() {
         setStatusKey("configurator.runtime.datasheetFailed", "error", {}, "Datasheet generation failed.");
         console.error(error);
     } finally {
+        if (holdSuccessState) {
+            await waitForNextPaint();
+            await new Promise((resolve) => window.setTimeout(resolve, PDF_LOADING_SUCCESS_HOLD_MS));
+        }
+
         setPdfLoadingOverlayOpen(false);
+        setPdfLoadingOverlayState("loading");
     }
 }
 
@@ -1990,6 +2002,31 @@ function setPdfLoadingOverlayOpen(isOpen) {
         "modal-open",
         Array.from(document.querySelectorAll(".modal-overlay")).some((item) => item.classList.contains("is-open"))
     );
+}
+
+function setPdfLoadingOverlayState(state) {
+    const loadingState = document.getElementById("pdf-loading-state");
+    const successState = document.getElementById("pdf-success-state");
+    const status = document.getElementById("pdf-loading-status");
+
+    if (!loadingState || !successState || !status) {
+        return;
+    }
+
+    const isSuccess = state === "success";
+
+    loadingState.classList.toggle("hidden", isSuccess);
+    successState.classList.toggle("hidden", !isSuccess);
+    successState.setAttribute("aria-hidden", String(!isSuccess));
+    status.setAttribute("aria-busy", String(!isSuccess));
+}
+
+function waitForNextPaint() {
+    return new Promise((resolve) => {
+        window.requestAnimationFrame(() => {
+            window.requestAnimationFrame(resolve);
+        });
+    });
 }
 
 function syncCopyButtons() {

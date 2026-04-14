@@ -668,14 +668,25 @@
     </div>
 
     <div class="modal-overlay" id="pdf-loading-overlay" aria-hidden="true" inert>
-        <div class="flex flex-col items-center justify-center gap-16 text-center m-auto" role="status" aria-live="polite" aria-busy="true">
-            <div class="spinner spinner-white spinner-lg" aria-hidden="true">
-                <svg class="w-full h-full" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
-                    <path class="spinner-track" d="M 50 5 L 75 5 A 20 20 0 0 1 95 25 L 95 75 A 20 20 0 0 1 75 95 L 25 95 A 20 20 0 0 1 5 75 L 5 25 A 20 20 0 0 1 25 5 L 50 5 Z" />
-                    <path class="spinner-anim" d="M 50 5 L 75 5 A 20 20 0 0 1 95 25 L 95 75 A 20 20 0 0 1 75 95 L 25 95 A 20 20 0 0 1 5 75 L 5 25 A 20 20 0 0 1 25 5 L 50 5 Z" />
-                </svg>
+        <div id="pdf-loading-status" class="flex flex-col items-center justify-center m-auto" role="status" aria-live="polite" aria-busy="true">
+            <div id="pdf-loading-state" class="flex flex-col items-center justify-center gap-16 text-center">
+                <div class="spinner spinner-white spinner-lg" aria-hidden="true">
+                    <svg class="w-full h-full" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+                        <path class="spinner-track" d="M 50 5 L 75 5 A 20 20 0 0 1 95 25 L 95 75 A 20 20 0 0 1 75 95 L 25 95 A 20 20 0 0 1 5 75 L 5 25 A 20 20 0 0 1 25 5 L 50 5 Z" />
+                        <path class="spinner-anim" d="M 50 5 L 75 5 A 20 20 0 0 1 95 25 L 95 75 A 20 20 0 0 1 75 95 L 25 95 A 20 20 0 0 1 5 75 L 5 25 A 20 20 0 0 1 25 5 L 50 5 Z" />
+                    </svg>
+                </div>
+                <p class="text-body-lg text-white" data-i18n="configurator.runtime.creatingPdf">Creating PDF</p>
             </div>
-            <p class="text-body-lg text-white" data-i18n="configurator.runtime.creatingPdf">Creating PDF</p>
+            <div id="pdf-success-state" class="empty-state empty-state-md border-0 bg-transparent hidden" aria-hidden="true">
+                <div class="empty-state-icon icon-box icon-box-empty-state">
+                    <i class="ri-check-line text-icon-lg" aria-hidden="true"></i>
+                </div>
+                <div class="empty-state-copy">
+                    <p class="empty-state-title" data-i18n="configurator.runtime.pdfReady">PDF ready</p>
+                    <p class="empty-state-text" data-i18n="configurator.runtime.pdfReadyHint">The download has started in your browser.</p>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -697,10 +708,10 @@
         </div>
     </div>
 
-    <script src="locales/en.js?v=20260414-copy-remediation"></script>
-    <script src="locales/pt.js?v=20260414-copy-remediation"></script>
+    <script src="locales/en.js?v=20260414-pdf-finish-state"></script>
+    <script src="locales/pt.js?v=20260414-pdf-finish-state"></script>
     <script src="i18n.js?v=20260414-code-explorer"></script>
     <script src="app-shell.js?v=20260414-code-explorer"></script>
-    <script src="script.js?v=20260414-copy-remediation"></script>
+    <script src="script.js?v=20260414-pdf-finish-state"></script>
 </body>
 </html>

@@ -408,6 +408,8 @@ window.NexLedLocales.pt = {
             completeConfiguration: "Complete a configuração antes de gerar a ficha técnica.",
             generatingDatasheet: "A gerar ficha técnica...",
             creatingPdf: "A criar PDF",
+            pdfReady: "PDF pronto",
+            pdfReadyHint: "A transferência começou no navegador.",
             unknownError: "Erro desconhecido",
             datasheetFailedWithMessage: "Falha na geração da ficha técnica: {message}",
             datasheetReady: "Ficha técnica pronta. A transferência do PDF começou.",
