@@ -1,5 +1,6 @@
 const DAM_API_KEY = "7b8edd27a16f60bf7a1c92b8ceb40cda474588d24491140c130418153053063b";
 const DAM_I18N_EVENT = "nexled:i18n-applied";
+const DAM_ROOT_FOLDER_ID = "nexled";
 const DAM_DEFAULT_FOLDER_ID = "nexled/00_brand";
 
 const damState = {
@@ -11,6 +12,7 @@ const damState = {
     selectedAssetId: null,
     selectedAsset: null,
     searchQuery: "",
+    createFolderParentId: "",
 };
 
 let treeRequestToken = 0;
@@ -35,6 +37,7 @@ window.addEventListener(DAM_I18N_EVENT, () => {
     }
 
     renderRootDropdown();
+    renderCreateFolderParentDropdown();
     renderDamList();
     updateFolderSummary();
     renderSelectedAsset();
@@ -50,9 +53,13 @@ function getDamElements() {
     const rootValue = document.querySelector("[data-dam-root-value]");
     const rootMenu = document.querySelector("[data-dam-root-menu]");
     const refreshTreeButton = document.querySelector("[data-dam-refresh-tree]");
-    const selectedFolder = document.querySelector("[data-dam-selected-folder]");
-    const createFolderInput = document.getElementById("dam-create-folder-name");
-    const createFolderButton = document.querySelector("[data-dam-create-folder]");
+    const openCreateFolderButton = document.querySelector("[data-dam-open-create-folder]");
+    const createFolderModal = document.querySelector("[data-dam-create-folder-modal]");
+    const createFolderInput = document.querySelector("[data-dam-create-folder-name]");
+    const createFolderParentDropdown = document.querySelector("[data-dam-create-parent-dropdown]");
+    const createFolderParentValue = document.querySelector("[data-dam-create-parent-value]");
+    const createFolderParentMenu = document.querySelector("[data-dam-create-parent-menu]");
+    const createFolderButton = document.querySelector("[data-dam-submit-create-folder]");
     const folderActionStatus = document.querySelector("[data-dam-folder-action-status]");
     const uploadTrigger = document.querySelector("[data-dam-upload-trigger]");
     const uploadInput = document.querySelector("[data-dam-upload-input]");
@@ -71,7 +78,7 @@ function getDamElements() {
     const copyAssetUrlButton = document.querySelector("[data-dam-copy-asset-url]");
     const assetStatus = document.querySelector("[data-dam-asset-status]");
 
-    if (!fileGrid || !emptyState || !searchInput || !breadcrumb || !rootDropdown || !rootValue || !rootMenu || !refreshTreeButton || !selectedFolder || !createFolderInput || !createFolderButton || !folderActionStatus || !uploadTrigger || !uploadInput || !uploadStatus || !assetModal || !assetModalPanel || !closeAssetModalButton || !assetPreview || !emptyAsset || !assetName || !assetType || !assetSize || !assetFormat || !assetFolder || !openAssetButton || !copyAssetUrlButton || !assetStatus) {
+    if (!fileGrid || !emptyState || !searchInput || !breadcrumb || !rootDropdown || !rootValue || !rootMenu || !refreshTreeButton || !openCreateFolderButton || !createFolderModal || !createFolderInput || !createFolderParentDropdown || !createFolderParentValue || !createFolderParentMenu || !createFolderButton || !folderActionStatus || !uploadTrigger || !uploadInput || !uploadStatus || !assetModal || !assetModalPanel || !closeAssetModalButton || !assetPreview || !emptyAsset || !assetName || !assetType || !assetSize || !assetFormat || !assetFolder || !openAssetButton || !copyAssetUrlButton || !assetStatus) {
         return null;
     }
 
@@ -84,8 +91,12 @@ function getDamElements() {
         rootValue,
         rootMenu,
         refreshTreeButton,
-        selectedFolder,
+        openCreateFolderButton,
+        createFolderModal,
         createFolderInput,
+        createFolderParentDropdown,
+        createFolderParentValue,
+        createFolderParentMenu,
         createFolderButton,
         folderActionStatus,
         uploadTrigger,
@@ -122,6 +133,10 @@ function bindDamEvents() {
                 loadDamFolder(damState.currentFolderId);
             }
         }, 180);
+    });
+
+    damElements.openCreateFolderButton.addEventListener("click", () => {
+        prepareCreateFolderModal();
     });
 
     damElements.createFolderButton.addEventListener("click", handleCreateFolder);
@@ -290,37 +305,182 @@ async function loadDamFolder(folderId) {
 }
 
 async function handleCreateFolder() {
-    if (!damState.currentFolder?.can_create_children) {
-        setFolderActionStatus(t("dam.folderActionBlocked", "Selected folder cannot create child folders."));
+    const creatableFolders = getCreatableFolders();
+
+    if (creatableFolders.length === 0) {
+        setFolderActionStatus(t("dam.folderActionBlocked", "No folder destinations available."));
         return;
     }
 
+    const parentId = resolveCreateFolderParentId(creatableFolders);
+    const parentFolder = creatableFolders.find((folder) => folder.id === parentId) || null;
     const name = String(damElements.createFolderInput.value || "").trim();
 
-    if (!name) {
-        setFolderActionStatus(t("dam.folderCreateFailed", "Unable to create folder."));
+    if (!parentFolder) {
+        setFolderActionStatus(t("dam.folderDestinationRequired", "Select folder destination."));
         return;
     }
 
-    setFolderActionStatus(t("dam.loadingFolders", "Loading folders..."));
+    if (!name) {
+        setFolderActionStatus(t("dam.folderNameRequired", "Enter folder name."));
+        return;
+    }
+
+    setFolderActionStatus(t("dam.folderCreating", "Creating folder..."));
 
     try {
         const response = await fetchDamJson("create-folder", {
-            parent_id: damState.currentFolder.id,
+            parent_id: parentFolder.id,
             name,
         });
         const folder = response?.data?.folder || null;
 
         damElements.createFolderInput.value = "";
-        setFolderActionStatus(t("dam.folderCreated", "Folder created."));
+        setFolderActionStatus("");
         await loadDamTree(false);
 
         if (folder?.id) {
             await loadDamFolder(folder.id);
         }
+
+        closeCreateFolderModal(true);
     } catch (error) {
         console.error(error);
         setFolderActionStatus(getDamErrorMessage(error, t("dam.folderCreateFailed", "Unable to create folder.")));
+    }
+}
+
+function prepareCreateFolderModal() {
+    const creatableFolders = getCreatableFolders();
+    damState.createFolderParentId = resolveCreateFolderParentId(creatableFolders);
+    damElements.createFolderInput.value = "";
+    setFolderActionStatus("");
+    renderCreateFolderParentDropdown();
+}
+
+function getCreatableFolders() {
+    return flattenFolderTree(damState.tree).filter((folder) => folder.can_create_children);
+}
+
+function resolveCreateFolderParentId(creatableFolders = getCreatableFolders()) {
+    if (creatableFolders.length === 0) {
+        return "";
+    }
+
+    if (damState.createFolderParentId && creatableFolders.some((folder) => folder.id === damState.createFolderParentId)) {
+        return damState.createFolderParentId;
+    }
+
+    const currentFolderId = damState.currentFolder?.id || damState.currentFolderId || "";
+
+    if (currentFolderId && creatableFolders.some((folder) => folder.id === currentFolderId)) {
+        return currentFolderId;
+    }
+
+    const activeRootId = resolveActiveRootFolder()?.id || "";
+    const activeRoot = creatableFolders.find((folder) => folder.id === activeRootId);
+
+    return activeRoot?.id || creatableFolders[0]?.id || "";
+}
+
+function renderCreateFolderParentDropdown() {
+    if (!damElements) {
+        return;
+    }
+
+    const creatableFolders = getCreatableFolders();
+    const selectedParentId = resolveCreateFolderParentId(creatableFolders);
+    const selectedParent = creatableFolders.find((folder) => folder.id === selectedParentId) || null;
+
+    damState.createFolderParentId = selectedParentId;
+    damElements.createFolderParentMenu.innerHTML = "";
+
+    if (creatableFolders.length === 0) {
+        damElements.createFolderParentValue.textContent = t("dam.folderActionBlocked", "No folder destinations available.");
+        damElements.createFolderParentDropdown.classList.remove("has-value");
+        return;
+    }
+
+    const fragment = document.createDocumentFragment();
+
+    creatableFolders.forEach((folder) => {
+        const item = document.createElement("li");
+        item.className = "dropdown-item";
+        item.setAttribute("role", "option");
+        item.setAttribute("aria-selected", String(selectedParentId === folder.id));
+        item.dataset.value = folder.id;
+        item.tabIndex = 0;
+
+        const label = document.createElement("span");
+        label.textContent = folder.path || folder.name;
+
+        const check = document.createElement("i");
+        check.className = "ri-check-line dropdown-item-check";
+        check.setAttribute("aria-hidden", "true");
+
+        item.appendChild(label);
+        item.appendChild(check);
+        item.addEventListener("click", () => {
+            handleCreateFolderParentSelect(folder);
+        });
+        item.addEventListener("keydown", (event) => {
+            if (event.key === "Enter" || event.key === " ") {
+                event.preventDefault();
+                handleCreateFolderParentSelect(folder);
+            }
+        });
+        fragment.appendChild(item);
+    });
+
+    damElements.createFolderParentMenu.appendChild(fragment);
+    damElements.createFolderParentValue.textContent = selectedParent?.path || t("dam.createFolderDestinationPlaceholder", "Select destination");
+    damElements.createFolderParentDropdown.classList.add("has-value");
+}
+
+function handleCreateFolderParentSelect(folder) {
+    if (!folder || !damElements) {
+        return;
+    }
+
+    damState.createFolderParentId = folder.id;
+    damElements.createFolderParentValue.textContent = folder.path || folder.name;
+    syncCreateFolderParentSelection(folder.id);
+    closeCreateFolderParentDropdown();
+}
+
+function syncCreateFolderParentSelection(folderId) {
+    if (!damElements) {
+        return;
+    }
+
+    damElements.createFolderParentMenu.querySelectorAll(".dropdown-item").forEach((item) => {
+        item.setAttribute("aria-selected", String(item.dataset.value === folderId));
+    });
+}
+
+function closeCreateFolderParentDropdown() {
+    if (!damElements) {
+        return;
+    }
+
+    damElements.createFolderParentDropdown.classList.remove("is-open");
+    damElements.createFolderParentDropdown.querySelector(".dropdown-trigger")?.setAttribute("aria-expanded", "false");
+}
+
+function closeCreateFolderModal(restoreFocus) {
+    if (!damElements?.createFolderModal) {
+        return;
+    }
+
+    const overlay = damElements.createFolderModal;
+    overlay.classList.remove("is-open", "is-visible");
+    overlay.setAttribute("aria-hidden", "true");
+    overlay.inert = true;
+    damElements.openCreateFolderButton?.setAttribute("aria-expanded", "false");
+    syncModalBodyLock();
+
+    if (restoreFocus && overlay._lastTrigger && typeof overlay._lastTrigger.focus === "function") {
+        overlay._lastTrigger.focus({ preventScroll: true });
     }
 }
 
@@ -793,8 +953,6 @@ function updateFolderSummary() {
         return;
     }
 
-    const folderPath = damState.currentFolder?.path || damState.currentFolderId || "nexled";
-    damElements.selectedFolder.textContent = folderPath;
     renderBreadcrumbs();
 }
 
@@ -803,15 +961,18 @@ function syncFolderActionButtons() {
         return;
     }
 
-    const canCreateChildren = Boolean(damState.currentFolder?.can_create_children);
+    const canCreateChildren = getCreatableFolders().length > 0;
     const canUpload = Boolean(damState.currentFolder?.can_upload);
 
+    damElements.openCreateFolderButton.disabled = !canCreateChildren;
     damElements.createFolderButton.disabled = !canCreateChildren;
     damElements.uploadTrigger.disabled = !canUpload;
 
     if (!canCreateChildren) {
-        damElements.createFolderButton.title = t("dam.folderActionBlocked", "Selected folder cannot create child folders.");
+        damElements.openCreateFolderButton.title = t("dam.folderActionBlocked", "No folder destinations available.");
+        damElements.createFolderButton.title = t("dam.folderActionBlocked", "No folder destinations available.");
     } else {
+        damElements.openCreateFolderButton.removeAttribute("title");
         damElements.createFolderButton.removeAttribute("title");
     }
 
