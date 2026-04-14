@@ -93,7 +93,117 @@ function buildPdfImageTag(?string $path, string $attributes = ""): string {
         $attrs .= " ";
     }
 
+    $attrs .= getLegacySvgDimensionAttributes($path, $attributes);
+
     return "<img {$attrs}src=\"{$src}\">";
+}
+
+function getLegacySvgDimensionAttributes(?string $path, string $existingAttributes = ""): string {
+    if (!is_string($path) || trim($path) === "") {
+        return "";
+    }
+
+    $normalizedAttributes = strtolower($existingAttributes);
+    if (
+        str_contains($normalizedAttributes, " width=") ||
+        str_starts_with($normalizedAttributes, "width=") ||
+        str_contains($normalizedAttributes, " height=") ||
+        str_starts_with($normalizedAttributes, "height=")
+    ) {
+        return "";
+    }
+
+    $svgPath = resolveLegacySvgPath($path);
+
+    if ($svgPath === null) {
+        return "";
+    }
+
+    $dimensions = getSvgDimensions($svgPath);
+
+    if ($dimensions === null) {
+        return "";
+    }
+
+    return "width=\"{$dimensions["width"]}\" height=\"{$dimensions["height"]}\" ";
+}
+
+function resolveLegacySvgPath(string $path): ?string {
+    if (
+        preg_match("#^(https?:)?//#i", $path) ||
+        str_starts_with($path, "data:") ||
+        str_starts_with($path, "file://")
+    ) {
+        return null;
+    }
+
+    $resolved = realpath($path) ?: $path;
+    $extension = strtolower(pathinfo($resolved, PATHINFO_EXTENSION));
+
+    if ($extension === "svg" && is_file($resolved)) {
+        return $resolved;
+    }
+
+    if ($extension === "png") {
+        $siblingSvg = preg_replace("/\\.png$/i", ".svg", $resolved);
+        if (is_string($siblingSvg) && is_file($siblingSvg)) {
+            return $siblingSvg;
+        }
+    }
+
+    return null;
+}
+
+function getSvgDimensions(string $svgPath): ?array {
+    if (!is_file($svgPath)) {
+        return null;
+    }
+
+    $xml = @simplexml_load_file($svgPath);
+
+    if ($xml === false) {
+        return null;
+    }
+
+    $width  = trim((string) $xml["width"]);
+    $height = trim((string) $xml["height"]);
+
+    if ($width !== "" && $height !== "") {
+        return ["width" => $width, "height" => $height];
+    }
+
+    $viewBox = trim((string) $xml["viewBox"]);
+    if ($viewBox === "") {
+        return null;
+    }
+
+    $parts = preg_split("/[\s,]+/", $viewBox);
+    if ($parts === false || count($parts) !== 4) {
+        return null;
+    }
+
+    $widthValue  = normalizeSvgDimensionValue($parts[2]);
+    $heightValue = normalizeSvgDimensionValue($parts[3]);
+
+    if ($widthValue === "" || $heightValue === "") {
+        return null;
+    }
+
+    return ["width" => $widthValue, "height" => $heightValue];
+}
+
+function normalizeSvgDimensionValue(string $value): string {
+    $numeric = (float) $value;
+
+    if ($numeric <= 0) {
+        return "";
+    }
+
+    if (abs($numeric - round($numeric)) < 0.00001) {
+        return (string) (int) round($numeric);
+    }
+
+    return rtrim(rtrim(number_format($numeric, 5, ".", ""), "0"), ".");
 }
 
 
@@ -273,8 +383,6 @@ function buildTechnicalDrawing(array $drawing, string $lang): string {
     $json  = json_decode(file_get_contents(DATASHEET_JSON_PATH));
     $title = $json->desenhotecnico->titulo->$lang;
     $note  = $json->notaMedidas->$lang;
-
-    $image   = toPdfAssetSrc($drawing["drawing"]);
     $dimKeys = ["A","B","C","D","E","F","G","H","I","J"];
 
     $headerCells = "";
@@ -291,7 +399,7 @@ function buildTechnicalDrawing(array $drawing, string $lang): string {
     return
     "<table nobr=\"true\">" .
         "<tr><td colspan=\"$colCount\"><h2>$title</h2></td></tr>" .
-        "<tr><td colspan=\"$colCount\">" . buildPdfImageTag($image) . "</td></tr>" .
+        "<tr><td colspan=\"$colCount\">" . buildPdfImageTag($drawing["drawing"] ?? null) . "</td></tr>" .
         "<tr><td colspan=\"$colCount\"></td></tr>" .
         "<tr>$headerCells</tr>" .
         "<tr>$valueCells</tr>" .
