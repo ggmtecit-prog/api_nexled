@@ -209,7 +209,20 @@ function findSystemCommand(string $command): ?string {
     }
 
     $binary = trim((string) $output[0]);
-    return $binary !== "" ? $binary : null;
+
+    if ($binary === "") {
+        return null;
+    }
+
+    if (
+        PHP_OS_FAMILY === "Windows" &&
+        strtolower($command) === "convert" &&
+        str_ends_with(strtolower(str_replace("\\", "/", $binary)), "/windows/system32/convert.exe")
+    ) {
+        return null;
+    }
+
+    return $binary;
 }
 
 

@@ -29,6 +29,7 @@ require_once "./lib/validate.php";
 // Route: /api/?endpoint=decode-reference&ref=...
 // Route: /api/?endpoint=datasheet (POST)
 // Route: /api/?endpoint=health
+// Route: /api/?endpoint=svg-diagnostics&ref=...
 // Route: /api/?endpoint=assets&action=get|upload|delete
 // Route: /api/?endpoint=dam&action=tree|list|asset|create-folder|resolve-target|upload
 
@@ -56,6 +57,9 @@ switch ($endpoint) {
         break;
     case "health":
         require "./endpoints/health.php";
+        break;
+    case "svg-diagnostics":
+        require "./endpoints/svg-diagnostics.php";
         break;
     case "assets":
         require "./endpoints/assets.php";
