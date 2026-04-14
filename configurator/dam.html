@@ -75,6 +75,15 @@
                             </a>
                         </div>
                         <div class="dropdown dropdown-minimal dropdown-md">
+                            <a href="code-explorer.html" class="dropdown-trigger">
+                                <span class="flex items-center gap-8">
+                                    <i class="ri-table-line text-icon-md" aria-hidden="true"></i>
+                                    <span class="dropdown-value" data-i18n="shared.nav.codeExplorer">Code Explorer</span>
+                                </span>
+                                <i class="ri-arrow-right-s-line dropdown-arrow" aria-hidden="true"></i>
+                            </a>
+                        </div>
+                        <div class="dropdown dropdown-minimal dropdown-md">
                             <a href="dam.html" class="dropdown-trigger" aria-current="page">
                                 <span class="flex items-center gap-8">
                                     <i class="ri-folder-line text-icon-md" aria-hidden="true"></i>
@@ -147,6 +156,15 @@
                                 <i class="ri-arrow-right-s-line dropdown-arrow" aria-hidden="true"></i>
                             </a>
                         </div>
+                        <div class="dropdown dropdown-minimal dropdown-sm">
+                            <a href="code-explorer.html" class="dropdown-trigger">
+                                <span class="flex items-center gap-8">
+                                    <i class="ri-table-line text-icon-md" aria-hidden="true"></i>
+                                    <span class="dropdown-value" data-i18n="shared.nav.codeExplorer">Code Explorer</span>
+                                </span>
+                                <i class="ri-arrow-right-s-line dropdown-arrow" aria-hidden="true"></i>
+                            </a>
+                        </div>
 
                         <div class="dropdown dropdown-minimal dropdown-sm">
                             <a href="dam.html" class="dropdown-trigger" aria-current="page">
@@ -195,9 +213,9 @@
                 Manage Brand Assets
             </h2>
 
-            <div class="flex flex-col items-start gap-32 lg:flex-row lg:gap-24 lg:justify-start">
+            <div class="flex flex-col items-start gap-32 lg:grid lg:grid-cols-12 lg:gap-24">
 
-                <div class="relative flex-1" data-reveal="section">
+                <div class="relative w-full min-w-0 lg:col-span-9" data-reveal="section">
                     <div class="input-icon-wrapper absolute inset-x-0 top-0 z-sticky">
                         <span class="input-icon-area" aria-hidden="true">
                             <i class="ri-search-line text-icon-md"></i>
@@ -223,7 +241,7 @@
                     </div>
                 </div>
 
-                <div class="flex w-full shrink-0 flex-col gap-24 lg:w-96 lg:sticky lg:top-56" data-reveal="section">
+                <div class="flex w-full flex-col gap-24 lg:col-span-3 lg:sticky lg:top-56" data-reveal="section">
                     <div class="card overflow-visible">
                         <div class="card-body p-24">
                             <h3 class="card-title" data-i18n="dam.quickActions">Quick Actions</h3>
@@ -241,17 +259,17 @@
                                 </button>
                             </div>
 
-                            <div class="flex flex-col gap-12 pt-24 items-start">
-                                <button type="button" class="btn btn-secondary btn-sm" data-modal-target="damCreateFolderModal" data-dam-open-create-folder>
+                            <div class="flex flex-col gap-12 pt-24 items-stretch">
+                                <button type="button" class="btn btn-secondary btn-sm w-full justify-center" data-modal-target="damCreateFolderModal" data-dam-open-create-folder>
                                     <i class="ri-folder-add-line text-icon-sm" aria-hidden="true"></i>
                                     <span data-i18n="dam.createFolder">Create Folder</span>
                                 </button>
                                 <input type="file" id="dam-upload-input" class="hidden" data-dam-upload-input>
-                                <button type="button" class="btn btn-secondary btn-sm" data-dam-upload-trigger>
+                                <button type="button" class="btn btn-secondary btn-sm w-full justify-center" data-dam-upload-trigger>
                                     <i class="ri-upload-2-line text-icon-sm" aria-hidden="true"></i>
                                     <span data-i18n="dam.uploadAssets">Upload Assets</span>
                                 </button>
-                                <button type="button" class="btn btn-secondary btn-sm" data-modal-target="damFolderPolicyModal">
+                                <button type="button" class="btn btn-secondary btn-sm w-full justify-center" data-modal-target="damFolderPolicyModal">
                                     <i class="ri-information-line text-icon-sm" aria-hidden="true"></i>
                                     <span data-i18n="dam.folderPolicyButton">Folder Policy</span>
                                 </button>
@@ -409,10 +427,10 @@
         </div>
     </div>
 
-    <script src="locales/en.js?v=20260413-dam-create-modal"></script>
-    <script src="locales/pt.js?v=20260413-dam-create-modal"></script>
-    <script src="i18n.js?v=20260410-api-health"></script>
-    <script src="app-shell.js?v=20260410-api-health"></script>
+    <script src="locales/en.js?v=20260414-code-explorer"></script>
+    <script src="locales/pt.js?v=20260414-code-explorer"></script>
+    <script src="i18n.js?v=20260414-code-explorer"></script>
+    <script src="app-shell.js?v=20260414-code-explorer"></script>
     <script src="dam.js?v=20260413-dam-create-modal"></script>
 </body>
 </html>

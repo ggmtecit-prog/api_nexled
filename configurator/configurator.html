@@ -75,6 +75,15 @@
                             </a>
                         </div>
                         <div class="dropdown dropdown-minimal dropdown-md">
+                            <a href="code-explorer.html" class="dropdown-trigger">
+                                <span class="flex items-center gap-8">
+                                    <i class="ri-table-line text-icon-md" aria-hidden="true"></i>
+                                    <span class="dropdown-value" data-i18n="shared.nav.codeExplorer">Code Explorer</span>
+                                </span>
+                                <i class="ri-arrow-right-s-line dropdown-arrow" aria-hidden="true"></i>
+                            </a>
+                        </div>
+                        <div class="dropdown dropdown-minimal dropdown-md">
                             <a href="dam.html" class="dropdown-trigger">
                                 <span class="flex items-center gap-8">
                                     <i class="ri-folder-line text-icon-md" aria-hidden="true"></i>
@@ -147,6 +156,15 @@
                                 <i class="ri-arrow-right-s-line dropdown-arrow" aria-hidden="true"></i>
                             </a>
                         </div>
+                        <div class="dropdown dropdown-minimal dropdown-sm">
+                            <a href="code-explorer.html" class="dropdown-trigger">
+                                <span class="flex items-center gap-8">
+                                    <i class="ri-table-line text-icon-md" aria-hidden="true"></i>
+                                    <span class="dropdown-value" data-i18n="shared.nav.codeExplorer">Code Explorer</span>
+                                </span>
+                                <i class="ri-arrow-right-s-line dropdown-arrow" aria-hidden="true"></i>
+                            </a>
+                        </div>
 
                         <div class="dropdown dropdown-minimal dropdown-sm">
                             <a href="dam.html" class="dropdown-trigger">
@@ -200,30 +218,7 @@
                 <div class="flex-1 w-full" data-reveal="section">
                     <div class="card overflow-visible" id="builder-card">
                         <div class="card-body">
-                            <div id="builder" class="flex flex-col gap-4">
-                                <h3 class="card-title" data-i18n="configurator.referenceSetupTitle">Reference Setup</h3>
-                                <p class="text-body-sm text-grey-primary max-w-readable" data-i18n="configurator.referenceSetupText">
-                                    Start with the product family, then complete the valid manufacturing options. The
-                                    live export state stays pinned on the right.
-                                </p>
-                            </div>
-
-                            <div class="pt-40 flex flex-col gap-12">
-                                <label class="input-label ml-12" for="input-tecit-code" data-i18n="configurator.tecitCodeLabel">Load Tecit Code</label>
-                                <div class="flex flex-col md:flex-row gap-16 md:items-center">
-                                    <div class="flex-1 w-full">
-                                        <input type="text" id="input-tecit-code" class="input input-sm" placeholder="11037581110010100" maxlength="20" autocomplete="off" spellcheck="false" data-i18n-placeholder="configurator.tecitCodePlaceholder">
-                                    </div>
-                                    <button type="button" id="btn-load-tecit-code" class="btn btn-secondary btn-sm shrink-0">
-                                        <i class="ri-scan-line text-icon-sm" aria-hidden="true"></i>
-                                        <span data-i18n="configurator.loadTecitCode">Load Code</span>
-                                    </button>
-                                </div>
-                                <p class="input-hint ml-12" data-i18n="configurator.tecitCodeHint">Paste full Tecit code to prefill family, size, light, optics, and finish fields.</p>
-                            </div>
-
-                            <div class="pt-40 flex flex-col gap-12">
-                                <label class="input-label ml-12" for="family-combobox-input" data-i18n="configurator.familyLabel">Product Family *</label>
+                            <div class="flex flex-col gap-12">
                                 <div id="family-combobox" class="combobox combobox-md">
                                     <div class="combobox-control">
                                         <span class="input-icon-area" aria-hidden="true">
@@ -486,23 +481,27 @@
                         <div class="flex flex-col gap-12 pt-16">
                             <span class="input-label" data-i18n="configurator.quickActions.liveReference">Live Reference</span>
                             <div class="flex flex-col gap-8 w-full">
-                                <input type="text" id="output-reference" class="input input-sm flex-1 min-w-0" maxlength="20" autocomplete="off" spellcheck="false">
-                                <div class="flex flex-wrap items-center justify-end gap-8">
-                                    <button type="button" id="btn-load-output-reference" class="btn btn-secondary btn-sm shrink-0">
-                                        <i class="ri-scan-line text-icon-sm" aria-hidden="true"></i>
-                                        <span data-i18n="configurator.loadTecitCode">Load Code</span>
-                                    </button>
-                                    <span class="tooltip-wrapper shrink-0">
-                                        <button type="button" class="btn btn-ghost btn-icon btn-xs shrink-0" data-copy-target="output-reference" aria-label="Copy reference" data-i18n-aria-label="shared.actions.copyReference">
-                                            <i class="ri-file-copy-line text-icon-xs" aria-hidden="true"></i>
+                                <div class="flex flex-col gap-8 md:flex-row md:items-center md:justify-between">
+                                    <div class="w-full max-w-narrow">
+                                        <input type="text" id="output-reference" class="input input-sm w-full" placeholder="11037581110010100" maxlength="20" autocomplete="off" spellcheck="false" data-i18n-placeholder="configurator.tecitCodePlaceholder">
+                                    </div>
+                                    <div class="flex items-center justify-end gap-8 shrink-0">
+                                        <button type="button" id="btn-load-output-reference" class="btn btn-secondary btn-sm shrink-0">
+                                            <i class="ri-scan-line text-icon-sm" aria-hidden="true"></i>
+                                            <span data-i18n="configurator.loadTecitCode">Load Code</span>
                                         </button>
-                                        <div class="tooltip tooltip-black tooltip-xs">
-                                            <span data-i18n="configurator.quickActions.copyReference">Copy Reference</span>
-                                        </div>
-                                    </span>
+                                        <span class="tooltip-wrapper shrink-0">
+                                            <button type="button" class="btn btn-ghost btn-icon btn-xs shrink-0" data-copy-target="output-reference" aria-label="Copy reference" data-i18n-aria-label="shared.actions.copyReference">
+                                                <i class="ri-file-copy-line text-icon-xs" aria-hidden="true"></i>
+                                            </button>
+                                            <div class="tooltip tooltip-black tooltip-xs">
+                                                <span data-i18n="configurator.quickActions.copyReference">Copy Reference</span>
+                                            </div>
+                                        </span>
+                                    </div>
                                 </div>
                             </div>
-                            <p class="input-hint" data-i18n="configurator.quickActions.liveReferenceHint">Built automatically from the selected manufacturing options.</p>
+                            <p class="input-hint" data-i18n="configurator.tecitCodeHint">Paste full Tecit code to prefill family, size, light, optics, and finish fields.</p>
                         </div>
 
                         <div id="output-fields" class="hidden flex flex-col gap-12 pt-24">
@@ -523,28 +522,10 @@
 
                         <div class="flex flex-col gap-12 pt-24">
                             <span class="input-label" data-i18n="configurator.tecitCodeLogicTitle">Tecit Code Logic</span>
-                            <button type="button" class="btn btn-secondary btn-sm justify-center w-full" data-modal-target="tecitCodeLogicModal">
+                            <button type="button" class="btn btn-ghost btn-sm justify-center w-full" data-modal-target="tecitCodeLogicModal">
                                 <i class="ri-information-line text-icon-sm" aria-hidden="true"></i>
                                 <span data-i18n="configurator.tecitCodeLogicButton">View Tecit Code Logic</span>
                             </button>
-                        </div>
-
-                        <div class="flex flex-col gap-12 pt-24">
-                            <span class="input-label" data-i18n="configurator.quickActions.exportTarget">Export Target</span>
-                            <div class="flex flex-wrap gap-16 justify-center items-center">
-                                <label class="radio-wrapper radio-md">
-                                    <input type="radio" name="exportSurface" value="pdf" checked>
-                                    <span class="text-body-sm" data-i18n="configurator.quickActions.pdfFile">PDF File</span>
-                                </label>
-                                <label class="radio-wrapper radio-md">
-                                    <input type="radio" name="exportSurface" value="reference" disabled>
-                                    <span class="text-body-sm" data-i18n="configurator.quickActions.reference">Reference</span>
-                                </label>
-                                <label class="radio-wrapper radio-md">
-                                    <input type="radio" name="exportSurface" value="description" disabled>
-                                    <span class="text-body-sm" data-i18n="configurator.quickActions.descriptionLabel">Description</span>
-                                </label>
-                            </div>
                         </div>
 
                         <div class="flex flex-col gap-12 pt-32 items-center">
@@ -553,11 +534,8 @@
                                     <i class="ri-file-pdf-line text-icon-sm" aria-hidden="true"></i>
                                     <span data-i18n="configurator.quickActions.generatePdf">Generate PDF</span>
                                 </button>
-                                <button type="button" class="btn btn-secondary btn-icon btn-sm" data-copy-target="output-reference" aria-label="Copy reference" data-i18n-aria-label="shared.actions.copyReference">
-                                    <i class="ri-file-copy-line text-icon-lg" aria-hidden="true"></i>
-                                </button>
                                 <button type="button" class="btn btn-secondary btn-icon btn-sm" id="reset-configurator-panel" aria-label="Reset configurator" data-i18n-aria-label="shared.actions.resetConfigurator">
-                                    <i class="ri-refresh-line text-icon-lg" aria-hidden="true"></i>
+                                    <i class="ri-delete-bin-2-line text-icon-lg" aria-hidden="true"></i>
                                 </button>
                             </div>
                         </div>
@@ -656,6 +634,28 @@
                             </div>
                         </div>
                     </div>
+
+                    <div class="flex flex-col gap-8">
+                        <span class="input-label" data-i18n="configurator.tecitCodeLogicSourcesTitle">Where Datasheet Data Comes From</span>
+                        <div class="grid grid-cols-1 gap-12">
+                            <div class="panel panel-sm flex flex-col gap-4">
+                                <span class="text-body-sm text-black" data-i18n="configurator.tecitCodeLogicSourceValidationTitle">Tecit code + Luminos validation</span>
+                                <p class="text-body-sm text-grey-primary" data-i18n="configurator.tecitCodeLogicSourceValidationBody">First 10 characters validate family, size, color, CRI, and series against the Luminos view. That lookup decides if the code is valid and which product ID the API should use.</p>
+                            </div>
+                            <div class="panel panel-sm flex flex-col gap-4">
+                                <span class="text-body-sm text-black" data-i18n="configurator.tecitCodeLogicSourceCharacteristicsTitle">Database characteristics</span>
+                                <p class="text-body-sm text-grey-primary" data-i18n="configurator.tecitCodeLogicSourceCharacteristicsBody">Technical characteristics, electrical data, dimensions, and product descriptions come from NexLed MySQL data used by the API.</p>
+                            </div>
+                            <div class="panel panel-sm flex flex-col gap-4">
+                                <span class="text-body-sm text-black" data-i18n="configurator.tecitCodeLogicSourceAssetsTitle">Local PDF assets</span>
+                                <p class="text-body-sm text-grey-primary" data-i18n="configurator.tecitCodeLogicSourceAssetsBody">Product images, technical drawings, color spectrum files, lens diagrams, icons, and accessory graphics still come from local assets in `appdatasheets/img`. Current PDF does not use DAM assets yet.</p>
+                            </div>
+                            <div class="panel panel-sm flex flex-col gap-4">
+                                <span class="text-body-sm text-black" data-i18n="configurator.tecitCodeLogicSourceFormTitle">Live configurator selections</span>
+                                <p class="text-body-sm text-grey-primary" data-i18n="configurator.tecitCodeLogicSourceFormBody">Language, company logo, fixing, power supply, cable, purpose, and other optional fields come from current form selections before the API builds the PDF.</p>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -667,26 +667,40 @@
         </div>
     </div>
 
-    <div class="toast-viewport" aria-live="polite" aria-atomic="false">
-        <div id="status-message" class="toast toast-info toast-sm" role="status" aria-hidden="true" hidden inert>
-            <span class="toast-icon">
-                <i id="status-message-icon" class="ri-information-line text-icon-lg" aria-hidden="true"></i>
-            </span>
-            <div class="toast-copy">
-                <p id="status-message-copy" class="toast-title" data-i18n="configurator.runtime.chooseFamilyToBegin">Choose a family to begin.</p>
+    <div class="modal-overlay" id="pdf-loading-overlay" aria-hidden="true" inert>
+        <div class="flex flex-col items-center justify-center gap-16 text-center m-auto" role="status" aria-live="polite" aria-busy="true">
+            <div class="spinner spinner-white spinner-lg" aria-hidden="true">
+                <svg class="w-full h-full" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+                    <path class="spinner-track" d="M 50 5 L 75 5 A 20 20 0 0 1 95 25 L 95 75 A 20 20 0 0 1 75 95 L 25 95 A 20 20 0 0 1 5 75 L 5 25 A 20 20 0 0 1 25 5 L 50 5 Z" />
+                    <path class="spinner-anim" d="M 50 5 L 75 5 A 20 20 0 0 1 95 25 L 95 75 A 20 20 0 0 1 75 95 L 25 95 A 20 20 0 0 1 5 75 L 5 25 A 20 20 0 0 1 25 5 L 50 5 Z" />
+                </svg>
             </div>
-            <div class="toast-actions">
-                <button type="button" id="status-message-close" class="btn btn-ghost btn-icon btn-xs" aria-label="Close notification">
-                    <i class="ri-close-line text-icon-md" aria-hidden="true"></i>
-                </button>
+            <p class="text-body-lg text-white" data-i18n="configurator.runtime.creatingPdf">Creating the pdf</p>
+        </div>
+    </div>
+
+    <div class="toast-viewport" aria-live="polite" aria-atomic="false">
+        <div class="panel border-0 bg-transparent">
+            <div id="status-message" class="toast toast-info toast-sm" role="status" aria-hidden="true" hidden inert>
+                <span class="toast-icon">
+                    <i id="status-message-icon" class="ri-information-line text-icon-lg" aria-hidden="true"></i>
+                </span>
+                <div class="toast-copy">
+                    <p id="status-message-copy" class="toast-title" data-i18n="configurator.runtime.chooseFamilyToBegin">Choose a family to begin.</p>
+                </div>
+                <div class="toast-actions">
+                    <button type="button" id="status-message-close" class="btn btn-ghost btn-icon btn-xs" aria-label="Close notification">
+                        <i class="ri-close-line text-icon-md" aria-hidden="true"></i>
+                    </button>
+                </div>
             </div>
         </div>
     </div>
 
-    <script src="locales/en.js?v=20260414-configurator-tecit-logic-examples"></script>
-    <script src="locales/pt.js?v=20260414-configurator-tecit-logic-examples"></script>
-    <script src="i18n.js?v=20260410-configurator-state-fix"></script>
-    <script src="app-shell.js?v=20260410-configurator-state-fix"></script>
-    <script src="script.js?v=20260413-configurator-datasheet-diagnostics"></script>
+    <script src="locales/en.js?v=20260414-code-explorer"></script>
+    <script src="locales/pt.js?v=20260414-code-explorer"></script>
+    <script src="i18n.js?v=20260414-code-explorer"></script>
+    <script src="app-shell.js?v=20260414-code-explorer"></script>
+    <script src="script.js?v=20260414-configurator-pdf-loading"></script>
 </body>
 </html>

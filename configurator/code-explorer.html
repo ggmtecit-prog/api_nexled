@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title data-i18n="title.codeExplorer">Code Explorer - NexLed</title>
+    <link rel="icon" type="image/svg+xml" href="./nexled-project-icon.svg">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Urbanist:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/remixicon@4.5.0/fonts/remixicon.css" rel="stylesheet">
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://ggmtecit-prog.github.io/NexLed_UI_System/src/config-cdn.js?v=1.3"></script>
+    <link rel="stylesheet" href="https://ggmtecit-prog.github.io/NexLed_UI_System/src/nexled.css?v=1.3">
+    <script src="https://ggmtecit-prog.github.io/NexLed_UI_System/src/nexled.js?v=1.3"></script>
+</head>
+<body class="bg-grey-tertiary text-black selection:bg-green-primary/10 min-h-screen lg:flex">
+
+    <header class="sticky top-0 z-sticky lg:hidden">
+        <div class="panel rounded-none border-x-0 border-t-0">
+            <div class="container-standard flex items-center justify-between gap-16 py-16">
+                <a href="index.html" class="flex items-center gap-12">
+                    <img src="./nexled-project-icon.svg" alt="NexLed" class="w-40 h-40">
+                    <div class="flex flex-col">
+                        <span class="font-semibold text-body-lg leading-none tracking-tight text-black">NexLed</span>
+                        <span class="text-overline text-grey-primary">API</span>
+                    </div>
+                </a>
+                <button type="button" class="btn btn-secondary btn-icon btn-xs" data-drawer-target="app-nav-drawer" aria-label="Open navigation" data-i18n-aria-label="shared.drawer.open">
+                    <i class="ri-menu-3-line icon icon-md" aria-hidden="true"></i>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <div id="app-nav-drawer" class="drawer-sheet drawer-sheet-sm lg:hidden" aria-hidden="true">
+        <div class="drawer-sheet-panel">
+            <div class="drawer-sheet-header">
+                <div class="flex items-center gap-12">
+                    <img src="./nexled-project-icon.svg" alt="NexLed" class="w-40 h-40">
+                    <div class="flex flex-col">
+                        <span class="font-semibold text-body-lg leading-none tracking-tight text-black">NexLed</span>
+                        <span class="text-overline text-grey-primary">API</span>
+                    </div>
+                </div>
+                <button type="button" class="btn btn-secondary btn-icon btn-xs drawer-sheet-close" data-drawer-close data-drawer-initial-focus aria-label="Close navigation" data-i18n-aria-label="shared.drawer.close">
+                    <i class="ri-close-line icon icon-md" aria-hidden="true"></i>
+                </button>
+            </div>
+            <div class="drawer-sheet-body">
+                <div class="flex h-full flex-col justify-between gap-24">
+                    <nav class="flex flex-col gap-12">
+                        <div class="dropdown dropdown-minimal dropdown-md">
+                            <a href="index.html" class="dropdown-trigger">
+                                <span class="flex items-center gap-8">
+                                    <i class="ri-home-5-line text-icon-md" aria-hidden="true"></i>
+                                    <span class="dropdown-value" data-i18n="shared.nav.home">Workspace Home</span>
+                                </span>
+                                <i class="ri-arrow-right-s-line dropdown-arrow" aria-hidden="true"></i>
+                            </a>
+                        </div>
+                        <div class="dropdown dropdown-minimal dropdown-md">
+                            <a href="configurator.html" class="dropdown-trigger">
+                                <span class="flex items-center gap-8">
+                                    <i class="ri-file-list-3-line text-icon-md" aria-hidden="true"></i>
+                                    <span class="dropdown-value" data-i18n="shared.nav.configurator">Configurator</span>
+                                </span>
+                                <i class="ri-arrow-right-s-line dropdown-arrow" aria-hidden="true"></i>
+                            </a>
+                        </div>
+                        <div class="dropdown dropdown-minimal dropdown-md">
+                            <a href="code-explorer.html" class="dropdown-trigger" aria-current="page">
+                                <span class="flex items-center gap-8">
+                                    <i class="ri-table-line text-icon-md" aria-hidden="true"></i>
+                                    <span class="dropdown-value" data-i18n="shared.nav.codeExplorer">Code Explorer</span>
+                                </span>
+                                <i class="ri-arrow-right-s-line dropdown-arrow" aria-hidden="true"></i>
+                            </a>
+                        </div>
+                        <div class="dropdown dropdown-minimal dropdown-md">
+                            <a href="dam.html" class="dropdown-trigger">
+                                <span class="flex items-center gap-8">
+                                    <i class="ri-folder-line text-icon-md" aria-hidden="true"></i>
+                                    <span class="dropdown-value" data-i18n="shared.nav.dam">DAM</span>
+                                </span>
+                                <i class="ri-arrow-right-s-line dropdown-arrow" aria-hidden="true"></i>
+                            </a>
+                        </div>
+                    </nav>
+
+                    <div class="flex flex-col items-center gap-12">
+                        <div class="language-selector language-selector-icon language-selector-xs language-selector-panel-top has-value w-auto shrink-0" data-app-language-selector>
+                            <button type="button" class="language-selector-trigger" aria-haspopup="listbox" aria-expanded="false" aria-label="Current language: English">
+                                <span class="language-selector-current">
+                                    <img class="language-selector-flag" src="https://flagcdn.com/w40/gb.png" srcset="https://flagcdn.com/w80/gb.png 2x" alt="">
+                                </span>
+                                <i class="ri-arrow-down-s-line language-selector-arrow" aria-hidden="true"></i>
+                            </button>
+                            <ul class="language-selector-menu custom-scrollbar" role="listbox" aria-label="Application language options" data-i18n-aria-label="shared.language.options">
+                                <li class="language-selector-option" role="option" aria-selected="true" data-code="gb" data-app-lang="en">
+                                    <img class="language-selector-flag" src="https://flagcdn.com/w40/gb.png" srcset="https://flagcdn.com/w80/gb.png 2x" alt="">
+                                    <span data-i18n="shared.language.english">English</span>
+                                    <i class="ri-check-line language-selector-check" aria-hidden="true"></i>
+                                </li>
+                                <li class="language-selector-option" role="option" aria-selected="false" data-code="pt" data-app-lang="pt">
+                                    <img class="language-selector-flag" src="https://flagcdn.com/w40/pt.png" srcset="https://flagcdn.com/w80/pt.png 2x" alt="">
+                                    <span data-i18n="shared.language.portuguese">Portuguese</span>
+                                    <i class="ri-check-line language-selector-check" aria-hidden="true"></i>
+                                </li>
+                            </ul>
+                        </div>
+                        <span class="badge badge-danger badge-md shrink-0" data-api-badge>
+                            <span data-api-badge-text data-i18n="shared.badge.apiUnavailable">API unavailable</span>
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <aside class="hidden lg:block shrink-0 sticky top-0 h-screen px-24 py-24">
+        <div class="sidebar w-sidebar h-full">
+            <div class="flex flex-col h-full gap-24 p-40">
+                <a href="index.html" class="flex items-center justify-center gap-12 group">
+                    <img src="./nexled-project-icon.svg" alt="NexLed" class="w-64 h-64">
+                    <div class="flex flex-col">
+                        <span class="text-card-title leading-none tracking-tight text-black">NexLed</span>
+                        <span class="text-label text-black tracking-wider">API</span>
+                    </div>
+                </a>
+
+                <div class="flex-1 flex items-center">
+                    <nav class="flex flex-col gap-24 w-full">
+                        <div class="dropdown dropdown-minimal dropdown-sm">
+                            <a href="index.html" class="dropdown-trigger">
+                                <span class="flex items-center gap-8">
+                                    <i class="ri-home-5-line text-icon-md" aria-hidden="true"></i>
+                                    <span class="dropdown-value" data-i18n="shared.nav.home">Workspace Home</span>
+                                </span>
+                                <i class="ri-arrow-right-s-line dropdown-arrow" aria-hidden="true"></i>
+                            </a>
+                        </div>
+                        <div class="dropdown dropdown-minimal dropdown-sm">
+                            <a href="configurator.html" class="dropdown-trigger">
+                                <span class="flex items-center gap-8">
+                                    <i class="ri-file-list-3-line text-icon-md" aria-hidden="true"></i>
+                                    <span class="dropdown-value" data-i18n="shared.nav.configurator">Configurator</span>
+                                </span>
+                                <i class="ri-arrow-right-s-line dropdown-arrow" aria-hidden="true"></i>
+                            </a>
+                        </div>
+                        <div class="dropdown dropdown-minimal dropdown-sm">
+                            <a href="code-explorer.html" class="dropdown-trigger" aria-current="page">
+                                <span class="flex items-center gap-8">
+                                    <i class="ri-table-line text-icon-md" aria-hidden="true"></i>
+                                    <span class="dropdown-value" data-i18n="shared.nav.codeExplorer">Code Explorer</span>
+                                </span>
+                                <i class="ri-arrow-right-s-line dropdown-arrow" aria-hidden="true"></i>
+                            </a>
+                        </div>
+                        <div class="dropdown dropdown-minimal dropdown-sm">
+                            <a href="dam.html" class="dropdown-trigger">
+                                <span class="flex items-center gap-8">
+                                    <i class="ri-folder-line text-icon-md" aria-hidden="true"></i>
+                                    <span class="dropdown-value" data-i18n="shared.nav.dam">DAM</span>
+                                </span>
+                                <i class="ri-arrow-right-s-line dropdown-arrow" aria-hidden="true"></i>
+                            </a>
+                        </div>
+                    </nav>
+                </div>
+
+                <div class="flex flex-col items-center gap-12 w-full mt-auto">
+                    <div class="language-selector language-selector-icon language-selector-xs language-selector-panel-top has-value w-auto shrink-0" data-app-language-selector>
+                        <button type="button" class="language-selector-trigger" aria-haspopup="listbox" aria-expanded="false" aria-label="Current language: English">
+                            <span class="language-selector-current">
+                                <img class="language-selector-flag" src="https://flagcdn.com/w40/gb.png" srcset="https://flagcdn.com/w80/gb.png 2x" alt="">
+                            </span>
+                            <i class="ri-arrow-down-s-line language-selector-arrow" aria-hidden="true"></i>
+                        </button>
+                        <ul class="language-selector-menu custom-scrollbar" role="listbox" aria-label="Application language options" data-i18n-aria-label="shared.language.options">
+                            <li class="language-selector-option" role="option" aria-selected="true" data-code="gb" data-app-lang="en">
+                                <img class="language-selector-flag" src="https://flagcdn.com/w40/gb.png" srcset="https://flagcdn.com/w80/gb.png 2x" alt="">
+                                <span data-i18n="shared.language.english">English</span>
+                                <i class="ri-check-line language-selector-check" aria-hidden="true"></i>
+                            </li>
+                            <li class="language-selector-option" role="option" aria-selected="false" data-code="pt" data-app-lang="pt">
+                                <img class="language-selector-flag" src="https://flagcdn.com/w40/pt.png" srcset="https://flagcdn.com/w80/pt.png 2x" alt="">
+                                <span data-i18n="shared.language.portuguese">Portuguese</span>
+                                <i class="ri-check-line language-selector-check" aria-hidden="true"></i>
+                            </li>
+                        </ul>
+                    </div>
+                    <span class="badge badge-danger badge-md shrink-0" data-api-badge>
+                        <span data-api-badge-text data-i18n="shared.badge.apiUnavailable">API unavailable</span>
+                    </span>
+                </div>
+            </div>
+        </div>
+    </aside>
+
+    <div class="flex-1 min-w-0 flex flex-col lg:h-screen overflow-y-auto">
+        <main class="flex-1 px-16 pt-32 pb-32 sm:px-20 sm:pt-40 sm:pb-40 md:px-24 md:pt-48 md:pb-48 lg:px-32 lg:pt-64 lg:pb-64 w-full">
+            <header class="flex flex-col gap-12 pb-32" data-reveal="hero">
+                <h1 class="text-h1 font-medium text-black" data-i18n="codeExplorer.heading">Explore Valid Tecit Codes</h1>
+                <p class="text-body-md text-grey-primary max-w-readable" data-i18n="codeExplorer.subtitle">
+                    Separate internal page. Inspect full 17-character codes allowed by current system, then compare configurator validity against datasheet readiness.
+                </p>
+            </header>
+
+            <section class="grid grid-cols-1 xl:grid-cols-3 gap-24 items-start" data-reveal="section">
+                <div class="card xl:col-span-2">
+                    <div class="card-body flex flex-col gap-20">
+                        <div class="flex flex-col gap-4">
+                            <h2 class="card-title" data-i18n="codeExplorer.logicTitle">Tecit Code Logic</h2>
+                            <p class="text-body-sm text-grey-primary" data-i18n="configurator.tecitCodeLogicIntro">Live Tecit references use a fixed 17-character structure. Each segment maps to one manufacturing field in the configurator.</p>
+                        </div>
+
+                        <div class="panel panel-sm flex flex-col gap-8">
+                            <span class="input-label" data-i18n="configurator.tecitCodeLogicPatternLabel">Reference Pattern</span>
+                            <code class="text-body-lg font-mono text-black break-all" data-i18n="configurator.tecitCodeLogicPattern">11 | 0375 | 81 | 1 | 1 | 0 | 01 | 01 | 00</code>
+                        </div>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-12">
+                            <div class="panel panel-sm flex items-start justify-between gap-16"><code class="text-body-sm font-mono text-black shrink-0">11</code><span class="text-body-sm text-black text-right" data-i18n="configurator.tecitCodeLogicFamily">Family (2 chars)</span></div>
+                            <div class="panel panel-sm flex items-start justify-between gap-16"><code class="text-body-sm font-mono text-black shrink-0">0375</code><span class="text-body-sm text-black text-right" data-i18n="configurator.tecitCodeLogicSize">Size (4 chars)</span></div>
+                            <div class="panel panel-sm flex items-start justify-between gap-16"><code class="text-body-sm font-mono text-black shrink-0">81</code><span class="text-body-sm text-black text-right" data-i18n="configurator.tecitCodeLogicColor">Color (2 chars)</span></div>
+                            <div class="panel panel-sm flex items-start justify-between gap-16"><code class="text-body-sm font-mono text-black shrink-0">1</code><span class="text-body-sm text-black text-right" data-i18n="configurator.tecitCodeLogicCri">CRI (1 char)</span></div>
+                            <div class="panel panel-sm flex items-start justify-between gap-16"><code class="text-body-sm font-mono text-black shrink-0">1</code><span class="text-body-sm text-black text-right" data-i18n="configurator.tecitCodeLogicSeries">Series (1 char)</span></div>
+                            <div class="panel panel-sm flex items-start justify-between gap-16"><code class="text-body-sm font-mono text-black shrink-0">0</code><span class="text-body-sm text-black text-right" data-i18n="configurator.tecitCodeLogicLens">Lens (1 char)</span></div>
+                            <div class="panel panel-sm flex items-start justify-between gap-16"><code class="text-body-sm font-mono text-black shrink-0">01</code><span class="text-body-sm text-black text-right" data-i18n="configurator.tecitCodeLogicFinish">Finish (2 chars)</span></div>
+                            <div class="panel panel-sm flex items-start justify-between gap-16"><code class="text-body-sm font-mono text-black shrink-0">01</code><span class="text-body-sm text-black text-right" data-i18n="configurator.tecitCodeLogicCap">Cap (2 chars)</span></div>
+                            <div class="panel panel-sm flex items-start justify-between gap-16"><code class="text-body-sm font-mono text-black shrink-0">00</code><span class="text-body-sm text-black text-right" data-i18n="configurator.tecitCodeLogicOption">Option (2 chars)</span></div>
+                        </div>
+
+                        <div class="grid grid-cols-1 lg:grid-cols-2 gap-12">
+                            <div class="panel panel-sm flex flex-col gap-6">
+                                <span class="input-label" data-i18n="configurator.tecitCodeLogicIdentityTitle">Luminos Validation</span>
+                                <p class="text-body-sm text-black" data-i18n="configurator.tecitCodeLogicIdentityBody">First 10 characters (family + size + color + CRI + series) form identity checked against the Luminos view.</p>
+                            </div>
+                            <div class="panel panel-sm flex flex-col gap-6">
+                                <span class="input-label" data-i18n="codeExplorer.defaultContextTitle">Datasheet Ready Context</span>
+                                <p class="text-body-sm text-black" data-i18n="codeExplorer.defaultContextBody">Readiness check uses default export context: Portuguese output, purpose 0, no fixing, no driver, no connection cable, cable connector 0, cable type branco, end cap 0, and gasket 5.</p>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-12">
+                            <div class="panel panel-sm flex flex-col gap-4"><span class="text-body-sm text-black" data-i18n="configurator.tecitCodeLogicExampleBarra">Barra sample</span><code class="text-body-sm font-mono text-black break-all">11037581110010100</code></div>
+                            <div class="panel panel-sm flex flex-col gap-4"><span class="text-body-sm text-black" data-i18n="configurator.tecitCodeLogicExampleBarraLens">Barra sample with lens</span><code class="text-body-sm font-mono text-black break-all">11007502111010100</code></div>
+                            <div class="panel panel-sm flex flex-col gap-4"><span class="text-body-sm text-black" data-i18n="configurator.tecitCodeLogicExampleDownlight">Downlight sample</span><code class="text-body-sm font-mono text-black break-all">29012022191010000</code></div>
+                            <div class="panel panel-sm flex flex-col gap-4"><span class="text-body-sm text-black" data-i18n="configurator.tecitCodeLogicExampleDynamic">Dynamic sample</span><code class="text-body-sm font-mono text-black break-all">48007002110010000</code></div>
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-12">
+                            <div class="panel panel-sm flex flex-col gap-4"><span class="text-body-sm text-black" data-i18n="configurator.tecitCodeLogicSourceValidationTitle">Tecit code + Luminos validation</span><p class="text-body-sm text-grey-primary" data-i18n="configurator.tecitCodeLogicSourceValidationBody">First 10 characters validate family, size, color, CRI, and series against the Luminos view. That lookup also defines the internal product ID used by the API.</p></div>
+                            <div class="panel panel-sm flex flex-col gap-4"><span class="text-body-sm text-black" data-i18n="configurator.tecitCodeLogicSourceCharacteristicsTitle">Database characteristics</span><p class="text-body-sm text-grey-primary" data-i18n="configurator.tecitCodeLogicSourceCharacteristicsBody">Technical characteristics, electrical data, dimensions, and product descriptions come from the MySQL data used by the NexLed API.</p></div>
+                            <div class="panel panel-sm flex flex-col gap-4"><span class="text-body-sm text-black" data-i18n="configurator.tecitCodeLogicSourceAssetsTitle">Local PDF assets</span><p class="text-body-sm text-grey-primary" data-i18n="configurator.tecitCodeLogicSourceAssetsBody">Product images, technical drawings, color spectrum files, lens diagrams, icons, and accessory graphics still come from local assets in appdatasheets/img. Current PDF does not use DAM assets yet.</p></div>
+                            <div class="panel panel-sm flex flex-col gap-4"><span class="text-body-sm text-black" data-i18n="configurator.tecitCodeLogicSourceFormTitle">Live configurator selections</span><p class="text-body-sm text-grey-primary" data-i18n="configurator.tecitCodeLogicSourceFormBody">Language, company logo, fixing, power supply, cable, purpose, and other optional fields come from the current form state before the API generates the PDF.</p></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-body flex flex-col gap-20">
+                        <div class="flex flex-col gap-4">
+                            <h2 class="card-title" data-i18n="codeExplorer.filtersTitle">Explorer Filters</h2>
+                            <p class="text-body-sm text-grey-primary" data-i18n="codeExplorer.filtersBody">Choose one family first. Explorer builds allowed full codes live from Luminos identities plus family suffix options.</p>
+                        </div>
+
+                        <form id="explorer-filters" class="flex flex-col gap-16">
+                            <div>
+                                <label class="input-label ml-12" for="explorer-family" data-i18n="codeExplorer.familyLabel">Family</label>
+                                <select id="explorer-family" class="input input-sm">
+                                    <option value="" data-i18n="codeExplorer.familyPlaceholder">Select a family</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="input-label ml-12" for="explorer-search" data-i18n="codeExplorer.searchLabel">Search</label>
+                                <input id="explorer-search" type="text" class="input input-sm" placeholder="Reference, identity, description" data-i18n-placeholder="codeExplorer.searchPlaceholder">
+                            </div>
+                            <div>
+                                <label class="input-label ml-12" for="explorer-status" data-i18n="codeExplorer.statusLabel">Status</label>
+                                <select id="explorer-status" class="input input-sm">
+                                    <option value="all" data-i18n="codeExplorer.statusAll">All</option>
+                                    <option value="configurator_valid" data-i18n="codeExplorer.statusConfiguratorValid">Configurator valid</option>
+                                    <option value="datasheet_ready" data-i18n="codeExplorer.statusDatasheetReady">Datasheet ready</option>
+                                    <option value="datasheet_blocked" data-i18n="codeExplorer.statusDatasheetBlocked">Datasheet blocked</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="input-label ml-12" for="explorer-page-size" data-i18n="codeExplorer.pageSizeLabel">Rows per page</label>
+                                <select id="explorer-page-size" class="input input-sm">
+                                    <option value="50">50</option>
+                                    <option value="100" selected>100</option>
+                                    <option value="250">250</option>
+                                </select>
+                            </div>
+                            <button id="explorer-refresh" type="submit" class="btn btn-primary btn-sm justify-center">
+                                <i class="ri-refresh-line text-icon-sm" aria-hidden="true"></i>
+                                <span data-i18n="codeExplorer.refresh">Refresh Results</span>
+                            </button>
+                        </form>
+
+                        <div class="panel panel-sm flex flex-col gap-6">
+                            <span class="input-label" data-i18n="codeExplorer.readinessNoteTitle">Readiness Note</span>
+                            <p class="text-body-sm text-grey-primary" data-i18n="codeExplorer.readinessNoteBody">Datasheet-ready here means base PDF data and required assets exist for default context. It does not render a PDF and does not test optional fixing, driver, or connection cable selections.</p>
+                        </div>
+
+                        <div class="panel panel-sm flex flex-col gap-6">
+                            <span class="input-label" data-i18n="codeExplorer.pageStatusTitle">Page Status</span>
+                            <p id="explorer-status-message" class="text-body-sm text-grey-primary" data-i18n="codeExplorer.runtime.chooseFamily">Select one family to start building valid code rows.</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-16 pt-24" data-reveal="section">
+                <div class="card"><div class="card-body flex flex-col gap-6"><span class="text-overline text-grey-primary" data-i18n="codeExplorer.summaryTotal">Total codes</span><span id="summary-total" class="text-h3 font-medium text-black">0</span></div></div>
+                <div class="card"><div class="card-body flex flex-col gap-6"><span class="text-overline text-grey-primary" data-i18n="codeExplorer.summaryConfigurator">Configurator valid</span><span id="summary-configurator" class="text-h3 font-medium text-black">0</span></div></div>
+                <div class="card"><div class="card-body flex flex-col gap-6"><span class="text-overline text-grey-primary" data-i18n="codeExplorer.summaryReady">Datasheet ready</span><span id="summary-ready" class="text-h3 font-medium text-black">0</span></div></div>
+                <div class="card"><div class="card-body flex flex-col gap-6"><span class="text-overline text-grey-primary" data-i18n="codeExplorer.summaryBlocked">Datasheet blocked</span><span id="summary-blocked" class="text-h3 font-medium text-black">0</span></div></div>
+            </section>
+
+            <section class="grid grid-cols-1 xl:grid-cols-12 gap-24 pt-24" data-reveal="section">
+                <div class="xl:col-span-8">
+                    <div class="card overflow-hidden">
+                        <div class="card-body flex flex-col gap-16">
+                            <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                                <div>
+                                    <h2 class="card-title" data-i18n="codeExplorer.tableTitle">Allowed Codes</h2>
+                                    <p id="explorer-results-meta" class="text-body-sm text-grey-primary" data-i18n="codeExplorer.runtime.awaitingFamily">Waiting for family selection.</p>
+                                </div>
+                            </div>
+
+                            <div id="explorer-loading" class="hidden panel panel-sm">
+                                <p class="text-body-sm text-grey-primary" data-i18n="codeExplorer.runtime.loadingRows">Building family code matrix...</p>
+                            </div>
+
+                            <div class="overflow-x-auto">
+                                <table class="min-w-full text-left text-body-sm">
+                                    <thead class="border-b border-grey-quaternary/60">
+                                        <tr class="text-grey-primary">
+                                            <th class="py-12 pr-16 font-medium" data-i18n="codeExplorer.tableReference">Reference</th>
+                                            <th class="py-12 pr-16 font-medium" data-i18n="codeExplorer.tableIdentity">Identity</th>
+                                            <th class="py-12 pr-16 font-medium" data-i18n="codeExplorer.tableDescription">Description</th>
+                                            <th class="py-12 pr-16 font-medium" data-i18n="codeExplorer.tableType">Type</th>
+                                            <th class="py-12 pr-16 font-medium" data-i18n="codeExplorer.tableProductId">Product ID</th>
+                                            <th class="py-12 pr-16 font-medium" data-i18n="codeExplorer.tableConfigurator">Configurator</th>
+                                            <th class="py-12 pr-16 font-medium" data-i18n="codeExplorer.tableDatasheet">Datasheet</th>
+                                            <th class="py-12 font-medium" data-i18n="codeExplorer.tableFailure">Failure</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="explorer-rows"></tbody>
+                                </table>
+                            </div>
+
+                            <div id="explorer-empty" class="panel panel-sm">
+                                <p class="text-body-sm text-grey-primary" data-i18n="codeExplorer.runtime.noRows">No rows yet. Select one family and refresh.</p>
+                            </div>
+
+                            <div class="flex flex-col gap-12 sm:flex-row sm:items-center sm:justify-between">
+                                <p id="explorer-pagination-meta" class="text-body-sm text-grey-primary">0-0 / 0</p>
+                                <div class="flex items-center gap-12">
+                                    <button id="explorer-prev" type="button" class="btn btn-secondary btn-sm" disabled>
+                                        <i class="ri-arrow-left-s-line text-icon-sm" aria-hidden="true"></i>
+                                        <span data-i18n="codeExplorer.paginationPrev">Previous</span>
+                                    </button>
+                                    <span id="explorer-page-indicator" class="text-body-sm text-grey-primary">1 / 1</span>
+                                    <button id="explorer-next" type="button" class="btn btn-secondary btn-sm" disabled>
+                                        <span data-i18n="codeExplorer.paginationNext">Next</span>
+                                        <i class="ri-arrow-right-s-line text-icon-sm" aria-hidden="true"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="xl:col-span-4">
+                    <div class="card">
+                        <div class="card-body flex flex-col gap-16">
+                            <div>
+                                <h2 class="card-title" data-i18n="codeExplorer.detailsTitle">Code Detail</h2>
+                                <p class="text-body-sm text-grey-primary" data-i18n="codeExplorer.detailsHint">Pick one row to inspect full segment breakdown and readiness result.</p>
+                            </div>
+
+                            <div id="explorer-detail-empty" class="panel panel-sm">
+                                <p class="text-body-sm text-grey-primary" data-i18n="codeExplorer.detailsEmpty">No code selected yet.</p>
+                            </div>
+
+                            <div id="explorer-detail" class="hidden flex flex-col gap-16">
+                                <div class="panel panel-sm flex flex-col gap-8">
+                                    <div class="flex flex-col gap-2"><span class="input-label" data-i18n="codeExplorer.tableReference">Reference</span><code id="detail-reference" class="text-body-sm font-mono text-black break-all"></code></div>
+                                    <div class="flex flex-col gap-2"><span class="input-label" data-i18n="codeExplorer.tableIdentity">Identity</span><code id="detail-identity" class="text-body-sm font-mono text-black break-all"></code></div>
+                                    <div class="flex flex-col gap-2"><span class="input-label" data-i18n="codeExplorer.tableDescription">Description</span><p id="detail-description" class="text-body-sm text-black"></p></div>
+                                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-8">
+                                        <div class="flex flex-col gap-2"><span class="input-label" data-i18n="codeExplorer.tableType">Type</span><p id="detail-type" class="text-body-sm text-black"></p></div>
+                                        <div class="flex flex-col gap-2"><span class="input-label" data-i18n="codeExplorer.tableProductId">Product ID</span><p id="detail-product-id" class="text-body-sm text-black break-all"></p></div>
+                                    </div>
+                                </div>
+
+                                <div class="panel panel-sm flex flex-col gap-8">
+                                    <span class="input-label" data-i18n="codeExplorer.detailsSegments">Decoded Segments</span>
+                                    <div id="detail-segments" class="grid grid-cols-1 sm:grid-cols-2 gap-8"></div>
+                                </div>
+
+                                <div class="panel panel-sm flex flex-col gap-8">
+                                    <span class="input-label" data-i18n="codeExplorer.detailsStatuses">Statuses</span>
+                                    <div class="flex flex-wrap gap-8" id="detail-statuses"></div>
+                                    <p id="detail-failure" class="text-body-sm text-grey-primary"></p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script src="locales/en.js?v=20260414-code-explorer"></script>
+    <script src="locales/pt.js?v=20260414-code-explorer"></script>
+    <script src="i18n.js?v=20260414-code-explorer"></script>
+    <script src="app-shell.js?v=20260414-code-explorer"></script>
+    <script src="code-explorer.js?v=20260414-code-explorer"></script>
+</body>
+</html>

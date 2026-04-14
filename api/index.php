@@ -32,6 +32,7 @@ require_once "./lib/validate.php";
 // Route: /api/?endpoint=svg-diagnostics&ref=...
 // Route: /api/?endpoint=assets&action=get|upload|delete
 // Route: /api/?endpoint=dam&action=tree|list|asset|create-folder|resolve-target|upload
+// Route: /api/?endpoint=code-explorer&family=11&page=1&page_size=100&search=&status=all
 
 if (!$endpoint) {
     http_response_code(400);
@@ -60,6 +61,9 @@ switch ($endpoint) {
         break;
     case "svg-diagnostics":
         require "./endpoints/svg-diagnostics.php";
+        break;
+    case "code-explorer":
+        require "./endpoints/code-explorer.php";
         break;
     case "assets":
         require "./endpoints/assets.php";
