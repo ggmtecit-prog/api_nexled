@@ -25,6 +25,24 @@ $statusFilter = getCodeExplorerStatusFilter($_GET["status"] ?? CODE_EXPLORER_STA
 
 $options = getCodeExplorerFamilyOptions($family);
 $identities = getCodeExplorerLuminosIdentities($familyMeta["code"]);
+$identityMatrixSize = getCodeExplorerIdentityMatrixSize($options);
+$suffixMatrixSize = getCodeExplorerSuffixMatrixSize($options);
+$fullMatrixSize = getCodeExplorerFullMatrixSize($options);
+
+if ($fullMatrixSize > CODE_EXPLORER_MAX_FULL_MATRIX_ROWS) {
+    http_response_code(400);
+    echo json_encode([
+        "error" => "Full family code matrix is too large for one request.",
+        "reason" => "family_matrix_too_large",
+        "family" => $familyMeta,
+        "identity_matrix_size" => $identityMatrixSize,
+        "suffix_matrix_size" => $suffixMatrixSize,
+        "full_matrix_size" => $fullMatrixSize,
+        "max_supported_rows" => CODE_EXPLORER_MAX_FULL_MATRIX_ROWS,
+        "message" => "Use identity-first drill-down. Example family 11 currently expands to billions of full codes.",
+    ]);
+    exit();
+}
 
 echo json_encode(
     buildCodeExplorerResponse(

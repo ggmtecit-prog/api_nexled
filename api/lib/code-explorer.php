@@ -17,6 +17,7 @@ const CODE_EXPLORER_STATUS_CONFIGURATOR_INVALID = "configurator_invalid";
 const CODE_EXPLORER_STATUS_DATASHEET_READY = "datasheet_ready";
 const CODE_EXPLORER_STATUS_DATASHEET_BLOCKED = "datasheet_blocked";
 const CODE_EXPLORER_DEFAULT_LANG = "pt";
+const CODE_EXPLORER_MAX_FULL_MATRIX_ROWS = 1000000;
 
 function getCodeExplorerStatusFilter(string $value): string {
     $normalized = trim(strtolower($value));
@@ -50,6 +51,25 @@ function getCodeExplorerPageSize(mixed $value): int {
 
 function sanitizeCodeExplorerSearch(mixed $value): string {
     return trim((string) $value);
+}
+
+function getCodeExplorerIdentityMatrixSize(array $options): int {
+    return count($options["size"])
+        * count($options["color"])
+        * count($options["cri"])
+        * count($options["series"]);
+}
+
+function getCodeExplorerSuffixMatrixSize(array $options): int {
+    return count($options["lens"])
+        * count($options["finish"])
+        * count($options["cap"])
+        * count($options["option"]);
+}
+
+function getCodeExplorerFullMatrixSize(array $options): int {
+    return getCodeExplorerIdentityMatrixSize($options)
+        * getCodeExplorerSuffixMatrixSize($options);
 }
 
 function getCodeExplorerFamilyMeta(int $family): ?array {
