@@ -31,7 +31,10 @@ if ($result && mysqli_num_rows($result) > 0) {
     echo json_encode(["description" => $row[0]]);
 } else {
     http_response_code(404);
-    echo json_encode(["error" => "Reference not found"]);
+    echo json_encode([
+        "error" => "A combinacao da familia, tamanho, cor, CRI e serie nao exite na view Luminos",
+        "error_code" => "invalid_luminos_combination",
+    ]);
 }
 
 closeDB($con);

@@ -17,9 +17,13 @@ $parts = decodeReference($reference);
 $productType = getProductType($reference);
 $productId = null;
 $warnings = [];
+$errorCode = null;
+$errorMessage = null;
 
 if (!hasFullReferenceLength($reference)) {
     $warnings[] = "unexpected_length";
+    $errorCode = "unexpected_length";
+    $errorMessage = "Unexpected reference length.";
 }
 
 if ($productType !== null) {
@@ -29,16 +33,22 @@ if ($productType !== null) {
 
     if ($productId === null) {
         $warnings[] = "product_not_found";
+        $errorCode = "invalid_luminos_combination";
+        $errorMessage = "A combinacao da familia, tamanho, cor, CRI e serie nao exite na view Luminos";
     }
 } else {
     $warnings[] = "unknown_family";
+    if ($errorCode === null) {
+        $errorCode = "unknown_family";
+        $errorMessage = "Unknown product family in Tecit code.";
+    }
 }
 
 $description = getDecodedReferenceDescription($parts["identity"]);
 
 echo json_encode([
     "reference" => $reference,
-    "valid" => hasFullReferenceLength($reference) && $productType !== null,
+    "valid" => hasFullReferenceLength($reference) && $productType !== null && $productId !== null,
     "length" => $parts["length"],
     "expected_length" => REFERENCE_LENGTH_FULL,
     "identity" => $parts["identity"],
@@ -57,6 +67,8 @@ echo json_encode([
     "product_id" => $productId,
     "description" => $description,
     "warnings" => $warnings,
+    "error_code" => $errorCode,
+    "error_message" => $errorMessage,
 ]);
 
 function getDecodedReferenceDescription(string $identity): ?string {
