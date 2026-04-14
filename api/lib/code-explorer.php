@@ -163,7 +163,7 @@ function getCodeExplorerSegmentLength(string $segment): int {
 function getCodeExplorerLuminosIdentities(string $familyCode): array {
     $con = connectDBLampadas();
     $like = $familyCode . "%";
-    $stmt = mysqli_prepare($con, "SELECT ref, ID, `desc` FROM Luminos WHERE ref LIKE ? ORDER BY ref ASC, ID ASC");
+    $stmt = mysqli_prepare($con, "SELECT ref, ID, ID_Led, `desc` FROM Luminos WHERE ref LIKE ? ORDER BY ref ASC, ID ASC");
 
     if (!$stmt) {
         closeDB($con);
@@ -189,6 +189,7 @@ function getCodeExplorerLuminosIdentities(string $familyCode): array {
                 "description" => (string) ($row["desc"] ?? ""),
                 "product_type" => $productType,
                 "product_id" => (string) ($row["ID"] ?? ""),
+                "led_id" => (string) ($row["ID_Led"] ?? ""),
                 "dynamic_ids" => [],
             ];
         }
@@ -263,14 +264,14 @@ function buildCodeExplorerResponse(string $familyCode, string $familyName, array
 
                                 if ($isConfiguratorValid) {
                                     $validationReference = $identity . $lens["code"] . $finish["code"] . $cap["code"] . $defaultOptionCode;
-                                    $readiness = getCodeExplorerDatasheetReadiness(
-                                        $validationReference,
-                                        $productId,
-                                        $productType,
-                                        $description,
-                                        $options,
-                                        $validatorCache
-                                    );
+                                        $readiness = getCodeExplorerDatasheetReadiness(
+                                            $validationReference,
+                                            $productId,
+                                            $productType,
+                                            $identityData["led_id"] ?? "",
+                                            $options,
+                                            $validatorCache
+                                        );
                                 }
 
                                 $summary["total_codes"] += $optionCount;
@@ -408,9 +409,8 @@ function matchesCodeExplorerStatusFilter(array $row, string $statusFilter): bool
     };
 }
 
-function getCodeExplorerDatasheetReadiness(string $reference, string $productId, ?string $productType, string $description, array $options, array &$cache): array {
+function getCodeExplorerDatasheetReadiness(string $reference, string $productId, ?string $productType, string $ledId, array $options, array &$cache): array {
     $parts = decodeReference($reference);
-    $family = $parts["family"];
     $lang = CODE_EXPLORER_DEFAULT_LANG;
     $cacheKey = $reference . "|" . $productId;
 
@@ -434,16 +434,14 @@ function getCodeExplorerDatasheetReadiness(string $reference, string $productId,
         "gasket" => 5,
     ];
 
-    $lumino = getLuminotechnicalData($productId, $reference, $lang);
-
-    if ($lumino === null) {
+    if ($ledId === "") {
         return $cache[$cacheKey] = [
             "datasheet_ready" => false,
             "failure_reason" => "missing_header_data",
         ];
     }
 
-    $header = getProductHeader((string) $productType, $productId, $reference, $lumino["led_id"], $config);
+    $header = getProductHeader((string) $productType, $productId, $reference, $ledId, $config);
 
     if (($header["image"] ?? null) === null || trim((string) ($header["description"] ?? "")) === "") {
         return $cache[$cacheKey] = [
@@ -452,27 +450,14 @@ function getCodeExplorerDatasheetReadiness(string $reference, string $productId,
         ];
     }
 
-    $ipRating = getIpRating($productId, "0") ?? "";
-    $characteristics = getCharacteristics($productId, $ipRating, $family, $parts["lens"], $lang);
-
-    if ($characteristics === null) {
-        return $cache[$cacheKey] = [
-            "datasheet_ready" => false,
-            "failure_reason" => "missing_header_data",
-        ];
-    }
-
-    $sizesFile = getBarSizesFile($reference);
-    $drawing = getTechnicalDrawing((string) $productType, $reference, $productId, $sizesFile, $config);
-
-    if (($drawing["drawing"] ?? null) === null) {
+    if (getCodeExplorerTechnicalDrawingPath((string) $productType, $reference, $productId, $config) === null) {
         return $cache[$cacheKey] = [
             "datasheet_ready" => false,
             "failure_reason" => "missing_technical_drawing",
         ];
     }
 
-    $colorGraph = getColorGraph($lumino["led_id"], $lang);
+    $colorGraph = getColorGraph($ledId, $lang);
 
     if ($colorGraph === null) {
         return $cache[$cacheKey] = [
@@ -492,9 +477,9 @@ function getCodeExplorerDatasheetReadiness(string $reference, string $productId,
         }
     }
 
-    $finishData = getFinishAndLens((string) $productType, $productId, $reference, $config);
+    $finishImage = getCodeExplorerFinishImagePath((string) $productType, $productId, $reference, $config);
 
-    if ($finishData === null || str_contains((string) ($finishData["image"] ?? ""), "/img/placeholders/")) {
+    if ($finishImage === null || str_contains($finishImage, "/img/placeholders/")) {
         return $cache[$cacheKey] = [
             "datasheet_ready" => false,
             "failure_reason" => "missing_finish_image",
@@ -515,4 +500,83 @@ function resolveCodeExplorerOptionLabel(array $options, string $code): string {
     }
 
     return $code;
+}
+
+function getCodeExplorerTechnicalDrawingPath(string $productType, string $reference, string $productId, array $config): ?string {
+    $parts = decodeReference($reference);
+    $family = $parts["family"];
+    $size = $parts["size"];
+
+    if ($productType === "barra") {
+        $cap = $parts["cap"];
+        $connectorCable = $config["connector_cable"] ?? "0";
+        $endCap = $config["end_cap"] ?? "0";
+        $folder = IMAGES_BASE_PATH . "/img/$family/desenhos/";
+        $candidates = [
+            "{$cap}_{$connectorCable}_{$endCap}",
+            "{$cap}_{$endCap}",
+            "{$connectorCable}_{$endCap}",
+            $cap,
+        ];
+
+        foreach ($candidates as $name) {
+            $drawing = findImage($folder . $name);
+
+            if ($drawing !== null) {
+                return $drawing;
+            }
+        }
+
+        return null;
+    }
+
+    if ($productType === "dynamic") {
+        $subtype = explode("/", $productId)[1] ?? "";
+        return findImage(IMAGES_BASE_PATH . "/img/$family/$subtype/desenhos/$size");
+    }
+
+    return findImage(IMAGES_BASE_PATH . "/img/$family/desenhos/$size");
+}
+
+function getCodeExplorerFinishImagePath(string $productType, string $productId, string $reference, array $config): ?string {
+    $parts = decodeReference($reference);
+    $family = $parts["family"];
+    $size = $parts["size"];
+    $series = $parts["series"];
+    $cap = $parts["cap"];
+    $lens = strtolower((string) ($config["lens"] ?? ""));
+    $finish = strtolower((string) ($config["finish"] ?? ""));
+    $endCap = (string) ($config["end_cap"] ?? "0");
+
+    switch ($productType) {
+        case "barra":
+            $folder = ($lens === "clear")
+                ? "/img/$family/acabamentos/$lens/$series/"
+                : "/img/$family/acabamentos/$lens/";
+            $candidates = [
+                str_replace("+", "_", "{$finish}_{$cap}"),
+                str_replace("+", "_", "{$finish}_{$endCap}"),
+            ];
+            break;
+        case "dynamic":
+            $subtype = explode("/", $productId)[1] ?? "";
+            $folder = "/img/$family/$subtype/acabamentos/";
+            $cleanFinish = str_replace("+", "", $finish);
+            $candidates = ["{$size}_{$cleanFinish}"];
+            break;
+        default:
+            $folder = "/img/$family/acabamentos/";
+            $candidates = ["{$size}_{$lens}_{$finish}"];
+            break;
+    }
+
+    foreach ($candidates as $name) {
+        $image = findImage(IMAGES_BASE_PATH . $folder . $name);
+
+        if ($image !== null) {
+            return $image;
+        }
+    }
+
+    return getFinishPlaceholderImage();
 }
