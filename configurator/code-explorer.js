@@ -54,6 +54,7 @@ let explorerState = {
         status: "all",
         page: 1,
         pageSize: 100,
+        includeInvalid: false,
     },
 };
 
@@ -77,6 +78,8 @@ function bindControls() {
     document.getElementById("explorer-filters").addEventListener("submit", (event) => {
         event.preventDefault();
         explorerState.controls.search = document.getElementById("explorer-search").value.trim();
+        explorerState.controls.includeInvalid = document.getElementById("explorer-include-invalid").checked;
+        syncInvalidControls();
         explorerState.controls.page = 1;
         loadExplorerData();
     });
@@ -89,6 +92,7 @@ function bindControls() {
 
         document.getElementById("explorer-search").value = "";
         document.getElementById("explorer-status").value = "all";
+        syncInvalidControls();
 
         if (!explorerState.controls.family) {
             explorerState.data = null;
@@ -105,6 +109,16 @@ function bindControls() {
 
     document.getElementById("explorer-status").addEventListener("change", (event) => {
         explorerState.controls.status = event.target.value;
+        explorerState.controls.page = 1;
+
+        if (explorerState.controls.family) {
+            loadExplorerData();
+        }
+    });
+
+    document.getElementById("explorer-include-invalid").addEventListener("change", (event) => {
+        explorerState.controls.includeInvalid = event.target.checked;
+        syncInvalidControls();
         explorerState.controls.page = 1;
 
         if (explorerState.controls.family) {
@@ -163,6 +177,27 @@ function bindStaticEvents() {
         renderDetail();
         renderPagination();
     });
+}
+
+function syncInvalidControls() {
+    const includeInvalid = explorerState.controls.includeInvalid === true;
+    const invalidStatusOption = document.querySelector("[data-invalid-status-option]");
+    const invalidSummaryCard = document.getElementById("summary-invalid-card");
+    const statusSelect = document.getElementById("explorer-status");
+
+    if (invalidStatusOption) {
+        invalidStatusOption.disabled = !includeInvalid;
+        invalidStatusOption.hidden = !includeInvalid;
+    }
+
+    if (!includeInvalid && explorerState.controls.status === "configurator_invalid") {
+        explorerState.controls.status = "all";
+        statusSelect.value = "all";
+    }
+
+    if (invalidSummaryCard) {
+        invalidSummaryCard.classList.toggle("hidden", !includeInvalid);
+    }
 }
 
 async function getApiBase() {
@@ -259,6 +294,8 @@ function populateFamilies() {
 
     select.innerHTML = options.join("");
     select.value = explorerState.controls.family;
+    document.getElementById("explorer-include-invalid").checked = explorerState.controls.includeInvalid;
+    syncInvalidControls();
 }
 
 async function loadExplorerData() {
@@ -267,7 +304,7 @@ async function loadExplorerData() {
     }
 
     toggleLoading(true);
-    setPageStatus("codeExplorer.runtime.loadingRows", "Building family code matrix...");
+    setPageStatus("codeExplorer.runtime.loadingRows", "Loading family codes...");
 
     const params = new URLSearchParams({
         endpoint: "code-explorer",
@@ -276,6 +313,7 @@ async function loadExplorerData() {
         page_size: String(explorerState.controls.pageSize),
         search: explorerState.controls.search,
         status: explorerState.controls.status,
+        include_invalid: explorerState.controls.includeInvalid ? "1" : "0",
     });
 
     try {
@@ -294,7 +332,7 @@ async function loadExplorerData() {
         renderPagination();
 
         if (data.pagination.total_rows > 0) {
-            setPageStatus("codeExplorer.runtime.loadedRows", "Explorer rows loaded.");
+            setPageStatus("codeExplorer.runtime.loadedRows", "Code Explorer results loaded.");
         } else {
             setPageStatus("codeExplorer.runtime.noRows", "No rows match current filters.");
         }
@@ -336,12 +374,14 @@ function renderSummary(data) {
     document.getElementById("summary-invalid").textContent = formatNumber(summary.configurator_invalid);
     document.getElementById("summary-ready").textContent = formatNumber(summary.datasheet_ready);
     document.getElementById("summary-blocked").textContent = formatNumber(summary.datasheet_blocked);
+    syncInvalidControls();
 }
 
 function renderTable() {
     const body = document.getElementById("explorer-rows");
     const empty = document.getElementById("explorer-empty");
     const rows = explorerState.data?.rows || [];
+    const valueUnavailable = t("codeExplorer.valueUnavailable", {}, "Not available");
 
     if (rows.length === 0) {
         body.innerHTML = "";
@@ -365,9 +405,9 @@ function renderTable() {
                     </button>
                 </td>
                 <td class="py-12 pr-16 font-mono text-grey-primary">${escapeHtml(row.identity || "")}</td>
-                <td class="py-12 pr-16">${escapeHtml(row.description || "—")}</td>
-                <td class="py-12 pr-16">${escapeHtml(row.product_type || "—")}</td>
-                <td class="py-12 pr-16 break-all">${escapeHtml(row.product_id || "—")}</td>
+                <td class="py-12 pr-16">${escapeHtml(row.description || valueUnavailable)}</td>
+                <td class="py-12 pr-16">${escapeHtml(row.product_type || valueUnavailable)}</td>
+                <td class="py-12 pr-16 break-all">${escapeHtml(row.product_id || valueUnavailable)}</td>
                 <td class="py-12 pr-16">${buildStatusBadge(row.configurator_valid, t("codeExplorer.statusConfiguratorValidShort", {}, "Valid"), t("codeExplorer.statusConfiguratorInvalidShort", {}, "Invalid"))}</td>
                 <td class="py-12 pr-16">${datasheetStatus}</td>
                 <td class="py-12">${escapeHtml(getFailureReasonText(row.failure_reason))}</td>
@@ -380,6 +420,7 @@ function renderDetail() {
     const detail = document.getElementById("explorer-detail");
     const empty = document.getElementById("explorer-detail-empty");
     const row = getSelectedRow();
+    const valueUnavailable = t("codeExplorer.valueUnavailable", {}, "Not available");
 
     if (!row) {
         detail.classList.add("hidden");
@@ -392,9 +433,9 @@ function renderDetail() {
 
     document.getElementById("detail-reference").textContent = row.reference || "";
     document.getElementById("detail-identity").textContent = row.identity || "";
-    document.getElementById("detail-description").textContent = row.description || "—";
-    document.getElementById("detail-type").textContent = row.product_type || "—";
-    document.getElementById("detail-product-id").textContent = row.product_id || "—";
+    document.getElementById("detail-description").textContent = row.description || valueUnavailable;
+    document.getElementById("detail-type").textContent = row.product_type || valueUnavailable;
+    document.getElementById("detail-product-id").textContent = row.product_id || valueUnavailable;
 
     document.getElementById("detail-segments").innerHTML = SEGMENT_META.map((segment) => {
         return `
@@ -474,7 +515,7 @@ function renderResultsMeta() {
     meta.textContent = t("codeExplorer.runtime.resultsMeta", {
         family: familyLabel,
         total: explorerState.data.pagination.total_rows,
-    }, `${familyLabel} · ${explorerState.data.pagination.total_rows} filtered rows`);
+    }, `${familyLabel} - ${explorerState.data.pagination.total_rows} filtered rows`);
 }
 
 function renderPagination() {
@@ -519,7 +560,7 @@ function getSegmentDisplay(row, key) {
         return String(value);
     }
 
-    return `${value} · ${label}`;
+    return `${value} - ${label}`;
 }
 
 function getFailureReasonText(reason) {
@@ -581,3 +622,4 @@ function escapeHtml(value) {
         .replace(/"/g, "&quot;")
         .replace(/'/g, "&#39;");
 }
+

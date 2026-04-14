@@ -56,7 +56,7 @@
                             <a href="index.html" class="dropdown-trigger">
                                 <span class="flex items-center gap-8">
                                     <i class="ri-home-5-line text-icon-md" aria-hidden="true"></i>
-                                    <span class="dropdown-value" data-i18n="shared.nav.home">Workspace Home</span>
+                                    <span class="dropdown-value" data-i18n="shared.nav.home">Home</span>
                                 </span>
                                 <i class="ri-arrow-right-s-line dropdown-arrow" aria-hidden="true"></i>
                             </a>
@@ -137,7 +137,7 @@
                             <a href="index.html" class="dropdown-trigger">
                                 <span class="flex items-center gap-8">
                                     <i class="ri-home-5-line text-icon-md" aria-hidden="true"></i>
-                                    <span class="dropdown-value" data-i18n="shared.nav.home">Workspace Home</span>
+                                    <span class="dropdown-value" data-i18n="shared.nav.home">Home</span>
                                 </span>
                                 <i class="ri-arrow-right-s-line dropdown-arrow" aria-hidden="true"></i>
                             </a>
@@ -212,7 +212,7 @@
                     <div class="card-body flex flex-col gap-20">
                         <div class="flex flex-col gap-4">
                             <h2 class="card-title" data-i18n="codeExplorer.filtersTitle">Explorer Filters</h2>
-                            <p class="text-body-sm text-grey-primary" data-i18n="codeExplorer.filtersBody">Choose one family first. Explorer builds allowed full codes live from Luminos identities plus family suffix options.</p>
+                            <p class="text-body-sm text-grey-primary" data-i18n="codeExplorer.filtersBody">Choose a family first. The explorer builds full Tecit codes from the selected family and available options, then highlights invalid combinations and datasheet blockers.</p>
                         </div>
 
                         <form id="explorer-filters" class="flex flex-col gap-16">
@@ -231,14 +231,25 @@
                                 <select id="explorer-status" class="input input-sm">
                                     <option value="all" data-i18n="codeExplorer.statusAll">All</option>
                                     <option value="configurator_valid" data-i18n="codeExplorer.statusConfiguratorValid">Configurator valid</option>
-                                    <option value="configurator_invalid" data-i18n="codeExplorer.statusConfiguratorInvalid">Configurator invalid</option>
+                                    <option value="configurator_invalid" data-i18n="codeExplorer.statusConfiguratorInvalid" data-invalid-status-option>Configurator invalid</option>
                                     <option value="datasheet_ready" data-i18n="codeExplorer.statusDatasheetReady">Datasheet ready</option>
                                     <option value="datasheet_blocked" data-i18n="codeExplorer.statusDatasheetBlocked">Datasheet blocked</option>
                                 </select>
                             </div>
+                            <label class="panel panel-sm flex items-start gap-12 cursor-pointer">
+                                <input id="explorer-include-invalid" type="checkbox" class="mt-2 h-16 w-16 rounded border border-grey-quaternary text-green-primary focus:ring-green-primary">
+                                <span class="flex flex-col gap-4">
+                                    <span class="text-body-sm text-black" data-i18n="codeExplorer.includeInvalidLabel">Include invalid Luminos combinations</span>
+                                    <span class="text-body-xs text-grey-primary" data-i18n="codeExplorer.includeInvalidHint">Off by default. Excludes invalid identities so results stay focused on codes the system can use.</span>
+                                </span>
+                            </label>
                             <div>
                                 <label class="input-label ml-12" for="explorer-page-size" data-i18n="codeExplorer.pageSizeLabel">Rows per page</label>
                                 <select id="explorer-page-size" class="input input-sm">
+                                    <option value="5">5</option>
+                                    <option value="10">10</option>
+                                    <option value="15">15</option>
+                                    <option value="25">25</option>
                                     <option value="50">50</option>
                                     <option value="100" selected>100</option>
                                     <option value="250">250</option>
@@ -253,7 +264,7 @@
                         <div class="panel panel-sm flex flex-col gap-12">
                             <div class="flex flex-col gap-4">
                                 <span class="input-label" data-i18n="codeExplorer.logicTitle">Tecit Code Logic</span>
-                                <p class="text-body-sm text-grey-primary" data-i18n="configurator.tecitCodeLogicIntro">Live Tecit references use a fixed 17-character structure. Each segment maps to one manufacturing field in the configurator.</p>
+                                <p class="text-body-sm text-grey-primary" data-i18n="configurator.tecitCodeLogicIntro">Tecit references use a fixed 17-character structure. Each segment maps to one manufacturing field in the configurator.</p>
                             </div>
                             <button type="button" class="btn btn-ghost btn-sm justify-center w-full" data-modal-target="codeExplorerTecitCodeLogicModal">
                                 <i class="ri-information-line text-icon-sm" aria-hidden="true"></i>
@@ -263,12 +274,12 @@
 
                         <div class="panel panel-sm flex flex-col gap-6">
                             <span class="input-label" data-i18n="codeExplorer.readinessNoteTitle">Readiness Note</span>
-                            <p class="text-body-sm text-grey-primary" data-i18n="codeExplorer.readinessNoteBody">Datasheet-ready here means base PDF data and required assets exist for default context. It does not render a PDF and does not test optional fixing, driver, or connection cable selections.</p>
+                            <p class="text-body-sm text-grey-primary" data-i18n="codeExplorer.readinessNoteBody">Datasheet ready here means the base PDF data and required assets exist for the default context. It does not render a PDF and does not test optional fixing, driver, or connection cable selections.</p>
                         </div>
 
                         <div class="panel panel-sm flex flex-col gap-6">
                             <span class="input-label" data-i18n="codeExplorer.pageStatusTitle">Page Status</span>
-                            <p id="explorer-status-message" class="text-body-sm text-grey-primary" data-i18n="codeExplorer.runtime.chooseFamily">Select one family to start building valid code rows.</p>
+                            <p id="explorer-status-message" class="text-body-sm text-grey-primary" data-i18n="codeExplorer.runtime.chooseFamily">Select one family to load valid code rows.</p>
                         </div>
                     </div>
                 </div>
@@ -277,7 +288,7 @@
                     <section class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-16">
                         <div class="card"><div class="card-body flex flex-col gap-6"><span class="text-overline text-grey-primary" data-i18n="codeExplorer.summaryTotal">Total codes</span><span id="summary-total" class="text-h3 font-medium text-black">0</span></div></div>
                         <div class="card"><div class="card-body flex flex-col gap-6"><span class="text-overline text-grey-primary" data-i18n="codeExplorer.summaryConfigurator">Configurator valid</span><span id="summary-configurator" class="text-h3 font-medium text-black">0</span></div></div>
-                        <div class="card"><div class="card-body flex flex-col gap-6"><span class="text-overline text-grey-primary" data-i18n="codeExplorer.summaryInvalid">Configurator invalid</span><span id="summary-invalid" class="text-h3 font-medium text-black">0</span></div></div>
+                        <div id="summary-invalid-card" class="card"><div class="card-body flex flex-col gap-6"><span class="text-overline text-grey-primary" data-i18n="codeExplorer.summaryInvalid">Configurator invalid</span><span id="summary-invalid" class="text-h3 font-medium text-black">0</span></div></div>
                         <div class="card"><div class="card-body flex flex-col gap-6"><span class="text-overline text-grey-primary" data-i18n="codeExplorer.summaryReady">Datasheet ready</span><span id="summary-ready" class="text-h3 font-medium text-black">0</span></div></div>
                         <div class="card"><div class="card-body flex flex-col gap-6"><span class="text-overline text-grey-primary" data-i18n="codeExplorer.summaryBlocked">Datasheet blocked</span><span id="summary-blocked" class="text-h3 font-medium text-black">0</span></div></div>
                     </section>
@@ -294,7 +305,7 @@
                                     </div>
 
                                     <div id="explorer-loading" class="hidden panel panel-sm">
-                                        <p class="text-body-sm text-grey-primary" data-i18n="codeExplorer.runtime.loadingRows">Building family code matrix...</p>
+                                        <p class="text-body-sm text-grey-primary" data-i18n="codeExplorer.runtime.loadingRows">Loading family codes...</p>
                                     </div>
 
                                     <div class="overflow-x-auto">
@@ -356,7 +367,7 @@
 
             <div id="codeExplorerDetailModalBody" class="modal-body overflow-y-auto">
                 <div class="flex flex-col gap-16">
-                    <p class="text-body-sm text-grey-primary" data-i18n="codeExplorer.detailsHint">Pick one row to inspect full segment breakdown and readiness result.</p>
+                    <p class="text-body-sm text-grey-primary" data-i18n="codeExplorer.detailsHint">Select a row to inspect the full segment breakdown and readiness result.</p>
 
                     <div id="explorer-detail-empty" class="panel panel-sm">
                         <p class="text-body-sm text-grey-primary" data-i18n="codeExplorer.detailsEmpty">No code selected yet.</p>
@@ -437,7 +448,7 @@
                         </div>
                         <div class="panel panel-sm flex flex-col gap-6">
                             <span class="input-label" data-i18n="codeExplorer.defaultContextTitle">Datasheet Ready Context</span>
-                            <p class="text-body-sm text-black" data-i18n="codeExplorer.defaultContextBody">Readiness check uses default export context: Portuguese output, purpose 0, no fixing, no driver, no connection cable, cable connector 0, cable type branco, end cap 0, and gasket 5.</p>
+                            <p class="text-body-sm text-black" data-i18n="codeExplorer.defaultContextBody">Readiness checks use the default export context: Portuguese output, purpose 0, no fixing, no driver, no connection cable, cable connector 0, white cable, end cap 0, and gasket 5.</p>
                         </div>
                     </div>
 
@@ -449,10 +460,10 @@
                     </div>
 
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-12">
-                        <div class="panel panel-sm flex flex-col gap-4"><span class="text-body-sm text-black" data-i18n="configurator.tecitCodeLogicSourceValidationTitle">Tecit code + Luminos validation</span><p class="text-body-sm text-grey-primary" data-i18n="configurator.tecitCodeLogicSourceValidationBody">First 10 characters validate family, size, color, CRI, and series against the Luminos view. That lookup also defines the internal product ID used by the API.</p></div>
-                        <div class="panel panel-sm flex flex-col gap-4"><span class="text-body-sm text-black" data-i18n="configurator.tecitCodeLogicSourceCharacteristicsTitle">Database characteristics</span><p class="text-body-sm text-grey-primary" data-i18n="configurator.tecitCodeLogicSourceCharacteristicsBody">Technical characteristics, electrical data, dimensions, and product descriptions come from the MySQL data used by the NexLed API.</p></div>
-                        <div class="panel panel-sm flex flex-col gap-4"><span class="text-body-sm text-black" data-i18n="configurator.tecitCodeLogicSourceAssetsTitle">Local PDF assets</span><p class="text-body-sm text-grey-primary" data-i18n="configurator.tecitCodeLogicSourceAssetsBody">Product images, technical drawings, color spectrum files, lens diagrams, icons, and accessory graphics still come from local assets in appdatasheets/img. Current PDF does not use DAM assets yet.</p></div>
-                        <div class="panel panel-sm flex flex-col gap-4"><span class="text-body-sm text-black" data-i18n="configurator.tecitCodeLogicSourceFormTitle">Live configurator selections</span><p class="text-body-sm text-grey-primary" data-i18n="configurator.tecitCodeLogicSourceFormBody">Language, company logo, fixing, power supply, cable, purpose, and other optional fields come from the current form state before the API generates the PDF.</p></div>
+                        <div class="panel panel-sm flex flex-col gap-4"><span class="text-body-sm text-black" data-i18n="configurator.tecitCodeLogicSourceValidationTitle">Tecit code and Luminos validation</span><p class="text-body-sm text-grey-primary" data-i18n="configurator.tecitCodeLogicSourceValidationBody">The first 10 characters validate family, size, color, CRI, and series in Luminos. That lookup also defines the product ID used by the API.</p></div>
+                        <div class="panel panel-sm flex flex-col gap-4"><span class="text-body-sm text-black" data-i18n="configurator.tecitCodeLogicSourceCharacteristicsTitle">Product database</span><p class="text-body-sm text-grey-primary" data-i18n="configurator.tecitCodeLogicSourceCharacteristicsBody">Technical characteristics, electrical data, dimensions, and product descriptions come from the product database used by the NexLed API.</p></div>
+                        <div class="panel panel-sm flex flex-col gap-4"><span class="text-body-sm text-black" data-i18n="configurator.tecitCodeLogicSourceAssetsTitle">Current PDF assets</span><p class="text-body-sm text-grey-primary" data-i18n="configurator.tecitCodeLogicSourceAssetsBody">Product images, technical drawings, color spectrum files, lens diagrams, icons, and accessory graphics still come from the current local PDF asset library. DAM assets are not part of this PDF flow yet.</p></div>
+                        <div class="panel panel-sm flex flex-col gap-4"><span class="text-body-sm text-black" data-i18n="configurator.tecitCodeLogicSourceFormTitle">Configurator selections</span><p class="text-body-sm text-grey-primary" data-i18n="configurator.tecitCodeLogicSourceFormBody">Language, company logo, fixing, power supply, cable, purpose, and other optional fields come from the current configurator selections before the API builds the PDF.</p></div>
                     </div>
                 </div>
             </div>
@@ -465,10 +476,10 @@
         </div>
     </div>
 
-    <script src="locales/en.js?v=20260414-code-explorer-detail-modal"></script>
-    <script src="locales/pt.js?v=20260414-code-explorer-detail-modal"></script>
+    <script src="locales/en.js?v=20260414-copy-remediation"></script>
+    <script src="locales/pt.js?v=20260414-copy-remediation"></script>
     <script src="i18n.js?v=20260414-code-explorer"></script>
     <script src="app-shell.js?v=20260414-code-explorer"></script>
-    <script src="code-explorer.js?v=20260414-code-explorer-detail-modal"></script>
+    <script src="code-explorer.js?v=20260414-copy-remediation"></script>
 </body>
 </html>

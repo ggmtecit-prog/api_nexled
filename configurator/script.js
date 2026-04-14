@@ -1,7 +1,7 @@
 /**
  * NexLed Configurator
  *
- * Loads the allowed option matrix from the API, builds the product reference,
+ * Loads the valid option set from the API, builds the product reference,
  * and exports the datasheet request from the live UI state.
  */
 
@@ -283,9 +283,9 @@ function getApiFailureMessageKey() {
 
 function getApiFailureFallback(key) {
     const fallbacks = {
-        "configurator.runtime.apiFailureFile": "The NexLed Railway API is not responding.",
-        "configurator.runtime.apiFailureLocal": "The NexLed Railway API is not responding.",
-        "configurator.runtime.apiFailureRemote": "The NexLed Railway API is not reachable from this page.",
+        "configurator.runtime.apiFailureFile": "Product data is unavailable right now.",
+        "configurator.runtime.apiFailureLocal": "Product data is unavailable right now.",
+        "configurator.runtime.apiFailureRemote": "Unable to reach product data from this page.",
     };
 
     return fallbacks[key] || "";
@@ -297,9 +297,9 @@ function getFamilyPlaceholderMessageKey() {
 
 function getFamilyPlaceholderFallback(key) {
     const fallbacks = {
-        "configurator.runtime.familyPlaceholderFile": "Unable to load families from the Railway API",
-        "configurator.runtime.familyPlaceholderLocal": "Unable to load families from the Railway API",
-        "configurator.runtime.familyPlaceholderRemote": "Unable to load families from the Railway API",
+        "configurator.runtime.familyPlaceholderFile": "Unable to load product families right now.",
+        "configurator.runtime.familyPlaceholderLocal": "Unable to load product families right now.",
+        "configurator.runtime.familyPlaceholderRemote": "Unable to load product families right now.",
     };
 
     return fallbacks[key] || "";
@@ -1271,7 +1271,7 @@ async function handleFamilyChange() {
         {
             step: "Step 2",
             title: "Loading valid options",
-            subtitle: "Pulling the allowed manufacturing matrix for the selected family.",
+            subtitle: "Loading the valid manufacturing options for the selected family.",
         }
     );
     setStatusKey("configurator.runtime.loadingOptions", "loading", {}, "Loading options...");
@@ -1309,7 +1309,7 @@ async function loadOptions(familyCode) {
         {},
         {
             step: "Step 2",
-            title: "Reference builder active",
+            title: "Reference ready to edit",
             subtitle: "Adjust the configuration. The live output on the right updates automatically.",
         }
     );

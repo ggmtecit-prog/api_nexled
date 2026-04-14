@@ -60,7 +60,7 @@
                             <a href="index.html" class="dropdown-trigger">
                                 <span class="flex items-center gap-8">
                                     <i class="ri-home-5-line text-icon-md" aria-hidden="true"></i>
-                                    <span class="dropdown-value" data-i18n="shared.nav.home">Workspace Home</span>
+                                    <span class="dropdown-value" data-i18n="shared.nav.home">Home</span>
                                 </span>
                                 <i class="ri-arrow-right-s-line dropdown-arrow" aria-hidden="true"></i>
                             </a>
@@ -141,7 +141,7 @@
                             <a href="index.html" class="dropdown-trigger">
                                 <span class="flex items-center gap-8">
                                     <i class="ri-home-5-line text-icon-md" aria-hidden="true"></i>
-                                    <span class="dropdown-value" data-i18n="shared.nav.home">Workspace Home</span>
+                                    <span class="dropdown-value" data-i18n="shared.nav.home">Home</span>
                                 </span>
                                 <i class="ri-arrow-right-s-line dropdown-arrow" aria-hidden="true"></i>
                             </a>
@@ -210,7 +210,7 @@
     <div class="flex-1 min-w-0 flex flex-col lg:h-screen overflow-y-auto">
         <main class="flex-1 px-16 pt-32 pb-32 sm:px-20 sm:pt-40 sm:pb-40 md:px-24 md:pt-48 md:pb-48 lg:px-32 lg:pt-64 lg:pb-64 w-full">
             <h2 id="page-title" class="text-h1 font-medium text-black pb-24 pt-24" data-reveal="hero" data-i18n="configurator.heading">
-                Build Product Configurator
+                Product Configurator
             </h2>
 
             <div class="flex flex-col lg:flex-row gap-48 items-start justify-center">
@@ -235,7 +235,7 @@
                                         <p class="combobox-empty" id="family-combobox-empty" hidden data-i18n="configurator.familyEmpty">No matching families</p>
                                     </div>
                                 </div>
-                                <p class="input-hint ml-12" data-i18n="configurator.familyHint">Select the family to unlock the valid option matrix.</p>
+                                <p class="input-hint ml-12" data-i18n="configurator.familyHint">Select a family to load the valid option set.</p>
                             </div>
 
                             <div id="options-group" class="hidden flex flex-col gap-40 pt-40">
@@ -476,7 +476,7 @@
 
                 <div id="output-panel" class="card overflow-visible shrink-0 w-full lg:w-fit lg:sticky lg:top-56" data-reveal="section">
                     <div class="card-body p-24">
-                        <h3 class="card-title" data-i18n="configurator.quickActions.title">Quick Actions</h3>
+                        <h3 class="card-title" data-i18n="configurator.quickActions.title">Output and Actions</h3>
 
                         <div class="flex flex-col gap-12 pt-16">
                             <span class="input-label" data-i18n="configurator.quickActions.liveReference">Live Reference</span>
@@ -501,7 +501,7 @@
                                     </div>
                                 </div>
                             </div>
-                            <p class="input-hint" data-i18n="configurator.tecitCodeHint">Paste full Tecit code to prefill family, size, light, optics, and finish fields.</p>
+                            <p class="input-hint" data-i18n="configurator.tecitCodeHint">Paste a full Tecit code to prefill family, size, light, optics, and finish fields.</p>
                         </div>
 
                         <div id="output-fields" class="hidden flex flex-col gap-12 pt-24">
@@ -517,7 +517,7 @@
                                     </div>
                                 </span>
                             </div>
-                            <p id="descriptionHint" class="input-hint" data-i18n="configurator.quickActions.descriptionHint">Generated from the current reference when data is available.</p>
+                            <p id="descriptionHint" class="input-hint" data-i18n="configurator.quickActions.descriptionHint">Generated from the current reference when product data is available.</p>
                         </div>
 
                         <div class="flex flex-col gap-12 pt-24">
@@ -639,20 +639,20 @@
                         <span class="input-label" data-i18n="configurator.tecitCodeLogicSourcesTitle">Where Datasheet Data Comes From</span>
                         <div class="grid grid-cols-1 gap-12">
                             <div class="panel panel-sm flex flex-col gap-4">
-                                <span class="text-body-sm text-black" data-i18n="configurator.tecitCodeLogicSourceValidationTitle">Tecit code + Luminos validation</span>
-                                <p class="text-body-sm text-grey-primary" data-i18n="configurator.tecitCodeLogicSourceValidationBody">First 10 characters validate family, size, color, CRI, and series against the Luminos view. That lookup decides if the code is valid and which product ID the API should use.</p>
+                                <span class="text-body-sm text-black" data-i18n="configurator.tecitCodeLogicSourceValidationTitle">Tecit code and Luminos validation</span>
+                                <p class="text-body-sm text-grey-primary" data-i18n="configurator.tecitCodeLogicSourceValidationBody">The first 10 characters validate family, size, color, CRI, and series in Luminos. That lookup also defines the product ID used by the API.</p>
                             </div>
                             <div class="panel panel-sm flex flex-col gap-4">
-                                <span class="text-body-sm text-black" data-i18n="configurator.tecitCodeLogicSourceCharacteristicsTitle">Database characteristics</span>
-                                <p class="text-body-sm text-grey-primary" data-i18n="configurator.tecitCodeLogicSourceCharacteristicsBody">Technical characteristics, electrical data, dimensions, and product descriptions come from NexLed MySQL data used by the API.</p>
+                                <span class="text-body-sm text-black" data-i18n="configurator.tecitCodeLogicSourceCharacteristicsTitle">Product database</span>
+                                <p class="text-body-sm text-grey-primary" data-i18n="configurator.tecitCodeLogicSourceCharacteristicsBody">Technical characteristics, electrical data, dimensions, and product descriptions come from the product database used by the NexLed API.</p>
                             </div>
                             <div class="panel panel-sm flex flex-col gap-4">
-                                <span class="text-body-sm text-black" data-i18n="configurator.tecitCodeLogicSourceAssetsTitle">Local PDF assets</span>
-                                <p class="text-body-sm text-grey-primary" data-i18n="configurator.tecitCodeLogicSourceAssetsBody">Product images, technical drawings, color spectrum files, lens diagrams, icons, and accessory graphics still come from local assets in `appdatasheets/img`. Current PDF does not use DAM assets yet.</p>
+                                <span class="text-body-sm text-black" data-i18n="configurator.tecitCodeLogicSourceAssetsTitle">Current PDF assets</span>
+                                <p class="text-body-sm text-grey-primary" data-i18n="configurator.tecitCodeLogicSourceAssetsBody">Product images, technical drawings, color spectrum files, lens diagrams, icons, and accessory graphics still come from the current local PDF asset library. DAM assets are not part of this PDF flow yet.</p>
                             </div>
                             <div class="panel panel-sm flex flex-col gap-4">
-                                <span class="text-body-sm text-black" data-i18n="configurator.tecitCodeLogicSourceFormTitle">Live configurator selections</span>
-                                <p class="text-body-sm text-grey-primary" data-i18n="configurator.tecitCodeLogicSourceFormBody">Language, company logo, fixing, power supply, cable, purpose, and other optional fields come from current form selections before the API builds the PDF.</p>
+                                <span class="text-body-sm text-black" data-i18n="configurator.tecitCodeLogicSourceFormTitle">Configurator selections</span>
+                                <p class="text-body-sm text-grey-primary" data-i18n="configurator.tecitCodeLogicSourceFormBody">Language, company logo, fixing, power supply, cable, purpose, and other optional fields come from the current configurator selections before the API builds the PDF.</p>
                             </div>
                         </div>
                     </div>
@@ -675,7 +675,7 @@
                     <path class="spinner-anim" d="M 50 5 L 75 5 A 20 20 0 0 1 95 25 L 95 75 A 20 20 0 0 1 75 95 L 25 95 A 20 20 0 0 1 5 75 L 5 25 A 20 20 0 0 1 25 5 L 50 5 Z" />
                 </svg>
             </div>
-            <p class="text-body-lg text-white" data-i18n="configurator.runtime.creatingPdf">Creating the pdf</p>
+            <p class="text-body-lg text-white" data-i18n="configurator.runtime.creatingPdf">Creating PDF</p>
         </div>
     </div>
 
@@ -689,7 +689,7 @@
                     <p id="status-message-copy" class="toast-title" data-i18n="configurator.runtime.chooseFamilyToBegin">Choose a family to begin.</p>
                 </div>
                 <div class="toast-actions">
-                    <button type="button" id="status-message-close" class="btn btn-ghost btn-icon btn-xs" aria-label="Close notification">
+                    <button type="button" id="status-message-close" class="btn btn-ghost btn-icon btn-xs" aria-label="Close notification" data-i18n-aria-label="shared.actions.closeNotification">
                         <i class="ri-close-line text-icon-md" aria-hidden="true"></i>
                     </button>
                 </div>
@@ -697,10 +697,10 @@
         </div>
     </div>
 
-    <script src="locales/en.js?v=20260414-code-explorer"></script>
-    <script src="locales/pt.js?v=20260414-code-explorer"></script>
+    <script src="locales/en.js?v=20260414-copy-remediation"></script>
+    <script src="locales/pt.js?v=20260414-copy-remediation"></script>
     <script src="i18n.js?v=20260414-code-explorer"></script>
     <script src="app-shell.js?v=20260414-code-explorer"></script>
-    <script src="script.js?v=20260414-configurator-pdf-loading"></script>
+    <script src="script.js?v=20260414-copy-remediation"></script>
 </body>
 </html>
