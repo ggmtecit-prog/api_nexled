@@ -18,6 +18,7 @@ const CODE_EXPLORER_STATUS_DATASHEET_READY = "datasheet_ready";
 const CODE_EXPLORER_STATUS_DATASHEET_BLOCKED = "datasheet_blocked";
 const CODE_EXPLORER_DEFAULT_LANG = "pt";
 const CODE_EXPLORER_MAX_FULL_MATRIX_ROWS = 1000000;
+const CODE_EXPLORER_SEGMENT_KEYS = ["size", "color", "cri", "series", "lens", "finish", "cap", "option"];
 
 function getCodeExplorerStatusFilter(string $value): string {
     $normalized = trim(strtolower($value));
@@ -60,6 +61,101 @@ function getCodeExplorerIncludeInvalid(mixed $value): bool {
 
     $normalized = trim(strtolower((string) $value));
     return in_array($normalized, ["1", "true", "yes", "on"], true);
+}
+
+function getCodeExplorerSegmentFilters(array $input, array $options): array {
+    $filters = [];
+
+    foreach (CODE_EXPLORER_SEGMENT_KEYS as $segment) {
+        $rawValue = trim((string) ($input[$segment] ?? ""));
+        $normalizedValue = preg_replace('/\s+/', '', $rawValue);
+        $segmentLength = getCodeExplorerSegmentLength($segment);
+
+        if ($normalizedValue !== "" && $segmentLength > 0 && ctype_digit($normalizedValue) && strlen($normalizedValue) < $segmentLength) {
+            $normalizedValue = str_pad($normalizedValue, $segmentLength, "0", STR_PAD_LEFT);
+        }
+
+        $allowedCodes = array_map(
+            static fn(array $option): string => (string) ($option["code"] ?? ""),
+            $options[$segment] ?? []
+        );
+
+        $filters[$segment] = in_array($normalizedValue, $allowedCodes, true)
+            ? $normalizedValue
+            : "";
+    }
+
+    return $filters;
+}
+
+function getCodeExplorerFilteredOptions(array $options, array $segmentFilters): array {
+    $filteredOptions = [];
+
+    foreach ($options as $segment => $segmentOptions) {
+        $filterCode = (string) ($segmentFilters[$segment] ?? "");
+
+        if ($filterCode === "") {
+            $filteredOptions[$segment] = $segmentOptions;
+            continue;
+        }
+
+        $filteredOptions[$segment] = array_values(array_filter(
+            $segmentOptions,
+            static fn(array $option): bool => (string) ($option["code"] ?? "") === $filterCode
+        ));
+    }
+
+    return $filteredOptions;
+}
+
+function getCodeExplorerFilteredIdentities(array $identities, array $segmentFilters): array {
+    $identitySegments = ["size", "color", "cri", "series"];
+
+    if (!hasCodeExplorerSegmentDrillDown(array_intersect_key($segmentFilters, array_flip($identitySegments)))) {
+        return $identities;
+    }
+
+    return array_values(array_filter($identities, static function (array $identityData) use ($segmentFilters): bool {
+        $identity = (string) ($identityData["identity"] ?? "");
+
+        if (strlen($identity) !== REFERENCE_LENGTH_IDENTITY) {
+            return false;
+        }
+
+        $parts = decodeReference($identity . str_repeat("0", REFERENCE_LENGTH_FULL - REFERENCE_LENGTH_IDENTITY));
+
+        foreach (["size", "color", "cri", "series"] as $segment) {
+            $filterCode = (string) ($segmentFilters[$segment] ?? "");
+
+            if ($filterCode !== "" && ($parts[$segment] ?? "") !== $filterCode) {
+                return false;
+            }
+        }
+
+        return true;
+    }));
+}
+
+function hasCodeExplorerSegmentDrillDown(array $segmentFilters): bool {
+    foreach ($segmentFilters as $value) {
+        if ((string) $value !== "") {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+function matchesCodeExplorerSegmentFilters(array $segments, array $segmentFilters): bool {
+    foreach (CODE_EXPLORER_SEGMENT_KEYS as $segment) {
+        $filterCode = (string) ($segmentFilters[$segment] ?? "");
+
+        if ($filterCode !== "" && (($segments[$segment] ?? "") !== $filterCode)) {
+            return false;
+        }
+    }
+
+    return true;
 }
 
 function getCodeExplorerIdentityMatrixSize(array $options): int {
@@ -266,7 +362,7 @@ function getCodeExplorerLuminosIdentities(string $familyCode): array {
     return array_values($identities);
 }
 
-function buildCodeExplorerResponse(string $familyCode, string $familyName, array $options, array $identities, string $search, string $statusFilter, int $page, int $pageSize, bool $includeInvalid): array {
+function buildCodeExplorerResponse(string $familyCode, string $familyName, array $options, array $identities, string $search, string $statusFilter, int $page, int $pageSize, bool $includeInvalid, array $segmentFilters): array {
     $summary = [
         "total_codes" => 0,
         "configurator_valid" => 0,
@@ -395,6 +491,7 @@ function buildCodeExplorerResponse(string $familyCode, string $familyName, array
                 "search" => $search,
                 "status" => $statusFilter,
                 "include_invalid" => false,
+                "segment_filters" => $segmentFilters,
             ],
             "pagination" => [
                 "page" => $safePage,
@@ -524,6 +621,7 @@ function buildCodeExplorerResponse(string $familyCode, string $familyName, array
             "search" => $search,
             "status" => $statusFilter,
             "include_invalid" => true,
+            "segment_filters" => $segmentFilters,
         ],
         "pagination" => [
             "page" => $safePage,
@@ -535,7 +633,7 @@ function buildCodeExplorerResponse(string $familyCode, string $familyName, array
     ];
 }
 
-function buildCodeExplorerTargetedSearchResponse(string $familyCode, string $familyName, array $options, array $identities, string $search, string $statusFilter, int $page, int $pageSize, bool $includeInvalid): array {
+function buildCodeExplorerTargetedSearchResponse(string $familyCode, string $familyName, array $options, array $identities, string $search, string $statusFilter, int $page, int $pageSize, bool $includeInvalid, array $segmentFilters): array {
     $normalizedSearch = normalizeCodeExplorerReferenceSearch($search);
     $summary = [
         "total_codes" => 0,
@@ -576,6 +674,11 @@ function buildCodeExplorerTargetedSearchResponse(string $familyCode, string $fam
                     }
 
                     $parts = decodeReference($reference);
+
+                    if (!matchesCodeExplorerSegmentFilters($parts, $segmentFilters)) {
+                        continue;
+                    }
+
                     $identityData = $identityMap[$identity] ?? null;
                     $isConfiguratorValidIdentity = $identityData !== null;
                     $productId = $isConfiguratorValidIdentity
@@ -680,6 +783,7 @@ function buildCodeExplorerTargetedSearchResponse(string $familyCode, string $fam
             "search" => $search,
             "status" => $statusFilter,
             "include_invalid" => $includeInvalid,
+            "segment_filters" => $segmentFilters,
         ],
         "pagination" => [
             "page" => $safePage,

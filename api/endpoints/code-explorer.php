@@ -23,28 +23,48 @@ $pageSize = getCodeExplorerPageSize($_GET["page_size"] ?? null);
 $search = sanitizeCodeExplorerSearch($_GET["search"] ?? "");
 $statusFilter = getCodeExplorerStatusFilter($_GET["status"] ?? CODE_EXPLORER_STATUS_ALL);
 $includeInvalid = getCodeExplorerIncludeInvalid($_GET["include_invalid"] ?? false);
+$hasTargetedReferenceSearch = isCodeExplorerTargetedReferenceSearch($search, $familyMeta["code"]);
 
 $options = getCodeExplorerFamilyOptions($family);
+$segmentFilters = getCodeExplorerSegmentFilters($_GET, $options);
+$filteredOptions = getCodeExplorerFilteredOptions($options, $segmentFilters);
 $identities = getCodeExplorerLuminosIdentities($familyMeta["code"]);
-$validMatrixSize = getCodeExplorerValidMatrixSize($options, $identities);
-$identityMatrixSize = getCodeExplorerIdentityMatrixSize($options);
-$suffixMatrixSize = getCodeExplorerSuffixMatrixSize($options);
-$fullMatrixSize = getCodeExplorerFullMatrixSize($options);
+$filteredIdentities = getCodeExplorerFilteredIdentities($identities, $segmentFilters);
+$validMatrixSize = getCodeExplorerValidMatrixSize($filteredOptions, $filteredIdentities);
+$identityMatrixSize = getCodeExplorerIdentityMatrixSize($filteredOptions);
+$suffixMatrixSize = getCodeExplorerSuffixMatrixSize($filteredOptions);
+$fullMatrixSize = getCodeExplorerFullMatrixSize($filteredOptions);
 
-if (isCodeExplorerTargetedReferenceSearch($search, $familyMeta["code"])) {
+if ($hasTargetedReferenceSearch) {
     echo json_encode(
         buildCodeExplorerTargetedSearchResponse(
             $familyMeta["code"],
             $familyMeta["name"],
-            $options,
-            $identities,
+            $filteredOptions,
+            $filteredIdentities,
             $search,
             $statusFilter,
             $page,
             $pageSize,
-            $includeInvalid
+            $includeInvalid,
+            $segmentFilters
         )
     );
+    exit();
+}
+
+if ($includeInvalid && !hasCodeExplorerSegmentDrillDown($segmentFilters)) {
+    http_response_code(400);
+    echo json_encode([
+        "error" => "Invalid exploration requires at least one drill-down filter or a targeted full-code search.",
+        "reason" => "invalid_filters_required",
+        "family" => $familyMeta,
+        "valid_matrix_size" => $validMatrixSize,
+        "identity_matrix_size" => $identityMatrixSize,
+        "suffix_matrix_size" => $suffixMatrixSize,
+        "full_matrix_size" => $fullMatrixSize,
+        "message" => "Turn off invalid combinations, search for a specific full code prefix, or narrow the family by segment filters such as size, color, CRI, or series.",
+    ]);
     exit();
 }
 
@@ -68,12 +88,13 @@ echo json_encode(
     buildCodeExplorerResponse(
         $familyMeta["code"],
         $familyMeta["name"],
-        $options,
-        $identities,
+        $filteredOptions,
+        $filteredIdentities,
         $search,
         $statusFilter,
         $page,
         $pageSize,
-        $includeInvalid
+        $includeInvalid,
+        $segmentFilters
     )
 );

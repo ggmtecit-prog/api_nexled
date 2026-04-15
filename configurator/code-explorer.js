@@ -7,6 +7,7 @@ const STATUS_TOAST_VARIANT = {
     neutral: { className: "toast-info", iconClass: "ri-information-line", role: "status", autoHide: true },
     loading: { className: "toast-info", iconClass: "ri-information-line", role: "status", autoHide: false },
     success: { className: "toast-success", iconClass: "ri-checkbox-circle-line", role: "status", autoHide: true },
+    warning: { className: "toast-warning", iconClass: "ri-alert-line", role: "status", autoHide: false },
     error: { className: "toast-danger", iconClass: "ri-close-circle-line", role: "alert", autoHide: true },
 };
 const EXPLORER_TABLE_HEAD_FALLBACK_COLUMNS = [
@@ -39,6 +40,12 @@ const SEGMENT_META = [
     { key: "cap", labelKey: "codeExplorer.segmentCap", fallback: "Cap" },
     { key: "option", labelKey: "codeExplorer.segmentOption", fallback: "Option" },
 ];
+const EXPLORER_SEGMENT_FILTER_META = [
+    { key: "size", payloadKey: "tamanho", selectId: "explorer-filter-size", labelKey: "codeExplorer.filterSizeLabel", anyKey: "codeExplorer.filterAnySize", fallbackLabel: "Size", fallbackAny: "Any size", length: 4 },
+    { key: "color", payloadKey: "cor", selectId: "explorer-filter-color", labelKey: "codeExplorer.filterColorLabel", anyKey: "codeExplorer.filterAnyColor", fallbackLabel: "Color", fallbackAny: "Any color", length: 2 },
+    { key: "cri", payloadKey: "cri", selectId: "explorer-filter-cri", labelKey: "codeExplorer.filterCriLabel", anyKey: "codeExplorer.filterAnyCri", fallbackLabel: "CRI", fallbackAny: "Any CRI", length: 1 },
+    { key: "series", payloadKey: "serie", selectId: "explorer-filter-series", labelKey: "codeExplorer.filterSeriesLabel", anyKey: "codeExplorer.filterAnySeries", fallbackLabel: "Series", fallbackAny: "Any series", length: 1 },
+];
 const FAILURE_REASON_KEYS = {
     invalid_luminos_combination: "codeExplorer.failure.invalid_luminos_combination",
     missing_header_data: "codeExplorer.failure.missing_header_data",
@@ -51,6 +58,12 @@ const FAILURE_REASON_KEYS = {
     missing_connection_cable_data: "codeExplorer.failure.missing_connection_cable_data",
     unsupported_datasheet_runtime: "codeExplorer.failure.unsupported_datasheet_runtime",
 };
+const EXPLORER_ERROR_REASON_KEYS = {
+    invalid_filters_required: "codeExplorer.error.invalid_filters_required",
+    family_matrix_too_large: "codeExplorer.error.family_matrix_too_large",
+};
+const EXPLORER_SEARCH_MODE_CODE = "code";
+const EXPLORER_SEARCH_MODE_NAME = "name";
 
 let apiBasePromise = null;
 let hasSuccessfulApiContact = false;
@@ -69,19 +82,26 @@ let statusToastTimers = {
     dismiss: null,
     hide: null,
 };
-let searchInputTimer = null;
 let familyCombobox = null;
 let explorerState = {
     families: [],
+    familyOptionsByFamily: {},
     data: null,
     selectedReference: "",
     controls: {
+        searchMode: EXPLORER_SEARCH_MODE_CODE,
         family: "",
         search: "",
         status: "all",
         page: 1,
         pageSize: 100,
         includeInvalid: false,
+        segmentFilters: {
+            size: "",
+            color: "",
+            cri: "",
+            series: "",
+        },
     },
 };
 
@@ -95,12 +115,215 @@ function initializeCodeExplorer() {
     bindStaticEvents();
     renderApiBadge();
     applyPageStatusState();
+    renderExplorerSegmentFilterOptions(null);
+    applyExplorerSearchMode(explorerState.controls.searchMode);
     renderSummary(null);
     renderTable();
     renderDetail();
     renderPagination();
     loadFamilies();
     checkApiHealth();
+}
+
+function getEmptyExplorerSegmentFilters() {
+    return {
+        size: "",
+        color: "",
+        cri: "",
+        series: "",
+    };
+}
+
+function normalizeExplorerSegmentCode(value, length) {
+    const normalized = String(value ?? "").trim().replace(/\s+/g, "");
+
+    if (normalized === "") {
+        return "";
+    }
+
+    if (/^\d+$/.test(normalized) && normalized.length < length) {
+        return normalized.padStart(length, "0");
+    }
+
+    return normalized.toUpperCase();
+}
+
+function normalizeExplorerFamilyOptions(payload) {
+    return EXPLORER_SEGMENT_FILTER_META.reduce((accumulator, meta) => {
+        const rawOptions = Array.isArray(payload?.[meta.payloadKey]) ? payload[meta.payloadKey] : [];
+
+        accumulator[meta.key] = rawOptions
+            .map((rawOption) => {
+                if (meta.key === "size") {
+                    const code = normalizeExplorerSegmentCode(rawOption, meta.length);
+
+                    return {
+                        code,
+                        label: String(rawOption ?? code).trim() || code,
+                    };
+                }
+
+                const label = String(rawOption?.[0] ?? rawOption?.[2] ?? rawOption?.[1] ?? "").trim();
+                const code = normalizeExplorerSegmentCode(rawOption?.[1] ?? rawOption?.[0] ?? "", meta.length);
+
+                return {
+                    code,
+                    label: label || code,
+                };
+            })
+            .filter((option) => option.code !== "");
+
+        return accumulator;
+    }, {});
+}
+
+async function loadExplorerFamilyOptions(family, resetSelection = false) {
+    if (!family) {
+        explorerState.controls.segmentFilters = getEmptyExplorerSegmentFilters();
+        renderExplorerSegmentFilterOptions(null);
+        return null;
+    }
+
+    if (!explorerState.familyOptionsByFamily[family]) {
+        const payload = await apiFetch("/?endpoint=options&family=" + encodeURIComponent(family));
+        explorerState.familyOptionsByFamily[family] = normalizeExplorerFamilyOptions(payload);
+    }
+
+    if (resetSelection) {
+        explorerState.controls.segmentFilters = getEmptyExplorerSegmentFilters();
+    }
+
+    const selectedFamily = document.getElementById("explorer-family")?.value || explorerState.controls.family;
+
+    if (selectedFamily === family) {
+        renderExplorerSegmentFilterOptions(explorerState.familyOptionsByFamily[family]);
+    }
+
+    return explorerState.familyOptionsByFamily[family];
+}
+
+function renderExplorerSegmentFilterOptions(optionMap) {
+    const optionsBySegment = optionMap || {};
+
+    EXPLORER_SEGMENT_FILTER_META.forEach((meta) => {
+        const select = document.getElementById(meta.selectId);
+
+        if (!select) {
+            return;
+        }
+
+        const options = Array.isArray(optionsBySegment[meta.key]) ? optionsBySegment[meta.key] : [];
+        const selectedValue = explorerState.controls.segmentFilters?.[meta.key] || "";
+        const hasSelectedValue = options.some((option) => option.code === selectedValue);
+        const nextValue = hasSelectedValue ? selectedValue : "";
+
+        select.innerHTML = [
+            `<option value="">${escapeHtml(t(meta.anyKey, {}, meta.fallbackAny))}</option>`,
+            ...options.map((option) => `<option value="${escapeHtml(option.code)}">${escapeHtml(option.code)} - ${escapeHtml(option.label)}</option>`),
+        ].join("");
+        select.disabled = options.length === 0;
+        select.value = nextValue;
+        explorerState.controls.segmentFilters[meta.key] = nextValue;
+    });
+
+    updateExplorerInvalidGuidance();
+}
+
+function readExplorerSegmentFiltersFromForm() {
+    return EXPLORER_SEGMENT_FILTER_META.reduce((accumulator, meta) => {
+        const select = document.getElementById(meta.selectId);
+        accumulator[meta.key] = normalizeExplorerSegmentCode(select?.value || "", meta.length);
+        return accumulator;
+    }, getEmptyExplorerSegmentFilters());
+}
+
+function hasActiveExplorerSegmentFilters(segmentFilters = explorerState.controls.segmentFilters) {
+    return EXPLORER_SEGMENT_FILTER_META.some((meta) => (segmentFilters?.[meta.key] || "") !== "");
+}
+
+function isTargetedExplorerReferenceSearch(search = explorerState.controls.search, family = explorerState.controls.family) {
+    const normalizedSearch = String(search ?? "").replace(/\s+/g, "").toUpperCase();
+    const normalizedFamily = String(family ?? "").trim().toUpperCase();
+
+    if (!normalizedFamily || normalizedSearch === "") {
+        return false;
+    }
+
+    return normalizedSearch.length >= 10
+        && normalizedSearch.length <= 17
+        && normalizedSearch.startsWith(normalizedFamily);
+}
+
+function updateExplorerInvalidGuidance() {
+    const guidance = document.getElementById("explorer-invalid-guidance");
+
+    if (!guidance) {
+        return;
+    }
+
+    if (explorerState.controls.searchMode !== EXPLORER_SEARCH_MODE_NAME) {
+        guidance.classList.add("hidden");
+        return;
+    }
+
+    const includeInvalid = document.getElementById("explorer-include-invalid")?.checked === true;
+    const search = document.getElementById("explorer-search")?.value || explorerState.controls.search;
+    const family = document.getElementById("explorer-family")?.value || explorerState.controls.family;
+    const segmentFilters = readExplorerSegmentFiltersFromForm();
+    const shouldShow = includeInvalid && !hasActiveExplorerSegmentFilters(segmentFilters) && !isTargetedExplorerReferenceSearch(search, family);
+
+    guidance.classList.toggle("hidden", !shouldShow);
+}
+
+function getExplorerErrorMessage(error) {
+    const reason = error?.payload?.reason;
+    const mappedKey = reason ? EXPLORER_ERROR_REASON_KEYS[reason] : "";
+
+    if (mappedKey) {
+        return t(mappedKey, {}, error?.payload?.message || error?.message || mappedKey);
+    }
+
+    return error?.payload?.message || error?.message || t("codeExplorer.runtime.unknownError", {}, "Unknown error");
+}
+
+function getExplorerSearchModeFromForm() {
+    return document.querySelector('input[name="explorer-search-mode"]:checked')?.value || EXPLORER_SEARCH_MODE_CODE;
+}
+
+function renderExplorerSearchInputCopy(searchMode = explorerState.controls.searchMode) {
+    const label = document.getElementById("explorer-search-label");
+    const input = document.getElementById("explorer-search");
+    const isCodeMode = searchMode === EXPLORER_SEARCH_MODE_CODE;
+
+    if (label) {
+        label.textContent = isCodeMode
+            ? t("codeExplorer.searchCodeLabel", {}, "Search By Code")
+            : t("codeExplorer.searchNameLabel", {}, "Search By Name");
+    }
+
+    if (input) {
+        input.placeholder = isCodeMode
+            ? t("codeExplorer.searchCodePlaceholder", {}, "Enter a code")
+            : t("codeExplorer.searchNamePlaceholder", {}, "Enter a name");
+    }
+}
+
+function applyExplorerSearchMode(searchMode = explorerState.controls.searchMode) {
+    const isCodeMode = searchMode === EXPLORER_SEARCH_MODE_CODE;
+
+    explorerState.controls.searchMode = searchMode;
+    document.querySelectorAll("[data-name-search-field]").forEach((element) => {
+        element.classList.toggle("hidden", isCodeMode);
+    });
+
+    renderExplorerSearchInputCopy(searchMode);
+    syncDraftInvalidControls();
+    syncAppliedInvalidSummaryCard();
+    updateExplorerInvalidGuidance();
+
+    if (!isCodeMode && explorerState.controls.family) {
+        void loadExplorerFamilyOptions(explorerState.controls.family, false);
+    }
 }
 
 function setupExplorerFamilyCombobox() {
@@ -384,14 +607,54 @@ function bindControls() {
     });
 
     document.getElementById("explorer-search").addEventListener("input", () => {
-        clearTimeout(searchInputTimer);
-        searchInputTimer = setTimeout(() => {
-            applyFiltersFromForm("search");
-        }, 250);
+        updateExplorerInvalidGuidance();
+    });
+
+    document.querySelectorAll('input[name="explorer-search-mode"]').forEach((radio) => {
+        radio.addEventListener("change", () => {
+            if (!radio.checked) {
+                return;
+            }
+
+            applyExplorerSearchMode(radio.value);
+        });
     });
 
     document.getElementById("explorer-include-invalid").addEventListener("change", () => {
         syncDraftInvalidControls();
+        updateExplorerInvalidGuidance();
+    });
+
+    document.getElementById("explorer-family").addEventListener("change", async () => {
+        const selectedFamily = document.getElementById("explorer-family").value;
+        explorerState.controls.family = selectedFamily;
+        explorerState.controls.segmentFilters = getEmptyExplorerSegmentFilters();
+        renderExplorerSegmentFilterOptions(null);
+
+        if (!selectedFamily) {
+            return;
+        }
+
+        try {
+            await loadExplorerFamilyOptions(selectedFamily, true);
+        } catch (error) {
+            setPageStatus("codeExplorer.runtime.loadFailedWithMessage", "error", "Unable to load explorer data right now: {message}", {
+                message: getExplorerErrorMessage(error),
+            });
+        }
+    });
+
+    EXPLORER_SEGMENT_FILTER_META.forEach((meta) => {
+        const select = document.getElementById(meta.selectId);
+
+        if (!select) {
+            return;
+        }
+
+        select.addEventListener("change", () => {
+            explorerState.controls.segmentFilters = readExplorerSegmentFiltersFromForm();
+            updateExplorerInvalidGuidance();
+        });
     });
 
     document.getElementById("explorer-pagination").addEventListener("click", (event) => {
@@ -437,6 +700,7 @@ function bindControls() {
     });
 
     syncDraftInvalidControls();
+    updateExplorerInvalidGuidance();
 
     document.getElementById("explorer-rows").addEventListener("click", (event) => {
         const trigger = event.target.closest("[data-reference]");
@@ -452,33 +716,78 @@ function bindControls() {
     });
 }
 
-function applyFiltersFromForm(source = "manual") {
-    clearTimeout(searchInputTimer);
-
+async function applyFiltersFromForm() {
     const search = document.getElementById("explorer-search").value.trim();
-    let family = document.getElementById("explorer-family").value;
-    const includeInvalid = document.getElementById("explorer-include-invalid").checked;
-    const detectedFamily = detectFamilyFromSearch(search);
+    const searchMode = getExplorerSearchModeFromForm();
+    const previousFamily = explorerState.controls.family;
+    const includeInvalid = searchMode === EXPLORER_SEARCH_MODE_NAME
+        ? document.getElementById("explorer-include-invalid").checked
+        : false;
+    let family = searchMode === EXPLORER_SEARCH_MODE_NAME
+        ? document.getElementById("explorer-family").value
+        : "";
 
-    if (detectedFamily && detectedFamily.value !== family) {
-        family = detectedFamily.value;
-        familyCombobox?.setSelectionByValue(detectedFamily.value, false);
+    if (searchMode === EXPLORER_SEARCH_MODE_CODE) {
+        family = detectFamilyCodeFromReferenceSearch(search);
     }
 
-    syncDraftInvalidControls();
-
-    explorerState.controls.family = family;
+    explorerState.controls.searchMode = searchMode;
     explorerState.controls.search = search;
-    explorerState.controls.status = document.getElementById("explorer-status").value;
+    explorerState.controls.family = family;
+    explorerState.controls.status = searchMode === EXPLORER_SEARCH_MODE_NAME
+        ? document.getElementById("explorer-status").value
+        : "all";
     explorerState.controls.includeInvalid = includeInvalid;
-    explorerState.controls.pageSize = Number.parseInt(document.getElementById("explorer-page-size").value, 10) || 100;
+    explorerState.controls.pageSize = searchMode === EXPLORER_SEARCH_MODE_NAME
+        ? (Number.parseInt(document.getElementById("explorer-page-size").value, 10) || 100)
+        : 100;
+    explorerState.controls.segmentFilters = searchMode === EXPLORER_SEARCH_MODE_NAME
+        ? readExplorerSegmentFiltersFromForm()
+        : getEmptyExplorerSegmentFilters();
     explorerState.controls.page = 1;
-    syncAppliedInvalidSummaryCard();
 
-    if (source === "search" && search !== "" && !explorerState.controls.family) {
+    if (searchMode === EXPLORER_SEARCH_MODE_NAME) {
+        syncDraftInvalidControls();
+    }
+
+    const familyChanged = family !== previousFamily;
+
+    if (searchMode === EXPLORER_SEARCH_MODE_NAME && family) {
+        if (familyChanged) {
+            explorerState.controls.segmentFilters = getEmptyExplorerSegmentFilters();
+        }
+
+        try {
+            await loadExplorerFamilyOptions(family, familyChanged);
+            explorerState.controls.segmentFilters = readExplorerSegmentFiltersFromForm();
+        } catch (error) {
+            explorerState.data = null;
+            explorerState.selectedReference = "";
+            renderSummary(null);
+            renderTable();
+            renderDetail();
+            renderResultsMeta();
+            renderPagination();
+            setPageStatus("codeExplorer.runtime.loadFailedWithMessage", "error", "Unable to load explorer data right now: {message}", {
+                message: getExplorerErrorMessage(error),
+            });
+            return;
+        }
+    }
+
+    syncAppliedInvalidSummaryCard();
+    updateExplorerInvalidGuidance();
+
+    if (!explorerState.controls.family) {
         explorerState.data = null;
         explorerState.selectedReference = "";
-        setPageStatus("codeExplorer.runtime.searchNeedsFamily", "neutral", "Enter a full code or choose a family first.");
+        setPageStatus(
+            searchMode === EXPLORER_SEARCH_MODE_CODE ? "codeExplorer.runtime.searchCodeNeedsFamily" : "codeExplorer.runtime.chooseFamily",
+            "neutral",
+            searchMode === EXPLORER_SEARCH_MODE_CODE
+                ? "Enter full code with family prefix to load explorer rows."
+                : "Select one family to start building valid code rows."
+        );
         renderSummary(null);
         renderTable();
         renderDetail();
@@ -487,10 +796,13 @@ function applyFiltersFromForm(source = "manual") {
         return;
     }
 
-    if (!explorerState.controls.family) {
+    if (searchMode === EXPLORER_SEARCH_MODE_NAME
+        && explorerState.controls.includeInvalid
+        && !hasActiveExplorerSegmentFilters(explorerState.controls.segmentFilters)
+        && !isTargetedExplorerReferenceSearch(search, explorerState.controls.family)) {
         explorerState.data = null;
         explorerState.selectedReference = "";
-        setPageStatus("codeExplorer.runtime.chooseFamily", "neutral", "Select one family to start building valid code rows.");
+        setPageStatus("codeExplorer.runtime.invalidNeedsDrillDown", "warning", "Include invalid requires at least one drill-down filter or a targeted full code.");
         renderSummary(null);
         renderTable();
         renderDetail();
@@ -502,27 +814,15 @@ function applyFiltersFromForm(source = "manual") {
     loadExplorerData();
 }
 
-function detectFamilyFromSearch(search) {
-    const normalizedSearch = search.replace(/\s+/g, "").toUpperCase();
+function detectFamilyCodeFromReferenceSearch(search) {
+    const normalizedSearch = String(search ?? "").replace(/\s+/g, "").toUpperCase();
 
-    if (normalizedSearch === "") {
-        return null;
+    if (normalizedSearch.length < 2) {
+        return "";
     }
 
-    const matchedFamily = [...explorerState.families]
-        .map((family) => {
-            const code = String(family.codigo || "");
-            const name = String(family.nome || code);
-
-            return {
-                value: code,
-                label: code + " - " + name,
-            };
-        })
-        .sort((left, right) => right.value.length - left.value.length)
-        .find((family) => normalizedSearch.startsWith(family.value.toUpperCase()));
-
-    return matchedFamily || null;
+    const familyCode = normalizedSearch.slice(0, 2);
+    return /^\d{2}$/.test(familyCode) ? familyCode : "";
 }
 
 function bindStaticEvents() {
@@ -537,6 +837,8 @@ function bindStaticEvents() {
     window.addEventListener(I18N_EVENT, () => {
         renderApiBadge();
         applyPageStatusState();
+        applyExplorerSearchMode(explorerState.controls.searchMode);
+        renderExplorerSegmentFilterOptions(explorerState.familyOptionsByFamily[explorerState.controls.family] || null);
         renderResultsMeta();
         renderSummary(explorerState.data);
         renderTable();
@@ -566,7 +868,10 @@ function syncAppliedInvalidSummaryCard() {
     const invalidSummaryCard = document.getElementById("summary-invalid-card");
 
     if (invalidSummaryCard) {
-        invalidSummaryCard.classList.toggle("hidden", explorerState.controls.includeInvalid !== true);
+        invalidSummaryCard.classList.toggle(
+            "hidden",
+            explorerState.controls.searchMode !== EXPLORER_SEARCH_MODE_NAME || explorerState.controls.includeInvalid !== true
+        );
     }
 }
 
@@ -640,10 +945,18 @@ async function loadFamilies() {
         const families = await apiFetch("/?endpoint=families");
         explorerState.families = Array.isArray(families) ? families : [];
         populateFamilies();
-        setPageStatus("codeExplorer.runtime.chooseFamily", "neutral", "Select one family to start building valid code rows.");
+        setPageStatus(
+            explorerState.controls.searchMode === EXPLORER_SEARCH_MODE_CODE
+                ? "codeExplorer.runtime.searchCodeNeedsFamily"
+                : "codeExplorer.runtime.chooseFamily",
+            "neutral",
+            explorerState.controls.searchMode === EXPLORER_SEARCH_MODE_CODE
+                ? "Enter a full code with family prefix first."
+                : "Select one family to start building valid code rows."
+        );
     } catch (error) {
         setPageStatus("codeExplorer.runtime.loadFailedWithMessage", "error", "Unable to load explorer data right now: {message}", {
-            message: error?.message || t("codeExplorer.runtime.unknownError", {}, "Unknown error"),
+            message: getExplorerErrorMessage(error),
         });
         renderResultsMeta();
     }
@@ -651,7 +964,6 @@ async function loadFamilies() {
 
 function populateFamilies() {
     const valueField = document.getElementById("explorer-family");
-    const searchField = document.getElementById("explorer-search");
     const options = explorerState.families.map((family) => {
         const code = String(family.codigo || "");
         const name = String(family.nome || code);
@@ -671,10 +983,7 @@ function populateFamilies() {
     document.getElementById("explorer-status").value = explorerState.controls.status;
     document.getElementById("explorer-page-size").value = String(explorerState.controls.pageSize);
     syncDraftInvalidControls();
-
-    if ((searchField?.value || "").trim() !== "" && !explorerState.controls.family) {
-        applyFiltersFromForm("search");
-    }
+    updateExplorerInvalidGuidance();
 }
 
 async function loadExplorerData() {
@@ -694,6 +1003,16 @@ async function loadExplorerData() {
         status: explorerState.controls.status,
         include_invalid: explorerState.controls.includeInvalid ? "1" : "0",
     });
+
+    if (explorerState.controls.searchMode === EXPLORER_SEARCH_MODE_NAME) {
+        EXPLORER_SEGMENT_FILTER_META.forEach((meta) => {
+            const value = explorerState.controls.segmentFilters?.[meta.key] || "";
+
+            if (value !== "") {
+                params.set(meta.key, value);
+            }
+        });
+    }
 
     try {
         const data = await apiFetch("/?" + params.toString());
@@ -724,7 +1043,7 @@ async function loadExplorerData() {
         renderResultsMeta();
         renderPagination();
         setPageStatus("codeExplorer.runtime.loadFailedWithMessage", "error", "Unable to load explorer data right now: {message}", {
-            message: error?.message || t("codeExplorer.runtime.unknownError", {}, "Unknown error"),
+            message: getExplorerErrorMessage(error),
         });
 
         if (error.status >= 500 || error.status === 401 || error.status === 403) {
@@ -765,6 +1084,7 @@ function renderSummary(data) {
 function renderTable() {
     const body = document.getElementById("explorer-rows");
     const tableRoot = document.getElementById("explorer-data-table");
+    const emptyState = document.getElementById("explorer-empty-state");
     const rows = explorerState.data?.rows || [];
     const valueUnavailable = t("codeExplorer.valueUnavailable", {}, "Not available");
 
@@ -775,11 +1095,13 @@ function renderTable() {
     if (rows.length === 0) {
         body.innerHTML = "";
         tableRoot.classList.add("hidden");
+        emptyState?.classList.remove("hidden");
         requestAnimationFrame(syncExplorerTableHeadColumns);
         return;
     }
 
     tableRoot.classList.remove("hidden");
+    emptyState?.classList.add("hidden");
     body.innerHTML = rows.map((row) => {
         const datasheetStatus = row.configurator_valid
             ? buildStatusBadge(row.datasheet_ready, t("codeExplorer.statusReadyShort", {}, "Ready"), t("codeExplorer.statusBlockedShort", {}, "Blocked"))
@@ -902,13 +1224,19 @@ function openCodeDetailModal(trigger) {
 function renderResultsMeta() {
     const meta = document.getElementById("explorer-results-meta");
 
+    if (!meta) {
+        return;
+    }
+
     if (!explorerState.controls.family) {
-        meta.textContent = t("codeExplorer.runtime.awaitingFamily", {}, "Waiting for family selection.");
+        meta.textContent = "";
+        meta.classList.add("hidden");
         return;
     }
 
     if (!explorerState.data) {
         meta.textContent = t("codeExplorer.runtime.loadFailed", {}, "Unable to load explorer data right now.");
+        meta.classList.remove("hidden");
         return;
     }
 
@@ -920,6 +1248,7 @@ function renderResultsMeta() {
         family: familyLabel,
         total: explorerState.data.pagination.total_rows,
     }, `${familyLabel} - ${explorerState.data.pagination.total_rows} filtered rows`);
+    meta.classList.remove("hidden");
 }
 
 function renderPagination() {

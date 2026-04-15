@@ -216,7 +216,20 @@
                         </div>
 
                         <form id="explorer-filters" class="flex flex-col gap-16">
-                            <div>
+                            <div class="flex flex-col gap-8">
+                                <span class="input-label" data-i18n="codeExplorer.searchModeLabel">Search mode</span>
+                                <div class="segmented-control segmented-control-md" role="radiogroup" aria-label="Code Explorer search mode" data-i18n-aria-label="codeExplorer.searchModeAria">
+                                    <label class="segmented-control-option">
+                                        <input id="explorer-search-mode-code" class="segmented-control-input" type="radio" name="explorer-search-mode" value="code" checked>
+                                        <span class="segmented-control-label" data-i18n="codeExplorer.searchModeCode">Search by code</span>
+                                    </label>
+                                    <label class="segmented-control-option">
+                                        <input id="explorer-search-mode-name" class="segmented-control-input" type="radio" name="explorer-search-mode" value="name">
+                                        <span class="segmented-control-label" data-i18n="codeExplorer.searchModeName">Search by name</span>
+                                    </label>
+                                </div>
+                            </div>
+                            <div id="explorer-family-field" class="hidden" data-name-search-field>
                                 <label class="input-label ml-12" for="explorer-family-input" data-i18n="codeExplorer.familyLabel">Family</label>
                                 <div id="explorer-family-combobox" class="combobox combobox-sm w-full" data-combobox data-combobox-bound="true">
                                     <div class="combobox-control">
@@ -236,10 +249,10 @@
                                 </div>
                             </div>
                             <div>
-                                <label class="input-label ml-12" for="explorer-search" data-i18n="codeExplorer.searchLabel">Search By Code</label>
-                                <input id="explorer-search" type="text" class="input input-sm" placeholder="Enter a code" data-i18n-placeholder="codeExplorer.searchPlaceholder">
+                                <label id="explorer-search-label" class="input-label ml-12" for="explorer-search">Search By Code</label>
+                                <input id="explorer-search" type="text" class="input input-sm" placeholder="Enter a code">
                             </div>
-                            <div>
+                            <div id="explorer-status-field" class="hidden" data-name-search-field>
                                 <label class="input-label ml-12" for="explorer-status" data-i18n="codeExplorer.statusLabel">Status</label>
                                 <select id="explorer-status" class="input input-sm">
                                     <option value="all" data-i18n="codeExplorer.statusAll">All</option>
@@ -249,14 +262,7 @@
                                     <option value="datasheet_blocked" data-i18n="codeExplorer.statusDatasheetBlocked">Datasheet blocked</option>
                                 </select>
                             </div>
-                            <label class="panel panel-sm flex items-start gap-12 cursor-pointer">
-                                <input id="explorer-include-invalid" type="checkbox" class="mt-2 h-16 w-16 rounded border border-grey-quaternary text-green-primary focus:ring-green-primary">
-                                <span class="flex flex-col gap-4">
-                                    <span class="text-body-sm text-black" data-i18n="codeExplorer.includeInvalidLabel">Include invalid Luminos combinations</span>
-                                    <span class="text-body-xs text-grey-primary" data-i18n="codeExplorer.includeInvalidHint">Off by default. Excludes invalid identities so results stay focused on codes the system can use.</span>
-                                </span>
-                            </label>
-                            <div>
+                            <div id="explorer-page-size-field" class="hidden" data-name-search-field>
                                 <label class="input-label ml-12" for="explorer-page-size" data-i18n="codeExplorer.pageSizeLabel">Rows per page</label>
                                 <select id="explorer-page-size" class="input input-sm">
                                     <option value="5">5</option>
@@ -268,129 +274,184 @@
                                     <option value="250">250</option>
                                 </select>
                             </div>
+                            <label id="explorer-include-invalid-field" class="hidden checkbox-wrapper checkbox-md" data-name-search-field>
+                                <span class="relative inline-flex items-center justify-center">
+                                    <input id="explorer-include-invalid" type="checkbox" class="peer">
+                                    <i class="ri-check-line absolute inset-0 flex items-center justify-center leading-none text-white text-icon-md opacity-0 peer-checked:opacity-100 pointer-events-none" aria-hidden="true"></i>
+                                </span>
+                                <span class="text-body-sm" data-i18n="codeExplorer.includeInvalidLabel">Include invalid Luminos combinations</span>
+                            </label>
+                            <div id="explorer-drilldown-field" class="hidden panel panel-sm flex flex-col gap-12" data-name-search-field>
+                                <div class="flex flex-col gap-4">
+                                    <span class="input-label" data-i18n="codeExplorer.drillDownTitle">Identity Drill-Down</span>
+                                    <p class="text-body-xs text-grey-primary" data-i18n="codeExplorer.drillDownBody">Narrow the family by size, color, CRI, or series before exploring invalid combinations.</p>
+                                </div>
+                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-12">
+                                    <div>
+                                        <label class="input-label ml-12" for="explorer-filter-size" data-i18n="codeExplorer.filterSizeLabel">Size</label>
+                                        <select id="explorer-filter-size" class="input input-sm" disabled>
+                                            <option value="" data-i18n="codeExplorer.filterAnySize">Any size</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label class="input-label ml-12" for="explorer-filter-color" data-i18n="codeExplorer.filterColorLabel">Color</label>
+                                        <select id="explorer-filter-color" class="input input-sm" disabled>
+                                            <option value="" data-i18n="codeExplorer.filterAnyColor">Any color</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label class="input-label ml-12" for="explorer-filter-cri" data-i18n="codeExplorer.filterCriLabel">CRI</label>
+                                        <select id="explorer-filter-cri" class="input input-sm" disabled>
+                                            <option value="" data-i18n="codeExplorer.filterAnyCri">Any CRI</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label class="input-label ml-12" for="explorer-filter-series" data-i18n="codeExplorer.filterSeriesLabel">Series</label>
+                                        <select id="explorer-filter-series" class="input input-sm" disabled>
+                                            <option value="" data-i18n="codeExplorer.filterAnySeries">Any series</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <p id="explorer-invalid-guidance" class="hidden text-body-xs text-yellow-primary" data-i18n="codeExplorer.invalidGuidance">Include invalid requires at least one drill-down filter or a targeted full-code search.</p>
+                            </div>
                             <button id="explorer-refresh" type="submit" class="btn btn-primary btn-sm justify-center">
                                 <i class="ri-refresh-line text-icon-sm" aria-hidden="true"></i>
                                 <span data-i18n="codeExplorer.refresh">Refresh Results</span>
                             </button>
                         </form>
-
-                        <div class="panel panel-sm flex flex-col gap-12">
-                            <div class="flex flex-col gap-4">
-                                <span class="input-label" data-i18n="codeExplorer.logicTitle">Tecit Code Logic</span>
-                                <p class="text-body-sm text-grey-primary" data-i18n="configurator.tecitCodeLogicIntro">Tecit references use a fixed 17-character structure. Each segment maps to one manufacturing field in the configurator.</p>
-                            </div>
-                            <button type="button" class="btn btn-ghost btn-sm justify-center w-full" data-modal-target="codeExplorerTecitCodeLogicModal">
-                                <i class="ri-information-line text-icon-sm" aria-hidden="true"></i>
-                                <span data-i18n="configurator.tecitCodeLogicButton">View Tecit Code Logic</span>
-                            </button>
-                        </div>
-
-                        <div class="panel panel-sm flex flex-col gap-6">
-                            <span class="input-label" data-i18n="codeExplorer.readinessNoteTitle">Readiness Note</span>
-                            <p class="text-body-sm text-grey-primary" data-i18n="codeExplorer.readinessNoteBody">Datasheet ready here means the base PDF data and required assets exist for the default context. It does not render a PDF and does not test optional fixing, driver, or connection cable selections.</p>
-                        </div>
-
+                        <button type="button" class="btn btn-ghost btn-sm justify-center w-full" data-modal-target="codeExplorerTecitCodeLogicModal">
+                            <i class="ri-information-line text-icon-sm" aria-hidden="true"></i>
+                            <span data-i18n="configurator.tecitCodeLogicButton">View Tecit Code Logic</span>
+                        </button>
                     </div>
                 </div>
 
                 <div class="xl:col-span-9 xl:row-start-1 flex flex-col gap-24">
-                    <section class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-16">
-                        <div class="card"><div class="card-body flex flex-col gap-6"><span class="text-overline text-grey-primary" data-i18n="codeExplorer.summaryTotal">Total codes</span><span id="summary-total" class="text-h3 font-medium text-black">0</span></div></div>
-                        <div class="card"><div class="card-body flex flex-col gap-6"><span class="text-overline text-grey-primary" data-i18n="codeExplorer.summaryConfigurator">Configurator valid</span><span id="summary-configurator" class="text-h3 font-medium text-black">0</span></div></div>
-                        <div id="summary-invalid-card" class="card"><div class="card-body flex flex-col gap-6"><span class="text-overline text-grey-primary" data-i18n="codeExplorer.summaryInvalid">Configurator invalid</span><span id="summary-invalid" class="text-h3 font-medium text-black">0</span></div></div>
-                        <div class="card"><div class="card-body flex flex-col gap-6"><span class="text-overline text-grey-primary" data-i18n="codeExplorer.summaryReady">Datasheet ready</span><span id="summary-ready" class="text-h3 font-medium text-black">0</span></div></div>
-                        <div class="card"><div class="card-body flex flex-col gap-6"><span class="text-overline text-grey-primary" data-i18n="codeExplorer.summaryBlocked">Datasheet blocked</span><span id="summary-blocked" class="text-h3 font-medium text-black">0</span></div></div>
-                    </section>
-
                     <section class="grid grid-cols-1 xl:grid-cols-12 gap-24">
                         <div class="xl:col-span-12">
                             <div class="card overflow-hidden">
-                                <div class="card-body flex flex-col gap-16">
-                                    <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                                <div class="card-body flex flex-col gap-16 lg:min-h-screen">
+                                    <div class="flex flex-col gap-12 lg:flex-row lg:items-start lg:justify-between">
                                         <div>
                                             <h2 class="card-title" data-i18n="codeExplorer.tableTitle">Allowed Codes</h2>
-                                            <p id="explorer-results-meta" class="text-body-sm text-grey-primary" data-i18n="codeExplorer.runtime.awaitingFamily">Waiting for family selection.</p>
+                                            <p id="explorer-results-meta" class="hidden text-body-sm text-grey-primary"></p>
+                                        </div>
+                                        <div class="flex flex-wrap items-center gap-12 lg:justify-end">
+                                            <div class="badge badge-neutral badge-lg">
+                                                <span data-i18n="codeExplorer.summaryTotal">Total codes</span>
+                                                <span id="summary-total">0</span>
+                                            </div>
+                                            <div class="badge badge-success badge-lg">
+                                                <span data-i18n="codeExplorer.summaryConfigurator">Configurator valid</span>
+                                                <span id="summary-configurator">0</span>
+                                            </div>
+                                            <div id="summary-invalid-card" class="badge badge-warning badge-lg hidden">
+                                                <span data-i18n="codeExplorer.summaryInvalid">Configurator invalid</span>
+                                                <span id="summary-invalid">0</span>
+                                            </div>
+                                            <div class="badge badge-info badge-lg">
+                                                <span data-i18n="codeExplorer.summaryReady">Datasheet ready</span>
+                                                <span id="summary-ready">0</span>
+                                            </div>
+                                            <div class="badge badge-danger badge-lg">
+                                                <span data-i18n="codeExplorer.summaryBlocked">Datasheet blocked</span>
+                                                <span id="summary-blocked">0</span>
+                                            </div>
                                         </div>
                                     </div>
 
-                                    <div id="explorer-data-table" class="panel border-0 bg-transparent data-table data-table-md data-table-floating-head w-full">
-                                        <div class="data-table-head-floating">
-                                            <div class="data-table-heading" role="columnheader">
-                                                <div class="data-table-heading-content">
-                                                    <span class="data-table-heading-label" data-i18n="codeExplorer.tableReference">Reference</span>
-                                                </div>
-                                            </div>
-                                            <div class="data-table-heading" role="columnheader">
-                                                <div class="data-table-heading-content">
-                                                    <span class="data-table-heading-label" data-i18n="codeExplorer.tableIdentity">Identity</span>
-                                                </div>
-                                            </div>
-                                            <div class="data-table-heading" role="columnheader">
-                                                <div class="data-table-heading-content">
-                                                    <span class="data-table-heading-label" data-i18n="codeExplorer.tableDescription">Description</span>
-                                                </div>
-                                            </div>
-                                            <div class="data-table-heading" role="columnheader">
-                                                <div class="data-table-heading-content">
-                                                    <span class="data-table-heading-label" data-i18n="codeExplorer.tableType">Type</span>
-                                                </div>
-                                            </div>
-                                            <div class="data-table-heading" role="columnheader">
-                                                <div class="data-table-heading-content">
-                                                    <span class="data-table-heading-label" data-i18n="codeExplorer.tableProductId">Product ID</span>
-                                                </div>
-                                            </div>
-                                            <div class="data-table-heading" role="columnheader">
-                                                <div class="data-table-heading-content">
-                                                    <span class="data-table-heading-label" data-i18n="codeExplorer.tableConfigurator">Configurator</span>
-                                                </div>
-                                            </div>
-                                            <div class="data-table-heading" role="columnheader">
-                                                <div class="data-table-heading-content">
-                                                    <span class="data-table-heading-label" data-i18n="codeExplorer.tableDatasheet">Datasheet</span>
-                                                </div>
-                                            </div>
-                                            <div class="data-table-heading" role="columnheader">
-                                                <div class="data-table-heading-content">
-                                                    <span class="data-table-heading-label" data-i18n="codeExplorer.tableFailure">Failure</span>
+                                    <div class="flex flex-1 flex-col gap-16">
+                                        <div id="explorer-empty-state" class="flex flex-1 items-center justify-center">
+                                            <div class="empty-state empty-state-md w-full max-w-2xl" role="status" aria-live="polite">
+                                                <span class="empty-state-icon icon-box icon-box-empty-state">
+                                                    <i class="ri-search-line text-icon-lg" aria-hidden="true"></i>
+                                                </span>
+                                                <div class="empty-state-copy">
+                                                    <h3 class="empty-state-title" data-i18n="codeExplorer.emptyStateTitle">No codes loaded yet</h3>
+                                                    <p class="empty-state-text" data-i18n="codeExplorer.emptyStateBody">Use the panel to the right to search.</p>
                                                 </div>
                                             </div>
                                         </div>
-                                        <div class="data-table-wrap custom-scrollbar">
-                                            <table class="data-table-table">
-                                                <thead class="sr-only">
-                                                    <tr>
-                                                        <th scope="col" data-i18n="codeExplorer.tableReference">Reference</th>
-                                                        <th scope="col" data-i18n="codeExplorer.tableIdentity">Identity</th>
-                                                        <th scope="col" data-i18n="codeExplorer.tableDescription">Description</th>
-                                                        <th scope="col" data-i18n="codeExplorer.tableType">Type</th>
-                                                        <th scope="col" data-i18n="codeExplorer.tableProductId">Product ID</th>
-                                                        <th scope="col" data-i18n="codeExplorer.tableConfigurator">Configurator</th>
-                                                        <th scope="col" data-i18n="codeExplorer.tableDatasheet">Datasheet</th>
-                                                        <th scope="col" data-i18n="codeExplorer.tableFailure">Failure</th>
-                                                    </tr>
-                                                </thead>
-                                                <tbody id="explorer-rows"></tbody>
-                                            </table>
-                                        </div>
-                                    </div>
 
-                                    <div id="explorer-pagination-wrap" class="flex justify-end">
-                                        <nav id="explorer-pagination" class="pagination" data-pagination data-pagination-bound="true" aria-label="Results pagination">
-                                            <button id="explorer-prev" type="button" class="pagination-link pagination-prev" data-pagination-prev aria-label="Previous page" disabled>
-                                                <i class="ri-arrow-left-s-line text-icon-md" aria-hidden="true"></i>
-                                                <span data-i18n="codeExplorer.paginationPrev">Prev</span>
-                                            </button>
-                                            <ol id="explorer-pagination-list" class="pagination-list">
-                                                <li class="pagination-item">
-                                                    <button type="button" class="pagination-link" data-page="1" aria-current="page">1</button>
-                                                </li>
-                                            </ol>
-                                            <button id="explorer-next" type="button" class="pagination-link pagination-next" data-pagination-next aria-label="Next page" disabled>
-                                                <span data-i18n="codeExplorer.paginationNext">Next</span>
-                                                <i class="ri-arrow-right-s-line text-icon-md" aria-hidden="true"></i>
-                                            </button>
-                                        </nav>
+                                        <div id="explorer-data-table" class="panel border-0 bg-transparent data-table data-table-md data-table-floating-head w-full">
+                                            <div class="data-table-head-floating">
+                                                <div class="data-table-heading" role="columnheader">
+                                                    <div class="data-table-heading-content">
+                                                        <span class="data-table-heading-label" data-i18n="codeExplorer.tableReference">Reference</span>
+                                                    </div>
+                                                </div>
+                                                <div class="data-table-heading" role="columnheader">
+                                                    <div class="data-table-heading-content">
+                                                        <span class="data-table-heading-label" data-i18n="codeExplorer.tableIdentity">Identity</span>
+                                                    </div>
+                                                </div>
+                                                <div class="data-table-heading" role="columnheader">
+                                                    <div class="data-table-heading-content">
+                                                        <span class="data-table-heading-label" data-i18n="codeExplorer.tableDescription">Description</span>
+                                                    </div>
+                                                </div>
+                                                <div class="data-table-heading" role="columnheader">
+                                                    <div class="data-table-heading-content">
+                                                        <span class="data-table-heading-label" data-i18n="codeExplorer.tableType">Type</span>
+                                                    </div>
+                                                </div>
+                                                <div class="data-table-heading" role="columnheader">
+                                                    <div class="data-table-heading-content">
+                                                        <span class="data-table-heading-label" data-i18n="codeExplorer.tableProductId">Product ID</span>
+                                                    </div>
+                                                </div>
+                                                <div class="data-table-heading" role="columnheader">
+                                                    <div class="data-table-heading-content">
+                                                        <span class="data-table-heading-label" data-i18n="codeExplorer.tableConfigurator">Configurator</span>
+                                                    </div>
+                                                </div>
+                                                <div class="data-table-heading" role="columnheader">
+                                                    <div class="data-table-heading-content">
+                                                        <span class="data-table-heading-label" data-i18n="codeExplorer.tableDatasheet">Datasheet</span>
+                                                    </div>
+                                                </div>
+                                                <div class="data-table-heading" role="columnheader">
+                                                    <div class="data-table-heading-content">
+                                                        <span class="data-table-heading-label" data-i18n="codeExplorer.tableFailure">Failure</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="data-table-wrap custom-scrollbar">
+                                                <table class="data-table-table">
+                                                    <thead class="sr-only">
+                                                        <tr>
+                                                            <th scope="col" data-i18n="codeExplorer.tableReference">Reference</th>
+                                                            <th scope="col" data-i18n="codeExplorer.tableIdentity">Identity</th>
+                                                            <th scope="col" data-i18n="codeExplorer.tableDescription">Description</th>
+                                                            <th scope="col" data-i18n="codeExplorer.tableType">Type</th>
+                                                            <th scope="col" data-i18n="codeExplorer.tableProductId">Product ID</th>
+                                                            <th scope="col" data-i18n="codeExplorer.tableConfigurator">Configurator</th>
+                                                            <th scope="col" data-i18n="codeExplorer.tableDatasheet">Datasheet</th>
+                                                            <th scope="col" data-i18n="codeExplorer.tableFailure">Failure</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody id="explorer-rows"></tbody>
+                                                </table>
+                                            </div>
+                                        </div>
+
+                                        <div id="explorer-pagination-wrap" class="flex justify-end">
+                                            <nav id="explorer-pagination" class="pagination" data-pagination data-pagination-bound="true" aria-label="Results pagination">
+                                                <button id="explorer-prev" type="button" class="pagination-link pagination-prev" data-pagination-prev aria-label="Previous page" disabled>
+                                                    <i class="ri-arrow-left-s-line text-icon-md" aria-hidden="true"></i>
+                                                    <span data-i18n="codeExplorer.paginationPrev">Prev</span>
+                                                </button>
+                                                <ol id="explorer-pagination-list" class="pagination-list">
+                                                    <li class="pagination-item">
+                                                        <button type="button" class="pagination-link" data-page="1" aria-current="page">1</button>
+                                                    </li>
+                                                </ol>
+                                                <button id="explorer-next" type="button" class="pagination-link pagination-next" data-pagination-next aria-label="Next page" disabled>
+                                                    <span data-i18n="codeExplorer.paginationNext">Next</span>
+                                                    <i class="ri-arrow-right-s-line text-icon-md" aria-hidden="true"></i>
+                                                </button>
+                                            </nav>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -486,6 +547,7 @@
             <div id="codeExplorerTecitCodeLogicBody" class="modal-body overflow-y-auto">
                 <div class="flex flex-col gap-20">
                     <p class="text-body-sm text-grey-primary" data-i18n="configurator.tecitCodeLogicIntro">Live Tecit references use a fixed 17-character structure. Each segment maps to one manufacturing field in the configurator.</p>
+                    <p class="text-body-sm text-black" data-i18n="configurator.tecitCodeLengthRule">A full Tecit code is exactly 17 characters long. Longer values are not valid live references.</p>
 
                     <div class="panel panel-sm flex flex-col gap-8">
                         <span class="input-label" data-i18n="configurator.tecitCodeLogicPatternLabel">Reference Pattern</span>
