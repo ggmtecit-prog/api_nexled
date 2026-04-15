@@ -85,6 +85,24 @@ function getCodeExplorerValidMatrixSize(array $options, array $identities): int 
     return count($identities) * getCodeExplorerSuffixMatrixSize($options);
 }
 
+function normalizeCodeExplorerReferenceSearch(string $search): string {
+    return strtoupper(preg_replace('/\s+/', '', trim($search)));
+}
+
+function isCodeExplorerTargetedReferenceSearch(string $search, string $familyCode): bool {
+    $normalized = normalizeCodeExplorerReferenceSearch($search);
+
+    if ($normalized === "") {
+        return false;
+    }
+
+    if (strlen($normalized) < REFERENCE_LENGTH_IDENTITY || strlen($normalized) > REFERENCE_LENGTH_FULL) {
+        return false;
+    }
+
+    return str_starts_with($normalized, $familyCode);
+}
+
 function getCodeExplorerFamilyMeta(int $family): ?array {
     $con = connectDBReferencias();
     $stmt = mysqli_prepare($con, "SELECT nome, codigo FROM Familias WHERE codigo = ? LIMIT 1");
@@ -506,6 +524,162 @@ function buildCodeExplorerResponse(string $familyCode, string $familyName, array
             "search" => $search,
             "status" => $statusFilter,
             "include_invalid" => true,
+        ],
+        "pagination" => [
+            "page" => $safePage,
+            "page_size" => $pageSize,
+            "total_pages" => $totalPages,
+            "total_rows" => $filteredTotal,
+        ],
+        "rows" => $pageRows,
+    ];
+}
+
+function buildCodeExplorerTargetedSearchResponse(string $familyCode, string $familyName, array $options, array $identities, string $search, string $statusFilter, int $page, int $pageSize, bool $includeInvalid): array {
+    $normalizedSearch = normalizeCodeExplorerReferenceSearch($search);
+    $summary = [
+        "total_codes" => 0,
+        "configurator_valid" => 0,
+        "configurator_invalid" => 0,
+        "datasheet_ready" => 0,
+        "datasheet_blocked" => 0,
+    ];
+    $validatorCache = [];
+    $identityMap = [];
+    $pageRows = [];
+    $filteredTotal = 0;
+    $requestedPage = max($page, 1);
+    $offset = ($requestedPage - 1) * $pageSize;
+    $limit = $offset + $pageSize;
+    $defaultProductType = getProductType($familyCode . str_repeat("0", REFERENCE_LENGTH_FULL - REFERENCE_LENGTH_FAMILY));
+    $segmentLookups = getCodeExplorerSegmentLabelLookups($options);
+
+    foreach ($identities as $identityData) {
+        $identityMap[$identityData["identity"]] = $identityData;
+    }
+
+    $identity = substr($normalizedSearch, 0, REFERENCE_LENGTH_IDENTITY);
+    $suffixSearch = substr($normalizedSearch, REFERENCE_LENGTH_IDENTITY);
+
+    foreach ($options["lens"] as $lens) {
+        foreach ($options["finish"] as $finish) {
+            foreach ($options["cap"] as $cap) {
+                foreach ($options["option"] as $option) {
+                    $reference = $identity . $lens["code"] . $finish["code"] . $cap["code"] . $option["code"];
+
+                    if ($suffixSearch !== "" && !str_starts_with(substr($reference, REFERENCE_LENGTH_IDENTITY), $suffixSearch)) {
+                        continue;
+                    }
+
+                    if (!str_starts_with($reference, $normalizedSearch)) {
+                        continue;
+                    }
+
+                    $parts = decodeReference($reference);
+                    $identityData = $identityMap[$identity] ?? null;
+                    $isConfiguratorValidIdentity = $identityData !== null;
+                    $productId = $isConfiguratorValidIdentity
+                        ? resolveCodeExplorerProductId($familyCode, $identityData, $parts["cap"])
+                        : null;
+                    $isConfiguratorValid = $isConfiguratorValidIdentity && $productId !== null && $productId !== "";
+
+                    if (!$includeInvalid && !$isConfiguratorValid) {
+                        continue;
+                    }
+
+                    $productType = $isConfiguratorValidIdentity
+                        ? ($identityData["product_type"] ?? $defaultProductType)
+                        : $defaultProductType;
+                    $description = $identityData["description"] ?? "";
+                    $readiness = [
+                        "datasheet_ready" => false,
+                        "failure_reason" => "invalid_luminos_combination",
+                    ];
+
+                    if ($isConfiguratorValid) {
+                        $readiness = getCodeExplorerDatasheetReadiness(
+                            $reference,
+                            $productId,
+                            $productType,
+                            $identityData["led_id"] ?? "",
+                            $options,
+                            $validatorCache
+                        );
+                    }
+
+                    $row = [
+                        "reference" => $reference,
+                        "identity" => $identity,
+                        "description" => $description,
+                        "product_type" => $productType,
+                        "product_id" => $productId,
+                        "segments" => [
+                            "family" => $familyCode,
+                            "size" => $parts["size"],
+                            "color" => $parts["color"],
+                            "cri" => $parts["cri"],
+                            "series" => $parts["series"],
+                            "lens" => $parts["lens"],
+                            "finish" => $parts["finish"],
+                            "cap" => $parts["cap"],
+                            "option" => $parts["option"],
+                        ],
+                        "segment_labels" => [
+                            "size" => $segmentLookups["size"][$parts["size"]] ?? $parts["size"],
+                            "color" => $segmentLookups["color"][$parts["color"]] ?? $parts["color"],
+                            "cri" => $segmentLookups["cri"][$parts["cri"]] ?? $parts["cri"],
+                            "series" => $segmentLookups["series"][$parts["series"]] ?? $parts["series"],
+                            "lens" => resolveCodeExplorerOptionLabel($options["lens"], $parts["lens"]),
+                            "finish" => resolveCodeExplorerOptionLabel($options["finish"], $parts["finish"]),
+                            "cap" => resolveCodeExplorerOptionLabel($options["cap"], $parts["cap"]),
+                            "option" => resolveCodeExplorerOptionLabel($options["option"], $parts["option"]),
+                        ],
+                        "configurator_valid" => $isConfiguratorValid,
+                        "datasheet_ready" => $isConfiguratorValid ? $readiness["datasheet_ready"] : false,
+                        "failure_reason" => $isConfiguratorValid ? $readiness["failure_reason"] : "invalid_luminos_combination",
+                    ];
+
+                    if (!matchesCodeExplorerStatusFilter($row, $statusFilter)) {
+                        continue;
+                    }
+
+                    $summary["total_codes"]++;
+
+                    if ($isConfiguratorValid) {
+                        $summary["configurator_valid"]++;
+
+                        if ($row["datasheet_ready"]) {
+                            $summary["datasheet_ready"]++;
+                        } else {
+                            $summary["datasheet_blocked"]++;
+                        }
+                    } else {
+                        $summary["configurator_invalid"]++;
+                    }
+
+                    if ($filteredTotal >= $offset && $filteredTotal < $limit) {
+                        $pageRows[] = $row;
+                    }
+
+                    $filteredTotal++;
+                }
+            }
+        }
+    }
+
+    $totalPages = max(1, (int) ceil($filteredTotal / $pageSize));
+    $safePage = min($requestedPage, $totalPages);
+
+    return [
+        "family" => [
+            "code" => $familyCode,
+            "name" => $familyName,
+        ],
+        "summary" => $summary,
+        "filters" => [
+            "search" => $search,
+            "status" => $statusFilter,
+            "include_invalid" => $includeInvalid,
         ],
         "pagination" => [
             "page" => $safePage,
