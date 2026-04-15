@@ -1,5 +1,24 @@
 const API_KEY = "7b8edd27a16f60bf7a1c92b8ceb40cda474588d24491140c130418153053063b";
 const DEFAULT_API_BASE = "https://apinexled-production.up.railway.app/api";
+const STATUS_TOAST_BASE_CLASS = "toast toast-sm";
+const STATUS_TOAST_AUTOHIDE_DELAY = 4000;
+const STATUS_TOAST_HIDE_DELAY = 320;
+const STATUS_TOAST_VARIANT = {
+    neutral: { className: "toast-info", iconClass: "ri-information-line", role: "status", autoHide: true },
+    loading: { className: "toast-info", iconClass: "ri-information-line", role: "status", autoHide: false },
+    success: { className: "toast-success", iconClass: "ri-checkbox-circle-line", role: "status", autoHide: true },
+    error: { className: "toast-danger", iconClass: "ri-close-circle-line", role: "alert", autoHide: true },
+};
+const EXPLORER_TABLE_HEAD_FALLBACK_COLUMNS = [
+    "minmax(0, 1.35fr)",
+    "minmax(0, 0.95fr)",
+    "minmax(0, 1.1fr)",
+    "minmax(0, 0.9fr)",
+    "minmax(0, 1fr)",
+    "minmax(0, 0.9fr)",
+    "minmax(0, 0.9fr)",
+    "minmax(0, 1.8fr)",
+].join(" ");
 const API_BADGE_BASE_CLASS = "badge badge-md shrink-0";
 const API_BADGE_VARIANT_CLASS = {
     neutral: "badge-neutral",
@@ -40,9 +59,14 @@ let apiBadgeState = {
     fallback: "API unavailable",
 };
 let pageStatusState = {
+    tone: "neutral",
     key: "codeExplorer.runtime.chooseFamily",
     fallback: "Select one family to start building valid code rows.",
     vars: {},
+};
+let statusToastTimers = {
+    dismiss: null,
+    hide: null,
 };
 let explorerState = {
     families: [],
@@ -66,7 +90,7 @@ function initializeCodeExplorer() {
     bindControls();
     bindStaticEvents();
     renderApiBadge();
-    renderPageStatus();
+    applyPageStatusState();
     renderSummary(null);
     renderTable();
     renderDetail();
@@ -98,7 +122,7 @@ function bindControls() {
         if (!explorerState.controls.family) {
             explorerState.data = null;
             explorerState.selectedReference = "";
-            setPageStatus("codeExplorer.runtime.chooseFamily", "Select one family to start building valid code rows.");
+            setPageStatus("codeExplorer.runtime.chooseFamily", "neutral", "Select one family to start building valid code rows.");
             renderSummary(null);
             renderTable();
             renderDetail();
@@ -138,33 +162,35 @@ function bindControls() {
         }
     });
 
-    document.getElementById("explorer-prev").addEventListener("click", () => {
-        const currentPage = getExplorerCurrentPage();
-
-        if (!explorerState.data || currentPage <= 1) {
-            return;
-        }
-
-        explorerState.controls.page = currentPage - 1;
-        loadExplorerData();
-    });
-
-    document.getElementById("explorer-next").addEventListener("click", () => {
-        const currentPage = getExplorerCurrentPage();
-        const totalPages = explorerState.data?.pagination?.total_pages || 1;
-
-        if (!explorerState.data || currentPage >= totalPages) {
-            return;
-        }
-
-        explorerState.controls.page = currentPage + 1;
-        loadExplorerData();
-    });
-
-    document.getElementById("explorer-pagination-list").addEventListener("click", (event) => {
-        const trigger = event.target.closest("[data-page]");
+    document.getElementById("explorer-pagination").addEventListener("click", (event) => {
+        const trigger = event.target.closest("[data-pagination-prev], [data-pagination-next], [data-page]");
 
         if (!trigger) {
+            return;
+        }
+
+        if (trigger.matches("[data-pagination-prev]")) {
+            const currentPage = getExplorerCurrentPage();
+
+            if (!explorerState.data || currentPage <= 1) {
+                return;
+            }
+
+            explorerState.controls.page = currentPage - 1;
+            loadExplorerData();
+            return;
+        }
+
+        if (trigger.matches("[data-pagination-next]")) {
+            const currentPage = getExplorerCurrentPage();
+            const totalPages = explorerState.data?.pagination?.total_pages || 1;
+
+            if (!explorerState.data || currentPage >= totalPages) {
+                return;
+            }
+
+            explorerState.controls.page = currentPage + 1;
+            loadExplorerData();
             return;
         }
 
@@ -193,15 +219,25 @@ function bindControls() {
 }
 
 function bindStaticEvents() {
+    const closeButton = document.getElementById("status-message-close");
+
+    if (closeButton) {
+        closeButton.addEventListener("click", () => {
+            hideStatusToast(true);
+        });
+    }
+
     window.addEventListener(I18N_EVENT, () => {
         renderApiBadge();
-        renderPageStatus();
+        applyPageStatusState();
         renderResultsMeta();
         renderSummary(explorerState.data);
         renderTable();
         renderDetail();
         renderPagination();
     });
+
+    window.addEventListener("resize", syncExplorerTableHeadColumns);
 }
 
 function syncInvalidControls() {
@@ -289,15 +325,15 @@ async function checkApiHealth() {
 }
 
 async function loadFamilies() {
-    setPageStatus("codeExplorer.runtime.loadingFamilies", "Loading families...");
+    setPageStatus("codeExplorer.runtime.loadingFamilies", "loading", "Loading families...");
 
     try {
         const families = await apiFetch("/?endpoint=families");
         explorerState.families = Array.isArray(families) ? families : [];
         populateFamilies();
-        setPageStatus("codeExplorer.runtime.chooseFamily", "Select one family to start building valid code rows.");
+        setPageStatus("codeExplorer.runtime.chooseFamily", "neutral", "Select one family to start building valid code rows.");
     } catch (error) {
-        setPageStatus("codeExplorer.runtime.loadFailedWithMessage", "Unable to load explorer data right now: {message}", {
+        setPageStatus("codeExplorer.runtime.loadFailedWithMessage", "error", "Unable to load explorer data right now: {message}", {
             message: error?.message || t("codeExplorer.runtime.unknownError", {}, "Unknown error"),
         });
         renderResultsMeta();
@@ -329,7 +365,7 @@ async function loadExplorerData() {
     }
 
     toggleLoading(true);
-    setPageStatus("codeExplorer.runtime.loadingRows", "Loading family codes...");
+    setPageStatus("codeExplorer.runtime.loadingRows", "loading", "Loading family codes...");
 
     const params = new URLSearchParams({
         endpoint: "code-explorer",
@@ -357,9 +393,9 @@ async function loadExplorerData() {
         renderPagination();
 
         if (data.pagination.total_rows > 0) {
-            setPageStatus("codeExplorer.runtime.loadedRows", "Code Explorer results loaded.");
+            setPageStatus("codeExplorer.runtime.loadedRows", "success", "Code Explorer results loaded.");
         } else {
-            setPageStatus("codeExplorer.runtime.noRows", "No rows match current filters.");
+            setPageStatus("codeExplorer.runtime.noRows", "neutral", "No rows match current filters.");
         }
     } catch (error) {
         explorerState.data = null;
@@ -369,7 +405,7 @@ async function loadExplorerData() {
         renderDetail();
         renderResultsMeta();
         renderPagination();
-        setPageStatus("codeExplorer.runtime.loadFailedWithMessage", "Unable to load explorer data right now: {message}", {
+        setPageStatus("codeExplorer.runtime.loadFailedWithMessage", "error", "Unable to load explorer data right now: {message}", {
             message: error?.message || t("codeExplorer.runtime.unknownError", {}, "Unknown error"),
         });
 
@@ -382,7 +418,13 @@ async function loadExplorerData() {
 }
 
 function toggleLoading(isLoading) {
-    document.getElementById("explorer-loading").classList.toggle("hidden", !isLoading);
+    const loading = document.getElementById("explorer-loading");
+
+    if (!loading) {
+        return;
+    }
+
+    loading.classList.toggle("hidden", !isLoading);
 }
 
 function renderSummary(data) {
@@ -404,41 +446,60 @@ function renderSummary(data) {
 
 function renderTable() {
     const body = document.getElementById("explorer-rows");
-    const empty = document.getElementById("explorer-empty");
+    const tableRoot = document.getElementById("explorer-data-table");
     const rows = explorerState.data?.rows || [];
     const valueUnavailable = t("codeExplorer.valueUnavailable", {}, "Not available");
 
-    if (rows.length === 0) {
-        body.innerHTML = "";
-        empty.classList.remove("hidden");
+    if (!body || !tableRoot) {
         return;
     }
 
-    empty.classList.add("hidden");
+    if (rows.length === 0) {
+        body.innerHTML = "";
+        tableRoot.classList.add("hidden");
+        requestAnimationFrame(syncExplorerTableHeadColumns);
+        return;
+    }
+
+    tableRoot.classList.remove("hidden");
     body.innerHTML = rows.map((row) => {
-        const selected = row.reference === explorerState.selectedReference;
-        const rowClass = selected ? "bg-green-quaternary/40" : "";
         const datasheetStatus = row.configurator_valid
             ? buildStatusBadge(row.datasheet_ready, t("codeExplorer.statusReadyShort", {}, "Ready"), t("codeExplorer.statusBlockedShort", {}, "Blocked"))
             : buildNeutralBadge(t("codeExplorer.statusNotApplicableShort", {}, "N/A"));
+        const description = row.description || valueUnavailable;
+        const productType = row.product_type || valueUnavailable;
+        const productId = row.product_id || valueUnavailable;
+        const failureReason = getFailureReasonText(row.failure_reason);
 
         return `
-            <tr class="border-b border-grey-quaternary/40 align-top ${rowClass}">
-                <td class="py-12 pr-16">
-                    <button type="button" class="link link-sm text-left" data-reference="${escapeHtml(row.reference)}">
+            <tr class="data-table-row">
+                <td class="data-table-cell" data-sort-value="${escapeHtml(row.reference)}">
+                    <button type="button" class="link link-sm text-left break-all" data-reference="${escapeHtml(row.reference)}">
                         <span class="font-mono">${escapeHtml(row.reference)}</span>
                     </button>
                 </td>
-                <td class="py-12 pr-16 font-mono text-grey-primary">${escapeHtml(row.identity || "")}</td>
-                <td class="py-12 pr-16">${escapeHtml(row.description || valueUnavailable)}</td>
-                <td class="py-12 pr-16">${escapeHtml(row.product_type || valueUnavailable)}</td>
-                <td class="py-12 pr-16 break-all">${escapeHtml(row.product_id || valueUnavailable)}</td>
-                <td class="py-12 pr-16">${buildStatusBadge(row.configurator_valid, t("codeExplorer.statusConfiguratorValidShort", {}, "Valid"), t("codeExplorer.statusConfiguratorInvalidShort", {}, "Invalid"))}</td>
-                <td class="py-12 pr-16">${datasheetStatus}</td>
-                <td class="py-12">${escapeHtml(getFailureReasonText(row.failure_reason))}</td>
+                <td class="data-table-cell" data-sort-value="${escapeHtml(row.identity || "")}">
+                    <span class="font-mono">${escapeHtml(row.identity || "")}</span>
+                </td>
+                <td class="data-table-cell" data-sort-value="${escapeHtml(description)}">
+                    ${escapeHtml(description)}
+                </td>
+                <td class="data-table-cell" data-sort-value="${escapeHtml(productType)}">
+                    ${escapeHtml(productType)}
+                </td>
+                <td class="data-table-cell break-all" data-sort-value="${escapeHtml(productId)}">
+                    <span class="break-all">${escapeHtml(productId)}</span>
+                </td>
+                <td class="data-table-cell" data-sort-value="${row.configurator_valid ? "valid" : "invalid"}">${buildStatusBadge(row.configurator_valid, t("codeExplorer.statusConfiguratorValidShort", {}, "Valid"), t("codeExplorer.statusConfiguratorInvalidShort", {}, "Invalid"))}</td>
+                <td class="data-table-cell" data-sort-value="${row.configurator_valid ? (row.datasheet_ready ? "ready" : "blocked") : "na"}">${datasheetStatus}</td>
+                <td class="data-table-cell" data-sort-value="${escapeHtml(failureReason)}">
+                    ${escapeHtml(failureReason)}
+                </td>
             </tr>
         `;
     }).join("");
+
+    requestAnimationFrame(syncExplorerTableHeadColumns);
 }
 
 function renderDetail() {
@@ -544,12 +605,19 @@ function renderResultsMeta() {
 }
 
 function renderPagination() {
-    const list = document.getElementById("explorer-pagination-list");
-    const prev = document.getElementById("explorer-prev");
-    const next = document.getElementById("explorer-next");
+    const wrapper = document.getElementById("explorer-pagination-wrap");
+    const pagination = document.getElementById("explorer-pagination");
+    const list = pagination?.querySelector(".pagination-list");
+    const prev = pagination?.querySelector("[data-pagination-prev]");
+    const next = pagination?.querySelector("[data-pagination-next]");
+    const hasRows = (explorerState.data?.rows?.length || 0) > 0;
 
     if (!list || !prev || !next) {
         return;
+    }
+
+    if (wrapper) {
+        wrapper.classList.toggle("hidden", !hasRows);
     }
 
     if (!explorerState.data) {
@@ -582,6 +650,34 @@ function renderPagination() {
     syncExplorerPaginationControl(prev, page <= 1);
     syncExplorerPaginationControl(next, page >= totalPages);
     revealExplorerActivePage(list);
+}
+
+function syncExplorerTableHeadColumns() {
+    const tableRoot = document.getElementById("explorer-data-table");
+    const table = tableRoot?.querySelector(".data-table-table");
+    const body = table?.tBodies?.[0];
+
+    if (!tableRoot || !table || !body) {
+        return;
+    }
+
+    const firstRow = body.rows[0];
+
+    if (!firstRow) {
+        tableRoot.style.setProperty("--data-table-head-columns", EXPLORER_TABLE_HEAD_FALLBACK_COLUMNS);
+        return;
+    }
+
+    const widths = Array.from(firstRow.cells)
+        .map((cell) => Math.ceil(cell.getBoundingClientRect().width))
+        .filter((width) => width > 0);
+
+    if (widths.length !== firstRow.cells.length) {
+        tableRoot.style.setProperty("--data-table-head-columns", EXPLORER_TABLE_HEAD_FALLBACK_COLUMNS);
+        return;
+    }
+
+    tableRoot.style.setProperty("--data-table-head-columns", widths.map((width) => `${width}px`).join(" "));
 }
 
 function getExplorerCurrentPage() {
@@ -686,13 +782,104 @@ function renderApiBadge() {
     });
 }
 
-function setPageStatus(key, fallback, vars = {}) {
-    pageStatusState = { key, fallback, vars };
-    renderPageStatus();
+function setPageStatus(key, tone = "neutral", fallback, vars = {}) {
+    pageStatusState = { key, tone, fallback, vars };
+    applyPageStatusState();
 }
 
-function renderPageStatus() {
-    document.getElementById("explorer-status-message").textContent = t(pageStatusState.key, pageStatusState.vars, pageStatusState.fallback);
+function applyPageStatusState() {
+    if (!pageStatusState) {
+        return;
+    }
+
+    applyStatusText(
+        t(pageStatusState.key, pageStatusState.vars, pageStatusState.fallback),
+        pageStatusState.tone,
+        pageStatusState.key
+    );
+}
+
+function applyStatusText(message, tone = "neutral", key = "") {
+    const toast = document.getElementById("status-message");
+    const copy = document.getElementById("status-message-copy");
+    const icon = document.getElementById("status-message-icon");
+    const variant = STATUS_TOAST_VARIANT[tone] || STATUS_TOAST_VARIANT.neutral;
+    const shouldHide = !message || (tone === "neutral" && key === "codeExplorer.runtime.chooseFamily");
+
+    if (!toast || !copy || !icon) {
+        return;
+    }
+
+    copy.textContent = message;
+    toast.className = STATUS_TOAST_BASE_CLASS + " " + variant.className;
+    toast.setAttribute("role", variant.role);
+    icon.className = variant.iconClass + " text-icon-lg";
+
+    if (shouldHide) {
+        hideStatusToast(true);
+        return;
+    }
+
+    showStatusToast(variant.autoHide ? STATUS_TOAST_AUTOHIDE_DELAY : 0);
+}
+
+function showStatusToast(dismissDelay = 0) {
+    const toast = document.getElementById("status-message");
+
+    if (!toast) {
+        return;
+    }
+
+    clearStatusToastTimers();
+    toast.hidden = false;
+    toast.inert = false;
+    toast.setAttribute("aria-hidden", "false");
+
+    requestAnimationFrame(() => {
+        toast.classList.add("is-visible");
+    });
+
+    if (dismissDelay > 0) {
+        statusToastTimers.dismiss = setTimeout(() => {
+            hideStatusToast();
+        }, dismissDelay);
+    }
+}
+
+function hideStatusToast(immediate = false) {
+    const toast = document.getElementById("status-message");
+
+    if (!toast) {
+        return;
+    }
+
+    clearStatusToastTimers();
+    toast.classList.remove("is-visible");
+    toast.setAttribute("aria-hidden", "true");
+
+    if (immediate) {
+        toast.hidden = true;
+        toast.inert = true;
+        return;
+    }
+
+    statusToastTimers.hide = setTimeout(() => {
+        toast.hidden = true;
+        toast.inert = true;
+        statusToastTimers.hide = null;
+    }, STATUS_TOAST_HIDE_DELAY);
+}
+
+function clearStatusToastTimers() {
+    if (statusToastTimers.dismiss) {
+        clearTimeout(statusToastTimers.dismiss);
+        statusToastTimers.dismiss = null;
+    }
+
+    if (statusToastTimers.hide) {
+        clearTimeout(statusToastTimers.hide);
+        statusToastTimers.hide = null;
+    }
 }
 
 function t(key, vars = {}, fallback = "") {

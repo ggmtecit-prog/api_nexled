@@ -207,8 +207,8 @@
                 <h1 class="text-h1 font-medium text-black" data-i18n="codeExplorer.heading">Explore Valid Tecit Codes</h1>
             </header>
 
-            <section class="grid grid-cols-1 xl:grid-cols-3 gap-24 items-start" data-reveal="section">
-                <div class="card xl:col-start-3">
+            <section class="grid grid-cols-1 xl:grid-cols-12 gap-24 items-start" data-reveal="section">
+                <div class="card xl:col-span-3 xl:col-start-10">
                     <div class="card-body flex flex-col gap-20">
                         <div class="flex flex-col gap-4">
                             <h2 class="card-title" data-i18n="codeExplorer.filtersTitle">Explorer Filters</h2>
@@ -277,14 +277,10 @@
                             <p class="text-body-sm text-grey-primary" data-i18n="codeExplorer.readinessNoteBody">Datasheet ready here means the base PDF data and required assets exist for the default context. It does not render a PDF and does not test optional fixing, driver, or connection cable selections.</p>
                         </div>
 
-                        <div class="panel panel-sm flex flex-col gap-6">
-                            <span class="input-label" data-i18n="codeExplorer.pageStatusTitle">Page Status</span>
-                            <p id="explorer-status-message" class="text-body-sm text-grey-primary" data-i18n="codeExplorer.runtime.chooseFamily">Select one family to load valid code rows.</p>
-                        </div>
                     </div>
                 </div>
 
-                <div class="xl:col-span-2 xl:row-start-1 flex flex-col gap-24">
+                <div class="xl:col-span-9 xl:row-start-1 flex flex-col gap-24">
                     <section class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-16">
                         <div class="card"><div class="card-body flex flex-col gap-6"><span class="text-overline text-grey-primary" data-i18n="codeExplorer.summaryTotal">Total codes</span><span id="summary-total" class="text-h3 font-medium text-black">0</span></div></div>
                         <div class="card"><div class="card-body flex flex-col gap-6"><span class="text-overline text-grey-primary" data-i18n="codeExplorer.summaryConfigurator">Configurator valid</span><span id="summary-configurator" class="text-h3 font-medium text-black">0</span></div></div>
@@ -304,35 +300,71 @@
                                         </div>
                                     </div>
 
-                                    <div id="explorer-loading" class="hidden panel panel-sm">
-                                        <p class="text-body-sm text-grey-primary" data-i18n="codeExplorer.runtime.loadingRows">Loading family codes...</p>
+                                    <div id="explorer-data-table" class="panel border-0 bg-transparent data-table data-table-md data-table-floating-head w-full">
+                                        <div class="data-table-head-floating">
+                                            <div class="data-table-heading" role="columnheader">
+                                                <div class="data-table-heading-content">
+                                                    <span class="data-table-heading-label" data-i18n="codeExplorer.tableReference">Reference</span>
+                                                </div>
+                                            </div>
+                                            <div class="data-table-heading" role="columnheader">
+                                                <div class="data-table-heading-content">
+                                                    <span class="data-table-heading-label" data-i18n="codeExplorer.tableIdentity">Identity</span>
+                                                </div>
+                                            </div>
+                                            <div class="data-table-heading" role="columnheader">
+                                                <div class="data-table-heading-content">
+                                                    <span class="data-table-heading-label" data-i18n="codeExplorer.tableDescription">Description</span>
+                                                </div>
+                                            </div>
+                                            <div class="data-table-heading" role="columnheader">
+                                                <div class="data-table-heading-content">
+                                                    <span class="data-table-heading-label" data-i18n="codeExplorer.tableType">Type</span>
+                                                </div>
+                                            </div>
+                                            <div class="data-table-heading" role="columnheader">
+                                                <div class="data-table-heading-content">
+                                                    <span class="data-table-heading-label" data-i18n="codeExplorer.tableProductId">Product ID</span>
+                                                </div>
+                                            </div>
+                                            <div class="data-table-heading" role="columnheader">
+                                                <div class="data-table-heading-content">
+                                                    <span class="data-table-heading-label" data-i18n="codeExplorer.tableConfigurator">Configurator</span>
+                                                </div>
+                                            </div>
+                                            <div class="data-table-heading" role="columnheader">
+                                                <div class="data-table-heading-content">
+                                                    <span class="data-table-heading-label" data-i18n="codeExplorer.tableDatasheet">Datasheet</span>
+                                                </div>
+                                            </div>
+                                            <div class="data-table-heading" role="columnheader">
+                                                <div class="data-table-heading-content">
+                                                    <span class="data-table-heading-label" data-i18n="codeExplorer.tableFailure">Failure</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="data-table-wrap custom-scrollbar">
+                                            <table class="data-table-table">
+                                                <thead class="sr-only">
+                                                    <tr>
+                                                        <th scope="col" data-i18n="codeExplorer.tableReference">Reference</th>
+                                                        <th scope="col" data-i18n="codeExplorer.tableIdentity">Identity</th>
+                                                        <th scope="col" data-i18n="codeExplorer.tableDescription">Description</th>
+                                                        <th scope="col" data-i18n="codeExplorer.tableType">Type</th>
+                                                        <th scope="col" data-i18n="codeExplorer.tableProductId">Product ID</th>
+                                                        <th scope="col" data-i18n="codeExplorer.tableConfigurator">Configurator</th>
+                                                        <th scope="col" data-i18n="codeExplorer.tableDatasheet">Datasheet</th>
+                                                        <th scope="col" data-i18n="codeExplorer.tableFailure">Failure</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody id="explorer-rows"></tbody>
+                                            </table>
+                                        </div>
                                     </div>
 
-                                    <div class="overflow-x-auto">
-                                        <table class="min-w-full text-left text-body-sm">
-                                            <thead class="border-b border-grey-quaternary/60">
-                                                <tr class="text-grey-primary">
-                                                    <th class="py-12 pr-16 font-medium" data-i18n="codeExplorer.tableReference">Reference</th>
-                                                    <th class="py-12 pr-16 font-medium" data-i18n="codeExplorer.tableIdentity">Identity</th>
-                                                    <th class="py-12 pr-16 font-medium" data-i18n="codeExplorer.tableDescription">Description</th>
-                                                    <th class="py-12 pr-16 font-medium" data-i18n="codeExplorer.tableType">Type</th>
-                                                    <th class="py-12 pr-16 font-medium" data-i18n="codeExplorer.tableProductId">Product ID</th>
-                                                    <th class="py-12 pr-16 font-medium" data-i18n="codeExplorer.tableConfigurator">Configurator</th>
-                                                    <th class="py-12 pr-16 font-medium" data-i18n="codeExplorer.tableDatasheet">Datasheet</th>
-                                                    <th class="py-12 font-medium" data-i18n="codeExplorer.tableFailure">Failure</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody id="explorer-rows"></tbody>
-                                        </table>
-                                    </div>
-
-                                    <div id="explorer-empty" class="panel panel-sm">
-                                        <p class="text-body-sm text-grey-primary" data-i18n="codeExplorer.runtime.noRows">No rows yet. Select one family and refresh.</p>
-                                    </div>
-
-                                    <div class="flex justify-end">
-                                        <nav id="explorer-pagination" class="pagination" aria-label="Results pagination">
-                                            <button id="explorer-prev" type="button" class="pagination-link pagination-prev" aria-label="Previous page" disabled>
+                                    <div id="explorer-pagination-wrap" class="flex justify-end">
+                                        <nav id="explorer-pagination" class="pagination" data-pagination data-pagination-bound="true" aria-label="Results pagination">
+                                            <button id="explorer-prev" type="button" class="pagination-link pagination-prev" data-pagination-prev aria-label="Previous page" disabled>
                                                 <i class="ri-arrow-left-s-line text-icon-md" aria-hidden="true"></i>
                                                 <span data-i18n="codeExplorer.paginationPrev">Prev</span>
                                             </button>
@@ -341,7 +373,7 @@
                                                     <button type="button" class="pagination-link" data-page="1" aria-current="page">1</button>
                                                 </li>
                                             </ol>
-                                            <button id="explorer-next" type="button" class="pagination-link pagination-next" aria-label="Next page" disabled>
+                                            <button id="explorer-next" type="button" class="pagination-link pagination-next" data-pagination-next aria-label="Next page" disabled>
                                                 <span data-i18n="codeExplorer.paginationNext">Next</span>
                                                 <i class="ri-arrow-right-s-line text-icon-md" aria-hidden="true"></i>
                                             </button>
@@ -355,6 +387,24 @@
             </section>
 
         </main>
+    </div>
+
+    <div class="toast-viewport" aria-live="polite" aria-atomic="false">
+        <div class="panel border-0 bg-transparent">
+            <div id="status-message" class="toast toast-info toast-sm" role="status" aria-hidden="true" hidden inert>
+                <span class="toast-icon">
+                    <i id="status-message-icon" class="ri-information-line text-icon-lg" aria-hidden="true"></i>
+                </span>
+                <div class="toast-copy">
+                    <p id="status-message-copy" class="toast-title" data-i18n="codeExplorer.runtime.chooseFamily">Select one family to load valid code rows.</p>
+                </div>
+                <div class="toast-actions">
+                    <button type="button" id="status-message-close" class="btn btn-ghost btn-icon btn-xs" aria-label="Close notification" data-i18n-aria-label="shared.actions.closeNotification">
+                        <i class="ri-close-line text-icon-md" aria-hidden="true"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
     </div>
 
     <div class="modal-overlay" id="codeExplorerDetailModal" aria-hidden="true">
