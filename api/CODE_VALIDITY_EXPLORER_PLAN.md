@@ -116,9 +116,14 @@ Dynamic family `48` must resolve `product_id` with same cap-aware split used by 
 - `missing_fixing_data`
 - `missing_power_supply_data`
 - `missing_connection_cable_data`
+- `unsupported_datasheet_runtime`
 
 ## Known Limits
 
 - v1 builds rows live per family, not from precomputed snapshot
 - v1 does not render PDFs
 - v1 readiness reflects default export context, not every optional accessory combination
+- families can be in 3 different states:
+  - fully supported runtime
+  - recognized but runtime not mapped yet
+  - not mapped at all

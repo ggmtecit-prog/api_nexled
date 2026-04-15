@@ -1,6 +1,6 @@
 # PROJECT_MEMORY
 
-Last Updated: 2026-04-14
+Last Updated: 2026-04-15
 Status: Active canonical hub
 Audience: AI agents + engineers resuming work
 
@@ -122,7 +122,7 @@ This means:
 | `datasheet` | Generate PDF datasheet | Live, functional, parity still incomplete |
 | `health` | Service/database status | Live, used by frontend badges and checks |
 | `svg-diagnostics` | Debug resolved SVG/PNG asset readiness | Debug/support endpoint |
-| `code-explorer` | Explore generated code space by family | Live, but full invalid-family matrix can be too large |
+| `code-explorer` | Explore generated code space by family | Live, valid-only mode useful; unsupported runtimes surfaced honestly |
 | `assets` | Older coarse asset endpoint | Exists, transitional |
 | `dam` | Newer DAM tree/list/upload-style endpoint | Exists, active design/workstream |
 
@@ -178,6 +178,30 @@ Relevant family/mask docs:
 - [api/BARRAS_FAMILY_11_SUBLINES.md](api/BARRAS_FAMILY_11_SUBLINES.md)
 - [api/BARRAS_FAMILY_32.md](api/BARRAS_FAMILY_32.md)
 - [api/BARRAS_CODE_LOGIC_FINDINGS.md](api/BARRAS_CODE_LOGIC_FINDINGS.md)
+- [api/SHELF_CODE_MASK_MATRIX.md](api/SHELF_CODE_MASK_MATRIX.md)
+- [api/SHELF_FAMILY_49.md](api/SHELF_FAMILY_49.md)
+- [api/DOWNLIGHTS_CODE_MASK_MATRIX.md](api/DOWNLIGHTS_CODE_MASK_MATRIX.md)
+- [api/DOWNLIGHTS_FAMILY_29.md](api/DOWNLIGHTS_FAMILY_29.md)
+- [api/DOWNLIGHTS_FAMILY_30.md](api/DOWNLIGHTS_FAMILY_30.md)
+- [api/TUBULARES_CODE_MASK_MATRIX.md](api/TUBULARES_CODE_MASK_MATRIX.md)
+- [api/TUBULARES_FAMILY_01.md](api/TUBULARES_FAMILY_01.md)
+- [api/TUBULARES_FAMILY_05.md](api/TUBULARES_FAMILY_05.md)
+
+### Current Family Runtime Snapshot
+
+Current code/runtime support is split into 3 states:
+
+- datasheet runtime supported:
+  - `11`, `32`, `55`, `58`, `60`, `29`, `30`, `48`
+- family recognized, but datasheet runtime not mapped yet:
+  - `49`, `01`, `05`
+- family documented/researched, but not yet mapped in live runtime:
+  - `31`, `40`
+
+Important:
+
+- family recognized != PDF supported
+- code-valid != datasheet-ready
 
 ## Datasheet Pipeline
 
@@ -260,12 +284,15 @@ Relevant parity docs:
 ### PDF / Assets
 
 - datasheet generation works online for many cases
-- SVG/PNG asset handling was improved so more visuals appear in PDFs
+- PDF asset handling now prefers source SVG again where available, to preserve original size/quality
 - family `32` BT asset parity was patched:
   - connector inference from cap
   - correct hero image resolution
   - correct drawing resolution
   - correct finish image lookup
+- family `60` is now recognized as `barra` in runtime
+- configurator can inject decoded families that are missing from the loaded dropdown list
+- Shelf (`49`) and Tubular (`01`, `05`) families are now recognized by API/code explorer, but datasheet runtime stops honestly instead of inventing data
 
 ### Explorer / DAM
 
@@ -282,6 +309,10 @@ Relevant parity docs:
 - old configurator family-specific UI logic is not fully restored
 - old missing-data validation sweep is not fully restored
 - code explorer does not scale for full invalid-family matrix on large families
+- some documented families are still code-recognized only, with no datasheet runtime yet:
+  - `49`, `01`, `05`
+- some researched families still are not mapped in live runtime:
+  - `31`, `40`
 - DAM is not yet the complete source of truth for datasheet assets
 - the repo contains many narrow research docs; they are useful, but they are not all canonical
 - the API is live, but datasheet generation still depends on bundled repo files and legacy-style asset organization
@@ -294,11 +325,20 @@ Relevant parity docs:
 - map visible fields to exact sources
 - move from generic section builder toward family/page template parity
 
-### 2. Family-by-Family Code Logic
+### 2. Family-by-Family Code Logic / Runtime Coverage
 
 - document family masks and runtime truth per family
 - avoid fake universal rules when family-specific behavior exists
-- current Barra work is strongest for families `11` and `32`
+- current documentation now covers:
+  - Barra
+  - Shelf
+  - Downlights
+  - Tubulares
+- current runtime parity is strongest for:
+  - `11`
+  - `32`
+  - `29`
+  - `30`
 
 ### 3. API Runtime Parity vs Old App
 
@@ -323,11 +363,15 @@ Relevant parity docs:
 Ordered recommendation:
 
 1. continue family-by-family parity work instead of broad generic rewrites
-2. restore old missing-data validator behavior
-3. build page-template parity starting from priority families
-4. keep documenting only the families being actively patched
-5. redesign code explorer invalid mode around narrower slices/drill-down
-6. continue DAM only after PDF/API parity priorities are stable
+2. finish runtime coverage for documented-but-unimplemented families:
+   - `49`
+   - `01`
+   - `05`
+3. restore old missing-data validator behavior
+4. build page-template parity starting from priority families
+5. keep documenting only the families being actively patched
+6. redesign code explorer invalid mode around narrower slices/drill-down
+7. continue DAM only after PDF/API parity priorities are stable
 
 Best immediate engineering path remains:
 
@@ -356,6 +400,14 @@ Best family docs to start with for current Barra work:
 - [api/BARRAS_FAMILY_11_SUBLINES.md](api/BARRAS_FAMILY_11_SUBLINES.md)
 - [api/BARRAS_FAMILY_32.md](api/BARRAS_FAMILY_32.md)
 
+Best non-Barra docs to start with for current expansion work:
+
+- [api/SHELF_FAMILY_49.md](api/SHELF_FAMILY_49.md)
+- [api/DOWNLIGHTS_FAMILY_29.md](api/DOWNLIGHTS_FAMILY_29.md)
+- [api/DOWNLIGHTS_FAMILY_30.md](api/DOWNLIGHTS_FAMILY_30.md)
+- [api/TUBULARES_FAMILY_01.md](api/TUBULARES_FAMILY_01.md)
+- [api/TUBULARES_FAMILY_05.md](api/TUBULARES_FAMILY_05.md)
+
 ## Doc Map
 
 ### Canonical Context
@@ -377,6 +429,23 @@ Best family docs to start with for current Barra work:
 - [api/BARRAS_FAMILY_11.md](api/BARRAS_FAMILY_11.md)
 - [api/BARRAS_FAMILY_11_SUBLINES.md](api/BARRAS_FAMILY_11_SUBLINES.md)
 - [api/BARRAS_FAMILY_32.md](api/BARRAS_FAMILY_32.md)
+- [api/BARRAS_FAMILY_31.md](api/BARRAS_FAMILY_31.md)
+- [api/BARRAS_FAMILY_40.md](api/BARRAS_FAMILY_40.md)
+- [api/BARRAS_FAMILY_55.md](api/BARRAS_FAMILY_55.md)
+- [api/BARRAS_FAMILY_58.md](api/BARRAS_FAMILY_58.md)
+- [api/BARRAS_FAMILY_60.md](api/BARRAS_FAMILY_60.md)
+- [api/SHELF_CODE_LOGIC_FINDINGS.md](api/SHELF_CODE_LOGIC_FINDINGS.md)
+- [api/SHELF_CODE_MASK_MATRIX.md](api/SHELF_CODE_MASK_MATRIX.md)
+- [api/SHELF_FAMILY_49.md](api/SHELF_FAMILY_49.md)
+- [api/DOWNLIGHTS_CODE_LOGIC_FINDINGS.md](api/DOWNLIGHTS_CODE_LOGIC_FINDINGS.md)
+- [api/DOWNLIGHTS_CODE_MASK_MATRIX.md](api/DOWNLIGHTS_CODE_MASK_MATRIX.md)
+- [api/DOWNLIGHTS_FAMILY_29.md](api/DOWNLIGHTS_FAMILY_29.md)
+- [api/DOWNLIGHTS_FAMILY_30.md](api/DOWNLIGHTS_FAMILY_30.md)
+- [api/TUBULARES_CODE_LOGIC_FINDINGS.md](api/TUBULARES_CODE_LOGIC_FINDINGS.md)
+- [api/TUBULARES_CODE_MASK_MATRIX.md](api/TUBULARES_CODE_MASK_MATRIX.md)
+- [api/TUBULARES_FAMILY_01.md](api/TUBULARES_FAMILY_01.md)
+- [api/TUBULARES_FAMILY_05.md](api/TUBULARES_FAMILY_05.md)
+- [api/ACESSORIOS_LOGIC_FINDINGS.md](api/ACESSORIOS_LOGIC_FINDINGS.md)
 
 ### Historical / Partial / Outdated Baselines
 
