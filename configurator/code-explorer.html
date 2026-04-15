@@ -217,10 +217,23 @@
 
                         <form id="explorer-filters" class="flex flex-col gap-16">
                             <div>
-                                <label class="input-label ml-12" for="explorer-family" data-i18n="codeExplorer.familyLabel">Family</label>
-                                <select id="explorer-family" class="input input-sm">
-                                    <option value="" data-i18n="codeExplorer.familyPlaceholder">Select a family</option>
-                                </select>
+                                <label class="input-label ml-12" for="explorer-family-input" data-i18n="codeExplorer.familyLabel">Family</label>
+                                <div id="explorer-family-combobox" class="combobox combobox-sm w-full" data-combobox data-combobox-bound="true">
+                                    <div class="combobox-control">
+                                        <span class="input-icon-area" aria-hidden="true">
+                                            <i class="ri-search-line text-icon-md"></i>
+                                        </span>
+                                        <input type="text" id="explorer-family-input" class="combobox-input" data-combobox-input placeholder="Select a family" role="combobox" aria-autocomplete="list" aria-expanded="false" autocomplete="off" data-i18n-placeholder="codeExplorer.familyPlaceholder" data-i18n-aria-label="codeExplorer.familyAria">
+                                        <input type="hidden" id="explorer-family" data-combobox-value value="">
+                                        <button type="button" id="explorer-family-clear" class="combobox-clear btn btn-ghost btn-icon btn-xs" data-combobox-clear aria-label="Clear product family" hidden disabled data-i18n-aria-label="codeExplorer.clearFamilyAria">
+                                            <i class="ri-close-line text-icon-md" aria-hidden="true"></i>
+                                        </button>
+                                    </div>
+                                    <div id="explorer-family-panel" class="combobox-panel" data-combobox-panel hidden aria-hidden="true">
+                                        <div id="explorer-family-list" class="combobox-list custom-scrollbar" role="listbox" aria-label="Product family options" data-i18n-aria-label="codeExplorer.familyAria"></div>
+                                        <p id="explorer-family-empty" class="combobox-empty text-body-xs" hidden data-i18n="codeExplorer.familyEmpty">No matching families</p>
+                                    </div>
+                                </div>
                             </div>
                             <div>
                                 <label class="input-label ml-12" for="explorer-search" data-i18n="codeExplorer.searchLabel">Search</label>

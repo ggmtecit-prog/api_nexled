@@ -68,6 +68,8 @@ let statusToastTimers = {
     dismiss: null,
     hide: null,
 };
+let searchInputTimer = null;
+let familyCombobox = null;
 let explorerState = {
     families: [],
     data: null,
@@ -87,6 +89,7 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 function initializeCodeExplorer() {
+    familyCombobox = setupExplorerFamilyCombobox();
     bindControls();
     bindStaticEvents();
     renderApiBadge();
@@ -99,67 +102,281 @@ function initializeCodeExplorer() {
     checkApiHealth();
 }
 
-function bindControls() {
-    document.getElementById("explorer-filters").addEventListener("submit", (event) => {
-        event.preventDefault();
-        explorerState.controls.search = document.getElementById("explorer-search").value.trim();
-        explorerState.controls.includeInvalid = document.getElementById("explorer-include-invalid").checked;
-        syncInvalidControls();
-        explorerState.controls.page = 1;
-        loadExplorerData();
-    });
+function setupExplorerFamilyCombobox() {
+    const combobox = document.getElementById("explorer-family-combobox");
+    const input = document.getElementById("explorer-family-input");
+    const clearButton = document.getElementById("explorer-family-clear");
+    const panel = document.getElementById("explorer-family-panel");
+    const list = document.getElementById("explorer-family-list");
+    const emptyState = document.getElementById("explorer-family-empty");
+    const valueField = document.getElementById("explorer-family");
 
-    document.getElementById("explorer-family").addEventListener("change", (event) => {
-        explorerState.controls.family = event.target.value;
-        explorerState.controls.search = "";
-        explorerState.controls.status = "all";
-        explorerState.controls.page = 1;
+    if (!combobox || !input || !clearButton || !panel || !list || !emptyState || !valueField) {
+        return null;
+    }
 
-        document.getElementById("explorer-search").value = "";
-        document.getElementById("explorer-status").value = "all";
-        syncInvalidControls();
+    let activeOption = null;
 
-        if (!explorerState.controls.family) {
-            explorerState.data = null;
-            explorerState.selectedReference = "";
-            setPageStatus("codeExplorer.runtime.chooseFamily", "neutral", "Select one family to start building valid code rows.");
-            renderSummary(null);
-            renderTable();
-            renderDetail();
-            renderResultsMeta();
-            renderPagination();
+    input.setAttribute("aria-controls", list.id);
+
+    const getOptions = () => Array.from(list.querySelectorAll("[data-combobox-option]"));
+    const getVisibleOptions = () => getOptions().filter((option) => !option.hidden);
+    const getSelectedOption = () => getOptions().find((option) => option.dataset.value === valueField.value) || null;
+    const getSelectedLabel = () => getSelectedOption()?.dataset.label || "";
+
+    const setActiveOption = (option) => {
+        activeOption = option;
+
+        getOptions().forEach((currentOption) => {
+            currentOption.classList.toggle("is-active", currentOption === option && !currentOption.hidden);
+        });
+
+        if (option && !option.hidden) {
+            input.setAttribute("aria-activedescendant", option.id);
+            option.scrollIntoView({ block: "nearest" });
             return;
         }
 
-        loadExplorerData();
-    });
+        input.removeAttribute("aria-activedescendant");
+    };
 
-    document.getElementById("explorer-status").addEventListener("change", (event) => {
-        explorerState.controls.status = event.target.value;
-        explorerState.controls.page = 1;
+    const updateClearState = () => {
+        const shouldShowClear = !input.disabled && input.value.trim() !== "";
+        clearButton.hidden = !shouldShowClear;
+        clearButton.disabled = !shouldShowClear;
+        clearButton.setAttribute("aria-hidden", shouldShowClear ? "false" : "true");
+    };
 
-        if (explorerState.controls.family) {
-            loadExplorerData();
+    const updateFilter = (query) => {
+        const normalizedQuery = query.trim().toLowerCase();
+
+        getOptions().forEach((option) => {
+            const matches = normalizedQuery === "" || (option.dataset.label || "").toLowerCase().includes(normalizedQuery);
+            option.hidden = !matches;
+        });
+
+        const visibleOptions = getVisibleOptions();
+        emptyState.hidden = visibleOptions.length !== 0;
+        setActiveOption(visibleOptions[0] || null);
+    };
+
+    const syncSelectedState = () => {
+        const currentValue = valueField.value;
+
+        getOptions().forEach((option) => {
+            option.setAttribute("aria-selected", option.dataset.value === currentValue ? "true" : "false");
+        });
+
+        combobox.classList.toggle("has-value", Boolean(currentValue));
+        updateClearState();
+    };
+
+    const closePanel = (restoreSelection = false) => {
+        combobox.classList.remove("is-open");
+        panel.hidden = true;
+        panel.setAttribute("aria-hidden", "true");
+        input.setAttribute("aria-expanded", "false");
+        setActiveOption(null);
+
+        if (restoreSelection) {
+            input.value = getSelectedLabel();
+        }
+
+        updateFilter("");
+        updateClearState();
+    };
+
+    const openPanel = () => {
+        if (input.disabled) {
+            return;
+        }
+
+        combobox.classList.add("is-open");
+        panel.hidden = false;
+        panel.setAttribute("aria-hidden", "false");
+        input.setAttribute("aria-expanded", "true");
+        updateFilter(valueField.value && input.value.trim() === getSelectedLabel() ? "" : input.value.trim());
+    };
+
+    const dispatchFamilyChange = () => {
+        valueField.dispatchEvent(new Event("change", { bubbles: true }));
+    };
+
+    const setSelection = (value, label, shouldTrigger = true) => {
+        const previousValue = valueField.value;
+
+        valueField.value = value;
+        input.value = label;
+        syncSelectedState();
+        closePanel(false);
+
+        if (shouldTrigger && previousValue !== value) {
+            dispatchFamilyChange();
+        }
+    };
+
+    const clearSelection = (shouldTrigger = true, clearInput = true) => {
+        const previousValue = valueField.value;
+
+        valueField.value = "";
+
+        if (clearInput) {
+            input.value = "";
+        }
+
+        syncSelectedState();
+        updateFilter(input.value.trim());
+
+        if (shouldTrigger && previousValue !== "") {
+            dispatchFamilyChange();
+        }
+    };
+
+    const renderOptions = (items) => {
+        list.innerHTML = "";
+
+        items.forEach((item, index) => {
+            const option = document.createElement("button");
+            const label = document.createElement("span");
+            const check = document.createElement("i");
+
+            option.type = "button";
+            option.className = "combobox-option";
+            option.id = "explorer-family-option-" + (index + 1);
+            option.dataset.comboboxOption = "true";
+            option.dataset.value = item.value;
+            option.dataset.label = item.label;
+            option.setAttribute("role", "option");
+            option.setAttribute("aria-selected", "false");
+
+            label.className = "combobox-option-label";
+            label.textContent = item.label;
+
+            check.className = "ri-check-line combobox-option-check";
+            check.setAttribute("aria-hidden", "true");
+
+            option.append(label, check);
+            option.addEventListener("click", () => {
+                setSelection(item.value, item.label, true);
+                input.focus();
+            });
+
+            list.append(option);
+        });
+
+        if (valueField.value && !items.some((item) => item.value === valueField.value)) {
+            valueField.value = "";
+            input.value = "";
+        } else if (valueField.value) {
+            input.value = getSelectedLabel();
+        }
+
+        syncSelectedState();
+        updateFilter(input.value.trim());
+    };
+
+    input.addEventListener("focus", openPanel);
+    input.addEventListener("click", openPanel);
+    input.addEventListener("input", () => {
+        if (valueField.value && input.value.trim() !== getSelectedLabel()) {
+            clearSelection(true, false);
+        }
+
+        if (input.value.trim() !== "") {
+            openPanel();
+        } else {
+            updateFilter("");
         }
     });
 
-    document.getElementById("explorer-include-invalid").addEventListener("change", (event) => {
-        explorerState.controls.includeInvalid = event.target.checked;
-        syncInvalidControls();
-        explorerState.controls.page = 1;
+    input.addEventListener("keydown", (event) => {
+        const visibleOptions = getVisibleOptions();
 
-        if (explorerState.controls.family) {
-            loadExplorerData();
+        if (event.key === "ArrowDown") {
+            event.preventDefault();
+            openPanel();
+
+            if (visibleOptions.length === 0) {
+                return;
+            }
+
+            const currentIndex = visibleOptions.indexOf(activeOption);
+            const nextIndex = currentIndex === -1 ? 0 : Math.min(currentIndex + 1, visibleOptions.length - 1);
+            setActiveOption(visibleOptions[nextIndex]);
+            return;
+        }
+
+        if (event.key === "ArrowUp") {
+            event.preventDefault();
+            openPanel();
+
+            if (visibleOptions.length === 0) {
+                return;
+            }
+
+            const currentIndex = visibleOptions.indexOf(activeOption);
+            const nextIndex = currentIndex === -1 ? visibleOptions.length - 1 : Math.max(currentIndex - 1, 0);
+            setActiveOption(visibleOptions[nextIndex]);
+            return;
+        }
+
+        if (event.key === "Enter") {
+            if (!combobox.classList.contains("is-open") || !activeOption) {
+                return;
+            }
+
+            event.preventDefault();
+            setSelection(activeOption.dataset.value || "", activeOption.dataset.label || "");
+            return;
+        }
+
+        if (event.key === "Escape") {
+            event.preventDefault();
+            closePanel(true);
+            input.focus();
+            return;
+        }
+
+        if (event.key === "Tab") {
+            closePanel(true);
         }
     });
 
-    document.getElementById("explorer-page-size").addEventListener("change", (event) => {
-        explorerState.controls.pageSize = Number.parseInt(event.target.value, 10) || 100;
-        explorerState.controls.page = 1;
+    clearButton.addEventListener("click", (event) => {
+        event.preventDefault();
+        clearSelection(true, true);
+        openPanel();
+        input.focus();
+    });
 
-        if (explorerState.controls.family) {
-            loadExplorerData();
+    document.addEventListener("click", (event) => {
+        if (combobox.contains(event.target)) {
+            return;
         }
+
+        closePanel(true);
+    });
+
+    return {
+        renderOptions,
+    };
+}
+
+function bindControls() {
+    document.getElementById("explorer-filters").addEventListener("submit", (event) => {
+        event.preventDefault();
+        applyFiltersFromForm();
+    });
+
+    document.getElementById("explorer-search").addEventListener("input", () => {
+        clearTimeout(searchInputTimer);
+        searchInputTimer = setTimeout(() => {
+            applyFiltersFromForm();
+        }, 250);
+    });
+
+    document.getElementById("explorer-include-invalid").addEventListener("change", () => {
+        syncDraftInvalidControls();
     });
 
     document.getElementById("explorer-pagination").addEventListener("click", (event) => {
@@ -204,6 +421,8 @@ function bindControls() {
         loadExplorerData();
     });
 
+    syncDraftInvalidControls();
+
     document.getElementById("explorer-rows").addEventListener("click", (event) => {
         const trigger = event.target.closest("[data-reference]");
 
@@ -216,6 +435,37 @@ function bindControls() {
         renderDetail();
         openCodeDetailModal(trigger);
     });
+}
+
+function applyFiltersFromForm() {
+    clearTimeout(searchInputTimer);
+
+    const family = document.getElementById("explorer-family").value;
+    const includeInvalid = document.getElementById("explorer-include-invalid").checked;
+
+    syncDraftInvalidControls();
+
+    explorerState.controls.family = family;
+    explorerState.controls.search = document.getElementById("explorer-search").value.trim();
+    explorerState.controls.status = document.getElementById("explorer-status").value;
+    explorerState.controls.includeInvalid = includeInvalid;
+    explorerState.controls.pageSize = Number.parseInt(document.getElementById("explorer-page-size").value, 10) || 100;
+    explorerState.controls.page = 1;
+    syncAppliedInvalidSummaryCard();
+
+    if (!explorerState.controls.family) {
+        explorerState.data = null;
+        explorerState.selectedReference = "";
+        setPageStatus("codeExplorer.runtime.chooseFamily", "neutral", "Select one family to start building valid code rows.");
+        renderSummary(null);
+        renderTable();
+        renderDetail();
+        renderResultsMeta();
+        renderPagination();
+        return;
+    }
+
+    loadExplorerData();
 }
 
 function bindStaticEvents() {
@@ -240,10 +490,9 @@ function bindStaticEvents() {
     window.addEventListener("resize", syncExplorerTableHeadColumns);
 }
 
-function syncInvalidControls() {
-    const includeInvalid = explorerState.controls.includeInvalid === true;
+function syncDraftInvalidControls() {
+    const includeInvalid = document.getElementById("explorer-include-invalid")?.checked === true;
     const invalidStatusOption = document.querySelector("[data-invalid-status-option]");
-    const invalidSummaryCard = document.getElementById("summary-invalid-card");
     const statusSelect = document.getElementById("explorer-status");
 
     if (invalidStatusOption) {
@@ -251,13 +500,16 @@ function syncInvalidControls() {
         invalidStatusOption.hidden = !includeInvalid;
     }
 
-    if (!includeInvalid && explorerState.controls.status === "configurator_invalid") {
-        explorerState.controls.status = "all";
+    if (!includeInvalid && statusSelect?.value === "configurator_invalid") {
         statusSelect.value = "all";
     }
+}
+
+function syncAppliedInvalidSummaryCard() {
+    const invalidSummaryCard = document.getElementById("summary-invalid-card");
 
     if (invalidSummaryCard) {
-        invalidSummaryCard.classList.toggle("hidden", !includeInvalid);
+        invalidSummaryCard.classList.toggle("hidden", explorerState.controls.includeInvalid !== true);
     }
 }
 
@@ -341,22 +593,26 @@ async function loadFamilies() {
 }
 
 function populateFamilies() {
-    const select = document.getElementById("explorer-family");
-    const placeholderLabel = t("codeExplorer.familyPlaceholder", {}, "Select a family");
-    const options = [
-        `<option value="">${escapeHtml(placeholderLabel)}</option>`,
-    ];
-
-    explorerState.families.forEach((family) => {
+    const valueField = document.getElementById("explorer-family");
+    const options = explorerState.families.map((family) => {
         const code = String(family.codigo || "");
         const name = String(family.nome || code);
-        options.push(`<option value="${escapeHtml(code)}">${escapeHtml(code + " - " + name)}</option>`);
+
+        return {
+            value: code,
+            label: code + " - " + name,
+        };
     });
 
-    select.innerHTML = options.join("");
-    select.value = explorerState.controls.family;
+    if (valueField) {
+        valueField.value = explorerState.controls.family;
+    }
+
+    familyCombobox?.renderOptions(options);
     document.getElementById("explorer-include-invalid").checked = explorerState.controls.includeInvalid;
-    syncInvalidControls();
+    document.getElementById("explorer-status").value = explorerState.controls.status;
+    document.getElementById("explorer-page-size").value = String(explorerState.controls.pageSize);
+    syncDraftInvalidControls();
 }
 
 async function loadExplorerData() {
@@ -441,7 +697,7 @@ function renderSummary(data) {
     document.getElementById("summary-invalid").textContent = formatNumber(summary.configurator_invalid);
     document.getElementById("summary-ready").textContent = formatNumber(summary.datasheet_ready);
     document.getElementById("summary-blocked").textContent = formatNumber(summary.datasheet_blocked);
-    syncInvalidControls();
+    syncAppliedInvalidSummaryCard();
 }
 
 function renderTable() {
