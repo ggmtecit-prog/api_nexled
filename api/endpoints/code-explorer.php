@@ -20,22 +20,21 @@ if ($familyMeta === null) {
 
 $page = getCodeExplorerPage($_GET["page"] ?? null);
 $pageSize = getCodeExplorerPageSize($_GET["page_size"] ?? null);
+$mode = getCodeExplorerMode($_GET["mode"] ?? CODE_EXPLORER_MODE_FILTERS);
 $search = sanitizeCodeExplorerSearch($_GET["search"] ?? "");
+$searchType = getCodeExplorerSearchType($_GET["search_type"] ?? CODE_EXPLORER_SEARCH_TYPE_CODE);
 $statusFilter = getCodeExplorerStatusFilter($_GET["status"] ?? CODE_EXPLORER_STATUS_ALL);
 $includeInvalid = getCodeExplorerIncludeInvalid($_GET["include_invalid"] ?? false);
-$hasTargetedReferenceSearch = isCodeExplorerTargetedReferenceSearch($search, $familyMeta["code"]);
+$hasTargetedReferenceSearch = $searchType === CODE_EXPLORER_SEARCH_TYPE_CODE
+    && isCodeExplorerTargetedReferenceSearch($search, $familyMeta["code"]);
 
 $options = getCodeExplorerFamilyOptions($family);
 $segmentFilters = getCodeExplorerSegmentFilters($_GET, $options);
 $filteredOptions = getCodeExplorerFilteredOptions($options, $segmentFilters);
 $identities = getCodeExplorerLuminosIdentities($familyMeta["code"]);
 $filteredIdentities = getCodeExplorerFilteredIdentities($identities, $segmentFilters);
-$validMatrixSize = getCodeExplorerValidMatrixSize($filteredOptions, $filteredIdentities);
-$identityMatrixSize = getCodeExplorerIdentityMatrixSize($filteredOptions);
-$suffixMatrixSize = getCodeExplorerSuffixMatrixSize($filteredOptions);
-$fullMatrixSize = getCodeExplorerFullMatrixSize($filteredOptions);
 
-if ($hasTargetedReferenceSearch) {
+if ($mode === CODE_EXPLORER_MODE_SEARCH && $hasTargetedReferenceSearch) {
     echo json_encode(
         buildCodeExplorerTargetedSearchResponse(
             $familyMeta["code"],
@@ -53,44 +52,32 @@ if ($hasTargetedReferenceSearch) {
     exit();
 }
 
-if ($includeInvalid && !hasCodeExplorerSegmentDrillDown($segmentFilters)) {
-    http_response_code(400);
-    echo json_encode([
-        "error" => "Invalid exploration requires at least one drill-down filter or a targeted full-code search.",
-        "reason" => "invalid_filters_required",
-        "family" => $familyMeta,
-        "valid_matrix_size" => $validMatrixSize,
-        "identity_matrix_size" => $identityMatrixSize,
-        "suffix_matrix_size" => $suffixMatrixSize,
-        "full_matrix_size" => $fullMatrixSize,
-        "message" => "Turn off invalid combinations, search for a specific full code prefix, or narrow the family by segment filters such as size, color, CRI, or series.",
-    ]);
-    exit();
-}
-
-if ($includeInvalid && $fullMatrixSize > CODE_EXPLORER_MAX_FULL_MATRIX_ROWS) {
-    http_response_code(400);
-    echo json_encode([
-        "error" => "Full family code matrix is too large for one request.",
-        "reason" => "family_matrix_too_large",
-        "family" => $familyMeta,
-        "valid_matrix_size" => $validMatrixSize,
-        "identity_matrix_size" => $identityMatrixSize,
-        "suffix_matrix_size" => $suffixMatrixSize,
-        "full_matrix_size" => $fullMatrixSize,
-        "max_supported_rows" => CODE_EXPLORER_MAX_FULL_MATRIX_ROWS,
-        "message" => "Turn off invalid combinations for faster valid-only mode, or use identity-first drill-down. Example family 11 currently expands to billions of full codes.",
-    ]);
+if ($mode === CODE_EXPLORER_MODE_SEARCH) {
+    echo json_encode(
+        buildCodeExplorerResponse(
+            $familyMeta["code"],
+            $familyMeta["name"],
+            $filteredOptions,
+            $filteredIdentities,
+            $search,
+            $searchType,
+            $statusFilter,
+            $page,
+            $pageSize,
+            $includeInvalid,
+            $segmentFilters
+        )
+    );
     exit();
 }
 
 echo json_encode(
-    buildCodeExplorerResponse(
+    buildCodeExplorerIdentityChunkResponse(
         $familyMeta["code"],
         $familyMeta["name"],
         $filteredOptions,
         $filteredIdentities,
-        $search,
+        "",
         $statusFilter,
         $page,
         $pageSize,

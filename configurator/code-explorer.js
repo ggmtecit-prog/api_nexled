@@ -62,8 +62,11 @@ const EXPLORER_ERROR_REASON_KEYS = {
     invalid_filters_required: "codeExplorer.error.invalid_filters_required",
     family_matrix_too_large: "codeExplorer.error.family_matrix_too_large",
 };
-const EXPLORER_SEARCH_MODE_CODE = "code";
-const EXPLORER_SEARCH_MODE_NAME = "name";
+const EXPLORER_VIEW_MODE_SEARCH = "search";
+const EXPLORER_VIEW_MODE_FILTERS = "filters";
+const EXPLORER_SEARCH_TYPE_CODE = "code";
+const EXPLORER_SEARCH_TYPE_NAME = "name";
+const EXPLORER_SEARCH_TYPE_DESCRIPTION = "description";
 
 let apiBasePromise = null;
 let hasSuccessfulApiContact = false;
@@ -94,7 +97,8 @@ let explorerState = {
     coverageExpandedIdentity: "",
     coverageDetailsByIdentity: {},
     controls: {
-        searchMode: EXPLORER_SEARCH_MODE_CODE,
+        viewMode: EXPLORER_VIEW_MODE_SEARCH,
+        searchType: EXPLORER_SEARCH_TYPE_CODE,
         family: "",
         search: "",
         status: "all",
@@ -122,7 +126,7 @@ function initializeCodeExplorer() {
     renderApiBadge();
     applyPageStatusState();
     renderExplorerSegmentFilterOptions(null);
-    applyExplorerSearchMode(explorerState.controls.searchMode);
+    applyExplorerViewMode(explorerState.controls.viewMode);
     renderCoverage(null);
     renderSummary(null);
     renderTable();
@@ -268,19 +272,7 @@ function updateExplorerInvalidGuidance() {
     if (!guidance) {
         return;
     }
-
-    if (explorerState.controls.searchMode !== EXPLORER_SEARCH_MODE_NAME) {
-        guidance.classList.add("hidden");
-        return;
-    }
-
-    const includeInvalid = document.getElementById("explorer-include-invalid")?.checked === true;
-    const search = document.getElementById("explorer-search")?.value || explorerState.controls.search;
-    const family = document.getElementById("explorer-family")?.value || explorerState.controls.family;
-    const segmentFilters = readExplorerSegmentFiltersFromForm();
-    const shouldShow = includeInvalid && !hasActiveExplorerSegmentFilters(segmentFilters) && !isTargetedExplorerReferenceSearch(search, family);
-
-    guidance.classList.toggle("hidden", !shouldShow);
+    guidance.classList.add("hidden");
 }
 
 function getExplorerErrorMessage(error) {
@@ -294,43 +286,126 @@ function getExplorerErrorMessage(error) {
     return error?.payload?.message || error?.message || t("codeExplorer.runtime.unknownError", {}, "Unknown error");
 }
 
-function getExplorerSearchModeFromForm() {
-    return document.querySelector('input[name="explorer-search-mode"]:checked')?.value || EXPLORER_SEARCH_MODE_CODE;
+function getExplorerViewModeFromForm() {
+    return document.querySelector('input[name="explorer-view-mode"]:checked')?.value || EXPLORER_VIEW_MODE_SEARCH;
 }
 
-function renderExplorerSearchInputCopy(searchMode = explorerState.controls.searchMode) {
+function getExplorerSearchTypeFromForm() {
+    return document.getElementById("explorer-search-type")?.value || EXPLORER_SEARCH_TYPE_CODE;
+}
+
+function isExplorerFilterMode(viewMode = explorerState.controls.viewMode) {
+    return viewMode === EXPLORER_VIEW_MODE_FILTERS;
+}
+
+function hasExplorerChunkItems(data = explorerState.data) {
+    return Array.isArray(data?.chunk?.items) && data.chunk.items.length > 0;
+}
+
+function isLegacyFilterResponse(data = explorerState.data, viewMode = explorerState.controls.viewMode) {
+    return isExplorerFilterMode(viewMode)
+        && !Array.isArray(data?.chunk?.items)
+        && Array.isArray(data?.rows)
+        && data.rows.length > 0;
+}
+
+function shouldShowExplorerCodeResultsSection(
+    viewMode = explorerState.controls.viewMode,
+    data = explorerState.data
+) {
+    return !isExplorerFilterMode(viewMode) || isLegacyFilterResponse(data, viewMode);
+}
+
+function shouldShowExplorerFamilyField(
+    viewMode = explorerState.controls.viewMode,
+    searchType = explorerState.controls.searchType
+) {
+    return isExplorerFilterMode(viewMode) || searchType !== EXPLORER_SEARCH_TYPE_CODE;
+}
+
+function renderExplorerSearchInputCopy(
+    viewMode = explorerState.controls.viewMode,
+    searchType = explorerState.controls.searchType
+) {
     const label = document.getElementById("explorer-search-label");
     const input = document.getElementById("explorer-search");
-    const isCodeMode = searchMode === EXPLORER_SEARCH_MODE_CODE;
+    const pageSizeLabel = document.getElementById("explorer-page-size-label");
 
     if (label) {
-        label.textContent = isCodeMode
-            ? t("codeExplorer.searchCodeLabel", {}, "Search By Code")
-            : t("codeExplorer.searchNameLabel", {}, "Search By Name");
+        label.textContent = searchType === EXPLORER_SEARCH_TYPE_NAME
+            ? t("codeExplorer.searchNameLabel", {}, "Search By Name")
+            : searchType === EXPLORER_SEARCH_TYPE_DESCRIPTION
+                ? t("codeExplorer.searchDescriptionLabel", {}, "Search By Description")
+                : t("codeExplorer.searchCodeLabel", {}, "Search By Code");
     }
 
     if (input) {
-        input.placeholder = isCodeMode
-            ? t("codeExplorer.searchCodePlaceholder", {}, "Enter a code")
-            : t("codeExplorer.searchNamePlaceholder", {}, "Enter a name");
+        input.placeholder = searchType === EXPLORER_SEARCH_TYPE_NAME
+            ? t("codeExplorer.searchNamePlaceholder", {}, "Enter a name")
+            : searchType === EXPLORER_SEARCH_TYPE_DESCRIPTION
+                ? t("codeExplorer.searchDescriptionPlaceholder", {}, "Enter a description")
+                : t("codeExplorer.searchCodePlaceholder", {}, "Enter a code");
+    }
+
+    if (pageSizeLabel) {
+        pageSizeLabel.textContent = isExplorerFilterMode(viewMode)
+            ? t("codeExplorer.pageSizeChunkLabel", {}, "Base combos per page")
+            : t("codeExplorer.pageSizeLabel", {}, "Rows per page");
     }
 }
 
-function applyExplorerSearchMode(searchMode = explorerState.controls.searchMode) {
-    const isCodeMode = searchMode === EXPLORER_SEARCH_MODE_CODE;
+function applyExplorerViewMode(viewMode = explorerState.controls.viewMode) {
+    const searchType = getExplorerSearchTypeFromForm();
+    const showFilters = isExplorerFilterMode(viewMode);
+    const searchTypeField = document.getElementById("explorer-search-type-field");
+    const textSearchField = document.getElementById("explorer-text-search-field");
+    const familyField = document.getElementById("explorer-family-field");
+    const chunkControlsRow = document.getElementById("explorer-chunk-controls-row");
+    const includeInvalidField = document.getElementById("explorer-include-invalid-field");
+    const drilldownField = document.getElementById("explorer-drilldown-field");
+    const codeResultsSection = document.getElementById("explorer-code-results-section");
 
-    explorerState.controls.searchMode = searchMode;
-    document.querySelectorAll("[data-name-search-field]").forEach((element) => {
-        element.classList.toggle("hidden", isCodeMode);
-    });
+    explorerState.controls.viewMode = viewMode;
+    explorerState.controls.searchType = searchType;
 
-    renderExplorerSearchInputCopy(searchMode);
+    if (searchTypeField) {
+        searchTypeField.classList.toggle("hidden", showFilters);
+    }
+
+    if (textSearchField) {
+        textSearchField.classList.toggle("hidden", showFilters);
+    }
+
+    if (familyField) {
+        familyField.classList.toggle("hidden", !shouldShowExplorerFamilyField(viewMode, searchType));
+    }
+
+    if (chunkControlsRow) {
+        chunkControlsRow.classList.toggle("hidden", !showFilters);
+    }
+
+    if (includeInvalidField) {
+        includeInvalidField.classList.toggle("hidden", !showFilters);
+    }
+
+    if (drilldownField) {
+        drilldownField.classList.toggle("hidden", !showFilters);
+    }
+
+    renderExplorerSearchInputCopy(viewMode, searchType);
     syncDraftInvalidControls();
     syncAppliedInvalidSummaryCard();
     updateExplorerInvalidGuidance();
     renderCoverage(explorerState.data);
 
-    if (!isCodeMode && explorerState.controls.family) {
+    if (codeResultsSection) {
+        codeResultsSection.classList.toggle(
+            "hidden",
+            !shouldShowExplorerCodeResultsSection(viewMode, explorerState.data)
+        );
+    }
+
+    if (showFilters && explorerState.controls.family) {
         void loadExplorerFamilyOptions(explorerState.controls.family, false);
     }
 }
@@ -971,14 +1046,34 @@ function bindControls() {
         updateExplorerInvalidGuidance();
     });
 
-    document.querySelectorAll('input[name="explorer-search-mode"]').forEach((radio) => {
+    document.querySelectorAll('input[name="explorer-view-mode"]').forEach((radio) => {
         radio.addEventListener("change", () => {
             if (!radio.checked) {
                 return;
             }
 
-            applyExplorerSearchMode(radio.value);
+            explorerState.data = null;
+            explorerState.selectedReference = "";
+            resetCoverageInteractions();
+            applyExplorerViewMode(radio.value);
+            renderSummary(null);
+            renderTable();
+            renderDetail();
+            renderResultsMeta();
+            renderPagination();
         });
+    });
+
+    document.getElementById("explorer-search-type").addEventListener("change", () => {
+        explorerState.data = null;
+        explorerState.selectedReference = "";
+        resetCoverageInteractions();
+        applyExplorerViewMode(getExplorerViewModeFromForm());
+        renderSummary(null);
+        renderTable();
+        renderDetail();
+        renderResultsMeta();
+        renderPagination();
     });
 
     document.getElementById("explorer-include-invalid").addEventListener("change", () => {
@@ -990,7 +1085,11 @@ function bindControls() {
         const selectedFamily = document.getElementById("explorer-family").value;
         explorerState.controls.family = selectedFamily;
         explorerState.controls.segmentFilters = getEmptyExplorerSegmentFilters();
+        explorerState.data = null;
+        resetCoverageInteractions();
         renderExplorerSegmentFilterOptions(null);
+        renderCoverage(null);
+        renderPagination();
 
         if (!selectedFamily) {
             return;
@@ -1088,42 +1187,46 @@ function bindControls() {
 }
 
 async function applyFiltersFromForm() {
-    const search = document.getElementById("explorer-search").value.trim();
-    const searchMode = getExplorerSearchModeFromForm();
+    const rawSearch = document.getElementById("explorer-search").value.trim();
+    const viewMode = getExplorerViewModeFromForm();
+    const isFilterMode = isExplorerFilterMode(viewMode);
+    const searchType = getExplorerSearchTypeFromForm();
+    const search = isFilterMode ? "" : rawSearch;
     const previousFamily = explorerState.controls.family;
-    const includeInvalid = searchMode === EXPLORER_SEARCH_MODE_NAME
+    const includeInvalid = isFilterMode
         ? document.getElementById("explorer-include-invalid").checked
         : false;
-    let family = searchMode === EXPLORER_SEARCH_MODE_NAME
+    let family = shouldShowExplorerFamilyField(viewMode, searchType)
         ? document.getElementById("explorer-family").value
         : "";
 
-    if (searchMode === EXPLORER_SEARCH_MODE_CODE) {
+    if (!isFilterMode && searchType === EXPLORER_SEARCH_TYPE_CODE) {
         family = detectFamilyCodeFromReferenceSearch(search);
     }
 
-    explorerState.controls.searchMode = searchMode;
+    explorerState.controls.viewMode = viewMode;
+    explorerState.controls.searchType = searchType;
     explorerState.controls.search = search;
     explorerState.controls.family = family;
-    explorerState.controls.status = searchMode === EXPLORER_SEARCH_MODE_NAME
+    explorerState.controls.status = isFilterMode
         ? document.getElementById("explorer-status").value
         : "all";
     explorerState.controls.includeInvalid = includeInvalid;
-    explorerState.controls.pageSize = searchMode === EXPLORER_SEARCH_MODE_NAME
+    explorerState.controls.pageSize = isFilterMode
         ? (Number.parseInt(document.getElementById("explorer-page-size").value, 10) || 5)
         : 5;
-    explorerState.controls.segmentFilters = searchMode === EXPLORER_SEARCH_MODE_NAME
+    explorerState.controls.segmentFilters = isFilterMode
         ? readExplorerSegmentFiltersFromForm()
         : getEmptyExplorerSegmentFilters();
     explorerState.controls.page = 1;
 
-    if (searchMode === EXPLORER_SEARCH_MODE_NAME) {
+    if (isFilterMode) {
         syncDraftInvalidControls();
     }
 
     const familyChanged = family !== previousFamily;
 
-    if (searchMode === EXPLORER_SEARCH_MODE_NAME && family) {
+    if (shouldShowExplorerFamilyField(viewMode, searchType) && family) {
         if (familyChanged) {
             explorerState.controls.segmentFilters = getEmptyExplorerSegmentFilters();
         }
@@ -1156,11 +1259,15 @@ async function applyFiltersFromForm() {
         explorerState.data = null;
         explorerState.selectedReference = "";
         setPageStatus(
-            searchMode === EXPLORER_SEARCH_MODE_CODE ? "codeExplorer.runtime.searchCodeNeedsFamily" : "codeExplorer.runtime.chooseFamily",
+            !shouldShowExplorerFamilyField(viewMode, searchType) ? "codeExplorer.runtime.searchCodeNeedsFamily" : "codeExplorer.runtime.chooseFamily",
             "neutral",
-            searchMode === EXPLORER_SEARCH_MODE_CODE
+            !shouldShowExplorerFamilyField(viewMode, searchType)
                 ? "Enter full code with family prefix to load explorer rows."
-                : "Select one family to start building valid code rows."
+                : isFilterMode
+                    ? "Select one family to start building valid code rows."
+                    : searchType === EXPLORER_SEARCH_TYPE_DESCRIPTION
+                        ? "Choose one family before searching by description."
+                        : "Choose one family before searching by name."
         );
         renderCoverage(null);
         renderSummary(null);
@@ -1171,14 +1278,11 @@ async function applyFiltersFromForm() {
         return;
     }
 
-    if (searchMode === EXPLORER_SEARCH_MODE_NAME
-        && explorerState.controls.includeInvalid
-        && !hasActiveExplorerSegmentFilters(explorerState.controls.segmentFilters)
-        && !isTargetedExplorerReferenceSearch(search, explorerState.controls.family)) {
+    if (!isFilterMode && searchType === EXPLORER_SEARCH_TYPE_CODE && search === "") {
         resetCoverageInteractions();
         explorerState.data = null;
         explorerState.selectedReference = "";
-        setPageStatus("codeExplorer.runtime.invalidNeedsDrillDown", "warning", "Include invalid requires at least one drill-down filter or a targeted full code.");
+        setPageStatus("codeExplorer.runtime.awaitingCode", "neutral", "Waiting for code search.");
         renderCoverage(null);
         renderSummary(null);
         renderTable();
@@ -1209,7 +1313,7 @@ function resetCoverageInteractions() {
 }
 
 function syncCoverageStateWithData(data) {
-    const identities = Array.isArray(data?.coverage?.identities) ? data.coverage.identities : [];
+    const identities = Array.isArray(data?.chunk?.items) ? data.chunk.items : [];
     const availableIdentities = new Set(identities.map((identity) => identity.identity));
 
     if (!availableIdentities.has(explorerState.coverageExpandedIdentity)) {
@@ -1226,13 +1330,18 @@ function syncCoverageStateWithData(data) {
 function renderCoverage(data) {
     const section = document.getElementById("explorer-coverage-section");
     const emptyState = document.getElementById("coverage-empty-state");
+    const emptyCopy = emptyState?.querySelector("p") || null;
     const list = document.getElementById("coverage-identity-list");
     const context = document.getElementById("coverage-family-context");
-    const shouldShow = explorerState.controls.searchMode === EXPLORER_SEARCH_MODE_NAME && Boolean(explorerState.controls.family);
-    const coverage = data?.coverage || null;
-    const identities = Array.isArray(coverage?.identities) ? coverage.identities : [];
-    const summary = coverage?.summary || {
+    const currentViewMode = getExplorerViewModeFromForm();
+    const currentFamily = document.getElementById("explorer-family")?.value || explorerState.controls.family;
+    const shouldShow = isExplorerFilterMode(currentViewMode);
+    const legacyFilterResponse = isLegacyFilterResponse(data, currentViewMode);
+    const chunk = data?.chunk || null;
+    const identities = Array.isArray(chunk?.items) ? chunk.items : [];
+    const summary = data?.coverage?.summary || {
         total_identities: 0,
+        current_chunk_identities: 0,
         fully_ready_identities: 0,
         partially_ready_identities: 0,
         blocked_identities: 0,
@@ -1253,11 +1362,29 @@ function renderCoverage(data) {
         return;
     }
 
-    context.textContent = data?.family
-        ? `${data.family.code} - ${data.family.name}`
-        : explorerState.controls.family;
+    context.textContent = getCoverageContextText(data, currentFamily);
 
     renderCoverageSummary(summary);
+
+    if (emptyCopy) {
+        emptyCopy.textContent = legacyFilterResponse
+            ? t(
+                "codeExplorer.coverageLegacyFallback",
+                {},
+                "Current API returned row data only. Showing matching codes below; identity chunk coverage is unavailable until chunk API is deployed."
+            )
+            : t(
+                "codeExplorer.coverageEmpty",
+                {},
+                "Load one family to compare identities and expand their full valid codes."
+            );
+    }
+
+    if (legacyFilterResponse) {
+        emptyState.classList.remove("hidden");
+        list.innerHTML = "";
+        return;
+    }
 
     if (identities.length === 0) {
         emptyState.classList.remove("hidden");
@@ -1276,6 +1403,38 @@ function renderCoverageSummary(summary) {
     document.getElementById("coverage-blocked-identities").textContent = formatNumber(summary.blocked_identities);
     document.getElementById("coverage-invalid-identities").textContent = formatNumber(summary.invalid_identities);
     document.getElementById("coverage-ready-rate").textContent = formatPercent(summary.datasheet_ready_ratio);
+}
+
+function getCoverageContextText(data, currentFamily = document.getElementById("explorer-family")?.value || explorerState.controls.family) {
+    const familyLabel = data?.family
+        ? `${data.family.code} - ${data.family.name}`
+        : currentFamily;
+    const chunk = data?.chunk || null;
+
+    if (isLegacyFilterResponse(data)) {
+        return t(
+            "codeExplorer.chunkContextLegacy",
+            { family: familyLabel },
+            `${familyLabel} - legacy row response`
+        );
+    }
+
+    if (!chunk) {
+        return familyLabel;
+    }
+
+    const sourceLabel = chunk.source === "all_identities"
+        ? t("codeExplorer.chunkSourceAll", {}, "All base combos")
+        : t("codeExplorer.chunkSourceValid", {}, "Valid base combos");
+
+    return t("codeExplorer.chunkContext", {
+        family: familyLabel,
+        source: sourceLabel,
+        page: chunk.page || 1,
+        totalPages: chunk.total_pages || 1,
+        pageSize: chunk.page_size || explorerState.controls.pageSize,
+        total: chunk.total_items || 0,
+    }, `${familyLabel} - ${sourceLabel} - page ${chunk.page || 1}/${chunk.total_pages || 1} - ${chunk.page_size || explorerState.controls.pageSize} base combos per page - ${chunk.total_items || 0} total`);
 }
 
 function buildCoverageIdentityCard(identity) {
@@ -1302,7 +1461,12 @@ function buildCoverageIdentityCard(identity) {
                     <div class="flex flex-col gap-8">
                         <div class="flex flex-wrap items-center gap-8">
                             <code class="text-body-sm font-mono text-black break-all">${escapeHtml(identityCode)}</code>
-                            ${getCoverageIdentityStatusBadge(identity.status)}
+                            ${buildStatusBadge(
+                                identity.configurator_valid === true,
+                                t("codeExplorer.statusConfiguratorValidShort", {}, "Valid"),
+                                t("codeExplorer.statusConfiguratorInvalidShort", {}, "Invalid")
+                            )}
+                            ${identity.configurator_valid === true ? getCoverageIdentityStatusBadge(identity.status) : ""}
                         </div>
                         <p class="text-body-sm text-grey-primary">${escapeHtml(getCoverageIdentitySegmentSummary(identity))}</p>
                         ${description}
@@ -1378,12 +1542,11 @@ function getCoverageIdentitySegmentDisplay(identity, key) {
 function buildCoverageIdentityDetail(identity) {
     const identityCode = identity.identity || "";
     const detailState = explorerState.coverageDetailsByIdentity[identityCode] || null;
-    const counts = identity.counts || {};
 
     if (!detailState || detailState.status === "loading") {
         return `
             <div class="rounded-card border border-grey-quaternary/60 bg-grey-tertiary/40 px-16 py-14">
-                <p class="text-body-sm text-grey-primary">${escapeHtml(t("codeExplorer.coverageDetailLoading", {}, "Loading valid full codes..."))}</p>
+                <p class="text-body-sm text-grey-primary">${escapeHtml(t("codeExplorer.coverageDetailLoading", {}, "Loading codes for this identity..."))}</p>
             </div>
         `;
     }
@@ -1399,26 +1562,26 @@ function buildCoverageIdentityDetail(identity) {
     if ((detailState.rows?.length || 0) === 0) {
         return `
             <div class="rounded-card border border-grey-quaternary/60 bg-grey-tertiary/40 px-16 py-14">
-                <p class="text-body-sm text-grey-primary">${escapeHtml(t("codeExplorer.coverageDetailEmpty", {}, "No valid full codes exist under this identity."))}</p>
+                <p class="text-body-sm text-grey-primary">${escapeHtml(t("codeExplorer.coverageDetailEmpty", {}, "No codes found under this identity."))}</p>
             </div>
         `;
     }
 
-    const totalValidCodes = counts.configurator_valid || detailState.totalRows || detailState.rows.length;
+    const totalDetailCodes = detailState.totalRows || detailState.rows.length;
     const truncated = detailState.totalRows > detailState.rows.length || detailState.totalPages > 1;
     const truncatedCopy = truncated
         ? `<p class="text-body-xs text-grey-primary">${escapeHtml(t("codeExplorer.coverageDetailTruncated", {
             shown: detailState.rows.length,
             total: detailState.totalRows,
-        }, `Showing ${detailState.rows.length} of ${detailState.totalRows} valid codes.`))}</p>`
+        }, `Showing ${detailState.rows.length} of ${detailState.totalRows} codes.`))}</p>`
         : "";
 
     return `
         <div class="flex flex-col gap-12 border-t border-grey-quaternary/60 pt-12">
             <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                 <div class="flex flex-wrap items-center gap-8">
-                    <span class="input-label">${escapeHtml(t("codeExplorer.coverageDetailTitle", {}, "Valid full codes"))}</span>
-                    <span class="badge badge-neutral badge-sm">${escapeHtml(formatNumber(totalValidCodes))}</span>
+                    <span class="input-label">${escapeHtml(t("codeExplorer.coverageDetailTitle", {}, "Full codes in this identity"))}</span>
+                    <span class="badge badge-neutral badge-sm">${escapeHtml(formatNumber(totalDetailCodes))}</span>
                 </div>
                 ${truncatedCopy}
             </div>
@@ -1430,11 +1593,18 @@ function buildCoverageIdentityDetail(identity) {
 }
 
 function buildCoverageCodeRow(row) {
-    const datasheetBadge = buildStatusBadge(
-        row.datasheet_ready,
-        t("codeExplorer.statusReadyShort", {}, "Ready"),
-        t("codeExplorer.statusBlockedShort", {}, "Blocked")
+    const configuratorBadge = buildStatusBadge(
+        row.configurator_valid === true,
+        t("codeExplorer.statusConfiguratorValidShort", {}, "Valid"),
+        t("codeExplorer.statusConfiguratorInvalidShort", {}, "Invalid")
     );
+    const datasheetBadge = row.configurator_valid
+        ? buildStatusBadge(
+            row.datasheet_ready,
+            t("codeExplorer.statusReadyShort", {}, "Ready"),
+            t("codeExplorer.statusBlockedShort", {}, "Blocked")
+        )
+        : buildNeutralBadge(t("codeExplorer.statusNotApplicableShort", {}, "N/A"));
     const failureText = row.datasheet_ready
         ? t("codeExplorer.failure.none", {}, "No blocking reason.")
         : getFailureReasonText(row.failure_reason);
@@ -1448,6 +1618,7 @@ function buildCoverageCodeRow(row) {
                     <p class="text-body-xs text-grey-primary">${escapeHtml(failureText)}</p>
                 </div>
                 <div class="flex flex-wrap gap-8">
+                    ${configuratorBadge}
                     ${datasheetBadge}
                 </div>
             </div>
@@ -1504,11 +1675,13 @@ async function loadCoverageIdentityCodes(identityCode) {
     const params = new URLSearchParams({
         endpoint: "code-explorer",
         family,
+        mode: "search",
         page: "1",
         page_size: "250",
         search: identityCode,
-        status: "all",
-        include_invalid: "0",
+        search_type: "code",
+        status: explorerState.controls.status || "all",
+        include_invalid: explorerState.controls.includeInvalid ? "1" : "0",
     });
 
     try {
@@ -1554,7 +1727,7 @@ function bindStaticEvents() {
     window.addEventListener(I18N_EVENT, () => {
         renderApiBadge();
         applyPageStatusState();
-        applyExplorerSearchMode(explorerState.controls.searchMode);
+        applyExplorerViewMode(explorerState.controls.viewMode);
         renderExplorerSegmentFilterOptions(explorerState.familyOptionsByFamily[explorerState.controls.family] || null);
         refreshExplorerSelectDropdowns();
         renderResultsMeta();
@@ -1591,7 +1764,7 @@ function syncAppliedInvalidSummaryCard() {
     if (invalidSummaryCard) {
         invalidSummaryCard.classList.toggle(
             "hidden",
-            explorerState.controls.searchMode !== EXPLORER_SEARCH_MODE_NAME || explorerState.controls.includeInvalid !== true
+            !isExplorerFilterMode(explorerState.controls.viewMode) || explorerState.controls.includeInvalid !== true
         );
     }
 }
@@ -1666,12 +1839,14 @@ async function loadFamilies() {
         const families = await apiFetch("/?endpoint=families");
         explorerState.families = Array.isArray(families) ? families : [];
         populateFamilies();
+        const searchNeedsFamily = explorerState.controls.viewMode === EXPLORER_VIEW_MODE_SEARCH
+            && explorerState.controls.searchType !== EXPLORER_SEARCH_TYPE_CODE;
         setPageStatus(
-            explorerState.controls.searchMode === EXPLORER_SEARCH_MODE_CODE
+            !searchNeedsFamily && explorerState.controls.viewMode === EXPLORER_VIEW_MODE_SEARCH
                 ? "codeExplorer.runtime.searchCodeNeedsFamily"
                 : "codeExplorer.runtime.chooseFamily",
             "neutral",
-            explorerState.controls.searchMode === EXPLORER_SEARCH_MODE_CODE
+            !searchNeedsFamily && explorerState.controls.viewMode === EXPLORER_VIEW_MODE_SEARCH
                 ? "Enter a full code with family prefix first."
                 : "Select one family to start building valid code rows."
         );
@@ -1700,9 +1875,11 @@ function populateFamilies() {
     }
 
     familyCombobox?.renderOptions(options);
+    document.getElementById("explorer-search-type").value = explorerState.controls.searchType;
     document.getElementById("explorer-include-invalid").checked = explorerState.controls.includeInvalid;
     document.getElementById("explorer-status").value = explorerState.controls.status;
     document.getElementById("explorer-page-size").value = String(explorerState.controls.pageSize);
+    syncExplorerSelectDropdown("explorer-search-type");
     syncExplorerSelectDropdown("explorer-status");
     syncExplorerSelectDropdown("explorer-page-size");
     syncDraftInvalidControls();
@@ -1720,14 +1897,16 @@ async function loadExplorerData() {
     const params = new URLSearchParams({
         endpoint: "code-explorer",
         family: explorerState.controls.family,
+        mode: explorerState.controls.viewMode,
         page: String(explorerState.controls.page),
         page_size: String(explorerState.controls.pageSize),
         search: explorerState.controls.search,
+        search_type: explorerState.controls.searchType,
         status: explorerState.controls.status,
         include_invalid: explorerState.controls.includeInvalid ? "1" : "0",
     });
 
-    if (explorerState.controls.searchMode === EXPLORER_SEARCH_MODE_NAME) {
+    if (isExplorerFilterMode(explorerState.controls.viewMode)) {
         EXPLORER_SEGMENT_FILTER_META.forEach((meta) => {
             const value = explorerState.controls.segmentFilters?.[meta.key] || "";
 
@@ -1809,13 +1988,22 @@ function renderSummary(data) {
 }
 
 function renderTable() {
+    const codeResultsSection = document.getElementById("explorer-code-results-section");
     const body = document.getElementById("explorer-rows");
     const tableRoot = document.getElementById("explorer-data-table");
     const emptyState = document.getElementById("explorer-empty-state");
     const rows = explorerState.data?.rows || [];
     const valueUnavailable = t("codeExplorer.valueUnavailable", {}, "Not available");
+    const shouldShowResultsSection = shouldShowExplorerCodeResultsSection(
+        getExplorerViewModeFromForm(),
+        explorerState.data
+    );
 
-    if (!body || !tableRoot) {
+    if (codeResultsSection) {
+        codeResultsSection.classList.toggle("hidden", !shouldShowResultsSection);
+    }
+
+    if (!body || !tableRoot || !shouldShowResultsSection) {
         return;
     }
 
@@ -1841,26 +2029,26 @@ function renderTable() {
         return `
             <tr class="data-table-row">
                 <td class="data-table-cell" data-sort-value="${escapeHtml(row.reference)}">
-                    <button type="button" class="link link-sm text-left break-all" data-reference="${escapeHtml(row.reference)}">
-                        <span class="font-mono">${escapeHtml(row.reference)}</span>
+                    <button type="button" class="link link-sm text-left" data-reference="${escapeHtml(row.reference)}">
+                        <span class="link-label font-mono break-all">${escapeHtml(row.reference)}</span>
                     </button>
                 </td>
                 <td class="data-table-cell" data-sort-value="${escapeHtml(row.identity || "")}">
-                    <span class="font-mono">${escapeHtml(row.identity || "")}</span>
+                    <span class="text-body-sm font-mono">${escapeHtml(row.identity || "")}</span>
                 </td>
                 <td class="data-table-cell" data-sort-value="${escapeHtml(description)}">
-                    ${escapeHtml(description)}
+                    <span class="text-body-sm">${escapeHtml(description)}</span>
                 </td>
                 <td class="data-table-cell" data-sort-value="${escapeHtml(productType)}">
-                    ${escapeHtml(productType)}
+                    <span class="text-body-sm">${escapeHtml(productType)}</span>
                 </td>
                 <td class="data-table-cell break-all" data-sort-value="${escapeHtml(productId)}">
-                    <span class="break-all">${escapeHtml(productId)}</span>
+                    <span class="text-body-sm break-all">${escapeHtml(productId)}</span>
                 </td>
                 <td class="data-table-cell" data-sort-value="${row.configurator_valid ? "valid" : "invalid"}">${buildStatusBadge(row.configurator_valid, t("codeExplorer.statusConfiguratorValidShort", {}, "Valid"), t("codeExplorer.statusConfiguratorInvalidShort", {}, "Invalid"))}</td>
                 <td class="data-table-cell" data-sort-value="${row.configurator_valid ? (row.datasheet_ready ? "ready" : "blocked") : "na"}">${datasheetStatus}</td>
                 <td class="data-table-cell" data-sort-value="${escapeHtml(failureReason)}">
-                    ${escapeHtml(failureReason)}
+                    <span class="text-body-sm">${escapeHtml(failureReason)}</span>
                 </td>
             </tr>
         `;
@@ -1962,7 +2150,9 @@ function renderPagination() {
     const list = pagination?.querySelector(".pagination-list");
     const prev = pagination?.querySelector("[data-pagination-prev]");
     const next = pagination?.querySelector("[data-pagination-next]");
-    const hasRows = (explorerState.data?.rows?.length || 0) > 0;
+    const hasRows = isExplorerFilterMode(explorerState.controls.viewMode)
+        ? hasExplorerChunkItems(explorerState.data) || (isLegacyFilterResponse(explorerState.data) && (explorerState.data?.rows?.length || 0) > 0)
+        : (explorerState.data?.rows?.length || 0) > 0;
     const totalPages = Math.max(explorerState.data?.pagination?.total_pages || 1, 1);
     const shouldShowPagination = hasRows && totalPages >= 2;
 

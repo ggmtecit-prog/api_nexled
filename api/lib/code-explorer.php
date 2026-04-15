@@ -19,6 +19,32 @@ const CODE_EXPLORER_STATUS_DATASHEET_BLOCKED = "datasheet_blocked";
 const CODE_EXPLORER_DEFAULT_LANG = "pt";
 const CODE_EXPLORER_MAX_FULL_MATRIX_ROWS = 1000000;
 const CODE_EXPLORER_SEGMENT_KEYS = ["size", "color", "cri", "series", "lens", "finish", "cap", "option"];
+const CODE_EXPLORER_MODE_SEARCH = "search";
+const CODE_EXPLORER_MODE_FILTERS = "filters";
+const CODE_EXPLORER_SEARCH_TYPE_CODE = "code";
+const CODE_EXPLORER_SEARCH_TYPE_NAME = "name";
+const CODE_EXPLORER_SEARCH_TYPE_DESCRIPTION = "description";
+
+function getCodeExplorerMode(mixed $value): string {
+    $normalized = trim(strtolower((string) $value));
+
+    return in_array($normalized, [CODE_EXPLORER_MODE_SEARCH, CODE_EXPLORER_MODE_FILTERS], true)
+        ? $normalized
+        : CODE_EXPLORER_MODE_FILTERS;
+}
+
+function getCodeExplorerSearchType(mixed $value): string {
+    $normalized = trim(strtolower((string) $value));
+    $allowed = [
+        CODE_EXPLORER_SEARCH_TYPE_CODE,
+        CODE_EXPLORER_SEARCH_TYPE_NAME,
+        CODE_EXPLORER_SEARCH_TYPE_DESCRIPTION,
+    ];
+
+    return in_array($normalized, $allowed, true)
+        ? $normalized
+        : CODE_EXPLORER_SEARCH_TYPE_CODE;
+}
 
 function getCodeExplorerStatusFilter(string $value): string {
     $normalized = trim(strtolower($value));
@@ -362,7 +388,464 @@ function getCodeExplorerLuminosIdentities(string $familyCode): array {
     return array_values($identities);
 }
 
-function buildCodeExplorerResponse(string $familyCode, string $familyName, array $options, array $identities, string $search, string $statusFilter, int $page, int $pageSize, bool $includeInvalid, array $segmentFilters): array {
+function createCodeExplorerCoverageEntry(string $identity, ?array $identityData, array $segmentLookups, ?string $defaultProductType): array {
+    $parts = decodeReference($identity . str_repeat("0", REFERENCE_LENGTH_FULL - REFERENCE_LENGTH_IDENTITY));
+
+    return [
+        "identity" => $identity,
+        "description" => (string) ($identityData["description"] ?? ""),
+        "product_type" => (string) ($identityData["product_type"] ?? $defaultProductType ?? ""),
+        "product_id" => getCodeExplorerCoverageProductPreview($identityData),
+        "segments" => [
+            "family" => $parts["family"] ?? "",
+            "size" => $parts["size"] ?? "",
+            "color" => $parts["color"] ?? "",
+            "cri" => $parts["cri"] ?? "",
+            "series" => $parts["series"] ?? "",
+        ],
+        "segment_labels" => [
+            "size" => $segmentLookups["size"][$parts["size"] ?? ""] ?? ($parts["size"] ?? ""),
+            "color" => $segmentLookups["color"][$parts["color"] ?? ""] ?? ($parts["color"] ?? ""),
+            "cri" => $segmentLookups["cri"][$parts["cri"] ?? ""] ?? ($parts["cri"] ?? ""),
+            "series" => $segmentLookups["series"][$parts["series"] ?? ""] ?? ($parts["series"] ?? ""),
+        ],
+        "counts" => [
+            "total_codes" => 0,
+            "configurator_valid" => 0,
+            "configurator_invalid" => 0,
+            "datasheet_ready" => 0,
+            "datasheet_blocked" => 0,
+        ],
+        "top_failure_reason" => "",
+        "blocked_reasons" => [],
+        "status" => "invalid",
+        "is_fully_ready" => false,
+        "ready_ratio" => 0,
+    ];
+}
+
+function getCodeExplorerCoverageProductPreview(?array $identityData): string {
+    if ($identityData === null) {
+        return "";
+    }
+
+    $productId = trim((string) ($identityData["product_id"] ?? ""));
+
+    if ($productId !== "") {
+        return $productId;
+    }
+
+    foreach (($identityData["dynamic_ids"] ?? []) as $dynamicProductId) {
+        $normalizedProductId = trim((string) $dynamicProductId);
+
+        if ($normalizedProductId !== "") {
+            return $normalizedProductId;
+        }
+    }
+
+    return "";
+}
+
+function ensureCodeExplorerCoverageEntry(array &$coverageMap, string $identity, ?array $identityData, array $segmentLookups, ?string $defaultProductType): void {
+    if (isset($coverageMap[$identity])) {
+        return;
+    }
+
+    $coverageMap[$identity] = createCodeExplorerCoverageEntry($identity, $identityData, $segmentLookups, $defaultProductType);
+}
+
+function updateCodeExplorerCoverageCounts(array &$coverageMap, string $identity, ?array $identityData, array $segmentLookups, ?string $defaultProductType, bool $isConfiguratorValid, bool $datasheetReady, string $failureReason, int $count): void {
+    ensureCodeExplorerCoverageEntry($coverageMap, $identity, $identityData, $segmentLookups, $defaultProductType);
+
+    $coverageMap[$identity]["counts"]["total_codes"] += $count;
+
+    if ($isConfiguratorValid) {
+        $coverageMap[$identity]["counts"]["configurator_valid"] += $count;
+
+        if ($datasheetReady) {
+            $coverageMap[$identity]["counts"]["datasheet_ready"] += $count;
+            return;
+        }
+
+        $coverageMap[$identity]["counts"]["datasheet_blocked"] += $count;
+    } else {
+        $coverageMap[$identity]["counts"]["configurator_invalid"] += $count;
+    }
+
+    if ($failureReason !== "") {
+        $coverageMap[$identity]["blocked_reasons"][$failureReason] = ($coverageMap[$identity]["blocked_reasons"][$failureReason] ?? 0) + $count;
+    }
+}
+
+function getCodeExplorerCoverageStatus(array $counts): string {
+    if (($counts["configurator_valid"] ?? 0) === 0) {
+        return "invalid";
+    }
+
+    if (($counts["datasheet_blocked"] ?? 0) === 0) {
+        return "fully_ready";
+    }
+
+    if (($counts["datasheet_ready"] ?? 0) > 0) {
+        return "partially_ready";
+    }
+
+    return "blocked";
+}
+
+function finalizeCodeExplorerCoverageEntry(array $entry): array {
+    arsort($entry["blocked_reasons"]);
+    $entry["top_failure_reason"] = array_key_first($entry["blocked_reasons"]) ?? "";
+    $entry["status"] = getCodeExplorerCoverageStatus($entry["counts"]);
+    $entry["is_fully_ready"] = $entry["status"] === "fully_ready";
+    $entry["ready_ratio"] = ($entry["counts"]["configurator_valid"] ?? 0) > 0
+        ? round(($entry["counts"]["datasheet_ready"] / $entry["counts"]["configurator_valid"]) * 100, 1)
+        : 0;
+    $entry["configurator_valid"] = ($entry["counts"]["configurator_valid"] ?? 0) > 0;
+
+    return $entry;
+}
+
+function finalizeCodeExplorerCoverage(array $coverageMap, array $summary): array {
+    $entries = array_values($coverageMap);
+    $coverageSummary = [
+        "total_identities" => count($entries),
+        "valid_identities" => 0,
+        "fully_ready_identities" => 0,
+        "partially_ready_identities" => 0,
+        "blocked_identities" => 0,
+        "invalid_identities" => 0,
+        "datasheet_ready_ratio" => ($summary["configurator_valid"] ?? 0) > 0
+            ? round((($summary["datasheet_ready"] ?? 0) / $summary["configurator_valid"]) * 100, 1)
+            : 0,
+    ];
+    $statusRank = [
+        "fully_ready" => 0,
+        "partially_ready" => 1,
+        "blocked" => 2,
+        "invalid" => 3,
+    ];
+
+    foreach ($entries as &$entry) {
+        $entry = finalizeCodeExplorerCoverageEntry($entry);
+
+        if (($entry["counts"]["configurator_valid"] ?? 0) > 0) {
+            $coverageSummary["valid_identities"]++;
+        }
+
+        if ($entry["status"] === "fully_ready") {
+            $coverageSummary["fully_ready_identities"]++;
+        } elseif ($entry["status"] === "partially_ready") {
+            $coverageSummary["partially_ready_identities"]++;
+        } elseif ($entry["status"] === "blocked") {
+            $coverageSummary["blocked_identities"]++;
+        } else {
+            $coverageSummary["invalid_identities"]++;
+        }
+    }
+    unset($entry);
+
+    usort($entries, static function (array $left, array $right) use ($statusRank): int {
+        $leftRank = $statusRank[$left["status"] ?? "invalid"] ?? 99;
+        $rightRank = $statusRank[$right["status"] ?? "invalid"] ?? 99;
+
+        if ($leftRank !== $rightRank) {
+            return $leftRank <=> $rightRank;
+        }
+
+        $leftReady = (int) ($left["counts"]["datasheet_ready"] ?? 0);
+        $rightReady = (int) ($right["counts"]["datasheet_ready"] ?? 0);
+
+        if ($leftReady !== $rightReady) {
+            return $rightReady <=> $leftReady;
+        }
+
+        $leftTotal = (int) ($left["counts"]["total_codes"] ?? 0);
+        $rightTotal = (int) ($right["counts"]["total_codes"] ?? 0);
+
+        if ($leftTotal !== $rightTotal) {
+            return $rightTotal <=> $leftTotal;
+        }
+
+        return strcmp((string) ($left["identity"] ?? ""), (string) ($right["identity"] ?? ""));
+    });
+
+    return [
+        "summary" => $coverageSummary,
+        "identities" => $entries,
+    ];
+}
+
+function matchesCodeExplorerIdentitySearch(array $identityEntry, string $search): bool {
+    if ($search === "") {
+        return true;
+    }
+
+    $needle = mb_strtolower($search, "UTF-8");
+    $haystacks = [
+        $identityEntry["identity"] ?? "",
+        $identityEntry["description"] ?? "",
+        $identityEntry["product_type"] ?? "",
+        $identityEntry["product_id"] ?? "",
+    ];
+
+    foreach (["size", "color", "cri", "series"] as $segment) {
+        $haystacks[] = $identityEntry["segments"][$segment] ?? "";
+        $haystacks[] = $identityEntry["segment_labels"][$segment] ?? "";
+    }
+
+    foreach ($haystacks as $value) {
+        if (mb_stripos((string) $value, $needle, 0, "UTF-8") !== false) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+function buildCodeExplorerIdentityChunkSourceEntries(string $familyCode, array $options, array $identities, string $search, bool $includeInvalid, array $segmentLookups, ?string $defaultProductType): array {
+    $identityMap = [];
+
+    foreach ($identities as $identityData) {
+        $identityMap[$identityData["identity"]] = $identityData;
+    }
+
+    if (!$includeInvalid) {
+        $entries = [];
+
+        foreach ($identities as $identityData) {
+            $identity = (string) ($identityData["identity"] ?? "");
+
+            if (strlen($identity) !== REFERENCE_LENGTH_IDENTITY) {
+                continue;
+            }
+
+            $entry = createCodeExplorerCoverageEntry($identity, $identityData, $segmentLookups, $defaultProductType);
+
+            if (!matchesCodeExplorerIdentitySearch($entry, $search)) {
+                continue;
+            }
+
+            $entries[] = $entry;
+        }
+
+        return $entries;
+    }
+
+    $entries = [];
+
+    foreach ($options["size"] as $size) {
+        foreach ($options["color"] as $color) {
+            foreach ($options["cri"] as $cri) {
+                foreach ($options["series"] as $series) {
+                    $identity = $familyCode . $size["code"] . $color["code"] . $cri["code"] . $series["code"];
+                    $identityData = $identityMap[$identity] ?? null;
+                    $entry = createCodeExplorerCoverageEntry($identity, $identityData, $segmentLookups, $defaultProductType);
+
+                    if (!matchesCodeExplorerIdentitySearch($entry, $search)) {
+                        continue;
+                    }
+
+                    $entries[] = $entry;
+                }
+            }
+        }
+    }
+
+    return $entries;
+}
+
+function buildCodeExplorerIdentityChunkItem(string $familyCode, array $identityEntry, array $identityDataMap, array $options, ?string $defaultProductType, array &$validatorCache): array {
+    $identity = (string) ($identityEntry["identity"] ?? "");
+    $identityData = $identityDataMap[$identity] ?? null;
+    $defaultOptionCode = $options["option"][0]["code"] ?? str_repeat("0", REFERENCE_LENGTH_OPTION);
+    $optionCount = max(1, count($options["option"]));
+    $item = $identityEntry;
+    $item["counts"] = [
+        "total_codes" => 0,
+        "configurator_valid" => 0,
+        "configurator_invalid" => 0,
+        "datasheet_ready" => 0,
+        "datasheet_blocked" => 0,
+    ];
+    $item["blocked_reasons"] = [];
+    $item["top_failure_reason"] = "";
+    $item["status"] = "invalid";
+    $item["is_fully_ready"] = false;
+    $item["ready_ratio"] = 0;
+
+    foreach ($options["lens"] as $lens) {
+        foreach ($options["finish"] as $finish) {
+            foreach ($options["cap"] as $cap) {
+                $productId = $identityData !== null
+                    ? resolveCodeExplorerProductId($familyCode, $identityData, $cap["code"])
+                    : null;
+                $isConfiguratorValid = $identityData !== null && $productId !== null && $productId !== "";
+                $productType = $identityData !== null
+                    ? ($identityData["product_type"] ?? $defaultProductType)
+                    : $defaultProductType;
+                $readiness = [
+                    "datasheet_ready" => false,
+                    "failure_reason" => "invalid_luminos_combination",
+                ];
+
+                if ($isConfiguratorValid) {
+                    $validationReference = $identity . $lens["code"] . $finish["code"] . $cap["code"] . $defaultOptionCode;
+                    $readiness = getCodeExplorerDatasheetReadiness(
+                        $validationReference,
+                        $productId,
+                        $productType,
+                        $identityData["led_id"] ?? "",
+                        $options,
+                        $validatorCache
+                    );
+                }
+
+                $item["counts"]["total_codes"] += $optionCount;
+
+                if ($isConfiguratorValid) {
+                    $item["counts"]["configurator_valid"] += $optionCount;
+
+                    if ($readiness["datasheet_ready"]) {
+                        $item["counts"]["datasheet_ready"] += $optionCount;
+                    } else {
+                        $item["counts"]["datasheet_blocked"] += $optionCount;
+                    }
+                } else {
+                    $item["counts"]["configurator_invalid"] += $optionCount;
+                }
+
+                $failureReason = $isConfiguratorValid
+                    ? (string) ($readiness["failure_reason"] ?? "")
+                    : "invalid_luminos_combination";
+
+                if ($failureReason !== "") {
+                    $item["blocked_reasons"][$failureReason] = ($item["blocked_reasons"][$failureReason] ?? 0) + $optionCount;
+                }
+            }
+        }
+    }
+
+    return finalizeCodeExplorerCoverageEntry($item);
+}
+
+function buildCodeExplorerIdentityChunkResponse(string $familyCode, string $familyName, array $options, array $identities, string $search, string $statusFilter, int $page, int $pageSize, bool $includeInvalid, array $segmentFilters): array {
+    $requestedPage = max($page, 1);
+    $defaultProductType = getProductType($familyCode . str_repeat("0", REFERENCE_LENGTH_FULL - REFERENCE_LENGTH_FAMILY));
+    $segmentLookups = getCodeExplorerSegmentLabelLookups($options);
+    $validatorCache = [];
+    $identityDataMap = [];
+    $sourceEntries = buildCodeExplorerIdentityChunkSourceEntries(
+        $familyCode,
+        $options,
+        $identities,
+        $search,
+        $includeInvalid,
+        $segmentLookups,
+        $defaultProductType
+    );
+
+    foreach ($identities as $identityData) {
+        $identityDataMap[$identityData["identity"]] = $identityData;
+    }
+
+    $totalItems = count($sourceEntries);
+    $totalPages = max(1, (int) ceil($totalItems / $pageSize));
+    $safePage = min($requestedPage, $totalPages);
+    $offset = ($safePage - 1) * $pageSize;
+    $pageEntries = array_slice($sourceEntries, $offset, $pageSize);
+    $chunkItems = [];
+    $summary = [
+        "total_codes" => 0,
+        "configurator_valid" => 0,
+        "configurator_invalid" => 0,
+        "datasheet_ready" => 0,
+        "datasheet_blocked" => 0,
+    ];
+    $chunkStatusSummary = [
+        "total_identities" => $totalItems,
+        "valid_identities" => 0,
+        "fully_ready_identities" => 0,
+        "partially_ready_identities" => 0,
+        "blocked_identities" => 0,
+        "invalid_identities" => 0,
+        "datasheet_ready_ratio" => 0,
+        "current_chunk_identities" => count($pageEntries),
+    ];
+
+    foreach ($pageEntries as $identityEntry) {
+        $item = buildCodeExplorerIdentityChunkItem(
+            $familyCode,
+            $identityEntry,
+            $identityDataMap,
+            $options,
+            $defaultProductType,
+            $validatorCache
+        );
+
+        $summary["total_codes"] += $item["counts"]["total_codes"] ?? 0;
+        $summary["configurator_valid"] += $item["counts"]["configurator_valid"] ?? 0;
+        $summary["configurator_invalid"] += $item["counts"]["configurator_invalid"] ?? 0;
+        $summary["datasheet_ready"] += $item["counts"]["datasheet_ready"] ?? 0;
+        $summary["datasheet_blocked"] += $item["counts"]["datasheet_blocked"] ?? 0;
+
+        if (($item["counts"]["configurator_valid"] ?? 0) > 0) {
+            $chunkStatusSummary["valid_identities"]++;
+        }
+
+        if ($item["status"] === "fully_ready") {
+            $chunkStatusSummary["fully_ready_identities"]++;
+        } elseif ($item["status"] === "partially_ready") {
+            $chunkStatusSummary["partially_ready_identities"]++;
+        } elseif ($item["status"] === "blocked") {
+            $chunkStatusSummary["blocked_identities"]++;
+        } else {
+            $chunkStatusSummary["invalid_identities"]++;
+        }
+
+        $chunkItems[] = $item;
+    }
+
+    $chunkStatusSummary["datasheet_ready_ratio"] = $summary["configurator_valid"] > 0
+        ? round(($summary["datasheet_ready"] / $summary["configurator_valid"]) * 100, 1)
+        : 0;
+
+    return [
+        "family" => [
+            "code" => $familyCode,
+            "name" => $familyName,
+        ],
+        "mode" => "identity_chunk",
+        "summary" => $summary,
+        "chunk" => [
+            "source" => $includeInvalid ? "all_identities" : "valid_identities",
+            "page" => $safePage,
+            "page_size" => $pageSize,
+            "total_items" => $totalItems,
+            "total_pages" => $totalPages,
+            "items" => $chunkItems,
+        ],
+        "coverage" => [
+            "summary" => $chunkStatusSummary,
+            "identities" => $chunkItems,
+        ],
+        "filters" => [
+            "search" => $search,
+            "status" => $statusFilter,
+            "include_invalid" => $includeInvalid,
+            "segment_filters" => $segmentFilters,
+        ],
+        "pagination" => [
+            "page" => $safePage,
+            "page_size" => $pageSize,
+            "total_pages" => $totalPages,
+            "total_rows" => $totalItems,
+        ],
+        "rows" => [],
+    ];
+}
+
+function buildCodeExplorerResponse(string $familyCode, string $familyName, array $options, array $identities, string $search, string $searchType, string $statusFilter, int $page, int $pageSize, bool $includeInvalid, array $segmentFilters): array {
     $summary = [
         "total_codes" => 0,
         "configurator_valid" => 0,
@@ -381,6 +864,7 @@ function buildCodeExplorerResponse(string $familyCode, string $familyName, array
     $limit = $offset + $pageSize;
     $defaultProductType = getProductType($familyCode . str_repeat("0", REFERENCE_LENGTH_FULL - REFERENCE_LENGTH_FAMILY));
     $segmentLookups = getCodeExplorerSegmentLabelLookups($options);
+    $coverageMap = [];
 
     foreach ($identities as $identityData) {
         $identityMap[$identityData["identity"]] = $identityData;
@@ -426,6 +910,18 @@ function buildCodeExplorerResponse(string $familyCode, string $familyName, array
                             $summary["datasheet_blocked"] += $optionCount;
                         }
 
+                        updateCodeExplorerCoverageCounts(
+                            $coverageMap,
+                            $identity,
+                            $identityData,
+                            $segmentLookups,
+                            $defaultProductType,
+                            true,
+                            $readiness["datasheet_ready"],
+                            (string) ($readiness["failure_reason"] ?? ""),
+                            $optionCount
+                        );
+
                         foreach ($options["option"] as $option) {
                             $row = [
                                 "reference" => $identity . $lens["code"] . $finish["code"] . $cap["code"] . $option["code"],
@@ -458,8 +954,9 @@ function buildCodeExplorerResponse(string $familyCode, string $familyName, array
                                 "datasheet_ready" => $readiness["datasheet_ready"],
                                 "failure_reason" => $readiness["failure_reason"],
                             ];
+                            $row["legacy_description"] = buildCodeExplorerLegacyDescription($row);
 
-                            if (!matchesCodeExplorerSearch($row, $search)) {
+                            if (!matchesCodeExplorerSearch($row, $search, $searchType)) {
                                 continue;
                             }
 
@@ -487,8 +984,10 @@ function buildCodeExplorerResponse(string $familyCode, string $familyName, array
                 "name" => $familyName,
             ],
             "summary" => $summary,
+            "coverage" => finalizeCodeExplorerCoverage($coverageMap, $summary),
             "filters" => [
                 "search" => $search,
+                "search_type" => $searchType,
                 "status" => $statusFilter,
                 "include_invalid" => false,
                 "segment_filters" => $segmentFilters,
@@ -553,6 +1052,18 @@ function buildCodeExplorerResponse(string $familyCode, string $familyName, array
                                     $summary["configurator_invalid"] += $optionCount;
                                 }
 
+                                updateCodeExplorerCoverageCounts(
+                                    $coverageMap,
+                                    $identity,
+                                    $identityData,
+                                    $segmentLookups,
+                                    $defaultProductType,
+                                    $isConfiguratorValid,
+                                    $isConfiguratorValid ? $readiness["datasheet_ready"] : false,
+                                    $isConfiguratorValid ? (string) ($readiness["failure_reason"] ?? "") : "invalid_luminos_combination",
+                                    $optionCount
+                                );
+
                                 foreach ($options["option"] as $option) {
                                     $reference = $identity . $lens["code"] . $finish["code"] . $cap["code"] . $option["code"];
                                     $row = [
@@ -586,8 +1097,9 @@ function buildCodeExplorerResponse(string $familyCode, string $familyName, array
                                         "datasheet_ready" => $isConfiguratorValid ? $readiness["datasheet_ready"] : false,
                                         "failure_reason" => $isConfiguratorValid ? $readiness["failure_reason"] : "invalid_luminos_combination",
                                     ];
+                                    $row["legacy_description"] = buildCodeExplorerLegacyDescription($row);
 
-                                    if (!matchesCodeExplorerSearch($row, $search)) {
+                                    if (!matchesCodeExplorerSearch($row, $search, $searchType)) {
                                         continue;
                                     }
 
@@ -617,6 +1129,7 @@ function buildCodeExplorerResponse(string $familyCode, string $familyName, array
             "name" => $familyName,
         ],
         "summary" => $summary,
+        "coverage" => finalizeCodeExplorerCoverage($coverageMap, $summary),
         "filters" => [
             "search" => $search,
             "status" => $statusFilter,
@@ -741,6 +1254,7 @@ function buildCodeExplorerTargetedSearchResponse(string $familyCode, string $fam
                         "datasheet_ready" => $isConfiguratorValid ? $readiness["datasheet_ready"] : false,
                         "failure_reason" => $isConfiguratorValid ? $readiness["failure_reason"] : "invalid_luminos_combination",
                     ];
+                    $row["legacy_description"] = buildCodeExplorerLegacyDescription($row);
 
                     if (!matchesCodeExplorerStatusFilter($row, $statusFilter)) {
                         continue;
@@ -781,6 +1295,7 @@ function buildCodeExplorerTargetedSearchResponse(string $familyCode, string $fam
         "summary" => $summary,
         "filters" => [
             "search" => $search,
+            "search_type" => CODE_EXPLORER_SEARCH_TYPE_CODE,
             "status" => $statusFilter,
             "include_invalid" => $includeInvalid,
             "segment_filters" => $segmentFilters,
@@ -809,6 +1324,28 @@ function getCodeExplorerSegmentLabelLookups(array $options): array {
     return $lookups;
 }
 
+function buildCodeExplorerLegacyDescription(array $row): string {
+    $parts = [];
+    $baseDescription = trim((string) ($row["description"] ?? ""));
+
+    if ($baseDescription !== "") {
+        $parts[] = $baseDescription;
+    }
+
+    foreach (["lens", "finish", "cap", "option"] as $segment) {
+        $label = trim((string) ($row["segment_labels"][$segment] ?? ""));
+        $code = trim((string) ($row["segments"][$segment] ?? ""));
+
+        if ($label === "" || $label === $code || $label === "0") {
+            continue;
+        }
+
+        $parts[] = $label;
+    }
+
+    return trim(implode(" ", $parts));
+}
+
 function resolveCodeExplorerProductId(string $familyCode, array $identityData, string $capCode): ?string {
     if ($familyCode === "48") {
         $dynamicIds = $identityData["dynamic_ids"] ?? [];
@@ -819,19 +1356,24 @@ function resolveCodeExplorerProductId(string $familyCode, array $identityData, s
     return $identityData["product_id"] ?? null;
 }
 
-function matchesCodeExplorerSearch(array $row, string $search): bool {
+function matchesCodeExplorerSearch(array $row, string $search, string $searchType = CODE_EXPLORER_SEARCH_TYPE_CODE): bool {
     if ($search === "") {
         return true;
     }
 
     $needle = mb_strtolower($search, "UTF-8");
-    $haystacks = [
-        $row["reference"] ?? "",
-        $row["identity"] ?? "",
-        $row["description"] ?? "",
-        $row["product_id"] ?? "",
-        $row["failure_reason"] ?? "",
-    ];
+    $haystacks = match ($searchType) {
+        CODE_EXPLORER_SEARCH_TYPE_NAME => [
+            $row["description"] ?? "",
+        ],
+        CODE_EXPLORER_SEARCH_TYPE_DESCRIPTION => [
+            $row["legacy_description"] ?? buildCodeExplorerLegacyDescription($row),
+        ],
+        default => [
+            $row["reference"] ?? "",
+            $row["identity"] ?? "",
+        ],
+    };
 
     foreach ($haystacks as $value) {
         if (mb_stripos((string) $value, $needle, 0, "UTF-8") !== false) {

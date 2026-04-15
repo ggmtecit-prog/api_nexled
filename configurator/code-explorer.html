@@ -219,16 +219,28 @@
                                 <span class="input-label" data-i18n="codeExplorer.searchModeLabel">Search mode</span>
                                 <div class="segmented-control segmented-control-md" role="radiogroup" aria-label="Code Explorer search mode" data-i18n-aria-label="codeExplorer.searchModeAria">
                                     <label class="segmented-control-option">
-                                        <input id="explorer-search-mode-code" class="segmented-control-input" type="radio" name="explorer-search-mode" value="code" checked>
-                                        <span class="segmented-control-label" data-i18n="codeExplorer.searchModeCode">Search by code</span>
+                                        <input id="explorer-view-mode-search" class="segmented-control-input" type="radio" name="explorer-view-mode" value="search" checked>
+                                        <span class="segmented-control-label" data-i18n="codeExplorer.searchModeSearch">Search Mode</span>
                                     </label>
                                     <label class="segmented-control-option">
-                                        <input id="explorer-search-mode-name" class="segmented-control-input" type="radio" name="explorer-search-mode" value="name">
-                                        <span class="segmented-control-label" data-i18n="codeExplorer.searchModeName">Search by name</span>
+                                        <input id="explorer-view-mode-filters" class="segmented-control-input" type="radio" name="explorer-view-mode" value="filters">
+                                        <span class="segmented-control-label" data-i18n="codeExplorer.searchModeFilters">See by filters</span>
                                     </label>
                                 </div>
                             </div>
-                            <div id="explorer-family-field" class="hidden" data-name-search-field>
+                            <div id="explorer-search-type-field" class="flex flex-col gap-8">
+                                <label class="input-label ml-12" for="explorer-search-type" data-i18n="codeExplorer.searchTypeLabel">Search type</label>
+                                <select id="explorer-search-type" class="input input-sm">
+                                    <option value="code" data-i18n="codeExplorer.searchTypeCode">Tecit code</option>
+                                    <option value="name" data-i18n="codeExplorer.searchTypeName">Name</option>
+                                    <option value="description" data-i18n="codeExplorer.searchTypeDescription">Description</option>
+                                </select>
+                            </div>
+                            <div id="explorer-text-search-field">
+                                <label id="explorer-search-label" class="input-label ml-12" for="explorer-search">Search By Code</label>
+                                <input id="explorer-search" type="text" class="input input-sm" placeholder="Enter a code">
+                            </div>
+                            <div id="explorer-family-field" class="hidden">
                                 <label class="input-label ml-12" for="explorer-family-input" data-i18n="codeExplorer.familyLabel">Family</label>
                                 <div id="explorer-family-combobox" class="combobox combobox-sm w-full" data-combobox data-combobox-bound="true">
                                     <div class="combobox-control">
@@ -247,11 +259,7 @@
                                     </div>
                                 </div>
                             </div>
-                            <div>
-                                <label id="explorer-search-label" class="input-label ml-12" for="explorer-search">Search By Code</label>
-                                <input id="explorer-search" type="text" class="input input-sm" placeholder="Enter a code">
-                            </div>
-                            <div class="hidden grid grid-cols-1 sm:grid-cols-2 gap-12 items-start" data-name-search-field>
+                            <div id="explorer-chunk-controls-row" class="hidden grid grid-cols-1 sm:grid-cols-2 gap-12 items-start">
                                 <div id="explorer-status-field" class="flex flex-col gap-8">
                                     <label class="input-label ml-12" for="explorer-status" data-i18n="codeExplorer.statusLabel">Status</label>
                                     <select id="explorer-status" class="input input-sm">
@@ -263,7 +271,7 @@
                                     </select>
                                 </div>
                                 <div id="explorer-page-size-field" class="flex flex-col gap-8">
-                                    <label class="input-label ml-12" for="explorer-page-size" data-i18n="codeExplorer.pageSizeLabel">Rows per page</label>
+                                    <label id="explorer-page-size-label" class="input-label ml-12" for="explorer-page-size" data-i18n="codeExplorer.pageSizeLabel">Rows per page</label>
                                     <select id="explorer-page-size" class="input input-sm">
                                         <option value="5" selected>5</option>
                                         <option value="10">10</option>
@@ -275,14 +283,14 @@
                                     </select>
                                 </div>
                             </div>
-                            <label id="explorer-include-invalid-field" class="hidden checkbox-wrapper checkbox-md" data-name-search-field>
+                            <label id="explorer-include-invalid-field" class="hidden checkbox-wrapper checkbox-md">
                                 <span class="relative inline-flex items-center justify-center">
                                     <input id="explorer-include-invalid" type="checkbox" class="peer">
                                     <i class="ri-check-line absolute inset-0 flex items-center justify-center leading-none text-white text-icon-md opacity-0 peer-checked:opacity-100 pointer-events-none" aria-hidden="true"></i>
                                 </span>
                                 <span class="text-body-sm" data-i18n="codeExplorer.includeInvalidLabel">Include invalid Luminos combinations</span>
                             </label>
-                            <div id="explorer-drilldown-field" class="hidden panel panel-sm flex flex-col gap-12" data-name-search-field>
+                            <div id="explorer-drilldown-field" class="hidden panel panel-sm flex flex-col gap-12">
                                 <div class="flex flex-col gap-4">
                                     <span class="input-label" data-i18n="codeExplorer.drillDownTitle">Identity Drill-Down</span>
                                     <p class="text-body-xs text-grey-primary" data-i18n="codeExplorer.drillDownBody">Narrow the family by size, color, CRI, or series before exploring invalid combinations.</p>
@@ -373,7 +381,7 @@
                         </div>
                     </section>
 
-                    <section class="grid grid-cols-1 xl:grid-cols-12 gap-24">
+                    <section id="explorer-code-results-section" class="grid grid-cols-1 xl:grid-cols-12 gap-24">
                         <div class="xl:col-span-12">
                             <div class="card overflow-hidden">
                                 <div class="card-body flex flex-col gap-16 lg:min-h-screen">
@@ -418,7 +426,7 @@
                                             </div>
                                         </div>
 
-                                        <div id="explorer-data-table" class="panel border-0 bg-transparent data-table data-table-md data-table-floating-head w-full">
+                                        <div id="explorer-data-table" class="panel border-0 bg-transparent data-table data-table-sm data-table-floating-head w-full">
                                             <div class="data-table-head-floating">
                                                 <div class="data-table-heading" role="columnheader">
                                                     <div class="data-table-heading-content">
@@ -462,7 +470,7 @@
                                                 </div>
                                             </div>
                                             <div class="data-table-wrap custom-scrollbar">
-                                                <table class="data-table-table">
+                                                <table class="data-table-table min-w-max">
                                                     <thead class="sr-only">
                                                         <tr>
                                                             <th scope="col" data-i18n="codeExplorer.tableReference">Reference</th>
@@ -480,28 +488,29 @@
                                             </div>
                                         </div>
 
-                                        <div id="explorer-pagination-wrap" class="flex justify-end">
-                                            <nav id="explorer-pagination" class="pagination" data-pagination data-pagination-bound="true" aria-label="Results pagination">
-                                                <button id="explorer-prev" type="button" class="pagination-link pagination-prev" data-pagination-prev aria-label="Previous page" disabled>
-                                                    <i class="ri-arrow-left-s-line text-icon-md" aria-hidden="true"></i>
-                                                    <span data-i18n="codeExplorer.paginationPrev">Prev</span>
-                                                </button>
-                                                <ol id="explorer-pagination-list" class="pagination-list">
-                                                    <li class="pagination-item">
-                                                        <button type="button" class="pagination-link" data-page="1" aria-current="page">1</button>
-                                                    </li>
-                                                </ol>
-                                                <button id="explorer-next" type="button" class="pagination-link pagination-next" data-pagination-next aria-label="Next page" disabled>
-                                                    <span data-i18n="codeExplorer.paginationNext">Next</span>
-                                                    <i class="ri-arrow-right-s-line text-icon-md" aria-hidden="true"></i>
-                                                </button>
-                                            </nav>
-                                        </div>
                                     </div>
                                 </div>
                             </div>
                         </div>
                     </section>
+
+                    <div id="explorer-pagination-wrap" class="hidden flex justify-end">
+                        <nav id="explorer-pagination" class="pagination" data-pagination data-pagination-bound="true" aria-label="Results pagination">
+                            <button id="explorer-prev" type="button" class="pagination-link pagination-prev" data-pagination-prev aria-label="Previous page" disabled>
+                                <i class="ri-arrow-left-s-line text-icon-md" aria-hidden="true"></i>
+                                <span data-i18n="codeExplorer.paginationPrev">Prev</span>
+                            </button>
+                            <ol id="explorer-pagination-list" class="pagination-list">
+                                <li class="pagination-item">
+                                    <button type="button" class="pagination-link" data-page="1" aria-current="page">1</button>
+                                </li>
+                            </ol>
+                            <button id="explorer-next" type="button" class="pagination-link pagination-next" data-pagination-next aria-label="Next page" disabled>
+                                <span data-i18n="codeExplorer.paginationNext">Next</span>
+                                <i class="ri-arrow-right-s-line text-icon-md" aria-hidden="true"></i>
+                            </button>
+                        </nav>
+                    </div>
                 </div>
             </section>
 
@@ -579,38 +588,26 @@
     </div>
 
     <div class="modal-overlay" id="codeExplorerTecitCodeLogicModal" aria-hidden="true">
-        <div class="modal" role="dialog" aria-modal="true" aria-labelledby="codeExplorerTecitCodeLogicTitle" aria-describedby="codeExplorerTecitCodeLogicBody">
+        <div class="modal max-h-full overflow-hidden" role="dialog" aria-modal="true" aria-labelledby="codeExplorerTecitCodeLogicTitle" aria-describedby="codeExplorerTecitCodeLogicBody">
             <div class="modal-header">
                 <div>
                     <h2 id="codeExplorerTecitCodeLogicTitle" class="modal-title" data-i18n="codeExplorer.logicTitle">Tecit Code Logic</h2>
                 </div>
-                <button type="button" class="btn btn-secondary btn-icon btn-xs" aria-label="Close Tecit code logic" data-i18n-aria-label="configurator.tecitCodeLogicCloseAria" data-close-modal>
+                <button type="button" class="btn btn-secondary btn-icon btn-xs" aria-label="Close Tecit code logic" data-i18n-aria-label="configurator.tecitCodeLogicCloseAria" data-close-modal data-modal-initial-focus>
                     <i class="ri-close-line text-icon-md" aria-hidden="true"></i>
                 </button>
             </div>
 
-            <div id="codeExplorerTecitCodeLogicBody" class="modal-body overflow-y-auto">
-                <div class="flex flex-col gap-20">
-                    <p class="text-body-sm text-grey-primary" data-i18n="configurator.tecitCodeLogicIntro">Live Tecit references use a fixed 17-character structure. Each segment maps to one manufacturing field in the configurator.</p>
-                    <p class="text-body-sm text-black" data-i18n="configurator.tecitCodeLengthRule">A full Tecit code is exactly 17 characters long. Longer values are not valid live references.</p>
-
-                    <div class="panel panel-sm flex flex-col gap-8">
-                        <span class="input-label" data-i18n="configurator.tecitCodeLogicPatternLabel">Reference Pattern</span>
-                        <code class="text-body-lg font-mono text-black break-all" data-i18n="configurator.tecitCodeLogicPattern">11 | 0375 | 81 | 1 | 1 | 0 | 01 | 01 | 00</code>
-                    </div>
-
-                    <div class="flex flex-col gap-8">
-                        <span class="input-label" data-i18n="configurator.tecitCodeLogicLegendLabel">Segment Legend</span>
-                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-12">
-                            <div class="panel panel-sm flex items-start justify-between gap-16"><code class="text-body-sm font-mono text-black shrink-0">11</code><span class="text-body-sm text-black text-right" data-i18n="configurator.tecitCodeLogicFamily">Family (2 chars)</span></div>
-                            <div class="panel panel-sm flex items-start justify-between gap-16"><code class="text-body-sm font-mono text-black shrink-0">0375</code><span class="text-body-sm text-black text-right" data-i18n="configurator.tecitCodeLogicSize">Size (4 chars)</span></div>
-                            <div class="panel panel-sm flex items-start justify-between gap-16"><code class="text-body-sm font-mono text-black shrink-0">81</code><span class="text-body-sm text-black text-right" data-i18n="configurator.tecitCodeLogicColor">Color (2 chars)</span></div>
-                            <div class="panel panel-sm flex items-start justify-between gap-16"><code class="text-body-sm font-mono text-black shrink-0">1</code><span class="text-body-sm text-black text-right" data-i18n="configurator.tecitCodeLogicCri">CRI (1 char)</span></div>
-                            <div class="panel panel-sm flex items-start justify-between gap-16"><code class="text-body-sm font-mono text-black shrink-0">1</code><span class="text-body-sm text-black text-right" data-i18n="configurator.tecitCodeLogicSeries">Series (1 char)</span></div>
-                            <div class="panel panel-sm flex items-start justify-between gap-16"><code class="text-body-sm font-mono text-black shrink-0">0</code><span class="text-body-sm text-black text-right" data-i18n="configurator.tecitCodeLogicLens">Lens (1 char)</span></div>
-                            <div class="panel panel-sm flex items-start justify-between gap-16"><code class="text-body-sm font-mono text-black shrink-0">01</code><span class="text-body-sm text-black text-right" data-i18n="configurator.tecitCodeLogicFinish">Finish (2 chars)</span></div>
-                            <div class="panel panel-sm flex items-start justify-between gap-16"><code class="text-body-sm font-mono text-black shrink-0">01</code><span class="text-body-sm text-black text-right" data-i18n="configurator.tecitCodeLogicCap">Cap (2 chars)</span></div>
-                            <div class="panel panel-sm flex items-start justify-between gap-16"><code class="text-body-sm font-mono text-black shrink-0">00</code><span class="text-body-sm text-black text-right" data-i18n="configurator.tecitCodeLogicOption">Option (2 chars)</span></div>
+            <div id="codeExplorerTecitCodeLogicBody" class="modal-body flex-1 min-h-0 overflow-y-auto overflow-x-hidden">
+                <div class="flex flex-col gap-24">
+                    <div class="panel panel-sm flex flex-col gap-16">
+                        <div class="flex flex-col gap-8">
+                            <p class="text-body-sm text-grey-primary" data-i18n="configurator.tecitCodeLogicIntro">Live Tecit references use a fixed 17-character structure. Each segment maps to one manufacturing field in the configurator.</p>
+                            <p class="text-body-sm text-black" data-i18n="configurator.tecitCodeLengthRule">A full Tecit code is exactly 17 characters long. Longer values are not valid live references.</p>
+                        </div>
+                        <div class="flex flex-col gap-8">
+                            <span class="input-label" data-i18n="configurator.tecitCodeLogicPatternLabel">Reference Pattern</span>
+                            <code class="text-body-lg font-mono text-black break-all" data-i18n="configurator.tecitCodeLogicPattern">11 | 0375 | 81 | 1 | 1 | 0 | 01 | 01 | 00</code>
                         </div>
                     </div>
 
@@ -625,34 +622,72 @@
                         </div>
                     </div>
 
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-12">
-                        <div class="panel panel-sm flex flex-col gap-4"><span class="text-body-sm text-black" data-i18n="configurator.tecitCodeLogicExampleBarra">Barra sample</span><code class="text-body-sm font-mono text-black break-all">11037581110010100</code></div>
-                        <div class="panel panel-sm flex flex-col gap-4"><span class="text-body-sm text-black" data-i18n="configurator.tecitCodeLogicExampleBarraLens">Barra sample with lens</span><code class="text-body-sm font-mono text-black break-all">11007502111010100</code></div>
-                        <div class="panel panel-sm flex flex-col gap-4"><span class="text-body-sm text-black" data-i18n="configurator.tecitCodeLogicExampleDownlight">Downlight sample</span><code class="text-body-sm font-mono text-black break-all">29012022191010000</code></div>
-                        <div class="panel panel-sm flex flex-col gap-4"><span class="text-body-sm text-black" data-i18n="configurator.tecitCodeLogicExampleDynamic">Dynamic sample</span><code class="text-body-sm font-mono text-black break-all">48007002110010000</code></div>
-                    </div>
+                    <div class="accordion accordion-md">
+                        <div class="accordion-item is-open">
+                            <button type="button" id="codeExplorerLogicLegendTrigger" class="accordion-trigger" aria-expanded="true" aria-controls="codeExplorerLogicLegendPanel">
+                                <span class="accordion-label" data-i18n="configurator.tecitCodeLogicLegendLabel">Segment Legend</span>
+                                <i class="accordion-icon ri-arrow-down-s-line" aria-hidden="true"></i>
+                            </button>
+                            <div id="codeExplorerLogicLegendPanel" class="accordion-content" role="region" aria-labelledby="codeExplorerLogicLegendTrigger">
+                                <div class="accordion-body">
+                                    <dl class="list list-spec list-md">
+                                        <div class="list-item"><dt class="list-key"><code class="text-body-sm font-mono text-black">11</code></dt><dd class="list-value" data-i18n="configurator.tecitCodeLogicFamily">Family (2 chars)</dd></div>
+                                        <div class="list-item"><dt class="list-key"><code class="text-body-sm font-mono text-black">0375</code></dt><dd class="list-value" data-i18n="configurator.tecitCodeLogicSize">Size (4 chars)</dd></div>
+                                        <div class="list-item"><dt class="list-key"><code class="text-body-sm font-mono text-black">81</code></dt><dd class="list-value" data-i18n="configurator.tecitCodeLogicColor">Color (2 chars)</dd></div>
+                                        <div class="list-item"><dt class="list-key"><code class="text-body-sm font-mono text-black">1</code></dt><dd class="list-value" data-i18n="configurator.tecitCodeLogicCri">CRI (1 char)</dd></div>
+                                        <div class="list-item"><dt class="list-key"><code class="text-body-sm font-mono text-black">1</code></dt><dd class="list-value" data-i18n="configurator.tecitCodeLogicSeries">Series (1 char)</dd></div>
+                                        <div class="list-item"><dt class="list-key"><code class="text-body-sm font-mono text-black">0</code></dt><dd class="list-value" data-i18n="configurator.tecitCodeLogicLens">Lens (1 char)</dd></div>
+                                        <div class="list-item"><dt class="list-key"><code class="text-body-sm font-mono text-black">01</code></dt><dd class="list-value" data-i18n="configurator.tecitCodeLogicFinish">Finish (2 chars)</dd></div>
+                                        <div class="list-item"><dt class="list-key"><code class="text-body-sm font-mono text-black">01</code></dt><dd class="list-value" data-i18n="configurator.tecitCodeLogicCap">Cap (2 chars)</dd></div>
+                                        <div class="list-item"><dt class="list-key"><code class="text-body-sm font-mono text-black">00</code></dt><dd class="list-value" data-i18n="configurator.tecitCodeLogicOption">Option (2 chars)</dd></div>
+                                    </dl>
+                                </div>
+                            </div>
+                        </div>
 
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-12">
-                        <div class="panel panel-sm flex flex-col gap-4"><span class="text-body-sm text-black" data-i18n="configurator.tecitCodeLogicSourceValidationTitle">Tecit code and Luminos validation</span><p class="text-body-sm text-grey-primary" data-i18n="configurator.tecitCodeLogicSourceValidationBody">The first 10 characters validate family, size, color, CRI, and series in Luminos. That lookup also defines the product ID used by the API.</p></div>
-                        <div class="panel panel-sm flex flex-col gap-4"><span class="text-body-sm text-black" data-i18n="configurator.tecitCodeLogicSourceCharacteristicsTitle">Product database</span><p class="text-body-sm text-grey-primary" data-i18n="configurator.tecitCodeLogicSourceCharacteristicsBody">Technical characteristics, electrical data, dimensions, and product descriptions come from the product database used by the NexLed API.</p></div>
-                        <div class="panel panel-sm flex flex-col gap-4"><span class="text-body-sm text-black" data-i18n="configurator.tecitCodeLogicSourceAssetsTitle">Current PDF assets</span><p class="text-body-sm text-grey-primary" data-i18n="configurator.tecitCodeLogicSourceAssetsBody">Product images, technical drawings, color spectrum files, lens diagrams, icons, and accessory graphics still come from the current local PDF asset library. DAM assets are not part of this PDF flow yet.</p></div>
-                        <div class="panel panel-sm flex flex-col gap-4"><span class="text-body-sm text-black" data-i18n="configurator.tecitCodeLogicSourceFormTitle">Configurator selections</span><p class="text-body-sm text-grey-primary" data-i18n="configurator.tecitCodeLogicSourceFormBody">Language, company logo, fixing, power supply, cable, purpose, and other optional fields come from the current configurator selections before the API builds the PDF.</p></div>
+                        <div class="accordion-item">
+                            <button type="button" id="codeExplorerLogicExamplesTrigger" class="accordion-trigger" aria-expanded="false" aria-controls="codeExplorerLogicExamplesPanel">
+                                <span class="accordion-label" data-i18n="configurator.tecitCodeLogicExamplesTitle">Full Code Examples</span>
+                                <i class="accordion-icon ri-arrow-down-s-line" aria-hidden="true"></i>
+                            </button>
+                            <div id="codeExplorerLogicExamplesPanel" class="accordion-content" role="region" aria-labelledby="codeExplorerLogicExamplesTrigger">
+                                <div class="accordion-body">
+                                    <dl class="list list-spec list-md">
+                                        <div class="list-item"><dt class="list-key" data-i18n="configurator.tecitCodeLogicExampleBarra">Barra sample</dt><dd class="list-value"><code class="text-body-sm font-mono text-black break-all">11037581110010100</code></dd></div>
+                                        <div class="list-item"><dt class="list-key" data-i18n="configurator.tecitCodeLogicExampleBarraLens">Barra sample with lens</dt><dd class="list-value"><code class="text-body-sm font-mono text-black break-all">11007502111010100</code></dd></div>
+                                        <div class="list-item"><dt class="list-key" data-i18n="configurator.tecitCodeLogicExampleDownlight">Downlight sample</dt><dd class="list-value"><code class="text-body-sm font-mono text-black break-all">29012022191010000</code></dd></div>
+                                        <div class="list-item"><dt class="list-key" data-i18n="configurator.tecitCodeLogicExampleDynamic">Dynamic sample</dt><dd class="list-value"><code class="text-body-sm font-mono text-black break-all">48007002110010000</code></dd></div>
+                                    </dl>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="accordion-item">
+                            <button type="button" id="codeExplorerLogicSourcesTrigger" class="accordion-trigger" aria-expanded="false" aria-controls="codeExplorerLogicSourcesPanel">
+                                <span class="accordion-label" data-i18n="configurator.tecitCodeLogicSourcesTitle">Where PDF Data Comes From</span>
+                                <i class="accordion-icon ri-arrow-down-s-line" aria-hidden="true"></i>
+                            </button>
+                            <div id="codeExplorerLogicSourcesPanel" class="accordion-content" role="region" aria-labelledby="codeExplorerLogicSourcesTrigger">
+                                <div class="accordion-body">
+                                    <dl class="list list-spec list-md">
+                                        <div class="list-item"><dt class="list-key" data-i18n="configurator.tecitCodeLogicSourceValidationTitle">Tecit code and Luminos validation</dt><dd class="list-value" data-i18n="configurator.tecitCodeLogicSourceValidationBody">The first 10 characters validate family, size, color, CRI, and series in Luminos. That lookup also defines the product ID used by the API.</dd></div>
+                                        <div class="list-item"><dt class="list-key" data-i18n="configurator.tecitCodeLogicSourceCharacteristicsTitle">Product database</dt><dd class="list-value" data-i18n="configurator.tecitCodeLogicSourceCharacteristicsBody">Technical characteristics, electrical data, dimensions, and product descriptions come from the product database used by the NexLed API.</dd></div>
+                                        <div class="list-item"><dt class="list-key" data-i18n="configurator.tecitCodeLogicSourceAssetsTitle">Current PDF assets</dt><dd class="list-value" data-i18n="configurator.tecitCodeLogicSourceAssetsBody">Product images, technical drawings, color spectrum files, lens diagrams, icons, and accessory graphics still come from the current local PDF asset library. DAM assets are not part of this PDF flow yet.</dd></div>
+                                        <div class="list-item"><dt class="list-key" data-i18n="configurator.tecitCodeLogicSourceFormTitle">Configurator selections</dt><dd class="list-value" data-i18n="configurator.tecitCodeLogicSourceFormBody">Language, company logo, fixing, power supply, cable, purpose, and other optional fields come from the current configurator selections before the API builds the PDF.</dd></div>
+                                    </dl>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
-            </div>
-
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary btn-sm" data-close-modal data-modal-initial-focus>
-                    <span data-i18n="configurator.tecitCodeLogicClose">Close</span>
-                </button>
             </div>
         </div>
     </div>
 
-    <script src="locales/en.js?v=20260415-coverage-view"></script>
-    <script src="locales/pt.js?v=20260415-coverage-view"></script>
+    <script src="locales/en.js?v=20260415-legacy-filter-fallback"></script>
+    <script src="locales/pt.js?v=20260415-legacy-filter-fallback"></script>
     <script src="i18n.js?v=20260414-code-explorer"></script>
     <script src="app-shell.js?v=20260414-code-explorer"></script>
-    <script src="code-explorer.js?v=20260415-coverage-view"></script>
+    <script src="code-explorer.js?v=20260415-legacy-filter-fallback"></script>
 </body>
 </html>
