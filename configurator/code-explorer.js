@@ -67,6 +67,9 @@ const EXPLORER_SEARCH_MODE_NAME = "name";
 
 let apiBasePromise = null;
 let hasSuccessfulApiContact = false;
+let explorerSelectDropdowns = new Map();
+let activeExplorerSelectDropdown = null;
+let explorerSelectDropdownEventsBound = false;
 let apiBadgeState = {
     tone: "error",
     key: "shared.badge.apiUnavailable",
@@ -88,13 +91,15 @@ let explorerState = {
     familyOptionsByFamily: {},
     data: null,
     selectedReference: "",
+    coverageExpandedIdentity: "",
+    coverageDetailsByIdentity: {},
     controls: {
         searchMode: EXPLORER_SEARCH_MODE_CODE,
         family: "",
         search: "",
         status: "all",
         page: 1,
-        pageSize: 100,
+        pageSize: 5,
         includeInvalid: false,
         segmentFilters: {
             size: "",
@@ -111,12 +116,14 @@ document.addEventListener("DOMContentLoaded", () => {
 
 function initializeCodeExplorer() {
     familyCombobox = setupExplorerFamilyCombobox();
+    setupExplorerSelectDropdowns();
     bindControls();
     bindStaticEvents();
     renderApiBadge();
     applyPageStatusState();
     renderExplorerSegmentFilterOptions(null);
     applyExplorerSearchMode(explorerState.controls.searchMode);
+    renderCoverage(null);
     renderSummary(null);
     renderTable();
     renderDetail();
@@ -224,6 +231,7 @@ function renderExplorerSegmentFilterOptions(optionMap) {
         select.disabled = options.length === 0;
         select.value = nextValue;
         explorerState.controls.segmentFilters[meta.key] = nextValue;
+        refreshExplorerSelectDropdown(meta.selectId);
     });
 
     updateExplorerInvalidGuidance();
@@ -320,6 +328,7 @@ function applyExplorerSearchMode(searchMode = explorerState.controls.searchMode)
     syncDraftInvalidControls();
     syncAppliedInvalidSummaryCard();
     updateExplorerInvalidGuidance();
+    renderCoverage(explorerState.data);
 
     if (!isCodeMode && explorerState.controls.family) {
         void loadExplorerFamilyOptions(explorerState.controls.family, false);
@@ -600,6 +609,358 @@ function setupExplorerFamilyCombobox() {
     };
 }
 
+function setupExplorerSelectDropdowns() {
+    const selects = Array.from(document.querySelectorAll("select[id]"));
+
+    selects.forEach((select) => {
+        if (explorerSelectDropdowns.has(select.id)) {
+            return;
+        }
+
+        const dropdown = createExplorerSelectDropdown(select);
+
+        if (dropdown) {
+            explorerSelectDropdowns.set(select.id, dropdown);
+        }
+    });
+
+    bindExplorerSelectDropdownDocumentEvents();
+}
+
+function createExplorerSelectDropdown(select) {
+    const label = document.querySelector('label[for="' + select.id + '"]');
+    const root = document.createElement("div");
+    const trigger = document.createElement("button");
+    const valueDisplay = document.createElement("span");
+    const arrow = document.createElement("i");
+    const menu = document.createElement("ul");
+    let itemElements = [];
+
+    if (label && !label.id) {
+        label.id = select.id + "-label";
+    }
+
+    function getLabelText() {
+        return label ? label.textContent.replace(/\*/g, "").trim() : "Options";
+    }
+
+    function syncAccessibleText() {
+        const labelText = getLabelText();
+
+        if (label?.id) {
+            trigger.setAttribute("aria-labelledby", label.id + " " + valueDisplay.id);
+        } else {
+            trigger.setAttribute("aria-label", labelText);
+        }
+
+        menu.setAttribute("aria-label", labelText);
+    }
+
+    root.className = "dropdown dropdown-sm w-full";
+    root.dataset.selectDropdown = select.id;
+
+    valueDisplay.className = "dropdown-value";
+    valueDisplay.id = select.id + "-dropdown-value";
+
+    trigger.type = "button";
+    trigger.className = "dropdown-trigger";
+    trigger.id = select.id + "-dropdown-trigger";
+    trigger.setAttribute("aria-haspopup", "listbox");
+    trigger.setAttribute("aria-expanded", "false");
+
+    arrow.className = "ri-arrow-down-s-line dropdown-arrow";
+    arrow.setAttribute("aria-hidden", "true");
+
+    trigger.append(valueDisplay, arrow);
+
+    menu.className = "dropdown-menu custom-scrollbar";
+    menu.setAttribute("role", "listbox");
+
+    root.append(trigger, menu);
+    select.insertAdjacentElement("afterend", root);
+    syncAccessibleText();
+
+    select.hidden = true;
+    select.setAttribute("aria-hidden", "true");
+    select.tabIndex = -1;
+
+    function getEnabledItems() {
+        return itemElements.filter((item) => item.getAttribute("aria-disabled") !== "true");
+    }
+
+    function updateValueDisplay(text, hasValue = true) {
+        valueDisplay.textContent = text;
+        root.classList.toggle("has-value", hasValue);
+    }
+
+    function closeDropdown({ restoreFocus = false } = {}) {
+        root.classList.remove("is-open");
+        trigger.setAttribute("aria-expanded", "false");
+
+        if (activeExplorerSelectDropdown === api) {
+            activeExplorerSelectDropdown = null;
+        }
+
+        if (restoreFocus) {
+            trigger.focus();
+        }
+    }
+
+    function openDropdown() {
+        if (trigger.disabled) {
+            return;
+        }
+
+        if (activeExplorerSelectDropdown && activeExplorerSelectDropdown !== api) {
+            activeExplorerSelectDropdown.close();
+        }
+
+        root.classList.add("is-open");
+        trigger.setAttribute("aria-expanded", "true");
+        activeExplorerSelectDropdown = api;
+    }
+
+    function syncFromSelect() {
+        const selectedOption = select.options[select.selectedIndex] || null;
+        const hasSelection = Boolean(selectedOption && !selectedOption.disabled && selectedOption.value !== "");
+
+        itemElements.forEach((item) => {
+            item.setAttribute(
+                "aria-selected",
+                String(selectedOption && item.dataset.value === selectedOption.value)
+            );
+        });
+
+        if (selectedOption) {
+            updateValueDisplay(selectedOption.textContent || "", hasSelection);
+        } else {
+            updateValueDisplay(t("configurator.runtime.noOptionsAvailable", {}, "No options available"), false);
+        }
+
+        const isDisabled = select.disabled || getEnabledItems().length === 0;
+        trigger.disabled = isDisabled;
+        trigger.setAttribute("aria-disabled", String(isDisabled));
+        root.setAttribute("aria-disabled", String(isDisabled));
+
+        if (isDisabled) {
+            closeDropdown();
+        }
+    }
+
+    function selectItem(item, shouldDispatch = true) {
+        const nextValue = item.dataset.value || "";
+        const previousValue = select.value;
+
+        select.value = nextValue;
+        syncFromSelect();
+        closeDropdown({ restoreFocus: true });
+
+        if (shouldDispatch && previousValue !== nextValue) {
+            select.dispatchEvent(new Event("change", { bubbles: true }));
+        }
+    }
+
+    function focusItem(item) {
+        if (!item || item.getAttribute("aria-disabled") === "true") {
+            return;
+        }
+
+        item.focus();
+    }
+
+    function bindItem(item) {
+        item.addEventListener("focus", () => {
+            item.scrollIntoView({ block: "nearest" });
+        });
+
+        item.addEventListener("click", () => {
+            if (item.getAttribute("aria-disabled") === "true") {
+                return;
+            }
+
+            selectItem(item, true);
+        });
+
+        item.addEventListener("keydown", (event) => {
+            const enabledItems = getEnabledItems();
+            const currentIndex = enabledItems.indexOf(item);
+
+            if (enabledItems.length === 0) {
+                return;
+            }
+
+            if (event.key === "ArrowDown") {
+                event.preventDefault();
+                focusItem(enabledItems[(currentIndex + 1) % enabledItems.length] || null);
+            }
+
+            if (event.key === "ArrowUp") {
+                event.preventDefault();
+                focusItem(enabledItems[(currentIndex - 1 + enabledItems.length) % enabledItems.length] || null);
+            }
+
+            if (event.key === "Home") {
+                event.preventDefault();
+                focusItem(enabledItems[0] || null);
+            }
+
+            if (event.key === "End") {
+                event.preventDefault();
+                focusItem(enabledItems[enabledItems.length - 1] || null);
+            }
+
+            if (event.key === "Enter" || event.key === " ") {
+                event.preventDefault();
+                item.click();
+            }
+
+            if (event.key === "Escape") {
+                event.preventDefault();
+                closeDropdown({ restoreFocus: true });
+            }
+
+            if (event.key === "Tab") {
+                closeDropdown();
+            }
+        });
+    }
+
+    function refreshOptions() {
+        menu.innerHTML = "";
+        itemElements = [];
+        syncAccessibleText();
+
+        Array.from(select.options).forEach((option) => {
+            if (option.hidden) {
+                return;
+            }
+
+            const item = document.createElement("li");
+            const text = document.createElement("span");
+            const check = document.createElement("i");
+
+            item.className = "dropdown-item";
+            item.setAttribute("role", "option");
+            item.setAttribute("tabindex", "-1");
+            item.dataset.value = option.value;
+            item.setAttribute("aria-selected", String(option.selected));
+
+            if (option.disabled) {
+                item.setAttribute("aria-disabled", "true");
+            }
+
+            if (option.title) {
+                item.title = option.title;
+            }
+
+            text.textContent = option.textContent || "";
+
+            check.className = "ri-check-line dropdown-item-check";
+            check.setAttribute("aria-hidden", "true");
+
+            item.append(text, check);
+            bindItem(item);
+            menu.append(item);
+            itemElements.push(item);
+        });
+
+        syncFromSelect();
+    }
+
+    trigger.addEventListener("click", () => {
+        if (trigger.disabled) {
+            return;
+        }
+
+        if (root.classList.contains("is-open")) {
+            closeDropdown();
+            return;
+        }
+
+        openDropdown();
+    });
+
+    trigger.addEventListener("keydown", (event) => {
+        const enabledItems = getEnabledItems();
+
+        if (enabledItems.length === 0 || trigger.disabled) {
+            return;
+        }
+
+        if (event.key === "ArrowDown" || event.key === "Enter" || event.key === " ") {
+            event.preventDefault();
+            openDropdown();
+            focusItem(itemElements.find((item) => item.getAttribute("aria-selected") === "true") || enabledItems[0]);
+        }
+
+        if (event.key === "ArrowUp") {
+            event.preventDefault();
+            openDropdown();
+            focusItem(itemElements.find((item) => item.getAttribute("aria-selected") === "true") || enabledItems[enabledItems.length - 1]);
+        }
+
+        if (event.key === "Escape") {
+            event.preventDefault();
+            closeDropdown();
+        }
+    });
+
+    select.addEventListener("change", syncFromSelect);
+
+    const api = {
+        close: () => closeDropdown(),
+        refreshOptions,
+        root,
+        syncFromSelect,
+    };
+
+    refreshOptions();
+
+    return api;
+}
+
+function bindExplorerSelectDropdownDocumentEvents() {
+    if (explorerSelectDropdownEventsBound) {
+        return;
+    }
+
+    explorerSelectDropdownEventsBound = true;
+
+    document.addEventListener("click", (event) => {
+        if (!activeExplorerSelectDropdown) {
+            return;
+        }
+
+        if (activeExplorerSelectDropdown.root.contains(event.target)) {
+            return;
+        }
+
+        activeExplorerSelectDropdown.close();
+    });
+
+    document.addEventListener("keydown", (event) => {
+        if (event.key !== "Escape" || !activeExplorerSelectDropdown) {
+            return;
+        }
+
+        activeExplorerSelectDropdown.close();
+    });
+}
+
+function refreshExplorerSelectDropdown(id) {
+    explorerSelectDropdowns.get(id)?.refreshOptions();
+}
+
+function syncExplorerSelectDropdown(id) {
+    explorerSelectDropdowns.get(id)?.syncFromSelect();
+}
+
+function refreshExplorerSelectDropdowns() {
+    explorerSelectDropdowns.forEach((dropdown) => {
+        dropdown.refreshOptions();
+    });
+}
+
 function bindControls() {
     document.getElementById("explorer-filters").addEventListener("submit", (event) => {
         event.preventDefault();
@@ -714,6 +1075,16 @@ function bindControls() {
         renderDetail();
         openCodeDetailModal(trigger);
     });
+
+    document.getElementById("coverage-identity-list").addEventListener("click", (event) => {
+        const trigger = event.target.closest("[data-identity-toggle]");
+
+        if (!trigger) {
+            return;
+        }
+
+        void toggleCoverageIdentity(trigger.dataset.identity || "");
+    });
 }
 
 async function applyFiltersFromForm() {
@@ -739,8 +1110,8 @@ async function applyFiltersFromForm() {
         : "all";
     explorerState.controls.includeInvalid = includeInvalid;
     explorerState.controls.pageSize = searchMode === EXPLORER_SEARCH_MODE_NAME
-        ? (Number.parseInt(document.getElementById("explorer-page-size").value, 10) || 100)
-        : 100;
+        ? (Number.parseInt(document.getElementById("explorer-page-size").value, 10) || 5)
+        : 5;
     explorerState.controls.segmentFilters = searchMode === EXPLORER_SEARCH_MODE_NAME
         ? readExplorerSegmentFiltersFromForm()
         : getEmptyExplorerSegmentFilters();
@@ -761,8 +1132,10 @@ async function applyFiltersFromForm() {
             await loadExplorerFamilyOptions(family, familyChanged);
             explorerState.controls.segmentFilters = readExplorerSegmentFiltersFromForm();
         } catch (error) {
+            resetCoverageInteractions();
             explorerState.data = null;
             explorerState.selectedReference = "";
+            renderCoverage(null);
             renderSummary(null);
             renderTable();
             renderDetail();
@@ -779,6 +1152,7 @@ async function applyFiltersFromForm() {
     updateExplorerInvalidGuidance();
 
     if (!explorerState.controls.family) {
+        resetCoverageInteractions();
         explorerState.data = null;
         explorerState.selectedReference = "";
         setPageStatus(
@@ -788,6 +1162,7 @@ async function applyFiltersFromForm() {
                 ? "Enter full code with family prefix to load explorer rows."
                 : "Select one family to start building valid code rows."
         );
+        renderCoverage(null);
         renderSummary(null);
         renderTable();
         renderDetail();
@@ -800,9 +1175,11 @@ async function applyFiltersFromForm() {
         && explorerState.controls.includeInvalid
         && !hasActiveExplorerSegmentFilters(explorerState.controls.segmentFilters)
         && !isTargetedExplorerReferenceSearch(search, explorerState.controls.family)) {
+        resetCoverageInteractions();
         explorerState.data = null;
         explorerState.selectedReference = "";
         setPageStatus("codeExplorer.runtime.invalidNeedsDrillDown", "warning", "Include invalid requires at least one drill-down filter or a targeted full code.");
+        renderCoverage(null);
         renderSummary(null);
         renderTable();
         renderDetail();
@@ -811,6 +1188,7 @@ async function applyFiltersFromForm() {
         return;
     }
 
+    resetCoverageInteractions();
     loadExplorerData();
 }
 
@@ -823,6 +1201,345 @@ function detectFamilyCodeFromReferenceSearch(search) {
 
     const familyCode = normalizedSearch.slice(0, 2);
     return /^\d{2}$/.test(familyCode) ? familyCode : "";
+}
+
+function resetCoverageInteractions() {
+    explorerState.coverageExpandedIdentity = "";
+    explorerState.coverageDetailsByIdentity = {};
+}
+
+function syncCoverageStateWithData(data) {
+    const identities = Array.isArray(data?.coverage?.identities) ? data.coverage.identities : [];
+    const availableIdentities = new Set(identities.map((identity) => identity.identity));
+
+    if (!availableIdentities.has(explorerState.coverageExpandedIdentity)) {
+        explorerState.coverageExpandedIdentity = "";
+    }
+
+    Object.keys(explorerState.coverageDetailsByIdentity).forEach((identityCode) => {
+        if (!availableIdentities.has(identityCode)) {
+            delete explorerState.coverageDetailsByIdentity[identityCode];
+        }
+    });
+}
+
+function renderCoverage(data) {
+    const section = document.getElementById("explorer-coverage-section");
+    const emptyState = document.getElementById("coverage-empty-state");
+    const list = document.getElementById("coverage-identity-list");
+    const context = document.getElementById("coverage-family-context");
+    const shouldShow = explorerState.controls.searchMode === EXPLORER_SEARCH_MODE_NAME && Boolean(explorerState.controls.family);
+    const coverage = data?.coverage || null;
+    const identities = Array.isArray(coverage?.identities) ? coverage.identities : [];
+    const summary = coverage?.summary || {
+        total_identities: 0,
+        fully_ready_identities: 0,
+        partially_ready_identities: 0,
+        blocked_identities: 0,
+        invalid_identities: 0,
+        datasheet_ready_ratio: 0,
+    };
+
+    if (!section || !emptyState || !list || !context) {
+        return;
+    }
+
+    section.classList.toggle("hidden", !shouldShow);
+
+    if (!shouldShow) {
+        list.innerHTML = "";
+        context.textContent = "";
+        renderCoverageSummary(summary);
+        return;
+    }
+
+    context.textContent = data?.family
+        ? `${data.family.code} - ${data.family.name}`
+        : explorerState.controls.family;
+
+    renderCoverageSummary(summary);
+
+    if (identities.length === 0) {
+        emptyState.classList.remove("hidden");
+        list.innerHTML = "";
+        return;
+    }
+
+    emptyState.classList.add("hidden");
+    list.innerHTML = identities.map((identity) => buildCoverageIdentityCard(identity)).join("");
+}
+
+function renderCoverageSummary(summary) {
+    document.getElementById("coverage-total-identities").textContent = formatNumber(summary.total_identities);
+    document.getElementById("coverage-ready-identities").textContent = formatNumber(summary.fully_ready_identities);
+    document.getElementById("coverage-partial-identities").textContent = formatNumber(summary.partially_ready_identities);
+    document.getElementById("coverage-blocked-identities").textContent = formatNumber(summary.blocked_identities);
+    document.getElementById("coverage-invalid-identities").textContent = formatNumber(summary.invalid_identities);
+    document.getElementById("coverage-ready-rate").textContent = formatPercent(summary.datasheet_ready_ratio);
+}
+
+function buildCoverageIdentityCard(identity) {
+    const identityCode = identity.identity || "";
+    const counts = identity.counts || {};
+    const isExpanded = explorerState.coverageExpandedIdentity === identityCode;
+    const description = identity.description
+        ? `<p class="text-body-sm text-black">${escapeHtml(identity.description)}</p>`
+        : "";
+    const productMeta = identity.product_type || identity.product_id
+        ? `<p class="text-body-xs text-grey-primary">${escapeHtml([identity.product_type, identity.product_id].filter(Boolean).join(" / "))}</p>`
+        : "";
+
+    return `
+        <div class="panel panel-sm flex flex-col gap-12">
+            <button
+                type="button"
+                class="flex w-full flex-col gap-12 text-left"
+                data-identity-toggle
+                data-identity="${escapeHtml(identityCode)}"
+                aria-expanded="${isExpanded ? "true" : "false"}"
+            >
+                <div class="flex flex-col gap-12 lg:flex-row lg:items-start lg:justify-between">
+                    <div class="flex flex-col gap-8">
+                        <div class="flex flex-wrap items-center gap-8">
+                            <code class="text-body-sm font-mono text-black break-all">${escapeHtml(identityCode)}</code>
+                            ${getCoverageIdentityStatusBadge(identity.status)}
+                        </div>
+                        <p class="text-body-sm text-grey-primary">${escapeHtml(getCoverageIdentitySegmentSummary(identity))}</p>
+                        ${description}
+                        ${productMeta}
+                    </div>
+                    <div class="flex flex-wrap gap-8 lg:justify-end">
+                        <span class="badge badge-success badge-sm">${escapeHtml(`${formatNumber(counts.datasheet_ready)} ${t("codeExplorer.coverageCountReady", {}, "ready")}`)}</span>
+                        <span class="badge badge-warning badge-sm">${escapeHtml(`${formatNumber(counts.datasheet_blocked)} ${t("codeExplorer.coverageCountBlocked", {}, "blocked")}`)}</span>
+                        ${counts.configurator_invalid > 0 ? `<span class="badge badge-danger badge-sm">${escapeHtml(`${formatNumber(counts.configurator_invalid)} ${t("codeExplorer.coverageCountInvalid", {}, "invalid")}`)}</span>` : ""}
+                        <span class="badge badge-neutral badge-sm">${escapeHtml(`${formatPercent(identity.ready_ratio)} ${t("codeExplorer.coverageCountRate", {}, "ready")}`)}</span>
+                    </div>
+                </div>
+            </button>
+            ${isExpanded ? buildCoverageIdentityDetail(identity) : ""}
+        </div>
+    `;
+}
+
+function getCoverageIdentityStatusBadge(status) {
+    const label = getCoverageIdentityStatusText(status);
+
+    if (status === "fully_ready") {
+        return `<span class="badge badge-success badge-sm">${escapeHtml(label)}</span>`;
+    }
+
+    if (status === "partially_ready") {
+        return `<span class="badge badge-info badge-sm">${escapeHtml(label)}</span>`;
+    }
+
+    if (status === "blocked") {
+        return `<span class="badge badge-warning badge-sm">${escapeHtml(label)}</span>`;
+    }
+
+    return `<span class="badge badge-danger badge-sm">${escapeHtml(label)}</span>`;
+}
+
+function getCoverageIdentityStatusText(status) {
+    if (status === "fully_ready") {
+        return t("codeExplorer.coverageStatusFullyReady", {}, "Fully ready");
+    }
+
+    if (status === "partially_ready") {
+        return t("codeExplorer.coverageStatusPartial", {}, "Partial");
+    }
+
+    if (status === "blocked") {
+        return t("codeExplorer.coverageStatusBlocked", {}, "Blocked");
+    }
+
+    return t("codeExplorer.coverageStatusInvalid", {}, "Invalid");
+}
+
+function getCoverageIdentitySegmentSummary(identity) {
+    return [
+        getCoverageIdentitySegmentDisplay(identity, "size"),
+        getCoverageIdentitySegmentDisplay(identity, "color"),
+        getCoverageIdentitySegmentDisplay(identity, "cri"),
+        getCoverageIdentitySegmentDisplay(identity, "series"),
+    ].filter(Boolean).join(" / ");
+}
+
+function getCoverageIdentitySegmentDisplay(identity, key) {
+    const value = identity.segments?.[key] ?? "";
+    const label = identity.segment_labels?.[key];
+
+    if (!label || label === value) {
+        return String(value);
+    }
+
+    return `${value} - ${label}`;
+}
+
+function buildCoverageIdentityDetail(identity) {
+    const identityCode = identity.identity || "";
+    const detailState = explorerState.coverageDetailsByIdentity[identityCode] || null;
+    const counts = identity.counts || {};
+
+    if (!detailState || detailState.status === "loading") {
+        return `
+            <div class="rounded-card border border-grey-quaternary/60 bg-grey-tertiary/40 px-16 py-14">
+                <p class="text-body-sm text-grey-primary">${escapeHtml(t("codeExplorer.coverageDetailLoading", {}, "Loading valid full codes..."))}</p>
+            </div>
+        `;
+    }
+
+    if (detailState.status === "error") {
+        return `
+            <div class="rounded-card border border-red-200 bg-red-50 px-16 py-14">
+                <p class="text-body-sm text-red-700">${escapeHtml(detailState.errorMessage || t("codeExplorer.coverageDetailError", {}, "Unable to load identity codes right now."))}</p>
+            </div>
+        `;
+    }
+
+    if ((detailState.rows?.length || 0) === 0) {
+        return `
+            <div class="rounded-card border border-grey-quaternary/60 bg-grey-tertiary/40 px-16 py-14">
+                <p class="text-body-sm text-grey-primary">${escapeHtml(t("codeExplorer.coverageDetailEmpty", {}, "No valid full codes exist under this identity."))}</p>
+            </div>
+        `;
+    }
+
+    const totalValidCodes = counts.configurator_valid || detailState.totalRows || detailState.rows.length;
+    const truncated = detailState.totalRows > detailState.rows.length || detailState.totalPages > 1;
+    const truncatedCopy = truncated
+        ? `<p class="text-body-xs text-grey-primary">${escapeHtml(t("codeExplorer.coverageDetailTruncated", {
+            shown: detailState.rows.length,
+            total: detailState.totalRows,
+        }, `Showing ${detailState.rows.length} of ${detailState.totalRows} valid codes.`))}</p>`
+        : "";
+
+    return `
+        <div class="flex flex-col gap-12 border-t border-grey-quaternary/60 pt-12">
+            <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                <div class="flex flex-wrap items-center gap-8">
+                    <span class="input-label">${escapeHtml(t("codeExplorer.coverageDetailTitle", {}, "Valid full codes"))}</span>
+                    <span class="badge badge-neutral badge-sm">${escapeHtml(formatNumber(totalValidCodes))}</span>
+                </div>
+                ${truncatedCopy}
+            </div>
+            <div class="flex max-h-96 flex-col gap-8 overflow-y-auto pr-4">
+                ${detailState.rows.map((row) => buildCoverageCodeRow(row)).join("")}
+            </div>
+        </div>
+    `;
+}
+
+function buildCoverageCodeRow(row) {
+    const datasheetBadge = buildStatusBadge(
+        row.datasheet_ready,
+        t("codeExplorer.statusReadyShort", {}, "Ready"),
+        t("codeExplorer.statusBlockedShort", {}, "Blocked")
+    );
+    const failureText = row.datasheet_ready
+        ? t("codeExplorer.failure.none", {}, "No blocking reason.")
+        : getFailureReasonText(row.failure_reason);
+
+    return `
+        <div class="rounded-card border border-grey-quaternary/60 bg-white px-12 py-12">
+            <div class="flex flex-col gap-8 lg:flex-row lg:items-start lg:justify-between">
+                <div class="flex flex-col gap-6">
+                    <code class="text-body-sm font-mono text-black break-all">${escapeHtml(row.reference || "")}</code>
+                    <p class="text-body-xs text-grey-primary">${escapeHtml(formatCoverageSuffix(row))}</p>
+                    <p class="text-body-xs text-grey-primary">${escapeHtml(failureText)}</p>
+                </div>
+                <div class="flex flex-wrap gap-8">
+                    ${datasheetBadge}
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+function formatCoverageSuffix(row) {
+    return [
+        getSegmentDisplay(row, "lens"),
+        getSegmentDisplay(row, "finish"),
+        getSegmentDisplay(row, "cap"),
+        getSegmentDisplay(row, "option"),
+    ].filter(Boolean).join(" / ");
+}
+
+async function toggleCoverageIdentity(identityCode) {
+    if (!identityCode) {
+        return;
+    }
+
+    if (explorerState.coverageExpandedIdentity === identityCode) {
+        explorerState.coverageExpandedIdentity = "";
+        renderCoverage(explorerState.data);
+        return;
+    }
+
+    explorerState.coverageExpandedIdentity = identityCode;
+    renderCoverage(explorerState.data);
+
+    if (explorerState.coverageDetailsByIdentity[identityCode]) {
+        return;
+    }
+
+    await loadCoverageIdentityCodes(identityCode);
+}
+
+async function loadCoverageIdentityCodes(identityCode) {
+    const family = explorerState.controls.family;
+
+    if (!family || !identityCode) {
+        return;
+    }
+
+    explorerState.coverageDetailsByIdentity[identityCode] = {
+        status: "loading",
+        rows: [],
+        totalRows: 0,
+        totalPages: 0,
+        errorMessage: "",
+    };
+    renderCoverage(explorerState.data);
+
+    const params = new URLSearchParams({
+        endpoint: "code-explorer",
+        family,
+        page: "1",
+        page_size: "250",
+        search: identityCode,
+        status: "all",
+        include_invalid: "0",
+    });
+
+    try {
+        const data = await apiFetch("/?" + params.toString());
+
+        if (family !== explorerState.controls.family) {
+            return;
+        }
+
+        explorerState.coverageDetailsByIdentity[identityCode] = {
+            status: "ready",
+            rows: Array.isArray(data?.rows) ? data.rows : [],
+            totalRows: Number.parseInt(String(data?.pagination?.total_rows || 0), 10) || 0,
+            totalPages: Number.parseInt(String(data?.pagination?.total_pages || 0), 10) || 0,
+            errorMessage: "",
+        };
+    } catch (error) {
+        if (family !== explorerState.controls.family) {
+            return;
+        }
+
+        explorerState.coverageDetailsByIdentity[identityCode] = {
+            status: "error",
+            rows: [],
+            totalRows: 0,
+            totalPages: 0,
+            errorMessage: getExplorerErrorMessage(error),
+        };
+    }
+
+    renderCoverage(explorerState.data);
 }
 
 function bindStaticEvents() {
@@ -839,7 +1556,9 @@ function bindStaticEvents() {
         applyPageStatusState();
         applyExplorerSearchMode(explorerState.controls.searchMode);
         renderExplorerSegmentFilterOptions(explorerState.familyOptionsByFamily[explorerState.controls.family] || null);
+        refreshExplorerSelectDropdowns();
         renderResultsMeta();
+        renderCoverage(explorerState.data);
         renderSummary(explorerState.data);
         renderTable();
         renderDetail();
@@ -862,6 +1581,8 @@ function syncDraftInvalidControls() {
     if (!includeInvalid && statusSelect?.value === "configurator_invalid") {
         statusSelect.value = "all";
     }
+
+    refreshExplorerSelectDropdown("explorer-status");
 }
 
 function syncAppliedInvalidSummaryCard() {
@@ -982,6 +1703,8 @@ function populateFamilies() {
     document.getElementById("explorer-include-invalid").checked = explorerState.controls.includeInvalid;
     document.getElementById("explorer-status").value = explorerState.controls.status;
     document.getElementById("explorer-page-size").value = String(explorerState.controls.pageSize);
+    syncExplorerSelectDropdown("explorer-status");
+    syncExplorerSelectDropdown("explorer-page-size");
     syncDraftInvalidControls();
     updateExplorerInvalidGuidance();
 }
@@ -1018,11 +1741,13 @@ async function loadExplorerData() {
         const data = await apiFetch("/?" + params.toString());
         explorerState.data = data;
         explorerState.controls.page = data.pagination?.page || explorerState.controls.page;
+        syncCoverageStateWithData(data);
 
         const firstRow = Array.isArray(data.rows) && data.rows.length > 0 ? data.rows[0] : null;
         const selectedExists = data.rows?.some((row) => row.reference === explorerState.selectedReference);
         explorerState.selectedReference = selectedExists ? explorerState.selectedReference : (firstRow?.reference || "");
 
+        renderCoverage(data);
         renderSummary(data);
         renderTable();
         renderDetail();
@@ -1035,8 +1760,10 @@ async function loadExplorerData() {
             setPageStatus("codeExplorer.runtime.noRows", "neutral", "No rows match current filters.");
         }
     } catch (error) {
+        resetCoverageInteractions();
         explorerState.data = null;
         explorerState.selectedReference = "";
+        renderCoverage(null);
         renderSummary(null);
         renderTable();
         renderDetail();
@@ -1227,28 +1954,6 @@ function renderResultsMeta() {
     if (!meta) {
         return;
     }
-
-    if (!explorerState.controls.family) {
-        meta.textContent = "";
-        meta.classList.add("hidden");
-        return;
-    }
-
-    if (!explorerState.data) {
-        meta.textContent = t("codeExplorer.runtime.loadFailed", {}, "Unable to load explorer data right now.");
-        meta.classList.remove("hidden");
-        return;
-    }
-
-    const familyLabel = explorerState.data.family
-        ? `${explorerState.data.family.code} - ${explorerState.data.family.name}`
-        : explorerState.controls.family;
-
-    meta.textContent = t("codeExplorer.runtime.resultsMeta", {
-        family: familyLabel,
-        total: explorerState.data.pagination.total_rows,
-    }, `${familyLabel} - ${explorerState.data.pagination.total_rows} filtered rows`);
-    meta.classList.remove("hidden");
 }
 
 function renderPagination() {
@@ -1536,6 +2241,22 @@ function t(key, vars = {}, fallback = "") {
 
 function formatNumber(value) {
     return new Intl.NumberFormat(window.NexLedI18n?.getLanguage?.() === "pt" ? "pt-PT" : "en-US").format(Number(value) || 0);
+}
+
+function formatPercent(value) {
+    const numericValue = Number(value);
+
+    if (!Number.isFinite(numericValue)) {
+        return "0%";
+    }
+
+    const normalizedValue = Math.round(numericValue * 10) / 10;
+    const formatter = new Intl.NumberFormat(window.NexLedI18n?.getLanguage?.() === "pt" ? "pt-PT" : "en-US", {
+        minimumFractionDigits: Number.isInteger(normalizedValue) ? 0 : 1,
+        maximumFractionDigits: 1,
+    });
+
+    return `${formatter.format(normalizedValue)}%`;
 }
 
 function escapeHtml(value) {

@@ -251,8 +251,8 @@
                                 <label id="explorer-search-label" class="input-label ml-12" for="explorer-search">Search By Code</label>
                                 <input id="explorer-search" type="text" class="input input-sm" placeholder="Enter a code">
                             </div>
-                            <div class="hidden grid grid-cols-1 sm:grid-cols-2 gap-12" data-name-search-field>
-                                <div id="explorer-status-field">
+                            <div class="hidden grid grid-cols-1 sm:grid-cols-2 gap-12 items-start" data-name-search-field>
+                                <div id="explorer-status-field" class="flex flex-col gap-8">
                                     <label class="input-label ml-12" for="explorer-status" data-i18n="codeExplorer.statusLabel">Status</label>
                                     <select id="explorer-status" class="input input-sm">
                                         <option value="all" data-i18n="codeExplorer.statusAll">All</option>
@@ -262,15 +262,15 @@
                                         <option value="datasheet_blocked" data-i18n="codeExplorer.statusDatasheetBlocked">Datasheet blocked</option>
                                     </select>
                                 </div>
-                                <div id="explorer-page-size-field">
+                                <div id="explorer-page-size-field" class="flex flex-col gap-8">
                                     <label class="input-label ml-12" for="explorer-page-size" data-i18n="codeExplorer.pageSizeLabel">Rows per page</label>
                                     <select id="explorer-page-size" class="input input-sm">
-                                        <option value="5">5</option>
+                                        <option value="5" selected>5</option>
                                         <option value="10">10</option>
                                         <option value="15">15</option>
                                         <option value="25">25</option>
                                         <option value="50">50</option>
-                                        <option value="100" selected>100</option>
+                                        <option value="100">100</option>
                                         <option value="250">250</option>
                                     </select>
                                 </div>
@@ -328,6 +328,51 @@
                 </div>
 
                 <div class="xl:col-span-9 xl:row-start-1 flex flex-col gap-24">
+                    <section id="explorer-coverage-section" class="card hidden">
+                        <div class="card-body flex flex-col gap-16">
+                            <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                                <div class="flex flex-col gap-4">
+                                    <h2 class="card-title" data-i18n="codeExplorer.coverageTitle">Family Coverage</h2>
+                                    <p class="text-body-sm text-grey-primary" data-i18n="codeExplorer.coverageBody">Compare identity readiness first, then expand one identity to inspect every valid full code under it.</p>
+                                </div>
+                                <p id="coverage-family-context" class="text-body-xs text-grey-primary"></p>
+                            </div>
+
+                            <div id="coverage-summary-grid" class="grid grid-cols-2 xl:grid-cols-6 gap-12">
+                                <div class="panel panel-sm flex flex-col gap-4">
+                                    <span class="input-label" data-i18n="codeExplorer.coverageMetricTotal">Identities</span>
+                                    <span id="coverage-total-identities" class="text-h4 text-black">0</span>
+                                </div>
+                                <div class="panel panel-sm flex flex-col gap-4">
+                                    <span class="input-label" data-i18n="codeExplorer.coverageMetricReady">Fully ready</span>
+                                    <span id="coverage-ready-identities" class="text-h4 text-green-primary">0</span>
+                                </div>
+                                <div class="panel panel-sm flex flex-col gap-4">
+                                    <span class="input-label" data-i18n="codeExplorer.coverageMetricPartial">Partial</span>
+                                    <span id="coverage-partial-identities" class="text-h4 text-blue-600">0</span>
+                                </div>
+                                <div class="panel panel-sm flex flex-col gap-4">
+                                    <span class="input-label" data-i18n="codeExplorer.coverageMetricBlocked">Blocked</span>
+                                    <span id="coverage-blocked-identities" class="text-h4 text-yellow-primary">0</span>
+                                </div>
+                                <div class="panel panel-sm flex flex-col gap-4">
+                                    <span class="input-label" data-i18n="codeExplorer.coverageMetricInvalid">Invalid</span>
+                                    <span id="coverage-invalid-identities" class="text-h4 text-red-500">0</span>
+                                </div>
+                                <div class="panel panel-sm flex flex-col gap-4">
+                                    <span class="input-label" data-i18n="codeExplorer.coverageMetricRate">Ready coverage</span>
+                                    <span id="coverage-ready-rate" class="text-h4 text-black">0%</span>
+                                </div>
+                            </div>
+
+                            <div id="coverage-empty-state" class="hidden panel panel-sm">
+                                <p class="text-body-sm text-grey-primary" data-i18n="codeExplorer.coverageEmpty">Load one family to compare identities and expand their full valid codes.</p>
+                            </div>
+
+                            <div id="coverage-identity-list" class="flex flex-col gap-12"></div>
+                        </div>
+                    </section>
+
                     <section class="grid grid-cols-1 xl:grid-cols-12 gap-24">
                         <div class="xl:col-span-12">
                             <div class="card overflow-hidden">
@@ -604,10 +649,10 @@
         </div>
     </div>
 
-    <script src="locales/en.js?v=20260415-tecit-length"></script>
-    <script src="locales/pt.js?v=20260415-tecit-length"></script>
+    <script src="locales/en.js?v=20260415-coverage-view"></script>
+    <script src="locales/pt.js?v=20260415-coverage-view"></script>
     <script src="i18n.js?v=20260414-code-explorer"></script>
     <script src="app-shell.js?v=20260414-code-explorer"></script>
-    <script src="code-explorer.js?v=20260414-copy-remediation"></script>
+    <script src="code-explorer.js?v=20260415-coverage-view"></script>
 </body>
 </html>
