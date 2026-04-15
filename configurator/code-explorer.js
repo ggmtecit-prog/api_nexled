@@ -139,20 +139,25 @@ function bindControls() {
     });
 
     document.getElementById("explorer-prev").addEventListener("click", () => {
-        if (!explorerState.data || explorerState.data.pagination.page <= 1) {
+        const currentPage = getExplorerCurrentPage();
+
+        if (!explorerState.data || currentPage <= 1) {
             return;
         }
 
-        explorerState.controls.page = explorerState.data.pagination.page - 1;
+        explorerState.controls.page = currentPage - 1;
         loadExplorerData();
     });
 
     document.getElementById("explorer-next").addEventListener("click", () => {
-        if (!explorerState.data || explorerState.data.pagination.page >= explorerState.data.pagination.total_pages) {
+        const currentPage = getExplorerCurrentPage();
+        const totalPages = explorerState.data?.pagination?.total_pages || 1;
+
+        if (!explorerState.data || currentPage >= totalPages) {
             return;
         }
 
-        explorerState.controls.page = explorerState.data.pagination.page + 1;
+        explorerState.controls.page = currentPage + 1;
         loadExplorerData();
     });
 
@@ -553,12 +558,16 @@ function renderPagination() {
             '<button type="button" class="pagination-link" data-page="1" aria-current="page">1</button>',
             "</li>",
         ].join("");
-        prev.disabled = true;
-        next.disabled = true;
+        syncExplorerPaginationControl(prev, true);
+        syncExplorerPaginationControl(next, true);
+        window.requestAnimationFrame(() => {
+            list.scrollTo({ left: 0, behavior: "auto" });
+        });
         return;
     }
 
-    const { page, total_pages: totalPages } = explorerState.data.pagination;
+    const page = getExplorerCurrentPage();
+    const totalPages = Math.max(explorerState.data.pagination?.total_pages || 1, 1);
 
     list.innerHTML = Array.from({ length: Math.max(totalPages, 1) }, (_, index) => {
         const pageNumber = index + 1;
@@ -570,8 +579,61 @@ function renderPagination() {
             "</li>",
         ].join("");
     }).join("");
-    prev.disabled = page <= 1;
-    next.disabled = page >= totalPages;
+    syncExplorerPaginationControl(prev, page <= 1);
+    syncExplorerPaginationControl(next, page >= totalPages);
+    revealExplorerActivePage(list);
+}
+
+function getExplorerCurrentPage() {
+    const dataPage = Number.parseInt(String(explorerState.data?.pagination?.page || ""), 10);
+    const controlPage = Number.parseInt(String(explorerState.controls.page || ""), 10);
+
+    if (Number.isFinite(dataPage) && dataPage > 0) {
+        return dataPage;
+    }
+
+    if (Number.isFinite(controlPage) && controlPage > 0) {
+        return controlPage;
+    }
+
+    return 1;
+}
+
+function syncExplorerPaginationControl(button, disabled) {
+    if (!button) {
+        return;
+    }
+
+    button.disabled = disabled;
+    button.setAttribute("aria-disabled", disabled ? "true" : "false");
+}
+
+function revealExplorerActivePage(list) {
+    if (!list) {
+        return;
+    }
+
+    const activeButton = list.querySelector('[aria-current="page"]');
+
+    if (!activeButton) {
+        return;
+    }
+
+    const maxScrollLeft = list.scrollWidth - list.clientWidth;
+
+    if (maxScrollLeft <= 0) {
+        return;
+    }
+
+    const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const nextScrollLeft = activeButton.offsetLeft - ((list.clientWidth - activeButton.offsetWidth) / 2);
+
+    window.requestAnimationFrame(() => {
+        list.scrollTo({
+            left: Math.min(Math.max(0, nextScrollLeft), maxScrollLeft),
+            behavior: reduceMotion ? "auto" : "smooth",
+        });
+    });
 }
 
 function getSelectedRow() {
