@@ -32,8 +32,11 @@ function toPdfAssetSrc(?string $path): string {
     }
 
     $resolved = realpath($path) ?: $path;
+    $preferredSvg = resolveLegacySvgPath($resolved);
 
-    if (function_exists("getPdfRenderableImagePath")) {
+    if ($preferredSvg !== null) {
+        $resolved = $preferredSvg;
+    } elseif (function_exists("getPdfRenderableImagePath")) {
         $resolved = getPdfRenderableImagePath($resolved);
     }
 
