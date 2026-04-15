@@ -359,6 +359,20 @@ function setupExplorerFamilyCombobox() {
 
     return {
         renderOptions,
+        setSelectionByValue(nextValue, shouldTrigger = false) {
+            if (!nextValue) {
+                clearSelection(shouldTrigger, true);
+                return;
+            }
+
+            const option = getOptions().find((currentOption) => currentOption.dataset.value === nextValue);
+
+            if (!option) {
+                return;
+            }
+
+            setSelection(option.dataset.value || "", option.dataset.label || "", shouldTrigger);
+        },
     };
 }
 
@@ -371,7 +385,7 @@ function bindControls() {
     document.getElementById("explorer-search").addEventListener("input", () => {
         clearTimeout(searchInputTimer);
         searchInputTimer = setTimeout(() => {
-            applyFiltersFromForm();
+            applyFiltersFromForm("search");
         }, 250);
     });
 
@@ -437,21 +451,40 @@ function bindControls() {
     });
 }
 
-function applyFiltersFromForm() {
+function applyFiltersFromForm(source = "manual") {
     clearTimeout(searchInputTimer);
 
-    const family = document.getElementById("explorer-family").value;
+    const search = document.getElementById("explorer-search").value.trim();
+    let family = document.getElementById("explorer-family").value;
     const includeInvalid = document.getElementById("explorer-include-invalid").checked;
+    const detectedFamily = detectFamilyFromSearch(search);
+
+    if (detectedFamily && detectedFamily.value !== family) {
+        family = detectedFamily.value;
+        familyCombobox?.setSelectionByValue(detectedFamily.value, false);
+    }
 
     syncDraftInvalidControls();
 
     explorerState.controls.family = family;
-    explorerState.controls.search = document.getElementById("explorer-search").value.trim();
+    explorerState.controls.search = search;
     explorerState.controls.status = document.getElementById("explorer-status").value;
     explorerState.controls.includeInvalid = includeInvalid;
     explorerState.controls.pageSize = Number.parseInt(document.getElementById("explorer-page-size").value, 10) || 100;
     explorerState.controls.page = 1;
     syncAppliedInvalidSummaryCard();
+
+    if (source === "search" && search !== "" && !explorerState.controls.family) {
+        explorerState.data = null;
+        explorerState.selectedReference = "";
+        setPageStatus("codeExplorer.runtime.searchNeedsFamily", "neutral", "Enter a full code or choose a family first.");
+        renderSummary(null);
+        renderTable();
+        renderDetail();
+        renderResultsMeta();
+        renderPagination();
+        return;
+    }
 
     if (!explorerState.controls.family) {
         explorerState.data = null;
@@ -466,6 +499,29 @@ function applyFiltersFromForm() {
     }
 
     loadExplorerData();
+}
+
+function detectFamilyFromSearch(search) {
+    const normalizedSearch = search.replace(/\s+/g, "").toUpperCase();
+
+    if (normalizedSearch === "") {
+        return null;
+    }
+
+    const matchedFamily = [...explorerState.families]
+        .map((family) => {
+            const code = String(family.codigo || "");
+            const name = String(family.nome || code);
+
+            return {
+                value: code,
+                label: code + " - " + name,
+            };
+        })
+        .sort((left, right) => right.value.length - left.value.length)
+        .find((family) => normalizedSearch.startsWith(family.value.toUpperCase()));
+
+    return matchedFamily || null;
 }
 
 function bindStaticEvents() {
@@ -594,6 +650,7 @@ async function loadFamilies() {
 
 function populateFamilies() {
     const valueField = document.getElementById("explorer-family");
+    const searchField = document.getElementById("explorer-search");
     const options = explorerState.families.map((family) => {
         const code = String(family.codigo || "");
         const name = String(family.nome || code);
@@ -613,6 +670,10 @@ function populateFamilies() {
     document.getElementById("explorer-status").value = explorerState.controls.status;
     document.getElementById("explorer-page-size").value = String(explorerState.controls.pageSize);
     syncDraftInvalidControls();
+
+    if ((searchField?.value || "").trim() !== "" && !explorerState.controls.family) {
+        applyFiltersFromForm("search");
+    }
 }
 
 async function loadExplorerData() {

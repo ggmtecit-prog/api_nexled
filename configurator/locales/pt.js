@@ -230,6 +230,7 @@ window.NexLedLocales.pt = {
             awaitingFamily: "A aguardar seleção de família.",
             resultsMeta: "{family} - {total} linhas filtradas",
             loadedRows: "Resultados do Code Explorer carregados.",
+            searchNeedsFamily: "Introduza um cÃ³digo completo ou escolha primeiro uma famÃ­lia.",
             unknownError: "Erro desconhecido",
         },
     },

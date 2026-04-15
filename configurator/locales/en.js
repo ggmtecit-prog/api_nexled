@@ -227,6 +227,7 @@ window.NexLedLocales.en = {
             noRows: "No rows match current filters.",
             loadFailed: "Unable to load explorer data right now.",
             loadFailedWithMessage: "Unable to load explorer data right now: {message}",
+            searchNeedsFamily: "Enter a full code or choose a family first.",
             awaitingFamily: "Waiting for family selection.",
             resultsMeta: "{family} - {total} filtered rows",
             loadedRows: "Code Explorer results loaded.",
