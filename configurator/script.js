@@ -596,6 +596,41 @@ function setupFamilyCombobox() {
         clearSelection,
         getSelectedLabel,
         renderOptions,
+        upsertOption(item) {
+            if (!item || !item.value || !item.label) {
+                return false;
+            }
+
+            const existing = getOptions().find((option) => option.dataset.value === item.value);
+
+            if (existing) {
+                existing.dataset.label = item.label;
+
+                const labelNode = existing.querySelector(".combobox-option-label");
+
+                if (labelNode) {
+                    labelNode.textContent = item.label;
+                }
+
+                syncSelectedState();
+                updateFilter(input.value.trim());
+                return true;
+            }
+
+            const items = getOptions().map((option) => ({
+                value: option.dataset.value,
+                label: option.dataset.label,
+            }));
+
+            items.push({
+                value: item.value,
+                label: item.label,
+            });
+
+            items.sort((left, right) => left.label.localeCompare(right.label, undefined, { numeric: true, sensitivity: "base" }));
+            renderOptions(items);
+            return true;
+        },
         selectByValue(value, shouldTrigger = true) {
             const option = getOptions().find((item) => item.dataset.value === value);
 
@@ -1426,7 +1461,16 @@ function applyDecodedSegmentsToForm(segments) {
 
 async function applyDecodedReferenceToForm(data) {
     const familyCode = data?.segments?.family || "";
-    const familyMatched = familyCombobox?.selectByValue(familyCode, false) || false;
+    let familyMatched = familyCombobox?.selectByValue(familyCode, false) || false;
+
+    if (!familyMatched && familyCode && data?.family_name) {
+        familyCombobox?.upsertOption({
+            value: familyCode,
+            label: data.family_name,
+        });
+
+        familyMatched = familyCombobox?.selectByValue(familyCode, false) || false;
+    }
 
     if (!familyMatched) {
         return {
