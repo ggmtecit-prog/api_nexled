@@ -182,6 +182,14 @@ function generateDatasheet(): void {
         return;
     }
 
+    if (!isDatasheetRuntimeSupported($productType)) {
+        respondDatasheetJsonError(422, [
+            "error" => "Datasheet runtime not mapped yet for product family: " . $parts["family"],
+            "error_code" => "unsupported_datasheet_runtime",
+        ]);
+        return;
+    }
+
     // --- Shared config passed to multiple fetchers ---
     $config = [
         "lens"            => $lens,

@@ -219,6 +219,7 @@ window.NexLedLocales.pt = {
             missing_fixing_data: "Faltam dados de fixação.",
             missing_power_supply_data: "Faltam dados da fonte de alimentação.",
             missing_connection_cable_data: "Faltam dados do cabo de ligação.",
+            unsupported_datasheet_runtime: "O runtime de datasheet ainda não está mapeado para esta família.",
         },
         runtime: {
             chooseFamily: "Selecione uma família para carregar linhas de código válidas.",

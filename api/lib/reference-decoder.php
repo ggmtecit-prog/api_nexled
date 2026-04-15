@@ -84,7 +84,7 @@ function decodeReference(string $reference): array {
  * Product types control which images, drawings, and PDF sections are used.
  * The mapping lives in correspondenciaProdutos.json (reference only).
  *
- * Known types: "barra", "downlight", "dynamic"
+ * Known types: "barra", "downlight", "dynamic", "shelf", "tubular"
  *
  * @param  string $reference  Full product reference code
  * @return string|null  Product type, or null if the family is not mapped
@@ -97,6 +97,8 @@ function getProductType(string $reference): ?string {
         "barra"     => ["11", "55", "58", "32", "60"],
         "downlight" => ["29", "30"],
         "dynamic"   => ["48"],
+        "shelf"     => ["49"],
+        "tubular"   => ["01", "05"],
     ];
 
     foreach ($map as $type => $families) {
@@ -106,6 +108,10 @@ function getProductType(string $reference): ?string {
     }
 
     return null;
+}
+
+function isDatasheetRuntimeSupported(?string $productType): bool {
+    return in_array($productType, ["barra", "downlight", "dynamic"], true);
 }
 
 

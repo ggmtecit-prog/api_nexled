@@ -49,6 +49,7 @@ const FAILURE_REASON_KEYS = {
     missing_fixing_data: "codeExplorer.failure.missing_fixing_data",
     missing_power_supply_data: "codeExplorer.failure.missing_power_supply_data",
     missing_connection_cable_data: "codeExplorer.failure.missing_connection_cable_data",
+    unsupported_datasheet_runtime: "codeExplorer.failure.unsupported_datasheet_runtime",
 };
 
 let apiBasePromise = null;
@@ -928,13 +929,15 @@ function renderPagination() {
     const prev = pagination?.querySelector("[data-pagination-prev]");
     const next = pagination?.querySelector("[data-pagination-next]");
     const hasRows = (explorerState.data?.rows?.length || 0) > 0;
+    const totalPages = Math.max(explorerState.data?.pagination?.total_pages || 1, 1);
+    const shouldShowPagination = hasRows && totalPages >= 2;
 
     if (!list || !prev || !next) {
         return;
     }
 
     if (wrapper) {
-        wrapper.classList.toggle("hidden", !hasRows);
+        wrapper.classList.toggle("hidden", !shouldShowPagination);
     }
 
     if (!explorerState.data) {
@@ -952,7 +955,6 @@ function renderPagination() {
     }
 
     const page = getExplorerCurrentPage();
-    const totalPages = Math.max(explorerState.data.pagination?.total_pages || 1, 1);
 
     list.innerHTML = Array.from({ length: Math.max(totalPages, 1) }, (_, index) => {
         const pageNumber = index + 1;

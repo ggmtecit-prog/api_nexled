@@ -53,6 +53,15 @@ function sanitizeCodeExplorerSearch(mixed $value): string {
     return trim((string) $value);
 }
 
+function getCodeExplorerIncludeInvalid(mixed $value): bool {
+    if (is_bool($value)) {
+        return $value;
+    }
+
+    $normalized = trim(strtolower((string) $value));
+    return in_array($normalized, ["1", "true", "yes", "on"], true);
+}
+
 function getCodeExplorerIdentityMatrixSize(array $options): int {
     return count($options["size"])
         * count($options["color"])
@@ -70,6 +79,10 @@ function getCodeExplorerSuffixMatrixSize(array $options): int {
 function getCodeExplorerFullMatrixSize(array $options): int {
     return getCodeExplorerIdentityMatrixSize($options)
         * getCodeExplorerSuffixMatrixSize($options);
+}
+
+function getCodeExplorerValidMatrixSize(array $options, array $identities): int {
+    return count($identities) * getCodeExplorerSuffixMatrixSize($options);
 }
 
 function getCodeExplorerFamilyMeta(int $family): ?array {
@@ -235,7 +248,7 @@ function getCodeExplorerLuminosIdentities(string $familyCode): array {
     return array_values($identities);
 }
 
-function buildCodeExplorerResponse(string $familyCode, string $familyName, array $options, array $identities, string $search, string $statusFilter, int $page, int $pageSize): array {
+function buildCodeExplorerResponse(string $familyCode, string $familyName, array $options, array $identities, string $search, string $statusFilter, int $page, int $pageSize, bool $includeInvalid): array {
     $summary = [
         "total_codes" => 0,
         "configurator_valid" => 0,
@@ -253,9 +266,126 @@ function buildCodeExplorerResponse(string $familyCode, string $familyName, array
     $offset = ($requestedPage - 1) * $pageSize;
     $limit = $offset + $pageSize;
     $defaultProductType = getProductType($familyCode . str_repeat("0", REFERENCE_LENGTH_FULL - REFERENCE_LENGTH_FAMILY));
+    $segmentLookups = getCodeExplorerSegmentLabelLookups($options);
 
     foreach ($identities as $identityData) {
         $identityMap[$identityData["identity"]] = $identityData;
+    }
+
+    if (!$includeInvalid) {
+        foreach ($identities as $identityData) {
+            $identity = (string) ($identityData["identity"] ?? "");
+
+            if (strlen($identity) !== REFERENCE_LENGTH_IDENTITY) {
+                continue;
+            }
+
+            $identityParts = decodeReference($identity . str_repeat("0", REFERENCE_LENGTH_FULL - REFERENCE_LENGTH_IDENTITY));
+            $description = (string) ($identityData["description"] ?? "");
+            $productType = $identityData["product_type"] ?? $defaultProductType;
+
+            foreach ($options["lens"] as $lens) {
+                foreach ($options["finish"] as $finish) {
+                    foreach ($options["cap"] as $cap) {
+                        $productId = resolveCodeExplorerProductId($familyCode, $identityData, $cap["code"]);
+
+                        if ($productId === null || $productId === "") {
+                            continue;
+                        }
+
+                        $validationReference = $identity . $lens["code"] . $finish["code"] . $cap["code"] . $defaultOptionCode;
+                        $readiness = getCodeExplorerDatasheetReadiness(
+                            $validationReference,
+                            $productId,
+                            $productType,
+                            $identityData["led_id"] ?? "",
+                            $options,
+                            $validatorCache
+                        );
+
+                        $summary["total_codes"] += $optionCount;
+                        $summary["configurator_valid"] += $optionCount;
+
+                        if ($readiness["datasheet_ready"]) {
+                            $summary["datasheet_ready"] += $optionCount;
+                        } else {
+                            $summary["datasheet_blocked"] += $optionCount;
+                        }
+
+                        foreach ($options["option"] as $option) {
+                            $row = [
+                                "reference" => $identity . $lens["code"] . $finish["code"] . $cap["code"] . $option["code"],
+                                "identity" => $identity,
+                                "description" => $description,
+                                "product_type" => $productType,
+                                "product_id" => $productId,
+                                "segments" => [
+                                    "family" => $familyCode,
+                                    "size" => $identityParts["size"],
+                                    "color" => $identityParts["color"],
+                                    "cri" => $identityParts["cri"],
+                                    "series" => $identityParts["series"],
+                                    "lens" => $lens["code"],
+                                    "finish" => $finish["code"],
+                                    "cap" => $cap["code"],
+                                    "option" => $option["code"],
+                                ],
+                                "segment_labels" => [
+                                    "size" => $segmentLookups["size"][$identityParts["size"]] ?? $identityParts["size"],
+                                    "color" => $segmentLookups["color"][$identityParts["color"]] ?? $identityParts["color"],
+                                    "cri" => $segmentLookups["cri"][$identityParts["cri"]] ?? $identityParts["cri"],
+                                    "series" => $segmentLookups["series"][$identityParts["series"]] ?? $identityParts["series"],
+                                    "lens" => $lens["label"],
+                                    "finish" => $finish["label"],
+                                    "cap" => $cap["label"],
+                                    "option" => $option["label"],
+                                ],
+                                "configurator_valid" => true,
+                                "datasheet_ready" => $readiness["datasheet_ready"],
+                                "failure_reason" => $readiness["failure_reason"],
+                            ];
+
+                            if (!matchesCodeExplorerSearch($row, $search)) {
+                                continue;
+                            }
+
+                            if (!matchesCodeExplorerStatusFilter($row, $statusFilter)) {
+                                continue;
+                            }
+
+                            if ($filteredTotal >= $offset && $filteredTotal < $limit) {
+                                $pageRows[] = $row;
+                            }
+
+                            $filteredTotal++;
+                        }
+                    }
+                }
+            }
+        }
+
+        $totalPages = max(1, (int) ceil($filteredTotal / $pageSize));
+        $safePage = min($requestedPage, $totalPages);
+
+        return [
+            "family" => [
+                "code" => $familyCode,
+                "name" => $familyName,
+            ],
+            "summary" => $summary,
+            "filters" => [
+                "search" => $search,
+                "status" => $statusFilter,
+                "include_invalid" => false,
+            ],
+            "pagination" => [
+                "page" => $safePage,
+                "page_size" => $pageSize,
+                "total_pages" => $totalPages,
+                "total_rows" => $filteredTotal,
+            ],
+            "rows" => $pageRows,
+        ];
     }
 
     foreach ($options["size"] as $size) {
@@ -375,6 +505,7 @@ function buildCodeExplorerResponse(string $familyCode, string $familyName, array
         "filters" => [
             "search" => $search,
             "status" => $statusFilter,
+            "include_invalid" => true,
         ],
         "pagination" => [
             "page" => $safePage,
@@ -384,6 +515,20 @@ function buildCodeExplorerResponse(string $familyCode, string $familyName, array
         ],
         "rows" => $pageRows,
     ];
+}
+
+function getCodeExplorerSegmentLabelLookups(array $options): array {
+    $lookups = [];
+
+    foreach (["size", "color", "cri", "series"] as $segment) {
+        $lookups[$segment] = [];
+
+        foreach ($options[$segment] ?? [] as $option) {
+            $lookups[$segment][$option["code"]] = $option["label"];
+        }
+    }
+
+    return $lookups;
 }
 
 function resolveCodeExplorerProductId(string $familyCode, array $identityData, string $capCode): ?string {
@@ -436,6 +581,13 @@ function getCodeExplorerDatasheetReadiness(string $reference, string $productId,
 
     if (isset($cache[$cacheKey])) {
         return $cache[$cacheKey];
+    }
+
+    if (!isDatasheetRuntimeSupported($productType)) {
+        return $cache[$cacheKey] = [
+            "datasheet_ready" => false,
+            "failure_reason" => "unsupported_datasheet_runtime",
+        ];
     }
 
     $lensLabel = resolveCodeExplorerOptionLabel($options["lens"], $parts["lens"]);

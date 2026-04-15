@@ -219,6 +219,7 @@ window.NexLedLocales.en = {
             missing_fixing_data: "Missing fixing data.",
             missing_power_supply_data: "Missing power supply data.",
             missing_connection_cable_data: "Missing connection cable data.",
+            unsupported_datasheet_runtime: "Datasheet runtime is not mapped yet for this family.",
         },
         runtime: {
             chooseFamily: "Select one family to load valid code rows.",
