@@ -18,6 +18,54 @@
 // Base path to sizes JSON files for bar products
 define("SIZES_JSON_PATH", dirname(__FILE__, 3) . "/appdatasheets/json/tamanhos");
 
+function getEmptyBarSizesDefinition(): object {
+    return (object) [
+        "tampa" => (object) [],
+        "barra" => (object) [],
+        "caps" => [],
+        "conectorcabo" => (object) [],
+    ];
+}
+
+function loadBarSizesDefinition(?string $sizesFile, string $reference): object {
+    if ($sizesFile === null || $sizesFile === "") {
+        error_log("NexLed datasheet: missing bar sizes file mapping for reference {$reference}");
+        return getEmptyBarSizesDefinition();
+    }
+
+    $jsonPath = SIZES_JSON_PATH . "/{$sizesFile}.json";
+
+    if (!is_file($jsonPath)) {
+        error_log("NexLed datasheet: bar sizes file not found at {$jsonPath} for reference {$reference}");
+        return getEmptyBarSizesDefinition();
+    }
+
+    $decoded = json_decode((string) file_get_contents($jsonPath));
+
+    if (!is_object($decoded)) {
+        error_log("NexLed datasheet: invalid bar sizes JSON at {$jsonPath} for reference {$reference}");
+        return getEmptyBarSizesDefinition();
+    }
+
+    if (!isset($decoded->tampa) || !is_object($decoded->tampa)) {
+        $decoded->tampa = (object) [];
+    }
+
+    if (!isset($decoded->barra) || !is_object($decoded->barra)) {
+        $decoded->barra = (object) [];
+    }
+
+    if (!isset($decoded->caps) || !is_array($decoded->caps)) {
+        $decoded->caps = [];
+    }
+
+    if (!isset($decoded->conectorcabo) || !is_object($decoded->conectorcabo)) {
+        $decoded->conectorcabo = (object) [];
+    }
+
+    return $decoded;
+}
+
 
 
 /**
@@ -39,12 +87,12 @@ define("SIZES_JSON_PATH", dirname(__FILE__, 3) . "/appdatasheets/json/tamanhos")
  *   J = bar connector width
  *
  * @param  string $reference    Full product reference
- * @param  string $sizesFile    Sizes JSON filename key (e.g. "barras", "barras_bt")
+ * @param  string|null $sizesFile  Sizes JSON filename key (e.g. "barras", "barras_bt")
  * @param  array  $config       User selections: extra_length, option, cable_length,
  *                              connector_cable, end_cap, gasket, cable_type
  * @return array  Keys: drawing (path|null), A–J (dimension values, "0" means not shown)
  */
-function getBarDrawing(string $reference, string $sizesFile, array $config): array {
+function getBarDrawing(string $reference, ?string $sizesFile, array $config): array {
     $config = normalizeBarAssetConfig($reference, $config);
 
     $parts          = decodeReference($reference);
@@ -60,7 +108,7 @@ function getBarDrawing(string $reference, string $sizesFile, array $config): arr
     $endCap         = $config["end_cap"];
     $gasket         = $config["gasket"];
 
-    $sizes = json_decode(file_get_contents(SIZES_JSON_PATH . "/$sizesFile.json"));
+    $sizes = loadBarSizesDefinition($sizesFile, $reference);
 
     // --- Find the drawing image ---
     $folder = "/img/$family/desenhos/";

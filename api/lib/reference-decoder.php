@@ -94,7 +94,7 @@ function getProductType(string $reference): ?string {
     $family = $parts["family"];
 
     $map = [
-        "barra"     => ["11", "55", "58", "32"],
+        "barra"     => ["11", "55", "58", "32", "60"],
         "downlight" => ["29", "30"],
         "dynamic"   => ["48"],
     ];
