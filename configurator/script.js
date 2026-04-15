@@ -1551,7 +1551,7 @@ async function loadTecitCodeIntoForm(sourceInputId = "output-reference") {
         const data = await apiFetch("/?endpoint=decode-reference&ref=" + encodeURIComponent(reference));
 
         if (Number(data?.length) !== Number(data?.expected_length)) {
-            setStatusKey("configurator.runtime.tecitCodeInvalid", "error", {}, "This Tecit code cannot be applied. Check family and length.");
+            setStatusKey("configurator.runtime.tecitCodeInvalid", "error", {}, "This Tecit code cannot be applied. A full live reference must contain exactly 17 characters.");
             return;
         }
 

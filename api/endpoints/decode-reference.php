@@ -16,6 +16,7 @@ if ($reference === "") {
 $parts = decodeReference($reference);
 $productType = getProductType($reference);
 $productId = null;
+$familyName = getDecodedReferenceFamilyName($parts["family"]);
 $warnings = [];
 $errorCode = null;
 $errorMessage = null;
@@ -23,7 +24,7 @@ $errorMessage = null;
 if (!hasFullReferenceLength($reference)) {
     $warnings[] = "unexpected_length";
     $errorCode = "unexpected_length";
-    $errorMessage = "Unexpected reference length.";
+    $errorMessage = "Unexpected reference length. A full Tecit code must contain exactly 17 characters.";
 }
 
 if ($productType !== null) {
@@ -63,6 +64,7 @@ echo json_encode([
         "cap" => $parts["cap"],
         "option" => $parts["option"],
     ],
+    "family_name" => $familyName,
     "product_type" => $productType,
     "product_id" => $productId,
     "description" => $description,
@@ -98,4 +100,33 @@ function getDecodedReferenceDescription(string $identity): ?string {
     closeDB($con);
 
     return $description;
+}
+
+function getDecodedReferenceFamilyName(string $familyCode): ?string {
+    if ($familyCode === "") {
+        return null;
+    }
+
+    $con = connectDBReferencias();
+    $stmt = mysqli_prepare($con, "SELECT nome FROM Familias WHERE codigo = ? LIMIT 1");
+
+    if (!$stmt) {
+        closeDB($con);
+        return null;
+    }
+
+    mysqli_stmt_bind_param($stmt, "s", $familyCode);
+    mysqli_stmt_execute($stmt);
+    $result = mysqli_stmt_get_result($stmt);
+    $familyName = null;
+
+    if ($result && mysqli_num_rows($result) > 0) {
+        $row = mysqli_fetch_assoc($result);
+        $familyName = $row["nome"] ?? null;
+    }
+
+    mysqli_stmt_close($stmt);
+    closeDB($con);
+
+    return $familyName;
 }

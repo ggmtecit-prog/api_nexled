@@ -212,7 +212,6 @@
                     <div class="card-body flex flex-col gap-20">
                         <div class="flex flex-col gap-4">
                             <h2 class="card-title" data-i18n="codeExplorer.filtersTitle">Explorer Filters</h2>
-                            <p class="text-body-sm text-grey-primary" data-i18n="codeExplorer.filtersBody">Choose a family first. The explorer builds full Tecit codes from the selected family and available options, then highlights invalid combinations and datasheet blockers.</p>
                         </div>
 
                         <form id="explorer-filters" class="flex flex-col gap-16">
@@ -252,27 +251,29 @@
                                 <label id="explorer-search-label" class="input-label ml-12" for="explorer-search">Search By Code</label>
                                 <input id="explorer-search" type="text" class="input input-sm" placeholder="Enter a code">
                             </div>
-                            <div id="explorer-status-field" class="hidden" data-name-search-field>
-                                <label class="input-label ml-12" for="explorer-status" data-i18n="codeExplorer.statusLabel">Status</label>
-                                <select id="explorer-status" class="input input-sm">
-                                    <option value="all" data-i18n="codeExplorer.statusAll">All</option>
-                                    <option value="configurator_valid" data-i18n="codeExplorer.statusConfiguratorValid">Configurator valid</option>
-                                    <option value="configurator_invalid" data-i18n="codeExplorer.statusConfiguratorInvalid" data-invalid-status-option>Configurator invalid</option>
-                                    <option value="datasheet_ready" data-i18n="codeExplorer.statusDatasheetReady">Datasheet ready</option>
-                                    <option value="datasheet_blocked" data-i18n="codeExplorer.statusDatasheetBlocked">Datasheet blocked</option>
-                                </select>
-                            </div>
-                            <div id="explorer-page-size-field" class="hidden" data-name-search-field>
-                                <label class="input-label ml-12" for="explorer-page-size" data-i18n="codeExplorer.pageSizeLabel">Rows per page</label>
-                                <select id="explorer-page-size" class="input input-sm">
-                                    <option value="5">5</option>
-                                    <option value="10">10</option>
-                                    <option value="15">15</option>
-                                    <option value="25">25</option>
-                                    <option value="50">50</option>
-                                    <option value="100" selected>100</option>
-                                    <option value="250">250</option>
-                                </select>
+                            <div class="hidden grid grid-cols-1 sm:grid-cols-2 gap-12" data-name-search-field>
+                                <div id="explorer-status-field">
+                                    <label class="input-label ml-12" for="explorer-status" data-i18n="codeExplorer.statusLabel">Status</label>
+                                    <select id="explorer-status" class="input input-sm">
+                                        <option value="all" data-i18n="codeExplorer.statusAll">All</option>
+                                        <option value="configurator_valid" data-i18n="codeExplorer.statusConfiguratorValid">Configurator valid</option>
+                                        <option value="configurator_invalid" data-i18n="codeExplorer.statusConfiguratorInvalid" data-invalid-status-option>Configurator invalid</option>
+                                        <option value="datasheet_ready" data-i18n="codeExplorer.statusDatasheetReady">Datasheet ready</option>
+                                        <option value="datasheet_blocked" data-i18n="codeExplorer.statusDatasheetBlocked">Datasheet blocked</option>
+                                    </select>
+                                </div>
+                                <div id="explorer-page-size-field">
+                                    <label class="input-label ml-12" for="explorer-page-size" data-i18n="codeExplorer.pageSizeLabel">Rows per page</label>
+                                    <select id="explorer-page-size" class="input input-sm">
+                                        <option value="5">5</option>
+                                        <option value="10">10</option>
+                                        <option value="15">15</option>
+                                        <option value="25">25</option>
+                                        <option value="50">50</option>
+                                        <option value="100" selected>100</option>
+                                        <option value="250">250</option>
+                                    </select>
+                                </div>
                             </div>
                             <label id="explorer-include-invalid-field" class="hidden checkbox-wrapper checkbox-md" data-name-search-field>
                                 <span class="relative inline-flex items-center justify-center">
@@ -334,7 +335,6 @@
                                     <div class="flex flex-col gap-12 lg:flex-row lg:items-start lg:justify-between">
                                         <div>
                                             <h2 class="card-title" data-i18n="codeExplorer.tableTitle">Allowed Codes</h2>
-                                            <p id="explorer-results-meta" class="hidden text-body-sm text-grey-primary"></p>
                                         </div>
                                         <div class="flex flex-wrap items-center gap-12 lg:justify-end">
                                             <div class="badge badge-neutral badge-lg">
@@ -604,8 +604,8 @@
         </div>
     </div>
 
-    <script src="locales/en.js?v=20260414-copy-remediation"></script>
-    <script src="locales/pt.js?v=20260414-copy-remediation"></script>
+    <script src="locales/en.js?v=20260415-tecit-length"></script>
+    <script src="locales/pt.js?v=20260415-tecit-length"></script>
     <script src="i18n.js?v=20260414-code-explorer"></script>
     <script src="app-shell.js?v=20260414-code-explorer"></script>
     <script src="code-explorer.js?v=20260414-copy-remediation"></script>

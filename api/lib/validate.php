@@ -45,13 +45,13 @@ function validateIpRating(string $ip): string {
 
 /**
  * Sanitizes a product reference code.
- * Strips everything except alphanumeric characters and returns the first 20 chars.
+ * Strips everything except alphanumeric characters and returns the first 17 chars.
  *
  * @param  string $reference  Raw value from user input
  * @return string  Safe reference string
  */
 function validateReference(string $reference): string {
-    return substr(preg_replace("/[^a-zA-Z0-9]/", "", $reference), 0, 20);
+    return substr(preg_replace("/[^a-zA-Z0-9]/", "", $reference), 0, 17);
 }
 
 
