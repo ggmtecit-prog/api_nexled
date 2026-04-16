@@ -12,10 +12,8 @@ const STATUS_TOAST_VARIANT = {
 };
 const EXPLORER_TABLE_HEAD_FALLBACK_COLUMNS = [
     "minmax(0, 1.35fr)",
-    "minmax(0, 0.95fr)",
-    "minmax(0, 1.1fr)",
+    "minmax(0, 1.25fr)",
     "minmax(0, 0.9fr)",
-    "minmax(0, 1fr)",
     "minmax(0, 0.9fr)",
     "minmax(0, 0.9fr)",
     "minmax(0, 1.8fr)",
@@ -2295,7 +2293,6 @@ function renderTable() {
             : buildNeutralBadge(t("codeExplorer.statusNotApplicableShort", {}, "N/A"));
         const description = row.description || valueUnavailable;
         const productType = row.product_type || valueUnavailable;
-        const productId = row.product_id || valueUnavailable;
         const failureReason = getFailureReasonText(row.failure_reason);
 
         return `
@@ -2305,17 +2302,11 @@ function renderTable() {
                         <span class="link-label font-mono break-all">${escapeHtml(row.reference)}</span>
                     </button>
                 </td>
-                <td class="data-table-cell" data-sort-value="${escapeHtml(row.identity || "")}">
-                    <span class="text-body-sm font-mono">${escapeHtml(row.identity || "")}</span>
-                </td>
                 <td class="data-table-cell" data-sort-value="${escapeHtml(description)}">
                     <span class="text-body-sm">${escapeHtml(description)}</span>
                 </td>
                 <td class="data-table-cell" data-sort-value="${escapeHtml(productType)}">
                     <span class="text-body-sm">${escapeHtml(productType)}</span>
-                </td>
-                <td class="data-table-cell break-all" data-sort-value="${escapeHtml(productId)}">
-                    <span class="text-body-sm break-all">${escapeHtml(productId)}</span>
                 </td>
                 <td class="data-table-cell" data-sort-value="${row.configurator_valid ? "valid" : "invalid"}">${buildStatusBadge(row.configurator_valid, t("codeExplorer.statusConfiguratorValidShort", {}, "Valid"), t("codeExplorer.statusConfiguratorInvalidShort", {}, "Invalid"))}</td>
                 <td class="data-table-cell" data-sort-value="${row.configurator_valid ? (row.datasheet_ready ? "ready" : "blocked") : "na"}">${datasheetStatus}</td>

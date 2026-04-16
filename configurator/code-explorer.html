@@ -221,8 +221,8 @@
                             </label>
                         </div>
                     </div>
-                    <div class="card-body pt-20 flex flex-col gap-20">
-                            <form id="explorer-filters" class="flex flex-col gap-16">
+                    <div class="card-body pt-64 flex flex-col gap-20">
+                            <form id="explorer-filters" class="mt-4 flex flex-col gap-16">
                             <div id="explorer-text-search-field">
                                 <label id="explorer-search-label" class="input-label ml-12" for="explorer-search" data-i18n="codeExplorer.searchInputLabel">Search</label>
                                 <input id="explorer-search" type="text" class="input input-sm" placeholder="Enter a code or description" data-i18n-placeholder="codeExplorer.searchInputPlaceholder">
@@ -414,22 +414,12 @@
                                                 </div>
                                                 <div class="data-table-heading" role="columnheader">
                                                     <div class="data-table-heading-content">
-                                                        <span class="data-table-heading-label" data-i18n="codeExplorer.tableIdentity">Identity</span>
-                                                    </div>
-                                                </div>
-                                                <div class="data-table-heading" role="columnheader">
-                                                    <div class="data-table-heading-content">
                                                         <span class="data-table-heading-label" data-i18n="codeExplorer.tableDescription">Description</span>
                                                     </div>
                                                 </div>
                                                 <div class="data-table-heading" role="columnheader">
                                                     <div class="data-table-heading-content">
                                                         <span class="data-table-heading-label" data-i18n="codeExplorer.tableType">Type</span>
-                                                    </div>
-                                                </div>
-                                                <div class="data-table-heading" role="columnheader">
-                                                    <div class="data-table-heading-content">
-                                                        <span class="data-table-heading-label" data-i18n="codeExplorer.tableProductId">Product ID</span>
                                                     </div>
                                                 </div>
                                                 <div class="data-table-heading" role="columnheader">
@@ -453,10 +443,8 @@
                                                     <thead class="sr-only">
                                                         <tr>
                                                             <th scope="col" data-i18n="codeExplorer.tableReference">Reference</th>
-                                                            <th scope="col" data-i18n="codeExplorer.tableIdentity">Identity</th>
                                                             <th scope="col" data-i18n="codeExplorer.tableDescription">Description</th>
                                                             <th scope="col" data-i18n="codeExplorer.tableType">Type</th>
-                                                            <th scope="col" data-i18n="codeExplorer.tableProductId">Product ID</th>
                                                             <th scope="col" data-i18n="codeExplorer.tableConfigurator">Configurator</th>
                                                             <th scope="col" data-i18n="codeExplorer.tableDatasheet">Datasheet</th>
                                                             <th scope="col" data-i18n="codeExplorer.tableFailure">Failure</th>
@@ -669,6 +657,6 @@
     <script src="locales/pt.js?v=20260416-pdf-specs-modal"></script>
     <script src="i18n.js?v=20260414-code-explorer"></script>
     <script src="app-shell.js?v=20260414-code-explorer"></script>
-    <script src="code-explorer.js?v=20260416-pdf-specs-modal"></script>
+    <script src="code-explorer.js?v=20260416-table-trim"></script>
 </body>
 </html>
