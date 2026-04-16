@@ -18,6 +18,34 @@ if ($familyMeta === null) {
     exit();
 }
 
+$action = trim(strtolower((string) ($_GET["action"] ?? "")));
+
+if ($action === "pdf_specs") {
+    $reference = sanitizeCodeExplorerSearch($_GET["reference"] ?? "");
+
+    if (strlen($reference) !== REFERENCE_LENGTH_FULL || !str_starts_with($reference, $familyMeta["code"])) {
+        http_response_code(400);
+        echo json_encode(["error" => "Missing or invalid reference parameter"]);
+        exit();
+    }
+
+    $lang = getCodeExplorerLanguage($_GET["lang"] ?? CODE_EXPLORER_DEFAULT_LANG);
+    $options = getCodeExplorerFamilyOptions($family);
+    $identities = getCodeExplorerLuminosIdentities($familyMeta["code"]);
+
+    echo json_encode(
+        buildCodeExplorerPdfSpecsResponse(
+            $familyMeta["code"],
+            $familyMeta["name"],
+            $options,
+            $identities,
+            $reference,
+            $lang
+        )
+    );
+    exit();
+}
+
 $page = getCodeExplorerPage($_GET["page"] ?? null);
 $pageSize = getCodeExplorerPageSize($_GET["page_size"] ?? null);
 $mode = getCodeExplorerMode($_GET["mode"] ?? CODE_EXPLORER_MODE_FILTERS);

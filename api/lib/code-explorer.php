@@ -78,6 +78,13 @@ function sanitizeCodeExplorerSearch(mixed $value): string {
     return trim((string) $value);
 }
 
+function getCodeExplorerLanguage(mixed $value): string {
+    $normalized = trim(strtolower((string) $value));
+    return in_array($normalized, ["pt", "en", "es"], true)
+        ? $normalized
+        : CODE_EXPLORER_DEFAULT_LANG;
+}
+
 function getCodeExplorerIncludeInvalid(mixed $value): bool {
     if (is_bool($value)) {
         return $value;
@@ -1476,6 +1483,157 @@ function getCodeExplorerDatasheetReadiness(string $reference, string $productId,
     return $cache[$cacheKey] = [
         "datasheet_ready" => true,
         "failure_reason" => null,
+    ];
+}
+
+function buildCodeExplorerPdfSpecsResponse(string $familyCode, string $familyName, array $options, array $identities, string $reference, string $lang = CODE_EXPLORER_DEFAULT_LANG): array {
+    $identityMap = [];
+    $parts = decodeReference($reference);
+    $identity = substr($reference, 0, REFERENCE_LENGTH_IDENTITY);
+    $defaultProductType = getProductType($familyCode . str_repeat("0", REFERENCE_LENGTH_FULL - REFERENCE_LENGTH_FAMILY));
+    $segmentLookups = getCodeExplorerSegmentLabelLookups($options);
+
+    foreach ($identities as $identityData) {
+        $identityMap[(string) ($identityData["identity"] ?? "")] = $identityData;
+    }
+
+    $identityData = $identityMap[$identity] ?? null;
+    $isConfiguratorValidIdentity = $identityData !== null;
+    $productId = $isConfiguratorValidIdentity
+        ? resolveCodeExplorerProductId($familyCode, $identityData, $parts["cap"] ?? "")
+        : null;
+    $isConfiguratorValid = $isConfiguratorValidIdentity && $productId !== null && $productId !== "";
+    $productType = $isConfiguratorValidIdentity
+        ? ($identityData["product_type"] ?? $defaultProductType)
+        : $defaultProductType;
+    $ledId = (string) ($identityData["led_id"] ?? "");
+    $description = (string) ($identityData["description"] ?? "");
+    $row = [
+        "reference" => $reference,
+        "identity" => $identity,
+        "description" => $description,
+        "product_type" => $productType,
+        "product_id" => $productId,
+        "segments" => [
+            "family" => $parts["family"] ?? "",
+            "size" => $parts["size"] ?? "",
+            "color" => $parts["color"] ?? "",
+            "cri" => $parts["cri"] ?? "",
+            "series" => $parts["series"] ?? "",
+            "lens" => $parts["lens"] ?? "",
+            "finish" => $parts["finish"] ?? "",
+            "cap" => $parts["cap"] ?? "",
+            "option" => $parts["option"] ?? "",
+        ],
+        "segment_labels" => [
+            "size" => $segmentLookups["size"][$parts["size"] ?? ""] ?? ($parts["size"] ?? ""),
+            "color" => $segmentLookups["color"][$parts["color"] ?? ""] ?? ($parts["color"] ?? ""),
+            "cri" => $segmentLookups["cri"][$parts["cri"] ?? ""] ?? ($parts["cri"] ?? ""),
+            "series" => $segmentLookups["series"][$parts["series"] ?? ""] ?? ($parts["series"] ?? ""),
+            "lens" => resolveCodeExplorerOptionLabel($options["lens"], $parts["lens"] ?? ""),
+            "finish" => resolveCodeExplorerOptionLabel($options["finish"], $parts["finish"] ?? ""),
+            "cap" => resolveCodeExplorerOptionLabel($options["cap"], $parts["cap"] ?? ""),
+            "option" => resolveCodeExplorerOptionLabel($options["option"], $parts["option"] ?? ""),
+        ],
+    ];
+    $row["legacy_description"] = buildCodeExplorerLegacyDescription($row);
+
+    $readiness = [
+        "datasheet_ready" => false,
+        "failure_reason" => "invalid_luminos_combination",
+    ];
+    $header = null;
+    $characteristics = null;
+    $technicalDrawing = null;
+    $colorGraph = null;
+    $lensDiagram = null;
+    $finishAndLens = null;
+    $ipRating = null;
+
+    if ($isConfiguratorValid) {
+        $validatorCache = [];
+        $readiness = getCodeExplorerDatasheetReadiness($reference, $productId, $productType, $ledId, $options, $validatorCache);
+        $config = [
+            "lens" => $row["segment_labels"]["lens"],
+            "finish" => $row["segment_labels"]["finish"],
+            "connector_cable" => "0",
+            "cable_type" => "branco",
+            "end_cap" => "0",
+            "purpose" => "0",
+            "lang" => $lang,
+            "extra_length" => 0,
+            "option" => $parts["option"] ?? "0",
+            "cable_length" => 0,
+            "gasket" => 5,
+        ];
+        $header = $ledId !== "" ? getProductHeader((string) $productType, $productId, $reference, $ledId, $config) : null;
+        $ipRating = getIpRating($productId, "0");
+        $characteristics = getCharacteristics($productId, (string) ($ipRating ?? ""), $familyCode, $parts["lens"] ?? "", $lang);
+        $technicalDrawing = getTechnicalDrawing((string) $productType, $reference, $productId, getBarSizesFile($reference), $config);
+        $colorGraph = $ledId !== "" ? getColorGraph($ledId, $lang) : null;
+        $lensDiagram = ($parts["lens"] ?? "0") !== "0"
+            ? getLensDiagram($productId, $reference)
+            : null;
+        $finishAndLens = getFinishAndLens((string) $productType, $productId, $reference, $config);
+    }
+
+    $characteristicRows = [];
+
+    foreach (($characteristics ?? []) as $label => $value) {
+        $characteristicRows[] = [
+            "label" => (string) $label,
+            "value" => (string) $value,
+        ];
+    }
+
+    $dimensionRows = [];
+
+    foreach (["A", "B", "C", "D", "E", "F", "G", "H", "I", "J"] as $dimensionKey) {
+        $value = trim((string) ($technicalDrawing[$dimensionKey] ?? ""));
+
+        if ($value === "" || $value === "0") {
+            continue;
+        }
+
+        $dimensionRows[] = [
+            "label" => $dimensionKey,
+            "value" => $value,
+        ];
+    }
+
+    $headerDescription = trim((string) preg_replace('/\s+/', ' ', strip_tags(str_replace(["<br>", "<br/>", "<br />"], "\n", (string) ($header["description"] ?? "")))));
+
+    return [
+        "family" => [
+            "code" => $familyCode,
+            "name" => $familyName,
+        ],
+        "reference" => $reference,
+        "configurator_valid" => $isConfiguratorValid,
+        "datasheet_ready" => $isConfiguratorValid ? (bool) ($readiness["datasheet_ready"] ?? false) : false,
+        "failure_reason" => $isConfiguratorValid ? ($readiness["failure_reason"] ?? null) : "invalid_luminos_combination",
+        "summary" => [
+            "product_id" => (string) ($productId ?? ""),
+            "product_type" => (string) ($productType ?? ""),
+            "led_id" => $ledId,
+            "description" => $description,
+            "legacy_description" => (string) ($row["legacy_description"] ?? ""),
+            "header_description" => $headerDescription,
+            "finish_name" => (string) ($finishAndLens["finish_name"] ?? ""),
+            "ip_rating" => (string) ($ipRating ?? ""),
+            "color_graph_label" => (string) ($colorGraph["label"] ?? ""),
+        ],
+        "segments" => $row["segments"],
+        "segment_labels" => $row["segment_labels"],
+        "characteristics" => $characteristicRows,
+        "dimensions" => $dimensionRows,
+        "assets" => [
+            "header_image" => ($header["image"] ?? null) !== null,
+            "technical_drawing" => ($technicalDrawing["drawing"] ?? null) !== null,
+            "color_graph" => $colorGraph !== null,
+            "lens_diagram" => ($parts["lens"] ?? "0") === "0" ? null : ($lensDiagram !== null),
+            "finish_image" => $finishAndLens !== null && !str_contains((string) ($finishAndLens["image"] ?? ""), "/img/placeholders/"),
+        ],
     ];
 }
 

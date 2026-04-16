@@ -95,6 +95,7 @@ let explorerState = {
     selectedReference: "",
     coverageExpandedIdentity: "",
     coverageDetailsByIdentity: {},
+    detailPdfSpecsByKey: {},
     controls: {
         viewMode: EXPLORER_VIEW_MODE_SEARCH,
         searchType: EXPLORER_SEARCH_TYPE_CODE,
@@ -1441,9 +1442,7 @@ function syncCoverageStateWithData(data) {
 function renderCoverage(data) {
     const section = document.getElementById("explorer-coverage-section");
     const list = document.getElementById("coverage-identity-list");
-    const context = document.getElementById("coverage-family-context");
     const currentViewMode = getExplorerViewModeFromForm();
-    const currentFamily = document.getElementById("explorer-family")?.value || explorerState.controls.family;
     const shouldShow = isExplorerFilterMode(currentViewMode);
     const legacyFilterResponse = isLegacyFilterResponse(data, currentViewMode);
     const chunk = data?.chunk || null;
@@ -1458,7 +1457,7 @@ function renderCoverage(data) {
         datasheet_ready_ratio: 0,
     };
 
-    if (!section || !list || !context) {
+    if (!section || !list) {
         return;
     }
 
@@ -1466,12 +1465,9 @@ function renderCoverage(data) {
 
     if (!shouldShow) {
         list.innerHTML = "";
-        context.textContent = "";
         renderCoverageSummary(summary);
         return;
     }
-
-    context.textContent = getCoverageContextText(data, currentFamily);
 
     renderCoverageSummary(summary);
 
@@ -1495,38 +1491,6 @@ function renderCoverageSummary(summary) {
     document.getElementById("coverage-blocked-identities").textContent = formatNumber(summary.blocked_identities);
     document.getElementById("coverage-invalid-identities").textContent = formatNumber(summary.invalid_identities);
     document.getElementById("coverage-ready-rate").textContent = formatPercent(summary.datasheet_ready_ratio);
-}
-
-function getCoverageContextText(data, currentFamily = document.getElementById("explorer-family")?.value || explorerState.controls.family) {
-    const familyLabel = data?.family
-        ? `${data.family.code} - ${data.family.name}`
-        : currentFamily;
-    const chunk = data?.chunk || null;
-
-    if (isLegacyFilterResponse(data)) {
-        return t(
-            "codeExplorer.chunkContextLegacy",
-            { family: familyLabel },
-            `${familyLabel} - legacy row response`
-        );
-    }
-
-    if (!chunk) {
-        return familyLabel;
-    }
-
-    const sourceLabel = chunk.source === "all_identities"
-        ? t("codeExplorer.chunkSourceAll", {}, "All base combos")
-        : t("codeExplorer.chunkSourceValid", {}, "Valid base combos");
-
-    return t("codeExplorer.chunkContext", {
-        family: familyLabel,
-        source: sourceLabel,
-        page: chunk.page || 1,
-        totalPages: chunk.total_pages || 1,
-        pageSize: chunk.page_size || explorerState.controls.pageSize,
-        total: chunk.total_items || 0,
-    }, `${familyLabel} - ${sourceLabel} - page ${chunk.page || 1}/${chunk.total_pages || 1} - ${chunk.page_size || explorerState.controls.pageSize} base combos per page - ${chunk.total_items || 0} total`);
 }
 
 function buildCoverageIdentityCard(identity) {
@@ -1809,10 +1773,17 @@ async function loadCoverageIdentityCodes(identityCode) {
 
 function bindStaticEvents() {
     const closeButton = document.getElementById("status-message-close");
+    const loadPdfSpecsButton = document.getElementById("detail-load-pdf-specs");
 
     if (closeButton) {
         closeButton.addEventListener("click", () => {
             hideStatusToast(true);
+        });
+    }
+
+    if (loadPdfSpecsButton) {
+        loadPdfSpecsButton.addEventListener("click", () => {
+            void loadDetailPdfSpecs();
         });
     }
 
@@ -2398,6 +2369,245 @@ function renderDetail() {
     document.getElementById("detail-failure").textContent = row.failure_reason
         ? getFailureReasonText(row.failure_reason)
         : t("codeExplorer.failure.none", {}, "No blocking reason.");
+    renderDetailPdfSpecs(row);
+}
+
+function getCurrentExplorerLanguage() {
+    return window.NexLedI18n?.getLanguage?.() || document.documentElement.lang || "en";
+}
+
+function getDetailPdfSpecsCacheKey(reference, lang = getCurrentExplorerLanguage()) {
+    return `${lang}:${reference}`;
+}
+
+function getDetailPdfSpecsState(reference, lang = getCurrentExplorerLanguage()) {
+    if (!reference) {
+        return {
+            status: "idle",
+            data: null,
+            errorMessage: "",
+        };
+    }
+
+    return explorerState.detailPdfSpecsByKey[getDetailPdfSpecsCacheKey(reference, lang)] || {
+        status: "idle",
+        data: null,
+        errorMessage: "",
+    };
+}
+
+function buildDetailPdfSpecsRows(rows) {
+    return rows.map((row) => {
+        return `
+            <div class="flex items-start justify-between gap-12 rounded-card border border-grey-quaternary/60 bg-white px-12 py-10">
+                <span class="text-body-sm text-grey-primary">${escapeHtml(row.label || "")}</span>
+                <span class="text-body-sm text-black text-right">${escapeHtml(row.value || t("codeExplorer.valueUnavailable", {}, "Not available"))}</span>
+            </div>
+        `;
+    }).join("");
+}
+
+function buildDetailPdfSpecsSection(title, rows, emptyMessage = "") {
+    if (!Array.isArray(rows) || rows.length === 0) {
+        if (!emptyMessage) {
+            return "";
+        }
+
+        return `
+            <div class="flex flex-col gap-8">
+                <span class="input-label">${escapeHtml(title)}</span>
+                <p class="text-body-sm text-grey-primary">${escapeHtml(emptyMessage)}</p>
+            </div>
+        `;
+    }
+
+    return `
+        <div class="flex flex-col gap-8">
+            <span class="input-label">${escapeHtml(title)}</span>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-8">
+                ${buildDetailPdfSpecsRows(rows)}
+            </div>
+        </div>
+    `;
+}
+
+function buildDetailPdfAssetStatusRow(label, available) {
+    let statusMarkup = buildNeutralBadge(t("codeExplorer.detailsPdfAssetNotApplicable", {}, "Not applicable"));
+
+    if (available === true) {
+        statusMarkup = buildStatusBadge(true, t("codeExplorer.detailsPdfAssetAvailable", {}, "Available"), t("codeExplorer.detailsPdfAssetMissing", {}, "Missing"));
+    } else if (available === false) {
+        statusMarkup = buildStatusBadge(false, t("codeExplorer.detailsPdfAssetAvailable", {}, "Available"), t("codeExplorer.detailsPdfAssetMissing", {}, "Missing"));
+    }
+
+    return `
+        <div class="flex items-start justify-between gap-12 rounded-card border border-grey-quaternary/60 bg-white px-12 py-10">
+            <span class="text-body-sm text-grey-primary">${escapeHtml(label)}</span>
+            <span>${statusMarkup}</span>
+        </div>
+    `;
+}
+
+function renderDetailPdfSpecs(row = getSelectedRow()) {
+    const button = document.getElementById("detail-load-pdf-specs");
+    const content = document.getElementById("detail-pdf-specs-content");
+
+    if (!button || !content) {
+        return;
+    }
+
+    if (!row) {
+        button.disabled = true;
+        content.innerHTML = "";
+        return;
+    }
+
+    if (!row.configurator_valid) {
+        button.disabled = true;
+        content.innerHTML = `
+            <p class="text-body-sm text-grey-primary">${escapeHtml(t("codeExplorer.detailsPdfSpecsUnavailable", {}, "PDF specs are available only for configurator-valid codes."))}</p>
+        `;
+        return;
+    }
+
+    const specsState = getDetailPdfSpecsState(row.reference);
+    button.disabled = specsState.status === "loading";
+
+    if (specsState.status === "idle") {
+        content.innerHTML = `
+            <p class="text-body-sm text-grey-primary">${escapeHtml(t("codeExplorer.detailsPdfSpecsIdle", {}, "Click the button to load the same specs used by the datasheet."))}</p>
+        `;
+        return;
+    }
+
+    if (specsState.status === "loading") {
+        content.innerHTML = `
+            <div class="flex items-center gap-8 text-grey-primary">
+                <i class="ri-loader-4-line animate-spin text-icon-sm" aria-hidden="true"></i>
+                <span class="text-body-sm">${escapeHtml(t("codeExplorer.detailsPdfSpecsLoading", {}, "Loading PDF specs..."))}</span>
+            </div>
+        `;
+        return;
+    }
+
+    if (specsState.status === "error") {
+        content.innerHTML = `
+            <p class="text-body-sm text-red-700">${escapeHtml(specsState.errorMessage || t("codeExplorer.detailsPdfSpecsError", {}, "Unable to load PDF specs right now."))}</p>
+        `;
+        return;
+    }
+
+    const payload = specsState.data || {};
+    const summaryRows = [
+        {
+            label: t("codeExplorer.detailsPdfHeaderDescriptionLabel", {}, "Header description"),
+            value: payload.summary?.header_description || payload.summary?.description || t("codeExplorer.valueUnavailable", {}, "Not available"),
+        },
+        {
+            label: t("codeExplorer.detailsPdfFinishNameLabel", {}, "Finish"),
+            value: payload.summary?.finish_name || t("codeExplorer.valueUnavailable", {}, "Not available"),
+        },
+        {
+            label: t("codeExplorer.detailsPdfIpRatingLabel", {}, "IP rating"),
+            value: payload.summary?.ip_rating || t("codeExplorer.valueUnavailable", {}, "Not available"),
+        },
+        {
+            label: t("codeExplorer.detailsPdfLedIdLabel", {}, "LED ID"),
+            value: payload.summary?.led_id || t("codeExplorer.valueUnavailable", {}, "Not available"),
+        },
+        {
+            label: t("codeExplorer.detailsPdfColorGraphLabel", {}, "Color graph"),
+            value: payload.summary?.color_graph_label || t("codeExplorer.valueUnavailable", {}, "Not available"),
+        },
+    ].filter((item) => item.value && item.value !== t("codeExplorer.valueUnavailable", {}, "Not available"));
+
+    const assetRows = [
+        buildDetailPdfAssetStatusRow(t("codeExplorer.detailsPdfAssetHeaderImage", {}, "Header image"), payload.assets?.header_image),
+        buildDetailPdfAssetStatusRow(t("codeExplorer.detailsPdfAssetTechnicalDrawing", {}, "Technical drawing"), payload.assets?.technical_drawing),
+        buildDetailPdfAssetStatusRow(t("codeExplorer.detailsPdfAssetColorGraph", {}, "Color graph"), payload.assets?.color_graph),
+        buildDetailPdfAssetStatusRow(t("codeExplorer.detailsPdfAssetLensDiagram", {}, "Lens diagram"), payload.assets?.lens_diagram),
+        buildDetailPdfAssetStatusRow(t("codeExplorer.detailsPdfAssetFinishImage", {}, "Finish image"), payload.assets?.finish_image),
+    ].join("");
+
+    content.innerHTML = [
+        buildDetailPdfSpecsSection(
+            t("codeExplorer.detailsPdfOverviewTitle", {}, "PDF Summary"),
+            summaryRows,
+            t("codeExplorer.detailsPdfOverviewEmpty", {}, "No PDF summary data found.")
+        ),
+        buildDetailPdfSpecsSection(
+            t("codeExplorer.detailsPdfCharacteristicsTitle", {}, "Technical characteristics"),
+            payload.characteristics || [],
+            t("codeExplorer.detailsPdfCharacteristicsEmpty", {}, "No technical characteristics found.")
+        ),
+        buildDetailPdfSpecsSection(
+            t("codeExplorer.detailsPdfDimensionsTitle", {}, "Dimensions"),
+            payload.dimensions || [],
+            t("codeExplorer.detailsPdfDimensionsEmpty", {}, "No drawing dimensions found.")
+        ),
+        `
+            <div class="flex flex-col gap-8">
+                <span class="input-label">${escapeHtml(t("codeExplorer.detailsPdfAssetsTitle", {}, "PDF assets"))}</span>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-8">
+                    ${assetRows}
+                </div>
+            </div>
+        `,
+    ].filter(Boolean).join("");
+}
+
+async function loadDetailPdfSpecs(force = false) {
+    const row = getSelectedRow();
+
+    if (!row || !row.configurator_valid) {
+        renderDetailPdfSpecs(row);
+        return;
+    }
+
+    const lang = getCurrentExplorerLanguage();
+    const cacheKey = getDetailPdfSpecsCacheKey(row.reference, lang);
+    const currentState = explorerState.detailPdfSpecsByKey[cacheKey];
+
+    if (!force && (currentState?.status === "loading" || currentState?.status === "loaded")) {
+        renderDetailPdfSpecs(row);
+        return;
+    }
+
+    explorerState.detailPdfSpecsByKey[cacheKey] = {
+        status: "loading",
+        data: null,
+        errorMessage: "",
+    };
+    renderDetailPdfSpecs(row);
+
+    try {
+        const params = new URLSearchParams({
+            endpoint: "code-explorer",
+            action: "pdf_specs",
+            family: row.segments?.family || String(row.reference || "").slice(0, 2),
+            reference: row.reference || "",
+            lang,
+        });
+        const payload = await apiFetch("/?" + params.toString());
+
+        explorerState.detailPdfSpecsByKey[cacheKey] = {
+            status: "loaded",
+            data: payload,
+            errorMessage: "",
+        };
+    } catch (error) {
+        explorerState.detailPdfSpecsByKey[cacheKey] = {
+            status: "error",
+            data: null,
+            errorMessage: getExplorerErrorMessage(error),
+        };
+
+        if (error.status >= 500 || error.status === 401 || error.status === 403) {
+            setApiBadge("warning", "shared.badge.apiDegraded", "API degraded");
+        }
+    }
+
+    renderDetailPdfSpecs(getSelectedRow());
 }
 
 function openCodeDetailModal(trigger) {
