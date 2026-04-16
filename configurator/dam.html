@@ -325,6 +325,42 @@
                         </div>
                     </div>
 
+                    <div class="panel panel-sm flex flex-col gap-16">
+                        <div class="flex flex-col gap-8">
+                            <span class="input-label" data-i18n="dam.linkAssetTitle">Link Asset</span>
+                            <div class="grid gap-12 sm:grid-cols-2">
+                                <div class="flex flex-col gap-6">
+                                    <label class="input-label" for="dam-link-family-code" data-i18n="dam.linkFamilyCode">Family Code</label>
+                                    <input type="text" id="dam-link-family-code" class="input input-sm" placeholder="11" data-dam-link-family-code>
+                                </div>
+                                <div class="flex flex-col gap-6">
+                                    <label class="input-label" for="dam-link-product-code" data-i18n="dam.linkProductCode">Product Code</label>
+                                    <input type="text" id="dam-link-product-code" class="input input-sm" placeholder="PRO-TRACK-50W" data-dam-link-product-code>
+                                </div>
+                                <div class="flex flex-col gap-6">
+                                    <label class="input-label" for="dam-link-role" data-i18n="dam.linkRole">Role</label>
+                                    <select id="dam-link-role" class="input input-sm" data-dam-link-role></select>
+                                </div>
+                                <div class="flex flex-col gap-6">
+                                    <label class="input-label" for="dam-link-sort-order" data-i18n="dam.linkSortOrder">Sort Order</label>
+                                    <input type="number" id="dam-link-sort-order" class="input input-sm" value="0" step="1" data-dam-link-sort-order>
+                                </div>
+                            </div>
+                            <div class="flex justify-end">
+                                <button type="button" class="btn btn-primary btn-sm" data-dam-submit-link disabled>
+                                    <i class="ri-links-line text-icon-sm" aria-hidden="true"></i>
+                                    <span data-i18n="dam.linkAssetButton">Link Asset</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="flex flex-col gap-8">
+                            <span class="input-label" data-i18n="dam.currentLinksTitle">Current Links</span>
+                            <div class="flex flex-col gap-8" data-dam-links-list></div>
+                            <span class="text-body-sm text-grey-primary" data-dam-empty-links data-i18n="dam.noLinks">No links yet.</span>
+                        </div>
+                    </div>
+
                     <div class="flex flex-wrap gap-12">
                         <button type="button" class="btn btn-secondary btn-sm" data-dam-open-asset disabled>
                             <i class="ri-eye-line text-icon-sm" aria-hidden="true"></i>
@@ -404,12 +440,12 @@
 
                     <div class="flex flex-col gap-4">
                         <span class="input-label" data-i18n="dam.folderPolicyKeepTitle">Active Cloud Folders Now</span>
-                        <p class="text-body-sm text-black" data-i18n="dam.folderPolicyKeepBody">Keep `00_brand/logos`, `10_products/shared`, `10_products/families`, and `60_configurator` active in the DAM.</p>
+                        <p class="text-body-sm text-black" data-i18n="dam.folderPolicyKeepBody">Keep `nexled/datasheet` and `nexled/media` as the live DAM roots, with uploads routed into their seeded child folders.</p>
                     </div>
 
                     <div class="flex flex-col gap-4">
                         <span class="input-label" data-i18n="dam.folderPolicyLaterTitle">Deferred Until Later</span>
-                        <p class="text-body-sm text-black" data-i18n="dam.folderPolicyLaterBody">Support, store, website, EPREL, and archive branches stay out of the live DAM for now.</p>
+                        <p class="text-body-sm text-black" data-i18n="dam.folderPolicyLaterBody">Do not change the PDF pipeline to read DAM assets directly yet. Local datasheet assets still remain the active fallback.</p>
                     </div>
 
                     <div class="flex flex-col gap-4">

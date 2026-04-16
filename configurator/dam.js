@@ -1,7 +1,8 @@
 const DAM_API_KEY = "7b8edd27a16f60bf7a1c92b8ceb40cda474588d24491140c130418153053063b";
 const DAM_I18N_EVENT = "nexled:i18n-applied";
 const DAM_ROOT_FOLDER_ID = "nexled";
-const DAM_DEFAULT_FOLDER_ID = "nexled/00_brand";
+const DAM_DEFAULT_FOLDER_ID = "nexled/datasheet";
+const DAM_ROLE_OPTIONS = ["packshot", "finish", "drawing", "diagram", "diagram-inv", "mounting", "connector", "temperature", "energy-label", "icon", "logo", "power-supply", "product-photo", "lifestyle", "datasheet-pdf", "eprel-label", "eprel-fiche", "brand-logo", "brand-asset", "hero", "banner", "category", "support-asset", "web-asset"];
 
 const damState = {
     tree: [],
@@ -11,12 +12,16 @@ const damState = {
     assets: [],
     selectedAssetId: null,
     selectedAsset: null,
+    selectedAssetLinks: [],
+    selectedAssetLinksLoading: false,
+    selectedAssetLinkActionBusy: false,
     searchQuery: "",
     createFolderParentId: "",
 };
 
 let treeRequestToken = 0;
 let listRequestToken = 0;
+let assetDetailsRequestToken = 0;
 let searchTimer = 0;
 let damElements = null;
 
@@ -27,6 +32,7 @@ document.addEventListener("DOMContentLoaded", () => {
         return;
     }
 
+    renderLinkRoleOptions();
     bindDamEvents();
     loadDamTree();
 });
@@ -38,6 +44,7 @@ window.addEventListener(DAM_I18N_EVENT, () => {
 
     renderRootDropdown();
     renderCreateFolderParentDropdown();
+    renderLinkRoleOptions();
     renderDamList();
     updateFolderSummary();
     renderSelectedAsset();
@@ -74,11 +81,18 @@ function getDamElements() {
     const assetSize = document.querySelector("[data-dam-asset-size]");
     const assetFormat = document.querySelector("[data-dam-asset-format]");
     const assetFolder = document.querySelector("[data-dam-asset-folder]");
+    const linkFamilyCodeInput = document.querySelector("[data-dam-link-family-code]");
+    const linkProductCodeInput = document.querySelector("[data-dam-link-product-code]");
+    const linkRoleSelect = document.querySelector("[data-dam-link-role]");
+    const linkSortOrderInput = document.querySelector("[data-dam-link-sort-order]");
+    const linkSubmitButton = document.querySelector("[data-dam-submit-link]");
+    const linksList = document.querySelector("[data-dam-links-list]");
+    const emptyLinks = document.querySelector("[data-dam-empty-links]");
     const openAssetButton = document.querySelector("[data-dam-open-asset]");
     const copyAssetUrlButton = document.querySelector("[data-dam-copy-asset-url]");
     const assetStatus = document.querySelector("[data-dam-asset-status]");
 
-    if (!fileGrid || !emptyState || !searchInput || !breadcrumb || !rootDropdown || !rootValue || !rootMenu || !refreshTreeButton || !openCreateFolderButton || !createFolderModal || !createFolderInput || !createFolderParentDropdown || !createFolderParentValue || !createFolderParentMenu || !createFolderButton || !folderActionStatus || !uploadTrigger || !uploadInput || !uploadStatus || !assetModal || !assetModalPanel || !closeAssetModalButton || !assetPreview || !emptyAsset || !assetName || !assetType || !assetSize || !assetFormat || !assetFolder || !openAssetButton || !copyAssetUrlButton || !assetStatus) {
+    if (!fileGrid || !emptyState || !searchInput || !breadcrumb || !rootDropdown || !rootValue || !rootMenu || !refreshTreeButton || !openCreateFolderButton || !createFolderModal || !createFolderInput || !createFolderParentDropdown || !createFolderParentValue || !createFolderParentMenu || !createFolderButton || !folderActionStatus || !uploadTrigger || !uploadInput || !uploadStatus || !assetModal || !assetModalPanel || !closeAssetModalButton || !assetPreview || !emptyAsset || !assetName || !assetType || !assetSize || !assetFormat || !assetFolder || !linkFamilyCodeInput || !linkProductCodeInput || !linkRoleSelect || !linkSortOrderInput || !linkSubmitButton || !linksList || !emptyLinks || !openAssetButton || !copyAssetUrlButton || !assetStatus) {
         return null;
     }
 
@@ -112,6 +126,13 @@ function getDamElements() {
         assetSize,
         assetFormat,
         assetFolder,
+        linkFamilyCodeInput,
+        linkProductCodeInput,
+        linkRoleSelect,
+        linkSortOrderInput,
+        linkSubmitButton,
+        linksList,
+        emptyLinks,
         openAssetButton,
         copyAssetUrlButton,
         assetStatus,
@@ -186,6 +207,16 @@ function bindDamEvents() {
         }
     });
 
+    damElements.linkSubmitButton.addEventListener("click", handleCreateAssetLink);
+    [damElements.linkFamilyCodeInput, damElements.linkProductCodeInput, damElements.linkSortOrderInput].forEach((input) => {
+        input.addEventListener("keydown", (event) => {
+            if (event.key === "Enter") {
+                event.preventDefault();
+                handleCreateAssetLink();
+            }
+        });
+    });
+
     document.addEventListener("keydown", (event) => {
         if (!isAssetModalOpen()) {
             return;
@@ -258,6 +289,9 @@ async function loadDamFolder(folderId) {
     damState.currentFolderId = folderId;
     damState.selectedAssetId = null;
     damState.selectedAsset = null;
+    damState.selectedAssetLinks = [];
+    damState.selectedAssetLinksLoading = false;
+    damState.selectedAssetLinkActionBusy = false;
     updateFolderSummary();
     renderRootDropdown();
     renderSelectedAsset();
@@ -570,6 +604,25 @@ async function fetchDamUpload(action, formData) {
     });
 }
 
+async function fetchDamDelete(action, params = {}) {
+    const url = new URL(resolveDamApiBase() + "/");
+    url.searchParams.set("endpoint", "dam");
+    url.searchParams.set("action", action);
+
+    Object.entries(params).forEach(([key, value]) => {
+        if (value !== undefined && value !== null && value !== "") {
+            url.searchParams.set(key, String(value));
+        }
+    });
+
+    return performDamRequest(url.toString(), {
+        method: "DELETE",
+        headers: {
+            "X-API-Key": DAM_API_KEY,
+        },
+    });
+}
+
 async function performDamRequest(url, options) {
     const response = await fetch(url, options);
     const payload = await response.json().catch(() => ({}));
@@ -587,6 +640,26 @@ function resolveDamApiBase() {
     }
 
     return new URL("../api", window.location.href).toString().replace(/\/+$/, "");
+}
+
+function renderLinkRoleOptions() {
+    if (!damElements) {
+        return;
+    }
+
+    const currentValue = damElements.linkRoleSelect.value;
+    damElements.linkRoleSelect.innerHTML = "";
+
+    DAM_ROLE_OPTIONS.forEach((role) => {
+        const option = document.createElement("option");
+        option.value = role;
+        option.textContent = formatDamRoleLabel(role);
+        damElements.linkRoleSelect.appendChild(option);
+    });
+
+    if (DAM_ROLE_OPTIONS.includes(currentValue)) {
+        damElements.linkRoleSelect.value = currentValue;
+    }
 }
 
 function resolveInitialFolderId(preserveSelection) {
@@ -801,12 +874,23 @@ function createAssetActionButton(iconClass, label, handler, disabled = false) {
 function selectAssetById(assetId) {
     damState.selectedAssetId = assetId;
     damState.selectedAsset = damState.assets.find((asset) => asset.id === assetId) || null;
+    damState.selectedAssetLinks = [];
+    damState.selectedAssetLinksLoading = false;
+    damState.selectedAssetLinkActionBusy = false;
+    resetAssetLinkForm();
+    if (damState.selectedAsset && damElements) {
+        damElements.linkRoleSelect.value = getDefaultAssetLinkRole(damState.selectedAsset);
+    }
     renderSelectedAsset();
 }
 
 function clearSelectedAsset() {
     damState.selectedAssetId = null;
     damState.selectedAsset = null;
+    damState.selectedAssetLinks = [];
+    damState.selectedAssetLinksLoading = false;
+    damState.selectedAssetLinkActionBusy = false;
+    resetAssetLinkForm();
     renderSelectedAsset();
 }
 
@@ -826,6 +910,8 @@ function openAssetDetailsModal(assetId, triggerElement = null) {
         const initialFocus = damElements.closeAssetModalButton || getFocusableElements(damElements.assetModalPanel)[0] || damElements.assetModalPanel;
         initialFocus?.focus({ preventScroll: true });
     });
+
+    loadSelectedAssetDetails(assetId);
 }
 
 function closeAssetDetailsModal(restoreFocus) {
@@ -893,6 +979,114 @@ function getFocusableElements(root) {
         .filter((element) => !element.hasAttribute("inert") && !element.closest("[inert]") && !element.hidden && element.getAttribute("aria-hidden") !== "true");
 }
 
+async function loadSelectedAssetDetails(assetId) {
+    const requestToken = ++assetDetailsRequestToken;
+    damState.selectedAssetLinksLoading = true;
+    renderSelectedAsset();
+
+    try {
+        const response = await fetchDamGet("asset", {
+            id: assetId,
+        });
+
+        if (requestToken !== assetDetailsRequestToken || damState.selectedAssetId !== assetId) {
+            return;
+        }
+
+        damState.selectedAsset = response?.data?.asset || damState.selectedAsset;
+        damState.selectedAssetLinks = Array.isArray(response?.data?.links) ? response.data.links : [];
+        damState.selectedAssetLinksLoading = false;
+        renderSelectedAsset();
+    } catch (error) {
+        console.error(error);
+
+        if (requestToken !== assetDetailsRequestToken || damState.selectedAssetId !== assetId) {
+            return;
+        }
+
+        damState.selectedAssetLinks = [];
+        damState.selectedAssetLinksLoading = false;
+        renderSelectedAsset();
+        setAssetStatus(getDamErrorMessage(error, t("dam.assetDetailsLoadFailed", "Unable to load asset details.")));
+    }
+}
+
+async function handleCreateAssetLink() {
+    const asset = damState.selectedAsset;
+
+    if (!asset?.id || !damElements) {
+        return;
+    }
+
+    const familyCode = String(damElements.linkFamilyCodeInput.value || "").trim();
+    const productCode = String(damElements.linkProductCodeInput.value || "").trim();
+    const role = String(damElements.linkRoleSelect.value || "").trim();
+    const sortOrderValue = String(damElements.linkSortOrderInput.value || "").trim();
+    const parsedSortOrder = Number.parseInt(sortOrderValue, 10);
+    const sortOrder = Number.isFinite(parsedSortOrder) ? parsedSortOrder : 0;
+
+    if (!familyCode && !productCode) {
+        setAssetStatus(t("dam.linkTargetRequired", "Provide family code or product code."));
+        return;
+    }
+
+    if (!role) {
+        setAssetStatus(t("dam.linkRoleRequired", "Select link role."));
+        return;
+    }
+
+    damState.selectedAssetLinkActionBusy = true;
+    syncAssetLinkControls();
+    setAssetStatus(t("dam.linkSaving", "Saving link..."));
+
+    try {
+        await fetchDamJson("link", {
+            asset_id: asset.id,
+            family_code: familyCode || null,
+            product_code: productCode || null,
+            role,
+            sort_order: sortOrder,
+        });
+        await loadSelectedAssetDetails(asset.id);
+        damElements.linkFamilyCodeInput.value = "";
+        damElements.linkProductCodeInput.value = "";
+        damElements.linkSortOrderInput.value = "0";
+        setAssetStatus(t("dam.linkSaved", "Asset linked."));
+    } catch (error) {
+        console.error(error);
+        setAssetStatus(getDamErrorMessage(error, t("dam.linkFailed", "Unable to link asset.")));
+    } finally {
+        damState.selectedAssetLinkActionBusy = false;
+        syncAssetLinkControls();
+    }
+}
+
+async function handleDeleteAssetLink(linkId) {
+    const asset = damState.selectedAsset;
+
+    if (!asset?.id || !linkId) {
+        return;
+    }
+
+    damState.selectedAssetLinkActionBusy = true;
+    syncAssetLinkControls();
+    setAssetStatus(t("dam.unlinkStarted", "Removing link..."));
+
+    try {
+        await fetchDamDelete("unlink", {
+            id: linkId,
+        });
+        await loadSelectedAssetDetails(asset.id);
+        setAssetStatus(t("dam.unlinkDone", "Link removed."));
+    } catch (error) {
+        console.error(error);
+        setAssetStatus(getDamErrorMessage(error, t("dam.unlinkFailed", "Unable to remove link.")));
+    } finally {
+        damState.selectedAssetLinkActionBusy = false;
+        syncAssetLinkControls();
+    }
+}
+
 function renderSelectedAsset() {
     if (!damElements) {
         return;
@@ -911,6 +1105,9 @@ function renderSelectedAsset() {
         damElements.assetFolder.textContent = "-";
         damElements.openAssetButton.disabled = true;
         damElements.copyAssetUrlButton.disabled = true;
+        resetAssetLinkForm();
+        renderSelectedAssetLinks();
+        syncAssetLinkControls();
         setAssetStatus("");
         return;
     }
@@ -945,7 +1142,130 @@ function renderSelectedAsset() {
     damElements.assetFolder.textContent = asset.asset_folder || "-";
     damElements.openAssetButton.disabled = !asset.secure_url;
     damElements.copyAssetUrlButton.disabled = !asset.secure_url;
+    if (!DAM_ROLE_OPTIONS.includes(damElements.linkRoleSelect.value)) {
+        damElements.linkRoleSelect.value = getDefaultAssetLinkRole(asset);
+    }
+    renderSelectedAssetLinks();
+    syncAssetLinkControls();
     setAssetStatus("");
+}
+
+function renderSelectedAssetLinks() {
+    if (!damElements) {
+        return;
+    }
+
+    damElements.linksList.innerHTML = "";
+
+    if (!damState.selectedAsset) {
+        damElements.emptyLinks.textContent = t("dam.noLinks", "No links yet.");
+        damElements.emptyLinks.hidden = false;
+        return;
+    }
+
+    if (damState.selectedAssetLinksLoading) {
+        damElements.emptyLinks.textContent = t("dam.loadingLinks", "Loading links...");
+        damElements.emptyLinks.hidden = false;
+        return;
+    }
+
+    if (!Array.isArray(damState.selectedAssetLinks) || damState.selectedAssetLinks.length === 0) {
+        damElements.emptyLinks.textContent = t("dam.noLinks", "No links yet.");
+        damElements.emptyLinks.hidden = false;
+        return;
+    }
+
+    damElements.emptyLinks.hidden = true;
+    const fragment = document.createDocumentFragment();
+
+    damState.selectedAssetLinks.forEach((link) => {
+        const item = document.createElement("div");
+        item.className = "panel panel-sm flex flex-col gap-8";
+
+        const header = document.createElement("div");
+        header.className = "flex flex-wrap items-start justify-between gap-12";
+
+        const content = document.createElement("div");
+        content.className = "flex min-w-0 flex-1 flex-col gap-2";
+
+        const target = document.createElement("span");
+        target.className = "text-body-sm text-black break-all";
+        target.textContent = buildAssetLinkTargetText(link);
+
+        const meta = document.createElement("span");
+        meta.className = "text-body-xs text-grey-primary break-all";
+        meta.textContent = formatDamRoleLabel(link.role || "") + " · " + t("dam.linkSortMeta", "Sort") + ": " + String(link.sort_order ?? 0);
+
+        content.appendChild(target);
+        content.appendChild(meta);
+
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = "btn btn-secondary btn-xs";
+        button.addEventListener("click", () => {
+            handleDeleteAssetLink(link.id);
+        });
+
+        const icon = document.createElement("i");
+        icon.className = "ri-link-unlink-m text-icon-sm";
+        icon.setAttribute("aria-hidden", "true");
+
+        const label = document.createElement("span");
+        label.textContent = t("dam.unlinkAssetButton", "Unlink");
+
+        button.appendChild(icon);
+        button.appendChild(label);
+        header.appendChild(content);
+        header.appendChild(button);
+        item.appendChild(header);
+        fragment.appendChild(item);
+    });
+
+    damElements.linksList.appendChild(fragment);
+}
+
+function syncAssetLinkControls() {
+    if (!damElements) {
+        return;
+    }
+
+    const hasAsset = Boolean(damState.selectedAsset?.id);
+    const disabled = !hasAsset || damState.selectedAssetLinksLoading || damState.selectedAssetLinkActionBusy;
+
+    damElements.linkFamilyCodeInput.disabled = disabled;
+    damElements.linkProductCodeInput.disabled = disabled;
+    damElements.linkRoleSelect.disabled = disabled;
+    damElements.linkSortOrderInput.disabled = disabled;
+    damElements.linkSubmitButton.disabled = disabled;
+}
+
+function resetAssetLinkForm() {
+    if (!damElements) {
+        return;
+    }
+
+    damElements.linkFamilyCodeInput.value = "";
+    damElements.linkProductCodeInput.value = "";
+    damElements.linkSortOrderInput.value = "0";
+    damElements.linkRoleSelect.value = DAM_ROLE_OPTIONS[0] || "";
+}
+
+function getDefaultAssetLinkRole(asset) {
+    return DAM_ROLE_OPTIONS.includes(asset?.kind) ? asset.kind : (DAM_ROLE_OPTIONS[0] || "");
+}
+
+function buildAssetLinkTargetText(link) {
+    const parts = [];
+
+    if (link?.family_code) {
+        parts.push(t("dam.linkFamilyPrefix", "Family") + " " + link.family_code);
+    }
+
+    if (link?.product_code) {
+        parts.push(t("dam.linkProductPrefix", "Product") + " " + link.product_code);
+    }
+
+    return parts.length > 0 ? parts.join(" · ") : t("dam.linkGlobalTarget", "Global");
 }
 
 function updateFolderSummary() {
@@ -1148,6 +1468,8 @@ function formatRootFolderLabel(folder) {
     }
 
     const scopeLabels = {
+        datasheet: t("dam.root.datasheet", "Datasheet"),
+        media: t("dam.root.media", "Media"),
         brand: t("dam.root.brand", "Brand"),
         products: t("dam.root.products", "Products"),
         configurator: t("dam.root.configurator", "Configurator"),
@@ -1159,6 +1481,14 @@ function formatRootFolderLabel(folder) {
     };
 
     return scopeLabels[folder.scope] || folder.name.replace(/^\d+_/, "").replace(/-/g, " ");
+}
+
+function formatDamRoleLabel(role) {
+    return String(role || "")
+        .split("-")
+        .filter(Boolean)
+        .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+        .join(" ");
 }
 
 function syncRootDropdownSelection(folderId) {

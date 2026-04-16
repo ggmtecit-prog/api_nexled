@@ -79,8 +79,8 @@ let apiBadgeState = {
 };
 let pageStatusState = {
     tone: "neutral",
-    key: "codeExplorer.runtime.chooseFamily",
-    fallback: "Select one family to start building valid code rows.",
+    key: "codeExplorer.runtime.awaitingSearch",
+    fallback: "Enter a Tecit code or product description.",
     vars: {},
 };
 let statusToastTimers = {
@@ -289,8 +289,12 @@ function getExplorerViewModeFromForm() {
     return document.querySelector('input[name="explorer-view-mode"]:checked')?.value || EXPLORER_VIEW_MODE_SEARCH;
 }
 
-function getExplorerSearchTypeFromForm() {
-    return document.getElementById("explorer-search-type")?.value || EXPLORER_SEARCH_TYPE_CODE;
+function detectExplorerSearchType(search = explorerState.controls.search) {
+    const normalizedSearch = String(search ?? "").replace(/\s+/g, "").toUpperCase();
+
+    return /^\d{2,17}$/.test(normalizedSearch)
+        ? EXPLORER_SEARCH_TYPE_CODE
+        : EXPLORER_SEARCH_TYPE_DESCRIPTION;
 }
 
 function isExplorerFilterMode(viewMode = explorerState.controls.viewMode) {
@@ -326,30 +330,24 @@ function isGlobalExplorerDescriptionSearch(
 }
 
 function shouldShowExplorerFamilyField(
-    viewMode = explorerState.controls.viewMode,
-    searchType = explorerState.controls.searchType
+    viewMode = explorerState.controls.viewMode
 ) {
     return isExplorerFilterMode(viewMode);
 }
 
 function renderExplorerSearchInputCopy(
-    viewMode = explorerState.controls.viewMode,
-    searchType = explorerState.controls.searchType
+    viewMode = explorerState.controls.viewMode
 ) {
     const label = document.getElementById("explorer-search-label");
     const input = document.getElementById("explorer-search");
     const pageSizeLabel = document.getElementById("explorer-page-size-label");
 
     if (label) {
-        label.textContent = searchType === EXPLORER_SEARCH_TYPE_DESCRIPTION
-            ? t("codeExplorer.searchDescriptionLabel", {}, "Search By Description")
-            : t("codeExplorer.searchCodeLabel", {}, "Search By Code");
+        label.textContent = t("codeExplorer.searchInputLabel", {}, "Search");
     }
 
     if (input) {
-        input.placeholder = searchType === EXPLORER_SEARCH_TYPE_DESCRIPTION
-            ? t("codeExplorer.searchDescriptionPlaceholder", {}, "Enter a description")
-            : t("codeExplorer.searchCodePlaceholder", {}, "Enter a code");
+        input.placeholder = t("codeExplorer.searchInputPlaceholder", {}, "Enter a code or description");
     }
 
     if (pageSizeLabel) {
@@ -360,9 +358,8 @@ function renderExplorerSearchInputCopy(
 }
 
 function applyExplorerViewMode(viewMode = explorerState.controls.viewMode) {
-    const searchType = getExplorerSearchTypeFromForm();
+    const searchType = detectExplorerSearchType(document.getElementById("explorer-search")?.value || explorerState.controls.search);
     const showFilters = isExplorerFilterMode(viewMode);
-    const searchTypeField = document.getElementById("explorer-search-type-field");
     const textSearchField = document.getElementById("explorer-text-search-field");
     const familyField = document.getElementById("explorer-family-field");
     const chunkControlsRow = document.getElementById("explorer-chunk-controls-row");
@@ -373,16 +370,12 @@ function applyExplorerViewMode(viewMode = explorerState.controls.viewMode) {
     explorerState.controls.viewMode = viewMode;
     explorerState.controls.searchType = searchType;
 
-    if (searchTypeField) {
-        searchTypeField.classList.toggle("hidden", showFilters);
-    }
-
     if (textSearchField) {
         textSearchField.classList.toggle("hidden", showFilters);
     }
 
     if (familyField) {
-        familyField.classList.toggle("hidden", !shouldShowExplorerFamilyField(viewMode, searchType));
+        familyField.classList.toggle("hidden", !shouldShowExplorerFamilyField(viewMode));
     }
 
     if (chunkControlsRow) {
@@ -397,7 +390,7 @@ function applyExplorerViewMode(viewMode = explorerState.controls.viewMode) {
         drilldownField.classList.toggle("hidden", !showFilters);
     }
 
-    renderExplorerSearchInputCopy(viewMode, searchType);
+    renderExplorerSearchInputCopy(viewMode);
     syncDraftInvalidControls();
     syncAppliedInvalidSummaryCard();
     updateExplorerInvalidGuidance();
@@ -1069,18 +1062,6 @@ function bindControls() {
         });
     });
 
-    document.getElementById("explorer-search-type").addEventListener("change", () => {
-        explorerState.data = null;
-        explorerState.selectedReference = "";
-        resetCoverageInteractions();
-        applyExplorerViewMode(getExplorerViewModeFromForm());
-        renderSummary(null);
-        renderTable();
-        renderDetail();
-        renderResultsMeta();
-        renderPagination();
-    });
-
     document.getElementById("explorer-include-invalid").addEventListener("change", () => {
         syncDraftInvalidControls();
         updateExplorerInvalidGuidance();
@@ -1195,13 +1176,15 @@ async function applyFiltersFromForm() {
     const rawSearch = document.getElementById("explorer-search").value.trim();
     const viewMode = getExplorerViewModeFromForm();
     const isFilterMode = isExplorerFilterMode(viewMode);
-    const searchType = getExplorerSearchTypeFromForm();
+    const searchType = isFilterMode
+        ? EXPLORER_SEARCH_TYPE_CODE
+        : detectExplorerSearchType(rawSearch);
     const search = isFilterMode ? "" : rawSearch;
     const previousFamily = explorerState.controls.family;
     const includeInvalid = isFilterMode
         ? document.getElementById("explorer-include-invalid").checked
         : false;
-    let family = shouldShowExplorerFamilyField(viewMode, searchType)
+    let family = shouldShowExplorerFamilyField(viewMode)
         ? document.getElementById("explorer-family").value
         : "";
 
@@ -1231,7 +1214,7 @@ async function applyFiltersFromForm() {
 
     const familyChanged = family !== previousFamily;
 
-    if (shouldShowExplorerFamilyField(viewMode, searchType) && family) {
+    if (shouldShowExplorerFamilyField(viewMode) && family) {
         if (familyChanged) {
             explorerState.controls.segmentFilters = getEmptyExplorerSegmentFilters();
         }
@@ -1259,51 +1242,35 @@ async function applyFiltersFromForm() {
     syncAppliedInvalidSummaryCard();
     updateExplorerInvalidGuidance();
 
+    if (!isFilterMode && search === "") {
+        resetCoverageInteractions();
+        explorerState.data = null;
+        explorerState.selectedReference = "";
+        setPageStatus("codeExplorer.runtime.awaitingSearch", "neutral", "Enter a Tecit code or product description.");
+        renderCoverage(null);
+        renderSummary(null);
+        renderTable();
+        renderDetail();
+        renderResultsMeta();
+        renderPagination();
+        return;
+    }
+
     if (!explorerState.controls.family && !isGlobalExplorerDescriptionSearch(viewMode, searchType, family)) {
         resetCoverageInteractions();
         explorerState.data = null;
         explorerState.selectedReference = "";
         setPageStatus(
-            !shouldShowExplorerFamilyField(viewMode, searchType)
-                ? (searchType === EXPLORER_SEARCH_TYPE_DESCRIPTION
-                    ? "codeExplorer.runtime.searchDescriptionNeedsFamily"
-                    : "codeExplorer.runtime.searchCodeNeedsFamily")
+            !shouldShowExplorerFamilyField(viewMode)
+                ? "codeExplorer.runtime.searchCodeNeedsFamily"
                 : "codeExplorer.runtime.chooseFamily",
             "neutral",
-            !shouldShowExplorerFamilyField(viewMode, searchType)
-                ? "Enter full code with family prefix to load explorer rows."
+            !shouldShowExplorerFamilyField(viewMode)
+                ? "Enter full code with family prefix, or use product description text."
                 : isFilterMode
                     ? "Select one family to start building valid code rows."
-                    : "Choose one family in See by filters before searching by description."
+                    : "Select one family to start building valid code rows."
         );
-        renderCoverage(null);
-        renderSummary(null);
-        renderTable();
-        renderDetail();
-        renderResultsMeta();
-        renderPagination();
-        return;
-    }
-
-    if (!isFilterMode && searchType === EXPLORER_SEARCH_TYPE_CODE && search === "") {
-        resetCoverageInteractions();
-        explorerState.data = null;
-        explorerState.selectedReference = "";
-        setPageStatus("codeExplorer.runtime.awaitingCode", "neutral", "Waiting for code search.");
-        renderCoverage(null);
-        renderSummary(null);
-        renderTable();
-        renderDetail();
-        renderResultsMeta();
-        renderPagination();
-        return;
-    }
-
-    if (!isFilterMode && searchType === EXPLORER_SEARCH_TYPE_DESCRIPTION && search === "") {
-        resetCoverageInteractions();
-        explorerState.data = null;
-        explorerState.selectedReference = "";
-        setPageStatus("codeExplorer.runtime.awaitingDescription", "neutral", "Waiting for description search.");
         renderCoverage(null);
         renderSummary(null);
         renderTable();
@@ -1868,19 +1835,13 @@ async function loadFamilies() {
         const families = await apiFetch("/?endpoint=families");
         explorerState.families = Array.isArray(families) ? families : [];
         populateFamilies();
-        const isDescriptionSearchMode = explorerState.controls.viewMode === EXPLORER_VIEW_MODE_SEARCH
-            && explorerState.controls.searchType === EXPLORER_SEARCH_TYPE_DESCRIPTION;
         setPageStatus(
-            isDescriptionSearchMode
-                ? "codeExplorer.runtime.awaitingDescription"
-                : explorerState.controls.viewMode === EXPLORER_VIEW_MODE_SEARCH
-                ? "codeExplorer.runtime.searchCodeNeedsFamily"
+            explorerState.controls.viewMode === EXPLORER_VIEW_MODE_SEARCH
+                ? "codeExplorer.runtime.awaitingSearch"
                 : "codeExplorer.runtime.chooseFamily",
             "neutral",
-            isDescriptionSearchMode
-                ? "Enter description to search across all families."
-                : explorerState.controls.viewMode === EXPLORER_VIEW_MODE_SEARCH
-                ? "Enter a full code with family prefix first."
+            explorerState.controls.viewMode === EXPLORER_VIEW_MODE_SEARCH
+                ? "Enter a Tecit code or product description."
                 : "Select one family to start building valid code rows."
         );
     } catch (error) {
@@ -1908,11 +1869,9 @@ function populateFamilies() {
     }
 
     familyCombobox?.renderOptions(options);
-    document.getElementById("explorer-search-type").value = explorerState.controls.searchType;
     document.getElementById("explorer-include-invalid").checked = explorerState.controls.includeInvalid;
     document.getElementById("explorer-status").value = explorerState.controls.status;
     document.getElementById("explorer-page-size").value = String(explorerState.controls.pageSize);
-    syncExplorerSelectDropdown("explorer-search-type");
     syncExplorerSelectDropdown("explorer-status");
     syncExplorerSelectDropdown("explorer-page-size");
     syncDraftInvalidControls();
