@@ -341,40 +341,35 @@
                             <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                                 <div class="flex flex-col gap-4">
                                     <h2 class="card-title" data-i18n="codeExplorer.coverageTitle">Family Coverage</h2>
-                                    <p class="text-body-sm text-grey-primary" data-i18n="codeExplorer.coverageBody">Compare identity readiness first, then expand one identity to inspect every valid full code under it.</p>
                                 </div>
                                 <p id="coverage-family-context" class="text-body-xs text-grey-primary"></p>
                             </div>
 
-                            <div id="coverage-summary-grid" class="grid grid-cols-2 xl:grid-cols-6 gap-12">
-                                <div class="panel panel-sm flex flex-col gap-4">
-                                    <span class="input-label" data-i18n="codeExplorer.coverageMetricTotal">Identities</span>
-                                    <span id="coverage-total-identities" class="text-h4 text-black">0</span>
+                            <div id="coverage-summary-grid" class="flex flex-wrap items-center gap-12">
+                                <div class="badge badge-neutral badge-lg">
+                                    <span data-i18n="codeExplorer.coverageMetricTotal">Identities</span>
+                                    <span id="coverage-total-identities">0</span>
                                 </div>
-                                <div class="panel panel-sm flex flex-col gap-4">
-                                    <span class="input-label" data-i18n="codeExplorer.coverageMetricReady">Fully ready</span>
-                                    <span id="coverage-ready-identities" class="text-h4 text-green-primary">0</span>
+                                <div class="badge badge-success badge-lg">
+                                    <span data-i18n="codeExplorer.coverageMetricReady">Fully ready</span>
+                                    <span id="coverage-ready-identities">0</span>
                                 </div>
-                                <div class="panel panel-sm flex flex-col gap-4">
-                                    <span class="input-label" data-i18n="codeExplorer.coverageMetricPartial">Partial</span>
-                                    <span id="coverage-partial-identities" class="text-h4 text-blue-600">0</span>
+                                <div class="badge badge-info badge-lg">
+                                    <span data-i18n="codeExplorer.coverageMetricPartial">Partial</span>
+                                    <span id="coverage-partial-identities">0</span>
                                 </div>
-                                <div class="panel panel-sm flex flex-col gap-4">
-                                    <span class="input-label" data-i18n="codeExplorer.coverageMetricBlocked">Blocked</span>
-                                    <span id="coverage-blocked-identities" class="text-h4 text-yellow-primary">0</span>
+                                <div class="badge badge-warning badge-lg">
+                                    <span data-i18n="codeExplorer.coverageMetricBlocked">Blocked</span>
+                                    <span id="coverage-blocked-identities">0</span>
                                 </div>
-                                <div class="panel panel-sm flex flex-col gap-4">
-                                    <span class="input-label" data-i18n="codeExplorer.coverageMetricInvalid">Invalid</span>
-                                    <span id="coverage-invalid-identities" class="text-h4 text-red-500">0</span>
+                                <div class="badge badge-danger badge-lg">
+                                    <span data-i18n="codeExplorer.coverageMetricInvalid">Invalid</span>
+                                    <span id="coverage-invalid-identities">0</span>
                                 </div>
-                                <div class="panel panel-sm flex flex-col gap-4">
-                                    <span class="input-label" data-i18n="codeExplorer.coverageMetricRate">Ready coverage</span>
-                                    <span id="coverage-ready-rate" class="text-h4 text-black">0%</span>
+                                <div class="badge badge-neutral badge-lg">
+                                    <span data-i18n="codeExplorer.coverageMetricRate">Ready coverage</span>
+                                    <span id="coverage-ready-rate">0%</span>
                                 </div>
-                            </div>
-
-                            <div id="coverage-empty-state" class="hidden panel panel-sm">
-                                <p class="text-body-sm text-grey-primary" data-i18n="codeExplorer.coverageEmpty">Load one family to compare identities and expand their full valid codes.</p>
                             </div>
 
                             <div id="coverage-identity-list" class="flex flex-col gap-12"></div>
@@ -541,7 +536,7 @@
                 <div>
                     <h2 id="codeExplorerDetailModalTitle" class="modal-title" data-i18n="codeExplorer.detailsTitle">Code Detail</h2>
                 </div>
-                <button type="button" class="btn btn-secondary btn-icon btn-xs" aria-label="Close code detail" data-i18n-aria-label="codeExplorer.closeDetailAria" data-close-modal>
+                <button type="button" class="btn btn-ghost btn-icon btn-xs" aria-label="Close code detail" data-i18n-aria-label="codeExplorer.closeDetailAria" data-close-modal>
                     <i class="ri-close-line text-icon-md" aria-hidden="true"></i>
                 </button>
             </div>
@@ -577,12 +572,6 @@
                         </div>
                     </div>
                 </div>
-            </div>
-
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary btn-sm" data-close-modal data-modal-initial-focus>
-                    <span data-i18n="codeExplorer.closeDetail">Close</span>
-                </button>
             </div>
         </div>
     </div>
@@ -682,6 +671,6 @@
     <script src="locales/pt.js?v=20260415-legacy-filter-fallback"></script>
     <script src="i18n.js?v=20260414-code-explorer"></script>
     <script src="app-shell.js?v=20260414-code-explorer"></script>
-    <script src="code-explorer.js?v=20260415-legacy-filter-fallback"></script>
+    <script src="code-explorer.js?v=20260416-global-description-search"></script>
 </body>
 </html>

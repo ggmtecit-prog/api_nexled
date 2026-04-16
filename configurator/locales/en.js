@@ -286,6 +286,7 @@ window.NexLedLocales.en = {
             loadFailedWithMessage: "Unable to load explorer data right now: {message}",
             invalidNeedsDrillDown: "Include invalid requires at least one drill-down filter or a targeted full code.",
             searchCodeNeedsFamily: "Enter a full code with family prefix first.",
+            searchDescriptionNeedsFamily: "Choose one family in See by filters before searching by description.",
             searchNeedsFamily: "Enter a full code or choose a family first.",
             awaitingCode: "Waiting for code search.",
             awaitingFamily: "Waiting for family selection.",

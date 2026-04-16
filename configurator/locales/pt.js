@@ -286,6 +286,7 @@ window.NexLedLocales.pt = {
             loadFailedWithMessage: "Não foi possível carregar os dados do explorador agora: {message}",
             invalidNeedsDrillDown: "Incluir inválidos exige pelo menos um filtro de detalhe ou um código completo.",
             searchCodeNeedsFamily: "Introduza primeiro um código completo com prefixo de família.",
+            searchDescriptionNeedsFamily: "Escolha uma família em Ver por filtros antes de pesquisar por descrição.",
             awaitingCode: "À espera de pesquisa por código.",
             awaitingFamily: "A aguardar seleção de família.",
             resultsMeta: "{family} - {total} linhas filtradas",

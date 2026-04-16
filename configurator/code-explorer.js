@@ -315,6 +315,16 @@ function shouldShowExplorerCodeResultsSection(
     return !isExplorerFilterMode(viewMode) || isLegacyFilterResponse(data, viewMode);
 }
 
+function isGlobalExplorerDescriptionSearch(
+    viewMode = explorerState.controls.viewMode,
+    searchType = explorerState.controls.searchType,
+    family = explorerState.controls.family
+) {
+    return !isExplorerFilterMode(viewMode)
+        && searchType === EXPLORER_SEARCH_TYPE_DESCRIPTION
+        && String(family || "").trim() === "";
+}
+
 function shouldShowExplorerFamilyField(
     viewMode = explorerState.controls.viewMode,
     searchType = explorerState.controls.searchType
@@ -1193,7 +1203,7 @@ async function applyFiltersFromForm() {
         : false;
     let family = shouldShowExplorerFamilyField(viewMode, searchType)
         ? document.getElementById("explorer-family").value
-        : previousFamily;
+        : "";
 
     if (!isFilterMode && searchType === EXPLORER_SEARCH_TYPE_CODE) {
         family = detectFamilyCodeFromReferenceSearch(search);
@@ -1249,12 +1259,16 @@ async function applyFiltersFromForm() {
     syncAppliedInvalidSummaryCard();
     updateExplorerInvalidGuidance();
 
-    if (!explorerState.controls.family) {
+    if (!explorerState.controls.family && !isGlobalExplorerDescriptionSearch(viewMode, searchType, family)) {
         resetCoverageInteractions();
         explorerState.data = null;
         explorerState.selectedReference = "";
         setPageStatus(
-            !shouldShowExplorerFamilyField(viewMode, searchType) ? "codeExplorer.runtime.searchCodeNeedsFamily" : "codeExplorer.runtime.chooseFamily",
+            !shouldShowExplorerFamilyField(viewMode, searchType)
+                ? (searchType === EXPLORER_SEARCH_TYPE_DESCRIPTION
+                    ? "codeExplorer.runtime.searchDescriptionNeedsFamily"
+                    : "codeExplorer.runtime.searchCodeNeedsFamily")
+                : "codeExplorer.runtime.chooseFamily",
             "neutral",
             !shouldShowExplorerFamilyField(viewMode, searchType)
                 ? "Enter full code with family prefix to load explorer rows."
@@ -1276,6 +1290,20 @@ async function applyFiltersFromForm() {
         explorerState.data = null;
         explorerState.selectedReference = "";
         setPageStatus("codeExplorer.runtime.awaitingCode", "neutral", "Waiting for code search.");
+        renderCoverage(null);
+        renderSummary(null);
+        renderTable();
+        renderDetail();
+        renderResultsMeta();
+        renderPagination();
+        return;
+    }
+
+    if (!isFilterMode && searchType === EXPLORER_SEARCH_TYPE_DESCRIPTION && search === "") {
+        resetCoverageInteractions();
+        explorerState.data = null;
+        explorerState.selectedReference = "";
+        setPageStatus("codeExplorer.runtime.awaitingDescription", "neutral", "Waiting for description search.");
         renderCoverage(null);
         renderSummary(null);
         renderTable();
@@ -1322,8 +1350,6 @@ function syncCoverageStateWithData(data) {
 
 function renderCoverage(data) {
     const section = document.getElementById("explorer-coverage-section");
-    const emptyState = document.getElementById("coverage-empty-state");
-    const emptyCopy = emptyState?.querySelector("p") || null;
     const list = document.getElementById("coverage-identity-list");
     const context = document.getElementById("coverage-family-context");
     const currentViewMode = getExplorerViewModeFromForm();
@@ -1342,7 +1368,7 @@ function renderCoverage(data) {
         datasheet_ready_ratio: 0,
     };
 
-    if (!section || !emptyState || !list || !context) {
+    if (!section || !list || !context) {
         return;
     }
 
@@ -1359,33 +1385,16 @@ function renderCoverage(data) {
 
     renderCoverageSummary(summary);
 
-    if (emptyCopy) {
-        emptyCopy.textContent = legacyFilterResponse
-            ? t(
-                "codeExplorer.coverageLegacyFallback",
-                {},
-                "Current API returned row data only. Showing matching codes below; identity chunk coverage is unavailable until chunk API is deployed."
-            )
-            : t(
-                "codeExplorer.coverageEmpty",
-                {},
-                "Load one family to compare identities and expand their full valid codes."
-            );
-    }
-
     if (legacyFilterResponse) {
-        emptyState.classList.remove("hidden");
         list.innerHTML = "";
         return;
     }
 
     if (identities.length === 0) {
-        emptyState.classList.remove("hidden");
         list.innerHTML = "";
         return;
     }
 
-    emptyState.classList.add("hidden");
     list.innerHTML = identities.map((identity) => buildCoverageIdentityCard(identity)).join("");
 }
 
@@ -1859,18 +1868,20 @@ async function loadFamilies() {
         const families = await apiFetch("/?endpoint=families");
         explorerState.families = Array.isArray(families) ? families : [];
         populateFamilies();
-        const searchNeedsFamily = explorerState.controls.viewMode === EXPLORER_VIEW_MODE_SEARCH
-            && explorerState.controls.searchType !== EXPLORER_SEARCH_TYPE_CODE;
+        const isDescriptionSearchMode = explorerState.controls.viewMode === EXPLORER_VIEW_MODE_SEARCH
+            && explorerState.controls.searchType === EXPLORER_SEARCH_TYPE_DESCRIPTION;
         setPageStatus(
-            !searchNeedsFamily && explorerState.controls.viewMode === EXPLORER_VIEW_MODE_SEARCH
+            isDescriptionSearchMode
+                ? "codeExplorer.runtime.awaitingDescription"
+                : explorerState.controls.viewMode === EXPLORER_VIEW_MODE_SEARCH
                 ? "codeExplorer.runtime.searchCodeNeedsFamily"
                 : "codeExplorer.runtime.chooseFamily",
             "neutral",
-            !searchNeedsFamily && explorerState.controls.viewMode === EXPLORER_VIEW_MODE_SEARCH
-                ? "Enter a full code with family prefix first."
+            isDescriptionSearchMode
+                ? "Enter description to search across all families."
                 : explorerState.controls.viewMode === EXPLORER_VIEW_MODE_SEARCH
-                    ? "Choose one family in See by filters before searching by description."
-                    : "Select one family to start building valid code rows."
+                ? "Enter a full code with family prefix first."
+                : "Select one family to start building valid code rows."
         );
     } catch (error) {
         setPageStatus("codeExplorer.runtime.loadFailedWithMessage", "error", "Unable to load explorer data right now: {message}", {
@@ -1909,6 +1920,55 @@ function populateFamilies() {
 }
 
 async function loadExplorerData() {
+    if (isGlobalExplorerDescriptionSearch()) {
+        toggleLoading(true);
+        setPageStatus("codeExplorer.runtime.loadingDescriptionSearch", "loading", "Searching descriptions across all families...");
+
+        try {
+            const data = await loadGlobalDescriptionSearchData();
+            explorerState.data = data;
+            explorerState.controls.page = data.pagination?.page || explorerState.controls.page;
+            syncCoverageStateWithData(data);
+
+            const firstRow = Array.isArray(data.rows) && data.rows.length > 0 ? data.rows[0] : null;
+            const selectedExists = data.rows?.some((row) => row.reference === explorerState.selectedReference);
+            explorerState.selectedReference = selectedExists ? explorerState.selectedReference : (firstRow?.reference || "");
+
+            renderCoverage(data);
+            renderSummary(data);
+            renderTable();
+            renderDetail();
+            renderResultsMeta();
+            renderPagination();
+
+            if (data.pagination.total_rows > 0) {
+                setPageStatus("codeExplorer.runtime.loadedRows", "success", "Code Explorer results loaded.");
+            } else {
+                setPageStatus("codeExplorer.runtime.noRows", "neutral", "No rows match current filters.");
+            }
+        } catch (error) {
+            resetCoverageInteractions();
+            explorerState.data = null;
+            explorerState.selectedReference = "";
+            renderCoverage(null);
+            renderSummary(null);
+            renderTable();
+            renderDetail();
+            renderResultsMeta();
+            renderPagination();
+            setPageStatus("codeExplorer.runtime.loadFailedWithMessage", "error", "Unable to load explorer data right now: {message}", {
+                message: getExplorerErrorMessage(error),
+            });
+
+            if (error.status >= 500 || error.status === 401 || error.status === 403) {
+                setApiBadge("warning", "shared.badge.apiDegraded", "API degraded");
+            }
+        } finally {
+            toggleLoading(false);
+        }
+        return;
+    }
+
     if (!explorerState.controls.family) {
         return;
     }
@@ -1980,6 +2040,119 @@ async function loadExplorerData() {
     } finally {
         toggleLoading(false);
     }
+}
+
+async function fetchGlobalDescriptionRowsForFamily(familyCode) {
+    const pageSize = 250;
+    const baseParams = {
+        endpoint: "code-explorer",
+        family: familyCode,
+        mode: EXPLORER_VIEW_MODE_SEARCH,
+        page_size: String(pageSize),
+        search: explorerState.controls.search,
+        search_type: EXPLORER_SEARCH_TYPE_DESCRIPTION,
+        status: explorerState.controls.status,
+        include_invalid: "0",
+    };
+    const rows = [];
+    let currentPage = 1;
+    let firstPayload = null;
+    let totalPages = 1;
+
+    while (currentPage <= totalPages) {
+        const params = new URLSearchParams({
+            ...baseParams,
+            page: String(currentPage),
+        });
+        const payload = await apiFetch("/?" + params.toString());
+
+        if (firstPayload === null) {
+            firstPayload = payload;
+            totalPages = Number.parseInt(String(payload?.pagination?.total_pages || 1), 10) || 1;
+        }
+
+        if (Array.isArray(payload?.rows) && payload.rows.length > 0) {
+            rows.push(...payload.rows);
+        }
+
+        currentPage += 1;
+    }
+
+    return {
+        family: firstPayload?.family || { code: familyCode, name: familyCode },
+        summary: firstPayload?.summary || {
+            total_codes: 0,
+            configurator_valid: 0,
+            configurator_invalid: 0,
+            datasheet_ready: 0,
+            datasheet_blocked: 0,
+        },
+        rows,
+    };
+}
+
+async function loadGlobalDescriptionSearchData() {
+    const summary = {
+        total_codes: 0,
+        configurator_valid: 0,
+        configurator_invalid: 0,
+        datasheet_ready: 0,
+        datasheet_blocked: 0,
+    };
+    const allRows = [];
+
+    for (const family of explorerState.families) {
+        const familyCode = String(family.codigo || "");
+
+        if (familyCode === "") {
+            continue;
+        }
+
+        let familyData = null;
+
+        try {
+            familyData = await fetchGlobalDescriptionRowsForFamily(familyCode);
+        } catch (error) {
+            continue;
+        }
+
+        summary.total_codes += Number.parseInt(String(familyData.summary?.total_codes || 0), 10) || 0;
+        summary.configurator_valid += Number.parseInt(String(familyData.summary?.configurator_valid || 0), 10) || 0;
+        summary.configurator_invalid += Number.parseInt(String(familyData.summary?.configurator_invalid || 0), 10) || 0;
+        summary.datasheet_ready += Number.parseInt(String(familyData.summary?.datasheet_ready || 0), 10) || 0;
+        summary.datasheet_blocked += Number.parseInt(String(familyData.summary?.datasheet_blocked || 0), 10) || 0;
+
+        if (familyData.rows.length > 0) {
+            allRows.push(...familyData.rows);
+        }
+    }
+
+    allRows.sort((left, right) => String(left.reference || "").localeCompare(String(right.reference || "")));
+
+    const totalRows = allRows.length;
+    const totalPages = Math.max(1, Math.ceil(totalRows / explorerState.controls.pageSize));
+    const safePage = Math.min(Math.max(explorerState.controls.page, 1), totalPages);
+    const offset = (safePage - 1) * explorerState.controls.pageSize;
+    const pageRows = allRows.slice(offset, offset + explorerState.controls.pageSize);
+
+    return {
+        family: null,
+        summary,
+        filters: {
+            search: explorerState.controls.search,
+            search_type: EXPLORER_SEARCH_TYPE_DESCRIPTION,
+            status: explorerState.controls.status,
+            include_invalid: false,
+            segment_filters: getEmptyExplorerSegmentFilters(),
+        },
+        pagination: {
+            page: safePage,
+            page_size: explorerState.controls.pageSize,
+            total_pages: totalPages,
+            total_rows: totalRows,
+        },
+        rows: pageRows,
+    };
 }
 
 function toggleLoading(isLoading) {
