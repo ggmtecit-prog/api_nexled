@@ -192,9 +192,9 @@ Relevant family/mask docs:
 Current code/runtime support is split into 3 states:
 
 - datasheet runtime supported:
-  - `11`, `32`, `55`, `58`, `60`, `29`, `30`, `48`
+  - `11`, `32`, `49`, `55`, `58`, `60`, `29`, `30`, `48`
 - family recognized, but datasheet runtime not mapped yet:
-  - `49`, `01`, `05`
+  - `01`, `05`
 - family documented/researched, but not yet mapped in live runtime:
   - `31`, `40`
 
@@ -292,7 +292,8 @@ Relevant parity docs:
   - correct finish image lookup
 - family `60` is now recognized as `barra` in runtime
 - configurator can inject decoded families that are missing from the loaded dropdown list
-- Shelf (`49`) and Tubular (`01`, `05`) families are now recognized by API/code explorer, but datasheet runtime stops honestly instead of inventing data
+- Shelf (`49`) family is now a real datasheet runtime with strict asset blocking instead of fake fallback support
+- Tubular (`01`, `05`) families are recognized by API/code explorer, but datasheet runtime still stops honestly instead of inventing data
 
 ### Explorer / DAM
 
@@ -310,7 +311,7 @@ Relevant parity docs:
 - old missing-data validation sweep is not fully restored
 - code explorer does not scale for full invalid-family matrix on large families
 - some documented families are still code-recognized only, with no datasheet runtime yet:
-  - `49`, `01`, `05`
+  - `01`, `05`
 - some researched families still are not mapped in live runtime:
   - `31`, `40`
 - DAM is not yet the complete source of truth for datasheet assets
@@ -363,8 +364,8 @@ Relevant parity docs:
 Ordered recommendation:
 
 1. continue family-by-family parity work instead of broad generic rewrites
-2. finish runtime coverage for documented-but-unimplemented families:
-   - `49`
+2. finish runtime coverage for documented families:
+   - complete `49` Shelf asset/data intake and gold-sample compare
    - `01`
    - `05`
 3. restore old missing-data validator behavior

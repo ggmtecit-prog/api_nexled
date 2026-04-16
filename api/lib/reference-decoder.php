@@ -111,7 +111,7 @@ function getProductType(string $reference): ?string {
 }
 
 function isDatasheetRuntimeSupported(?string $productType): bool {
-    return in_array($productType, ["barra", "downlight", "dynamic"], true);
+    return in_array($productType, ["barra", "downlight", "dynamic", "shelf"], true);
 }
 
 

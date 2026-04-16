@@ -36,7 +36,8 @@ What already works:
   - Downlights
   - Tubulares
 - family `60` is recognized by current runtime
-- families `49`, `01`, `05` are recognized by API/explorer, but datasheet runtime is still intentionally unsupported
+- family `49` now enters real datasheet runtime with strict asset blocking
+- families `01`, `05` are still recognized by API/explorer, but datasheet runtime is intentionally unsupported
 
 What still does not match official datasheets:
 
@@ -210,7 +211,7 @@ Do not move to next family until current one is acceptable.
 
 ### Step 1
 
-Finish one documented-but-unimplemented family runtime.
+Finish one documented-but-asset-blocked family runtime.
 
 Best current pick:
 
@@ -219,8 +220,8 @@ Best current pick:
 Why:
 
 - docs now exist
-- family is recognized in API
-- datasheet runtime still not mapped, so next gap is clear
+- family now enters real datasheet runtime
+- next clear gap is real Shelf asset/data completion
 
 ### Step 2
 

@@ -48,6 +48,15 @@ function getFinishPlaceholderImage(): ?string {
     return findImage(IMAGES_BASE_PATH . "/img/logos/nexled");
 }
 
+function isFinishPlaceholderImage(?string $path): bool {
+    if (!is_string($path) || trim($path) === "") {
+        return false;
+    }
+
+    $normalized = str_replace("\\", "/", $path);
+    return str_contains($normalized, "/img/placeholders/finish-missing");
+}
+
 function resolveColorGraphAlias(string $ledId): string {
     return COLOR_GRAPH_ALIASES[$ledId] ?? $ledId;
 }
@@ -171,11 +180,12 @@ function getLensDiagram(string $productId, string $reference): ?array {
  * Each product type organises finish images differently:
  * - Barra:     /img/{family}/acabamentos/{lens}/{series}/ or /{lens}/
  * - Downlight: /img/{family}/acabamentos/
+ * - Shelf:     /img/{family}/acabamentos/
  * - Dynamic:   /img/{family}/{subtype}/acabamentos/
  *
  * The finish name (e.g. "Aluminium — Silver") is fetched from tecit_referencias.
  *
- * @param  string $productType  "barra", "downlight", or "dynamic"
+ * @param  string $productType  "barra", "downlight", "shelf", or "dynamic"
  * @param  string $productId    Internal product ID
  * @param  string $reference    Full product reference
  * @param  array  $config       User selections: lens, finish, end_cap, lang
@@ -246,6 +256,20 @@ function getFinishAndLens(string $productType, string $productId, string $refere
             $folder     = "/img/$family/$subtype/acabamentos/";
             $cleanFinish = str_replace("+", "", $finish);
             $candidates = ["{$size}_{$cleanFinish}"];
+            break;
+
+        case "shelf":
+            $folder = "/img/$family/acabamentos/";
+            $cleanFinish = str_replace("+", "_", $finish);
+            $candidates = [
+                "{$size}_{$lens}_{$cleanFinish}_{$cap}",
+                "{$size}_{$lens}_{$cleanFinish}_{$endCap}",
+                "{$size}_{$lens}_{$cleanFinish}",
+                "{$cleanFinish}_{$cap}",
+                "{$cleanFinish}_{$endCap}",
+                "{$size}_{$lens}",
+                "{$size}",
+            ];
             break;
 
         default: // downlight

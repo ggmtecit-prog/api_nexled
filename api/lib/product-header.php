@@ -26,11 +26,12 @@ define("JSON_DESC_PATH", dirname(__FILE__, 2) . "/json/descricao");
  * Each product type organises its images differently:
  * - Barra:     /img/{family}/produto/{lens}/{series}/ or /img/{family}/produto/{lens}/
  * - Downlight: /img/{family}/produto/
+ * - Shelf:     /img/{family}/produto/
  * - Dynamic:   /img/{family}/{subtype}/produto/
  *
  * Multiple candidate filenames are tried — the first match wins.
  *
- * @param  string $productType  "barra", "downlight", or "dynamic"
+ * @param  string $productType  "barra", "downlight", "shelf", or "dynamic"
  * @param  string $productId    Internal product ID (e.g. "48/recessed/01")
  * @param  array  $parts        Decoded reference (from decodeReference())
  * @param  array  $config       User selections: lens, finish, connector_cable, cable_type, end_cap
@@ -81,6 +82,18 @@ function getProductImage(string $productType, string $productId, array $parts, a
             $candidates = ["{$size}_{$lens}"];
             break;
 
+        case "shelf":
+            $folder = "/img/$family/produto/";
+            $cleanFinish = str_replace("+", "_", $finish);
+            $candidates = [
+                "{$size}_{$lens}_{$cleanFinish}_{$cap}",
+                "{$size}_{$lens}_{$cleanFinish}_{$endCap}",
+                "{$size}_{$lens}_{$cleanFinish}",
+                "{$size}_{$lens}",
+                "{$size}",
+            ];
+            break;
+
         case "dynamic":
             $idParts  = explode("/", $productId);
             $subtype  = $idParts[1];
@@ -121,11 +134,33 @@ function getProductDescriptionText(string $productId, string $family, string $la
     $json = json_decode(file_get_contents(JSON_DESC_PATH . "/produtos.json"));
 
     $id = explode("/", $productId);
-    $key = ($family === "48")
-        ? $id[0] . "_" . $id[1]
-        : $id[0] . "_" . $id[1] . "_" . $id[3];
+    $candidateKeys = [];
 
-    if (!isset($json->descricao->$key->$lang)) {
+    if ($family === "48") {
+        $candidateKeys[] = $id[0] . "_" . $id[1];
+    } else {
+        if (isset($id[3]) && $id[3] !== "") {
+            $candidateKeys[] = $id[0] . "_" . $id[1] . "_" . $id[3];
+        }
+
+        if (isset($id[2]) && $id[2] !== "") {
+            $candidateKeys[] = $id[0] . "_" . $id[1] . "_" . $id[2];
+        }
+
+        if (isset($id[1]) && $id[1] !== "") {
+            $candidateKeys[] = $id[0] . "_" . $id[1];
+        }
+    }
+
+    $key = null;
+    foreach ($candidateKeys as $candidateKey) {
+        if (isset($json->descricao->$candidateKey->$lang)) {
+            $key = $candidateKey;
+            break;
+        }
+    }
+
+    if ($key === null) {
         return "";
     }
 
