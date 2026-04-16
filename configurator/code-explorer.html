@@ -593,7 +593,7 @@
                 <div>
                     <h2 id="codeExplorerTecitCodeLogicTitle" class="modal-title" data-i18n="codeExplorer.logicTitle">Tecit Code Logic</h2>
                 </div>
-                <button type="button" class="btn btn-secondary btn-icon btn-xs" aria-label="Close Tecit code logic" data-i18n-aria-label="configurator.tecitCodeLogicCloseAria" data-close-modal data-modal-initial-focus>
+                <button type="button" class="btn btn-ghost btn-icon btn-xs" aria-label="Close Tecit code logic" data-i18n-aria-label="configurator.tecitCodeLogicCloseAria" data-close-modal data-modal-initial-focus>
                     <i class="ri-close-line text-icon-md" aria-hidden="true"></i>
                 </button>
             </div>
@@ -601,24 +601,29 @@
             <div id="codeExplorerTecitCodeLogicBody" class="modal-body flex-1 min-h-0 overflow-y-auto overflow-x-hidden">
                 <div class="flex flex-col gap-24">
                     <div class="panel panel-sm flex flex-col gap-16">
-                        <div class="flex flex-col gap-8">
-                            <p class="text-body-sm text-grey-primary" data-i18n="configurator.tecitCodeLogicIntro">Live Tecit references use a fixed 17-character structure. Each segment maps to one manufacturing field in the configurator.</p>
-                            <p class="text-body-sm text-black" data-i18n="configurator.tecitCodeLengthRule">A full Tecit code is exactly 17 characters long. Longer values are not valid live references.</p>
-                        </div>
-                        <div class="flex flex-col gap-8">
-                            <span class="input-label" data-i18n="configurator.tecitCodeLogicPatternLabel">Reference Pattern</span>
-                            <code class="text-body-lg font-mono text-black break-all" data-i18n="configurator.tecitCodeLogicPattern">11 | 0375 | 81 | 1 | 1 | 0 | 01 | 01 | 00</code>
-                        </div>
+                        <p class="text-body text-grey-primary max-w-readable" data-i18n="configurator.tecitCodeLogicIntro">A Tecit reference is a fixed 17-character code. Each segment maps to one configurator field.</p>
+                        <dl class="list list-spec list-md">
+                            <div class="list-item">
+                                <dt class="list-key" data-i18n="configurator.tecitCodeLengthLabel">Length</dt>
+                                <dd class="list-value" data-i18n="configurator.tecitCodeLengthRule">17 characters. Longer values are not valid live references.</dd>
+                            </div>
+                            <div class="list-item">
+                                <dt class="list-key" data-i18n="configurator.tecitCodeLogicPatternLabel">Reference Pattern</dt>
+                                <dd class="list-value">
+                                    <code class="text-body font-mono text-black break-all" data-i18n="configurator.tecitCodeLogicPattern">11 | 0375 | 81 | 1 | 1 | 0 | 01 | 01 | 00</code>
+                                </dd>
+                            </div>
+                        </dl>
                     </div>
 
                     <div class="grid grid-cols-1 lg:grid-cols-2 gap-12">
                         <div class="panel panel-sm flex flex-col gap-6">
-                            <span class="input-label" data-i18n="configurator.tecitCodeLogicIdentityTitle">Luminos Validation</span>
-                            <p class="text-body-sm text-black" data-i18n="configurator.tecitCodeLogicIdentityBody">First 10 characters (family + size + color + CRI + series) form identity checked against the Luminos view.</p>
+                            <span class="text-label text-black" data-i18n="configurator.tecitCodeLogicIdentityTitle">Luminos Validation</span>
+                            <p class="text-body text-black max-w-readable" data-i18n="configurator.tecitCodeLogicIdentityBody">Luminos validates the first 10 characters: family, size, color, CRI, and series.</p>
                         </div>
                         <div class="panel panel-sm flex flex-col gap-6">
-                            <span class="input-label" data-i18n="codeExplorer.defaultContextTitle">Datasheet Ready Context</span>
-                            <p class="text-body-sm text-black" data-i18n="codeExplorer.defaultContextBody">Readiness checks use the default export context: Portuguese output, purpose 0, no fixing, no driver, no connection cable, cable connector 0, white cable, end cap 0, and gasket 5.</p>
+                            <span class="text-label text-black" data-i18n="codeExplorer.defaultContextTitle">Datasheet Ready Context</span>
+                            <p class="text-body text-black max-w-readable" data-i18n="codeExplorer.defaultContextBody">Readiness uses the default export context: Portuguese output, purpose 0, no fixing or driver, no connection cable, cable connector 0, white cable, end cap 0, and gasket 5.</p>
                         </div>
                     </div>
 
@@ -631,15 +636,15 @@
                             <div id="codeExplorerLogicLegendPanel" class="accordion-content" role="region" aria-labelledby="codeExplorerLogicLegendTrigger">
                                 <div class="accordion-body">
                                     <dl class="list list-spec list-md">
-                                        <div class="list-item"><dt class="list-key"><code class="text-body-sm font-mono text-black">11</code></dt><dd class="list-value" data-i18n="configurator.tecitCodeLogicFamily">Family (2 chars)</dd></div>
-                                        <div class="list-item"><dt class="list-key"><code class="text-body-sm font-mono text-black">0375</code></dt><dd class="list-value" data-i18n="configurator.tecitCodeLogicSize">Size (4 chars)</dd></div>
-                                        <div class="list-item"><dt class="list-key"><code class="text-body-sm font-mono text-black">81</code></dt><dd class="list-value" data-i18n="configurator.tecitCodeLogicColor">Color (2 chars)</dd></div>
-                                        <div class="list-item"><dt class="list-key"><code class="text-body-sm font-mono text-black">1</code></dt><dd class="list-value" data-i18n="configurator.tecitCodeLogicCri">CRI (1 char)</dd></div>
-                                        <div class="list-item"><dt class="list-key"><code class="text-body-sm font-mono text-black">1</code></dt><dd class="list-value" data-i18n="configurator.tecitCodeLogicSeries">Series (1 char)</dd></div>
-                                        <div class="list-item"><dt class="list-key"><code class="text-body-sm font-mono text-black">0</code></dt><dd class="list-value" data-i18n="configurator.tecitCodeLogicLens">Lens (1 char)</dd></div>
-                                        <div class="list-item"><dt class="list-key"><code class="text-body-sm font-mono text-black">01</code></dt><dd class="list-value" data-i18n="configurator.tecitCodeLogicFinish">Finish (2 chars)</dd></div>
-                                        <div class="list-item"><dt class="list-key"><code class="text-body-sm font-mono text-black">01</code></dt><dd class="list-value" data-i18n="configurator.tecitCodeLogicCap">Cap (2 chars)</dd></div>
-                                        <div class="list-item"><dt class="list-key"><code class="text-body-sm font-mono text-black">00</code></dt><dd class="list-value" data-i18n="configurator.tecitCodeLogicOption">Option (2 chars)</dd></div>
+                                        <div class="list-item"><dt class="list-key"><code class="text-body font-mono text-black">11</code></dt><dd class="list-value" data-i18n="configurator.tecitCodeLogicFamily">Family (2 chars)</dd></div>
+                                        <div class="list-item"><dt class="list-key"><code class="text-body font-mono text-black">0375</code></dt><dd class="list-value" data-i18n="configurator.tecitCodeLogicSize">Size (4 chars)</dd></div>
+                                        <div class="list-item"><dt class="list-key"><code class="text-body font-mono text-black">81</code></dt><dd class="list-value" data-i18n="configurator.tecitCodeLogicColor">Color (2 chars)</dd></div>
+                                        <div class="list-item"><dt class="list-key"><code class="text-body font-mono text-black">1</code></dt><dd class="list-value" data-i18n="configurator.tecitCodeLogicCri">CRI (1 char)</dd></div>
+                                        <div class="list-item"><dt class="list-key"><code class="text-body font-mono text-black">1</code></dt><dd class="list-value" data-i18n="configurator.tecitCodeLogicSeries">Series (1 char)</dd></div>
+                                        <div class="list-item"><dt class="list-key"><code class="text-body font-mono text-black">0</code></dt><dd class="list-value" data-i18n="configurator.tecitCodeLogicLens">Lens (1 char)</dd></div>
+                                        <div class="list-item"><dt class="list-key"><code class="text-body font-mono text-black">01</code></dt><dd class="list-value" data-i18n="configurator.tecitCodeLogicFinish">Finish (2 chars)</dd></div>
+                                        <div class="list-item"><dt class="list-key"><code class="text-body font-mono text-black">01</code></dt><dd class="list-value" data-i18n="configurator.tecitCodeLogicCap">Cap (2 chars)</dd></div>
+                                        <div class="list-item"><dt class="list-key"><code class="text-body font-mono text-black">00</code></dt><dd class="list-value" data-i18n="configurator.tecitCodeLogicOption">Option (2 chars)</dd></div>
                                     </dl>
                                 </div>
                             </div>
@@ -647,16 +652,16 @@
 
                         <div class="accordion-item">
                             <button type="button" id="codeExplorerLogicExamplesTrigger" class="accordion-trigger" aria-expanded="false" aria-controls="codeExplorerLogicExamplesPanel">
-                                <span class="accordion-label" data-i18n="configurator.tecitCodeLogicExamplesTitle">Full Code Examples</span>
+                                <span class="accordion-label" data-i18n="configurator.tecitCodeLogicExamplesTitle">Example References</span>
                                 <i class="accordion-icon ri-arrow-down-s-line" aria-hidden="true"></i>
                             </button>
                             <div id="codeExplorerLogicExamplesPanel" class="accordion-content" role="region" aria-labelledby="codeExplorerLogicExamplesTrigger">
                                 <div class="accordion-body">
                                     <dl class="list list-spec list-md">
-                                        <div class="list-item"><dt class="list-key" data-i18n="configurator.tecitCodeLogicExampleBarra">Barra sample</dt><dd class="list-value"><code class="text-body-sm font-mono text-black break-all">11037581110010100</code></dd></div>
-                                        <div class="list-item"><dt class="list-key" data-i18n="configurator.tecitCodeLogicExampleBarraLens">Barra sample with lens</dt><dd class="list-value"><code class="text-body-sm font-mono text-black break-all">11007502111010100</code></dd></div>
-                                        <div class="list-item"><dt class="list-key" data-i18n="configurator.tecitCodeLogicExampleDownlight">Downlight sample</dt><dd class="list-value"><code class="text-body-sm font-mono text-black break-all">29012022191010000</code></dd></div>
-                                        <div class="list-item"><dt class="list-key" data-i18n="configurator.tecitCodeLogicExampleDynamic">Dynamic sample</dt><dd class="list-value"><code class="text-body-sm font-mono text-black break-all">48007002110010000</code></dd></div>
+                                        <div class="list-item"><dt class="list-key" data-i18n="configurator.tecitCodeLogicExampleBarra">Barra sample</dt><dd class="list-value"><code class="text-body font-mono text-black break-all">11037581110010100</code></dd></div>
+                                        <div class="list-item"><dt class="list-key" data-i18n="configurator.tecitCodeLogicExampleBarraLens">Barra sample with lens</dt><dd class="list-value"><code class="text-body font-mono text-black break-all">11007502111010100</code></dd></div>
+                                        <div class="list-item"><dt class="list-key" data-i18n="configurator.tecitCodeLogicExampleDownlight">Downlight sample</dt><dd class="list-value"><code class="text-body font-mono text-black break-all">29012022191010000</code></dd></div>
+                                        <div class="list-item"><dt class="list-key" data-i18n="configurator.tecitCodeLogicExampleDynamic">Dynamic sample</dt><dd class="list-value"><code class="text-body font-mono text-black break-all">48007002110010000</code></dd></div>
                                     </dl>
                                 </div>
                             </div>
@@ -664,13 +669,12 @@
 
                         <div class="accordion-item">
                             <button type="button" id="codeExplorerLogicSourcesTrigger" class="accordion-trigger" aria-expanded="false" aria-controls="codeExplorerLogicSourcesPanel">
-                                <span class="accordion-label" data-i18n="configurator.tecitCodeLogicSourcesTitle">Where PDF Data Comes From</span>
+                                <span class="accordion-label" data-i18n="configurator.tecitCodeLogicSourcesTitle">PDF Data Sources</span>
                                 <i class="accordion-icon ri-arrow-down-s-line" aria-hidden="true"></i>
                             </button>
                             <div id="codeExplorerLogicSourcesPanel" class="accordion-content" role="region" aria-labelledby="codeExplorerLogicSourcesTrigger">
                                 <div class="accordion-body">
                                     <dl class="list list-spec list-md">
-                                        <div class="list-item"><dt class="list-key" data-i18n="configurator.tecitCodeLogicSourceValidationTitle">Tecit code and Luminos validation</dt><dd class="list-value" data-i18n="configurator.tecitCodeLogicSourceValidationBody">The first 10 characters validate family, size, color, CRI, and series in Luminos. That lookup also defines the product ID used by the API.</dd></div>
                                         <div class="list-item"><dt class="list-key" data-i18n="configurator.tecitCodeLogicSourceCharacteristicsTitle">Product database</dt><dd class="list-value" data-i18n="configurator.tecitCodeLogicSourceCharacteristicsBody">Technical characteristics, electrical data, dimensions, and product descriptions come from the product database used by the NexLed API.</dd></div>
                                         <div class="list-item"><dt class="list-key" data-i18n="configurator.tecitCodeLogicSourceAssetsTitle">Current PDF assets</dt><dd class="list-value" data-i18n="configurator.tecitCodeLogicSourceAssetsBody">Product images, technical drawings, color spectrum files, lens diagrams, icons, and accessory graphics still come from the current local PDF asset library. DAM assets are not part of this PDF flow yet.</dd></div>
                                         <div class="list-item"><dt class="list-key" data-i18n="configurator.tecitCodeLogicSourceFormTitle">Configurator selections</dt><dd class="list-value" data-i18n="configurator.tecitCodeLogicSourceFormBody">Language, company logo, fixing, power supply, cable, purpose, and other optional fields come from the current configurator selections before the API builds the PDF.</dd></div>

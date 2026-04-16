@@ -126,6 +126,7 @@ document.addEventListener("DOMContentLoaded", () => {
 function initializeConfigurator() {
     familyCombobox = setupFamilyCombobox();
     setupSelectDropdowns();
+    bindSystemTooltips();
     bindDocumentLanguageControls();
     bindLiveReferenceLoader();
     bindStatusToast();
@@ -137,6 +138,45 @@ function initializeConfigurator() {
     bindCopyButtons();
     resetConfiguratorState();
     loadFamilies();
+}
+
+function bindSystemTooltips(root = document) {
+    const wrappers = root.querySelectorAll(".tooltip-wrapper");
+
+    wrappers.forEach((wrapper) => {
+        if (wrapper.dataset.tooltipBound === "true") {
+            return;
+        }
+
+        const tooltip = wrapper.querySelector(".tooltip");
+
+        if (!tooltip) {
+            return;
+        }
+
+        const showTooltip = () => {
+            tooltip.style.opacity = "1";
+            tooltip.style.transform = "translateX(-50%) scale(1) translateY(0)";
+        };
+
+        const hideTooltip = () => {
+            tooltip.style.opacity = "0";
+            tooltip.style.transform = "translateX(-50%) scale(var(--scale-press)) translateY(var(--press-offset))";
+        };
+
+        wrapper.addEventListener("mouseenter", showTooltip);
+        wrapper.addEventListener("mouseleave", hideTooltip);
+        wrapper.addEventListener("focusin", showTooltip);
+        wrapper.addEventListener("focusout", (event) => {
+            if (wrapper.contains(event.relatedTarget)) {
+                return;
+            }
+
+            hideTooltip();
+        });
+
+        wrapper.dataset.tooltipBound = "true";
+    });
 }
 
 function handleConfiguratorInitError(error) {
