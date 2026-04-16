@@ -218,27 +218,27 @@
                 <div class="relative w-full min-w-0 lg:col-span-9" data-reveal="section">
                     <div class="card overflow-visible" id="builder-card">
                         <div class="card-body">
-                            <div class="flex flex-col gap-12">
-                                <div class="flex flex-col gap-8">
-                                    <label class="input-label ml-12" for="family-combobox-input" data-i18n="configurator.familyLabel">Family</label>
-                                    <div id="family-combobox" class="combobox combobox-md">
-                                        <div class="combobox-control">
-                                            <span class="input-icon-area" aria-hidden="true">
-                                                <i class="ri-search-line"></i>
-                                            </span>
-                                            <input type="text" id="family-combobox-input" class="combobox-input" placeholder="Loading families..." aria-label="Product family" autocomplete="off" data-i18n-placeholder="configurator.runtime.familyLoading" data-i18n-aria-label="configurator.familyAria">
-                                            <button type="button" id="family-combobox-clear" class="btn btn-ghost btn-icon btn-xs combobox-clear" aria-label="Clear product family" hidden disabled data-i18n-aria-label="configurator.clearFamilyAria">
-                                                <i class="ri-close-line text-icon-sm" aria-hidden="true"></i>
-                                            </button>
-                                        </div>
-                                        <input type="hidden" id="select-family" value="">
-                                        <div class="combobox-panel" id="family-combobox-panel" hidden aria-hidden="true">
-                                            <div class="combobox-list" id="family-combobox-list"></div>
-                                            <p class="combobox-empty" id="family-combobox-empty" hidden data-i18n="configurator.familyEmpty">No matching families</p>
-                                        </div>
+                            <div class="flex flex-col gap-16">
+                                <div class="flex flex-col gap-4 pt-16">
+                                    <h3 class="card-title" data-i18n="configurator.familyLabel">Family</h3>
+                                    <p class="text-body-sm text-grey-primary max-w-readable" data-i18n="configurator.familyHint">Select a family to load the valid option set.</p>
+                                </div>
+                                <div id="family-combobox" class="combobox combobox-md">
+                                    <div class="combobox-control">
+                                        <span class="input-icon-area" aria-hidden="true">
+                                            <i class="ri-search-line"></i>
+                                        </span>
+                                        <input type="text" id="family-combobox-input" class="combobox-input" placeholder="Loading families..." aria-label="Product family" autocomplete="off" data-i18n-placeholder="configurator.runtime.familyLoading" data-i18n-aria-label="configurator.familyAria">
+                                        <button type="button" id="family-combobox-clear" class="btn btn-ghost btn-icon btn-xs combobox-clear" aria-label="Clear product family" hidden disabled data-i18n-aria-label="configurator.clearFamilyAria">
+                                            <i class="ri-close-line text-icon-sm" aria-hidden="true"></i>
+                                        </button>
+                                    </div>
+                                    <input type="hidden" id="select-family" value="">
+                                    <div class="combobox-panel" id="family-combobox-panel" hidden aria-hidden="true">
+                                        <div class="combobox-list" id="family-combobox-list"></div>
+                                        <p class="combobox-empty" id="family-combobox-empty" hidden data-i18n="configurator.familyEmpty">No matching families</p>
                                     </div>
                                 </div>
-                                <p class="input-hint ml-12" data-i18n="configurator.familyHint">Select a family to load the valid option set.</p>
                             </div>
 
                             <div id="options-group" class="hidden flex flex-col gap-40 pt-40">
@@ -514,17 +514,16 @@
                         <div id="output-fields" class="hidden flex flex-col gap-12 pt-24">
                             <label class="input-label" for="output-description" data-i18n="configurator.quickActions.description">Description</label>
                             <div class="flex items-center gap-8 w-full">
-                                <input type="text" id="output-description" class="input input-sm flex-1 min-w-0" readonly aria-describedby="descriptionHint">
+                                <input type="text" id="output-description" class="input input-sm flex-1 min-w-0" readonly>
                                 <span class="tooltip-wrapper shrink-0">
-                                    <button type="button" class="btn btn-ghost btn-icon btn-xs shrink-0" data-copy-target="output-description" aria-label="Copy description" data-i18n-aria-label="configurator.quickActions.copyDescription">
-                                        <i class="ri-file-copy-line text-icon-xs" aria-hidden="true"></i>
+                                    <button type="button" class="btn btn-ghost btn-icon btn-sm shrink-0" data-copy-target="output-description" aria-label="Copy description" data-i18n-aria-label="configurator.quickActions.copyDescription">
+                                        <i class="ri-file-copy-line text-icon-lg" aria-hidden="true"></i>
                                     </button>
                                     <div class="tooltip tooltip-black tooltip-xs">
                                         <span data-i18n="configurator.quickActions.copyDescription">Copy Description</span>
                                     </div>
                                 </span>
                             </div>
-                            <p id="descriptionHint" class="input-hint" data-i18n="configurator.quickActions.descriptionHint">Generated from the current reference when product data is available.</p>
                         </div>
 
                         <div class="flex flex-col gap-12 pt-24">
@@ -570,36 +569,26 @@
 
             <div id="tecitCodeLogicBody" class="modal-body flex-1 min-h-0 overflow-y-auto overflow-x-hidden">
                 <div class="flex flex-col gap-24">
-                    <div class="panel panel-sm flex flex-col gap-16">
-                        <p class="text-body text-grey-primary max-w-readable" data-i18n="configurator.tecitCodeLogicIntro">A Tecit reference is a fixed 17-character code. Each segment maps to one configurator field.</p>
-                        <dl class="list list-spec list-md">
-                            <div class="list-item">
-                                <dt class="list-key" data-i18n="configurator.tecitCodeLengthLabel">Length</dt>
-                                <dd class="list-value" data-i18n="configurator.tecitCodeLengthRule">17 characters. Longer values are not valid live references.</dd>
-                            </div>
-                            <div class="list-item">
-                                <dt class="list-key" data-i18n="configurator.tecitCodeLogicPatternLabel">Reference Pattern</dt>
-                                <dd class="list-value">
-                                    <code class="text-body font-mono text-black break-all" data-i18n="configurator.tecitCodeLogicPattern">11 | 0375 | 81 | 1 | 1 | 0 | 01 | 01 | 00</code>
-                                </dd>
-                            </div>
-                        </dl>
-                    </div>
-
-                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-12">
-                        <div class="panel panel-sm flex flex-col gap-6">
-                            <span class="text-label text-black" data-i18n="configurator.tecitCodeLogicIdentityTitle">Luminos Validation</span>
-                            <p class="text-body text-black max-w-readable" data-i18n="configurator.tecitCodeLogicIdentityBody">Luminos validates the first 10 characters: family, size, color, CRI, and series.</p>
+                    <div class="flex flex-col gap-16">
+                        <div class="text-style text-style-hero gap-12">
+                            <span class="text-overline text-grey-primary" data-i18n="configurator.tecitCodeOverviewLabel">Reference Structure</span>
+                            <p class="text-style-subtitle text-hero-subtitle" data-i18n="configurator.tecitCodeLogicIntro">A Tecit reference is a fixed 17-character code. Each segment maps to one configurator field.</p>
                         </div>
-                        <div class="panel panel-sm flex flex-col gap-6">
-                            <span class="text-label text-black" data-i18n="codeExplorer.defaultContextTitle">Datasheet Ready Context</span>
-                            <p class="text-body text-black max-w-readable" data-i18n="codeExplorer.defaultContextBody">Readiness uses the default export context: Portuguese output, purpose 0, no fixing or driver, no connection cable, cable connector 0, white cable, end cap 0, and gasket 5.</p>
+                        <div class="flex flex-col gap-12">
+                            <div class="flex flex-col gap-4">
+                                <span class="text-label text-grey-primary" data-i18n="configurator.tecitCodeLengthLabel">Length</span>
+                                <p class="text-body text-black max-w-readable" data-i18n="configurator.tecitCodeLengthRule">17 characters. Longer values are not valid live references.</p>
+                            </div>
+                            <div class="flex flex-col gap-4">
+                                <span class="text-label text-grey-primary" data-i18n="configurator.tecitCodeLogicPatternLabel">Reference Pattern</span>
+                                <code class="text-body font-mono text-black break-all" data-i18n="configurator.tecitCodeLogicPattern">11 | 0375 | 81 | 1 | 1 | 0 | 01 | 01 | 00</code>
+                            </div>
                         </div>
                     </div>
 
                     <div class="accordion accordion-md">
-                        <div class="accordion-item is-open">
-                            <button type="button" id="tecitCodeLogicLegendTrigger" class="accordion-trigger" aria-expanded="true" aria-controls="tecitCodeLogicLegendPanel">
+                        <div class="accordion-item">
+                            <button type="button" id="tecitCodeLogicLegendTrigger" class="accordion-trigger" aria-expanded="false" aria-controls="tecitCodeLogicLegendPanel">
                                 <span class="accordion-label" data-i18n="configurator.tecitCodeLogicLegendLabel">Segment Legend</span>
                                 <i class="accordion-icon ri-arrow-down-s-line" aria-hidden="true"></i>
                             </button>
