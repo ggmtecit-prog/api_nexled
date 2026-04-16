@@ -1,166 +1,124 @@
--- NexLed DAM schema
--- Creates separate metadata database for DAM.
--- Does not alter tecit_referencias, tecit_lampadas, or info_nexled_2024.
--- Creates canonical folder and asset tables for DAM v2.
-
+-- DAM restructure migration
 SET NAMES utf8mb4;
-
-CREATE DATABASE IF NOT EXISTS `nexled_dam`
-    CHARACTER SET utf8mb4
-    COLLATE utf8mb4_unicode_ci;
-
+CREATE DATABASE IF NOT EXISTS `nexled_dam` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 USE `nexled_dam`;
-
-START TRANSACTION;
-
-CREATE TABLE IF NOT EXISTS `dam_folders` (
-    `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-    `folder_id` VARCHAR(255) NOT NULL,
-    `parent_id` VARCHAR(255) NULL,
-    `name` VARCHAR(80) NOT NULL,
-    `path` VARCHAR(255) NOT NULL,
-    `scope` ENUM('brand','products','support','store','website','eprel','configurator','archive') NOT NULL,
-    `kind` ENUM('system','custom') NOT NULL DEFAULT 'custom',
-    `is_system` TINYINT(1) NOT NULL DEFAULT 0,
-    `can_upload` TINYINT(1) NOT NULL DEFAULT 1,
-    `can_create_children` TINYINT(1) NOT NULL DEFAULT 1,
-    `sort_order` INT NOT NULL DEFAULT 0,
-    `metadata` JSON NULL,
-    `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    `updated_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    PRIMARY KEY (`id`),
-    UNIQUE KEY `uniq_dam_folders_folder_id` (`folder_id`),
-    UNIQUE KEY `uniq_dam_folders_path` (`path`),
-    KEY `idx_dam_folders_parent_id` (`parent_id`),
-    KEY `idx_dam_folders_scope` (`scope`),
-    CONSTRAINT `fk_dam_folders_parent`
-        FOREIGN KEY (`parent_id`) REFERENCES `dam_folders` (`folder_id`)
-        ON UPDATE CASCADE
-        ON DELETE RESTRICT
+DROP TABLE IF EXISTS `dam_asset_links`;
+DROP TABLE IF EXISTS `dam_assets`;
+DROP TABLE IF EXISTS `dam_folders`;
+CREATE TABLE `dam_folders` (
+  `folder_id` VARCHAR(255) NOT NULL,
+  `parent_id` VARCHAR(255) NULL,
+  `name` VARCHAR(80) NOT NULL,
+  `path` VARCHAR(255) NOT NULL,
+  `scope` VARCHAR(32) NOT NULL DEFAULT 'root',
+  `kind` VARCHAR(16) NOT NULL DEFAULT 'system',
+  `is_system` TINYINT(1) NOT NULL DEFAULT 1,
+  `can_upload` TINYINT(1) NOT NULL DEFAULT 0,
+  `can_create_children` TINYINT(1) NOT NULL DEFAULT 0,
+  `sort_order` INT NOT NULL DEFAULT 0,
+  `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`folder_id`),
+  UNIQUE KEY `uq_path` (`path`),
+  KEY `idx_parent` (`parent_id`),
+  KEY `idx_scope` (`scope`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
-CREATE TABLE IF NOT EXISTS `dam_assets` (
-    `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-    `folder_id` VARCHAR(255) NOT NULL,
-    `display_name` VARCHAR(255) NOT NULL,
-    `filename` VARCHAR(255) NOT NULL,
-    `public_id` VARCHAR(255) NOT NULL,
-    `asset_folder` VARCHAR(255) NOT NULL,
-    `resource_type` ENUM('image','raw','video') NOT NULL,
-    `format` VARCHAR(32) NOT NULL,
-    `mime_type` VARCHAR(128) NULL,
-    `bytes` BIGINT UNSIGNED NULL,
-    `width` INT UNSIGNED NULL,
-    `height` INT UNSIGNED NULL,
-    `duration_ms` INT UNSIGNED NULL,
-    `secure_url` VARCHAR(1024) NOT NULL,
-    `thumbnail_url` VARCHAR(1024) NULL,
-    `kind` VARCHAR(64) NOT NULL,
-    `scope` ENUM('brand','products','support','store','website','eprel','configurator','archive') NOT NULL,
-    `family_code` VARCHAR(16) NULL,
-    `product_code` VARCHAR(64) NULL,
-    `product_slug` VARCHAR(128) NULL,
-    `locale` VARCHAR(16) NULL,
-    `version` VARCHAR(64) NULL,
-    `tags` JSON NULL,
-    `metadata` JSON NULL,
-    `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    `updated_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    PRIMARY KEY (`id`),
-    UNIQUE KEY `uniq_dam_assets_public_id` (`public_id`),
-    UNIQUE KEY `uniq_dam_assets_folder_filename` (`folder_id`, `filename`),
-    KEY `idx_dam_assets_scope_kind` (`scope`, `kind`),
-    KEY `idx_dam_assets_family_code` (`family_code`),
-    KEY `idx_dam_assets_product_code` (`product_code`),
-    KEY `idx_dam_assets_product_slug` (`product_slug`),
-    KEY `idx_dam_assets_locale` (`locale`),
-    KEY `idx_dam_assets_version` (`version`),
-    CONSTRAINT `fk_dam_assets_folder`
-        FOREIGN KEY (`folder_id`) REFERENCES `dam_folders` (`folder_id`)
-        ON UPDATE CASCADE
-        ON DELETE RESTRICT
+CREATE TABLE `dam_assets` (
+  `id` INT AUTO_INCREMENT PRIMARY KEY,
+  `filename` VARCHAR(255) NOT NULL,
+  `display_name` VARCHAR(255) NOT NULL,
+  `public_id` VARCHAR(255) NOT NULL,
+  `folder_id` VARCHAR(255) NOT NULL,
+  `resource_type` VARCHAR(20) NOT NULL DEFAULT 'image',
+  `format` VARCHAR(20) NULL,
+  `mime_type` VARCHAR(100) NULL,
+  `bytes` INT NULL,
+  `width` INT NULL,
+  `height` INT NULL,
+  `secure_url` VARCHAR(500) NOT NULL,
+  `thumbnail_url` VARCHAR(500) NULL,
+  `kind` VARCHAR(64) NOT NULL,
+  `tags` JSON NULL,
+  `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  UNIQUE KEY `uq_public_id` (`public_id`),
+  KEY `idx_kind` (`kind`),
+  KEY `idx_folder` (`folder_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
-INSERT INTO `dam_folders` (
-    `folder_id`, `parent_id`, `name`, `path`, `scope`, `kind`, `is_system`, `can_upload`, `can_create_children`, `sort_order`
-) VALUES
-    ('nexled', NULL, 'nexled', 'nexled', 'brand', 'system', 1, 0, 1, 0)
-ON DUPLICATE KEY UPDATE
-    `parent_id` = VALUES(`parent_id`),
-    `name` = VALUES(`name`),
-    `path` = VALUES(`path`),
-    `scope` = VALUES(`scope`),
-    `kind` = VALUES(`kind`),
-    `is_system` = VALUES(`is_system`),
-    `can_upload` = VALUES(`can_upload`),
-    `can_create_children` = VALUES(`can_create_children`),
-    `sort_order` = VALUES(`sort_order`);
-
-INSERT INTO `dam_folders` (
-    `folder_id`, `parent_id`, `name`, `path`, `scope`, `kind`, `is_system`, `can_upload`, `can_create_children`, `sort_order`
-) VALUES
-    ('nexled/00_brand', 'nexled', '00_brand', 'nexled/00_brand', 'brand', 'system', 1, 0, 1, 10),
-    ('nexled/10_products', 'nexled', '10_products', 'nexled/10_products', 'products', 'system', 1, 0, 1, 20),
-    ('nexled/60_configurator', 'nexled', '60_configurator', 'nexled/60_configurator', 'configurator', 'system', 1, 0, 1, 70)
-ON DUPLICATE KEY UPDATE
-    `parent_id` = VALUES(`parent_id`),
-    `name` = VALUES(`name`),
-    `path` = VALUES(`path`),
-    `scope` = VALUES(`scope`),
-    `kind` = VALUES(`kind`),
-    `is_system` = VALUES(`is_system`),
-    `can_upload` = VALUES(`can_upload`),
-    `can_create_children` = VALUES(`can_create_children`),
-    `sort_order` = VALUES(`sort_order`);
-
-INSERT INTO `dam_folders` (
-    `folder_id`, `parent_id`, `name`, `path`, `scope`, `kind`, `is_system`, `can_upload`, `can_create_children`, `sort_order`
-) VALUES
-    ('nexled/00_brand/logos', 'nexled/00_brand', 'logos', 'nexled/00_brand/logos', 'brand', 'system', 1, 1, 0, 10),
-    ('nexled/10_products/shared', 'nexled/10_products', 'shared', 'nexled/10_products/shared', 'products', 'system', 1, 0, 1, 10),
-    ('nexled/10_products/families', 'nexled/10_products', 'families', 'nexled/10_products/families', 'products', 'system', 1, 0, 1, 20),
-    ('nexled/60_configurator/ui-assets', 'nexled/60_configurator', 'ui-assets', 'nexled/60_configurator/ui-assets', 'configurator', 'system', 1, 1, 0, 10),
-    ('nexled/60_configurator/placeholders', 'nexled/60_configurator', 'placeholders', 'nexled/60_configurator/placeholders', 'configurator', 'system', 1, 1, 0, 20),
-    ('nexled/60_configurator/imports', 'nexled/60_configurator', 'imports', 'nexled/60_configurator/imports', 'configurator', 'system', 1, 1, 0, 30)
-ON DUPLICATE KEY UPDATE
-    `parent_id` = VALUES(`parent_id`),
-    `name` = VALUES(`name`),
-    `path` = VALUES(`path`),
-    `scope` = VALUES(`scope`),
-    `kind` = VALUES(`kind`),
-    `is_system` = VALUES(`is_system`),
-    `can_upload` = VALUES(`can_upload`),
-    `can_create_children` = VALUES(`can_create_children`),
-    `sort_order` = VALUES(`sort_order`);
-
-INSERT INTO `dam_folders` (
-    `folder_id`, `parent_id`, `name`, `path`, `scope`, `kind`, `is_system`, `can_upload`, `can_create_children`, `sort_order`
-) VALUES
-    ('nexled/10_products/families/01_t8-ac', 'nexled/10_products/families', '01_t8-ac', 'nexled/10_products/families/01_t8-ac', 'products', 'system', 1, 0, 1, 10),
-    ('nexled/10_products/families/05_t5-vc', 'nexled/10_products/families', '05_t5-vc', 'nexled/10_products/families/05_t5-vc', 'products', 'system', 1, 0, 1, 50),
-    ('nexled/10_products/shared/temperatures', 'nexled/10_products/shared', 'temperatures', 'nexled/10_products/shared/temperatures', 'products', 'system', 1, 1, 0, 10),
-    ('nexled/10_products/shared/icons', 'nexled/10_products/shared', 'icons', 'nexled/10_products/shared/icons', 'products', 'system', 1, 1, 0, 20),
-    ('nexled/10_products/shared/power-supplies', 'nexled/10_products/shared', 'power-supplies', 'nexled/10_products/shared/power-supplies', 'products', 'system', 1, 1, 0, 30),
-    ('nexled/10_products/shared/energy-labels', 'nexled/10_products/shared', 'energy-labels', 'nexled/10_products/shared/energy-labels', 'products', 'system', 1, 1, 0, 40),
-    ('nexled/10_products/families/11_barra-t5', 'nexled/10_products/families', '11_barra-t5', 'nexled/10_products/families/11_barra-t5', 'products', 'system', 1, 0, 1, 110),
-    ('nexled/10_products/families/29_downlight', 'nexled/10_products/families', '29_downlight', 'nexled/10_products/families/29_downlight', 'products', 'system', 1, 0, 1, 290),
-    ('nexled/10_products/families/30_downlight', 'nexled/10_products/families', '30_downlight', 'nexled/10_products/families/30_downlight', 'products', 'system', 1, 0, 1, 300),
-    ('nexled/10_products/families/31_barra-rgb', 'nexled/10_products/families', '31_barra-rgb', 'nexled/10_products/families/31_barra-rgb', 'products', 'system', 1, 0, 1, 310),
-    ('nexled/10_products/families/32_barra-bt', 'nexled/10_products/families', '32_barra-bt', 'nexled/10_products/families/32_barra-bt', 'products', 'system', 1, 0, 1, 320),
-    ('nexled/10_products/families/40_barra-cct', 'nexled/10_products/families', '40_barra-cct', 'nexled/10_products/families/40_barra-cct', 'products', 'system', 1, 0, 1, 400),
-    ('nexled/10_products/families/49_shelfled', 'nexled/10_products/families', '49_shelfled', 'nexled/10_products/families/49_shelfled', 'products', 'system', 1, 0, 1, 490),
-    ('nexled/10_products/families/48_dynamic', 'nexled/10_products/families', '48_dynamic', 'nexled/10_products/families/48_dynamic', 'products', 'system', 1, 0, 1, 480),
-    ('nexled/10_products/families/55_barra', 'nexled/10_products/families', '55_barra', 'nexled/10_products/families/55_barra', 'products', 'system', 1, 0, 1, 550),
-    ('nexled/10_products/families/58_barra-hot', 'nexled/10_products/families', '58_barra-hot', 'nexled/10_products/families/58_barra-hot', 'products', 'system', 1, 0, 1, 580)
-ON DUPLICATE KEY UPDATE
-    `parent_id` = VALUES(`parent_id`),
-    `name` = VALUES(`name`),
-    `path` = VALUES(`path`),
-    `scope` = VALUES(`scope`),
-    `kind` = VALUES(`kind`),
-    `is_system` = VALUES(`is_system`),
-    `can_upload` = VALUES(`can_upload`),
-    `can_create_children` = VALUES(`can_create_children`),
-    `sort_order` = VALUES(`sort_order`);
-
-COMMIT;
+CREATE TABLE `dam_asset_links` (
+  `id` INT AUTO_INCREMENT PRIMARY KEY,
+  `asset_id` INT NOT NULL,
+  `product_code` VARCHAR(64) NULL,
+  `family_code` VARCHAR(20) NULL,
+  `role` VARCHAR(64) NOT NULL,
+  `sort_order` INT DEFAULT 0,
+  `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT `fk_dam_asset_links_asset` FOREIGN KEY (`asset_id`) REFERENCES `dam_assets` (`id`) ON DELETE CASCADE,
+  UNIQUE KEY `uq_link` (`asset_id`, `product_code`, `family_code`, `role`),
+  KEY `idx_product` (`product_code`, `role`),
+  KEY `idx_family` (`family_code`, `role`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+INSERT INTO `dam_folders` (`folder_id`,`parent_id`,`name`,`path`,`scope`,`kind`,`is_system`,`can_upload`,`can_create_children`,`sort_order`) VALUES
+('nexled',NULL,'nexled','nexled','root','system',1,0,1,0),
+('nexled/datasheet','nexled','datasheet','nexled/datasheet','datasheet','system',1,0,1,10),
+('nexled/datasheet/packshots','nexled/datasheet','packshots','nexled/datasheet/packshots','datasheet','system',1,0,1,10),
+('nexled/datasheet/packshots/20deg','nexled/datasheet/packshots','20deg','nexled/datasheet/packshots/20deg','datasheet','system',1,1,0,10),
+('nexled/datasheet/packshots/45deg','nexled/datasheet/packshots','45deg','nexled/datasheet/packshots/45deg','datasheet','system',1,1,0,20),
+('nexled/datasheet/packshots/2x55deg-lf','nexled/datasheet/packshots','2x55deg-lf','nexled/datasheet/packshots/2x55deg-lf','datasheet','system',1,1,0,30),
+('nexled/datasheet/packshots/40deg','nexled/datasheet/packshots','40deg','nexled/datasheet/packshots/40deg','datasheet','system',1,1,0,40),
+('nexled/datasheet/packshots/frost','nexled/datasheet/packshots','frost','nexled/datasheet/packshots/frost','datasheet','system',1,1,0,50),
+('nexled/datasheet/packshots/frostc','nexled/datasheet/packshots','frostc','nexled/datasheet/packshots/frostc','datasheet','system',1,1,0,60),
+('nexled/datasheet/packshots/clear','nexled/datasheet/packshots','clear','nexled/datasheet/packshots/clear','datasheet','system',1,1,0,70),
+('nexled/datasheet/packshots/generic','nexled/datasheet/packshots','generic','nexled/datasheet/packshots/generic','datasheet','system',1,1,0,80),
+('nexled/datasheet/packshots/clear-1','nexled/datasheet/packshots','clear-1','nexled/datasheet/packshots/clear-1','datasheet','system',1,1,0,90),
+('nexled/datasheet/packshots/clear-2','nexled/datasheet/packshots','clear-2','nexled/datasheet/packshots/clear-2','datasheet','system',1,1,0,100),
+('nexled/datasheet/packshots/clear-4','nexled/datasheet/packshots','clear-4','nexled/datasheet/packshots/clear-4','datasheet','system',1,1,0,110),
+('nexled/datasheet/packshots/clear-5','nexled/datasheet/packshots','clear-5','nexled/datasheet/packshots/clear-5','datasheet','system',1,1,0,120),
+('nexled/datasheet/packshots/clear-6','nexled/datasheet/packshots','clear-6','nexled/datasheet/packshots/clear-6','datasheet','system',1,1,0,130),
+('nexled/datasheet/finishes','nexled/datasheet','finishes','nexled/datasheet/finishes','datasheet','system',1,0,1,20),
+('nexled/datasheet/finishes/20deg','nexled/datasheet/finishes','20deg','nexled/datasheet/finishes/20deg','datasheet','system',1,1,0,10),
+('nexled/datasheet/finishes/45deg','nexled/datasheet/finishes','45deg','nexled/datasheet/finishes/45deg','datasheet','system',1,1,0,20),
+('nexled/datasheet/finishes/2x55deg-lf','nexled/datasheet/finishes','2x55deg-lf','nexled/datasheet/finishes/2x55deg-lf','datasheet','system',1,1,0,30),
+('nexled/datasheet/finishes/40deg','nexled/datasheet/finishes','40deg','nexled/datasheet/finishes/40deg','datasheet','system',1,1,0,40),
+('nexled/datasheet/finishes/frost','nexled/datasheet/finishes','frost','nexled/datasheet/finishes/frost','datasheet','system',1,1,0,50),
+('nexled/datasheet/finishes/frostc','nexled/datasheet/finishes','frostc','nexled/datasheet/finishes/frostc','datasheet','system',1,1,0,60),
+('nexled/datasheet/finishes/clear','nexled/datasheet/finishes','clear','nexled/datasheet/finishes/clear','datasheet','system',1,1,0,70),
+('nexled/datasheet/finishes/generic','nexled/datasheet/finishes','generic','nexled/datasheet/finishes/generic','datasheet','system',1,1,0,80),
+('nexled/datasheet/finishes/clear-1','nexled/datasheet/finishes','clear-1','nexled/datasheet/finishes/clear-1','datasheet','system',1,1,0,90),
+('nexled/datasheet/finishes/clear-2','nexled/datasheet/finishes','clear-2','nexled/datasheet/finishes/clear-2','datasheet','system',1,1,0,100),
+('nexled/datasheet/finishes/clear-4','nexled/datasheet/finishes','clear-4','nexled/datasheet/finishes/clear-4','datasheet','system',1,1,0,110),
+('nexled/datasheet/finishes/clear-5','nexled/datasheet/finishes','clear-5','nexled/datasheet/finishes/clear-5','datasheet','system',1,1,0,120),
+('nexled/datasheet/finishes/clear-6','nexled/datasheet/finishes','clear-6','nexled/datasheet/finishes/clear-6','datasheet','system',1,1,0,130),
+('nexled/datasheet/drawings','nexled/datasheet','drawings','nexled/datasheet/drawings','datasheet','system',1,1,0,30),
+('nexled/datasheet/diagrams','nexled/datasheet','diagrams','nexled/datasheet/diagrams','datasheet','system',1,1,1,40),
+('nexled/datasheet/diagrams/inverted','nexled/datasheet/diagrams','inverted','nexled/datasheet/diagrams/inverted','datasheet','system',1,1,0,10),
+('nexled/datasheet/mounting','nexled/datasheet','mounting','nexled/datasheet/mounting','datasheet','system',1,1,0,50),
+('nexled/datasheet/connectors','nexled/datasheet','connectors','nexled/datasheet/connectors','datasheet','system',1,1,0,60),
+('nexled/datasheet/temperatures','nexled/datasheet','temperatures','nexled/datasheet/temperatures','datasheet','system',1,1,0,70),
+('nexled/datasheet/energy-labels','nexled/datasheet','energy-labels','nexled/datasheet/energy-labels','datasheet','system',1,1,1,80),
+('nexled/datasheet/energy-labels/right','nexled/datasheet/energy-labels','right','nexled/datasheet/energy-labels/right','datasheet','system',1,1,0,10),
+('nexled/datasheet/icons','nexled/datasheet','icons','nexled/datasheet/icons','datasheet','system',1,1,0,90),
+('nexled/datasheet/logos','nexled/datasheet','logos','nexled/datasheet/logos','datasheet','system',1,1,0,100),
+('nexled/datasheet/power-supplies','nexled/datasheet','power-supplies','nexled/datasheet/power-supplies','datasheet','system',1,1,0,110);
+INSERT INTO `dam_folders` (`folder_id`,`parent_id`,`name`,`path`,`scope`,`kind`,`is_system`,`can_upload`,`can_create_children`,`sort_order`) VALUES
+('nexled/media','nexled','media','nexled/media','media','system',1,0,1,20),
+('nexled/media/products','nexled/media','products','nexled/media/products','media','system',1,1,1,10),
+('nexled/media/lifestyle','nexled/media','lifestyle','nexled/media/lifestyle','media','system',1,1,0,20),
+('nexled/media/datasheets','nexled/media','datasheets','nexled/media/datasheets','media','system',1,1,0,30),
+('nexled/media/eprel','nexled/media','eprel','nexled/media/eprel','media','system',1,0,1,40),
+('nexled/media/eprel/labels','nexled/media/eprel','labels','nexled/media/eprel/labels','media','system',1,1,0,10),
+('nexled/media/eprel/fiches','nexled/media/eprel','fiches','nexled/media/eprel/fiches','media','system',1,1,0,20),
+('nexled/media/brand','nexled/media','brand','nexled/media/brand','media','system',1,0,1,50),
+('nexled/media/brand/logos','nexled/media/brand','logos','nexled/media/brand/logos','media','system',1,1,0,10),
+('nexled/media/brand/guidelines','nexled/media/brand','guidelines','nexled/media/brand/guidelines','media','system',1,1,0,20),
+('nexled/media/brand/presentations','nexled/media/brand','presentations','nexled/media/brand/presentations','media','system',1,1,0,30),
+('nexled/media/store','nexled/media','store','nexled/media/store','media','system',1,0,1,60),
+('nexled/media/store/hero','nexled/media/store','hero','nexled/media/store/hero','media','system',1,1,0,10),
+('nexled/media/store/banners','nexled/media/store','banners','nexled/media/store/banners','media','system',1,1,0,20),
+('nexled/media/store/categories','nexled/media/store','categories','nexled/media/store/categories','media','system',1,1,0,30),
+('nexled/media/support','nexled/media','support','nexled/media/support','media','system',1,0,1,70),
+('nexled/media/support/repair-guides','nexled/media/support','repair-guides','nexled/media/support/repair-guides','media','system',1,1,0,10),
+('nexled/media/support/page-assets','nexled/media/support','page-assets','nexled/media/support/page-assets','media','system',1,1,0,20),
+('nexled/media/website','nexled/media','website','nexled/media/website','media','system',1,0,1,80),
+('nexled/media/website/hub','nexled/media/website','hub','nexled/media/website/hub','media','system',1,1,0,10),
+('nexled/media/website/landing-pages','nexled/media/website','landing-pages','nexled/media/website/landing-pages','media','system',1,1,0,20);

@@ -30,8 +30,7 @@ require_once "./lib/validate.php";
 // Route: /api/?endpoint=datasheet (POST)
 // Route: /api/?endpoint=health
 // Route: /api/?endpoint=svg-diagnostics&ref=...
-// Route: /api/?endpoint=assets&action=get|upload|delete
-// Route: /api/?endpoint=dam&action=tree|list|asset|create-folder|resolve-target|upload
+// Route: /api/?endpoint=dam&action=tree|list|asset|create-folder|sync-folders|upload|product-assets|link|unlink
 // Route: /api/?endpoint=code-explorer&family=11&page=1&page_size=100&search=&status=all
 
 if (!$endpoint) {
@@ -64,9 +63,6 @@ switch ($endpoint) {
         break;
     case "code-explorer":
         require "./endpoints/code-explorer.php";
-        break;
-    case "assets":
-        require "./endpoints/assets.php";
         break;
     case "dam":
         require "./endpoints/dam.php";

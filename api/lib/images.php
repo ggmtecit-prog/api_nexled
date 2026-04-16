@@ -336,15 +336,23 @@ function findDamProductAsset(string $familyCode, string $productId, string $kind
         return null;
     }
 
+    $roleMap = [
+        "product_media_packshot" => "packshot",
+        "technical_finish" => "finish",
+        "technical_diagram" => "diagram",
+        "technical_drawing" => "drawing",
+    ];
+    $role = $roleMap[$kind] ?? $kind;
+
     $stmt = mysqli_prepare(
         $con,
-        "SELECT `filename`, `display_name`, `public_id`, `product_slug`, `secure_url`
-         FROM `dam_assets`
-         WHERE `scope` = 'products'
-           AND `resource_type` = 'image'
-           AND `family_code` = ?
-           AND `kind` = ?
-         ORDER BY `id` DESC
+        "SELECT a.`filename`, a.`display_name`, a.`public_id`, a.`secure_url`, l.`product_code`
+         FROM `dam_asset_links` l
+         JOIN `dam_assets` a ON a.`id` = l.`asset_id`
+         WHERE a.`resource_type` = 'image'
+           AND l.`family_code` = ?
+           AND l.`role` = ?
+         ORDER BY l.`sort_order` ASC, a.`id` DESC
          LIMIT 200"
     );
 
@@ -353,7 +361,7 @@ function findDamProductAsset(string $familyCode, string $productId, string $kind
         return null;
     }
 
-    mysqli_stmt_bind_param($stmt, "ss", $familyCode, $kind);
+    mysqli_stmt_bind_param($stmt, "ss", $familyCode, $role);
     mysqli_stmt_execute($stmt);
     $result = mysqli_stmt_get_result($stmt);
 
@@ -375,13 +383,13 @@ function findDamProductAsset(string $familyCode, string $productId, string $kind
             }
 
             $score = 0;
-            $rowSlug = nexledNormalizeAssetStem((string) ($row["product_slug"] ?? ""));
             $rowFilename = nexledNormalizeAssetStem((string) ($row["filename"] ?? ""));
             $rowDisplayName = nexledNormalizeAssetStem((string) ($row["display_name"] ?? ""));
             $rowPublicId = strtolower((string) ($row["public_id"] ?? ""));
+            $rowProductCode = nexledNormalizeAssetStem((string) ($row["product_code"] ?? ""));
 
-            if ($rowSlug !== "" && in_array($rowSlug, $slugCandidates, true)) {
-                $score += 100;
+            if ($rowProductCode !== "" && in_array($rowProductCode, $slugCandidates, true)) {
+                $score += 40;
             }
 
             foreach ($stemCandidates as $stemCandidate) {

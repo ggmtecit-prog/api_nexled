@@ -70,8 +70,9 @@ Important interpretation rules:
   - `api/endpoints/code-explorer.php`
   - `api/lib/code-explorer.php`
 - DAM:
-  - `api/endpoints/assets.php` for older asset flow
-  - `api/endpoints/dam.php` for newer DAM tree/list/upload flow
+  - `api/endpoints/dam.php` thin wrapper for the current link-model DAM backend
+  - `api/endpoints/dam_link_model.php` with `tree`, `list`, `asset`, `create-folder`, `sync-folders`, `upload`, `product-assets`, `link`, `unlink`
+  - `api/endpoints/assets.php` removed by DAM link-model cutover
 
 ### Databases
 
@@ -314,7 +315,19 @@ Relevant parity docs:
 - separate code explorer page exists
 - explorer has a valid-only mode and an invalid-combo mode
 - invalid full-family matrix mode currently does not scale for large families
-- DAM backend and contract docs exist
+- DAM backend link-model cutover is in place:
+  - `dam.php` routes to `dam_link_model.php`
+  - `assets.php` route/file removed
+  - UI can upload, link, unlink, and inspect asset links
+- DAM shared datasheet assets are imported:
+  - icons, energy labels, temperatures, logos, power supplies
+- DAM family pilot completed for family `11`:
+  - packshots imported and linked by lens
+  - finishes imported and linked by lens
+  - technical drawings imported and linked with variant stems
+  - diagrams + inverted diagrams imported and linked
+  - mounting assets imported and linked
+  - connector cable assets imported and linked with filename stems
 - DAM UI page exists, but DAM is still an active workstream, not finished truth
 
 ## Current Known Gaps / Problems
@@ -365,9 +378,95 @@ Relevant parity docs:
 
 ### 5. DAM Future Work
 
-- align `dam.html` with `dam` endpoint contract
-- finalize folder/asset model
-- make DAM authoritative where appropriate without breaking current datasheet pipeline
+- Phase 1 cutover is done locally:
+  - schema/backend/UI link flow working
+  - shared datasheet assets imported
+  - family `11` packshot/finish pilot imported
+  - family `11` drawings/diagrams/mounting imported
+  - family `11` connectors imported
+  - family `55` packshot/finish dedupe rollout imported
+  - family `55` technical assets imported:
+    - drawings `44`
+    - diagrams `10`
+    - inverted diagrams `10`
+    - mounting `13`
+    - connectors `15`
+  - family `55` technical rollout reused existing DAM assets entirely (`92` reused, `0` new uploads)
+  - DAM lens folder model expanded for downlight-style shared buckets:
+    - `nexled/datasheet/packshots/clear`
+    - `nexled/datasheet/packshots/frostc`
+    - `nexled/datasheet/finishes/clear`
+    - `nexled/datasheet/finishes/frostc`
+  - family `29` flat downlight rollout imported:
+    - packshots `6`
+    - finishes `6`
+    - drawings `6`
+    - diagrams `4`
+    - inverted diagrams `2`
+  - family `29` technical rollout reused existing diagram assets partially (`2` reused, `10` uploaded)
+  - family `30` flat downlight rollout imported:
+    - packshots `8`
+    - finishes `8`
+    - drawings `8`
+    - diagrams `4`
+    - inverted diagrams `4`
+  - family `30` technical rollout was corrected after detecting bad cross-family filename reuse in shared technical folders
+  - technical importer now uploads family-prefixed filenames for family-specific roles:
+    - drawings
+    - diagrams
+    - inverted diagrams
+    - mounting
+    - connectors
+  - earlier roadmap families were reimported safely with prefixed technical filenames:
+    - `11`
+    - `29`
+    - `30`
+    - `55`
+  - family `32` imported:
+    - packshots `14`
+    - finishes `2`
+    - drawings `10`
+    - diagrams `4`
+    - mounting `5`
+    - connectors `8`
+  - DAM lens folder model expanded again for remaining datasheet families:
+    - `nexled/datasheet/packshots/generic`
+    - `nexled/datasheet/finishes/generic`
+    - `nexled/datasheet/packshots/clear-2`
+    - `nexled/datasheet/finishes/clear-2`
+    - `nexled/datasheet/packshots/clear-4`
+    - `nexled/datasheet/finishes/clear-4`
+  - family `58` imported:
+    - packshots `2`
+    - finishes `2`
+    - drawings `2`
+    - diagrams `2`
+    - inverted diagrams `2`
+    - mounting `2`
+  - family `48` imported through subtype-safe dynamic importer:
+    - packshots `10` linked by subtype product_code
+    - finishes `10` linked by subtype product_code
+    - drawings `20` linked by subtype product_code
+    - diagrams `24` linked by subtype product_code
+    - inverted diagrams `24` linked by subtype product_code
+  - roadmap family rollout is now complete for:
+    - `11`
+    - `29`
+    - `30`
+    - `32`
+    - `48`
+    - `55`
+    - `58`
+  - current DAM totals after full roadmap rollout:
+    - assets `724`
+    - links `638`
+- next DAM step:
+  - family rollout slice is complete for roadmap scope
+  - next work is validation and resolver phase:
+    - browser-smoke DAM UI on real data
+    - verify product-assets lookups against real datasheet generation
+    - only then start DAM-first PDF resolver work
+- keep DAM non-authoritative for PDF/runtime until broader validation is complete
 
 ## Recommended Next Steps
 
@@ -432,8 +531,13 @@ Best non-Barra docs to start with for current expansion work:
 - [api/NEXT_STEPS_DATASHEET_PARITY.md](api/NEXT_STEPS_DATASHEET_PARITY.md)
 - [api/OFFICIAL_DATASHEET_LAYOUT_SPEC.md](api/OFFICIAL_DATASHEET_LAYOUT_SPEC.md)
 - [api/CODE_VALIDITY_EXPLORER_PLAN.md](api/CODE_VALIDITY_EXPLORER_PLAN.md)
+- [DAM_CUTOVER_CHECKLIST.md](DAM_CUTOVER_CHECKLIST.md)
+- [DAM_IMPLEMENTATION_GUIDE.md](DAM_IMPLEMENTATION_GUIDE.md)
+- [DAM_ROADMAP.md](DAM_ROADMAP.md)
 - [api/DAM_API_CONTRACT.md](api/DAM_API_CONTRACT.md)
+  - legacy DAM contract before link-model cutover
 - [api/DAM_FOLDER_STRUCTURE.md](api/DAM_FOLDER_STRUCTURE.md)
+  - legacy DAM folder/model spec before link-model cutover
 
 ### Family Logic Research
 

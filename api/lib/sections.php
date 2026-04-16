@@ -484,7 +484,11 @@ function getConnectionCable(string $reference, string $cableId, string $connecto
     }
 
     if ($image === null) {
-        return null;
+        $image = findDamProductAsset($family, "", "connector", $candidates);
+
+        if ($image === null) {
+            return null;
+        }
     }
 
     // Look up cable ID template from JSON, substitute connector, then fetch description from DB
