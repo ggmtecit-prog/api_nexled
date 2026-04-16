@@ -211,18 +211,18 @@
                 <div id="explorer-filters-card" class="card overflow-hidden relative xl:col-span-3 xl:col-start-10">
                     <div class="absolute inset-x-0 top-0 z-sticky">
                         <div class="segmented-control segmented-control-lg w-full" role="radiogroup" aria-label="Code Explorer search mode" data-i18n-aria-label="codeExplorer.searchModeAria">
-                            <label class="segmented-control-option">
+                            <label class="segmented-control-option flex-1">
                                 <input id="explorer-view-mode-search" class="segmented-control-input" type="radio" name="explorer-view-mode" value="search" checked>
                                 <span class="segmented-control-label" data-i18n="codeExplorer.searchModeSearch">Search Mode</span>
                             </label>
-                            <label class="segmented-control-option">
+                            <label class="segmented-control-option flex-1">
                                 <input id="explorer-view-mode-filters" class="segmented-control-input" type="radio" name="explorer-view-mode" value="filters">
                                 <span class="segmented-control-label" data-i18n="codeExplorer.searchModeFilters">See by filters</span>
                             </label>
                         </div>
                     </div>
-                    <div class="card-body pt-80 flex flex-col gap-20">
-                        <form id="explorer-filters" class="flex flex-col gap-16">
+                    <div class="card-body pt-20 flex flex-col gap-20">
+                            <form id="explorer-filters" class="flex flex-col gap-16">
                             <div id="explorer-text-search-field">
                                 <label id="explorer-search-label" class="input-label ml-12" for="explorer-search" data-i18n="codeExplorer.searchInputLabel">Search</label>
                                 <input id="explorer-search" type="text" class="input input-sm" placeholder="Enter a code or description" data-i18n-placeholder="codeExplorer.searchInputPlaceholder">
@@ -310,15 +310,15 @@
                                 </span>
                                 <span class="text-body-sm" data-i18n="codeExplorer.includeInvalidLabel">Include invalid Luminos combinations</span>
                             </label>
-                            <button id="explorer-refresh" type="submit" class="btn btn-primary btn-sm justify-center">
-                                <i class="ri-refresh-line text-icon-sm" aria-hidden="true"></i>
-                                <span data-i18n="codeExplorer.refresh">Refresh Results</span>
+                                <button id="explorer-refresh" type="submit" class="btn btn-primary btn-sm justify-center">
+                                    <i class="ri-refresh-line text-icon-sm" aria-hidden="true"></i>
+                                    <span data-i18n="codeExplorer.refresh">Refresh Results</span>
+                                </button>
+                            </form>
+                            <button type="button" class="btn btn-ghost btn-sm justify-center w-full" data-modal-target="codeExplorerTecitCodeLogicModal">
+                                <i class="ri-information-line text-icon-sm" aria-hidden="true"></i>
+                                <span data-i18n="configurator.tecitCodeLogicButton">View Tecit Code Logic</span>
                             </button>
-                        </form>
-                        <button type="button" class="btn btn-ghost btn-sm justify-center w-full" data-modal-target="codeExplorerTecitCodeLogicModal">
-                            <i class="ri-information-line text-icon-sm" aria-hidden="true"></i>
-                            <span data-i18n="configurator.tecitCodeLogicButton">View Tecit Code Logic</span>
-                        </button>
                     </div>
                 </div>
 
