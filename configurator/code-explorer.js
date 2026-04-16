@@ -297,6 +297,129 @@ function detectExplorerSearchType(search = explorerState.controls.search) {
         : EXPLORER_SEARCH_TYPE_DESCRIPTION;
 }
 
+function normalizeExplorerDescriptionText(value) {
+    return String(value ?? "")
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, " ")
+        .trim();
+}
+
+function getExplorerDescriptionSubject(search = explorerState.controls.search) {
+    return normalizeExplorerDescriptionText(search).replace(/^lled\b\s*/, "").trim();
+}
+
+function getExplorerDescriptionCandidateFamilies(
+    search = explorerState.controls.search,
+    families = explorerState.families
+) {
+    if (!Array.isArray(families) || families.length === 0) {
+        return [];
+    }
+
+    const subject = getExplorerDescriptionSubject(search);
+
+    if (subject === "") {
+        return families;
+    }
+
+    const searchTokens = subject.split(" ").filter(Boolean);
+    const matches = [];
+    let bestPrefixMatch = 0;
+
+    families.forEach((family) => {
+        const familyCode = String(family?.codigo || "");
+        const familyName = normalizeExplorerDescriptionText(family?.nome || "");
+        const familyTokens = familyName.split(" ").filter(Boolean);
+
+        if (familyCode === "" || familyTokens.length === 0) {
+            return;
+        }
+
+        let prefixMatch = 0;
+
+        while (
+            prefixMatch < familyTokens.length
+            && prefixMatch < searchTokens.length
+            && familyTokens[prefixMatch] === searchTokens[prefixMatch]
+        ) {
+            prefixMatch += 1;
+        }
+
+        const exactPrefix = subject === familyName || subject.startsWith(familyName + " ");
+
+        if (!exactPrefix && prefixMatch === 0) {
+            return;
+        }
+
+        bestPrefixMatch = Math.max(bestPrefixMatch, exactPrefix ? familyTokens.length : prefixMatch);
+        matches.push({
+            family,
+            exactPrefix,
+            prefixMatch,
+            familyTokenCount: familyTokens.length,
+        });
+    });
+
+    const exactPrefixMatches = matches.filter((entry) => entry.exactPrefix);
+
+    if (exactPrefixMatches.length > 0) {
+        const longestExactPrefix = exactPrefixMatches.reduce((maximum, entry) => {
+            return Math.max(maximum, entry.familyTokenCount);
+        }, 0);
+
+        return exactPrefixMatches
+            .filter((entry) => entry.familyTokenCount === longestExactPrefix)
+            .map((entry) => entry.family);
+    }
+
+    if (bestPrefixMatch >= 2) {
+        return matches
+            .filter((entry) => entry.prefixMatch === bestPrefixMatch)
+            .map((entry) => entry.family);
+    }
+
+    if (bestPrefixMatch === 1) {
+        return matches
+            .filter((entry) => entry.prefixMatch === 1)
+            .map((entry) => entry.family);
+    }
+
+    const firstToken = searchTokens[0] || "";
+    const productTypeAliases = {
+        barra: ["barra"],
+        downlight: ["downlight"],
+        dynamic: ["dynamic"],
+        projetor: ["dynamic"],
+        shelfled: ["shelf"],
+        shelf: ["shelf"],
+        spot: ["spot"],
+        painel: ["panel"],
+        panel: ["panel"],
+        decoracao: ["decor"],
+        decor: ["decor"],
+        canopy: ["canopy"],
+        tubular: ["tubular"],
+        t8: ["tubular"],
+        t5: ["tubular"],
+        pll: ["tubular"],
+        plc: ["tubular"],
+        s14: ["tubular"],
+    };
+    const targetTypes = productTypeAliases[firstToken] || [];
+
+    if (targetTypes.length > 0) {
+        const typedFamilies = families.filter((family) => targetTypes.includes(String(family?.product_type || "").toLowerCase()));
+
+        if (typedFamilies.length > 0) {
+            return typedFamilies;
+        }
+    }
+
+    return families;
+}
+
 function isExplorerFilterMode(viewMode = explorerState.controls.viewMode) {
     return viewMode === EXPLORER_VIEW_MODE_FILTERS;
 }
@@ -1880,11 +2003,21 @@ function populateFamilies() {
 
 async function loadExplorerData() {
     if (isGlobalExplorerDescriptionSearch()) {
+        const candidateFamilies = getExplorerDescriptionCandidateFamilies();
+        const narrowedFamilyCount = Array.isArray(candidateFamilies) ? candidateFamilies.length : 0;
+        const totalFamilyCount = Array.isArray(explorerState.families) ? explorerState.families.length : 0;
+
         toggleLoading(true);
-        setPageStatus("codeExplorer.runtime.loadingDescriptionSearch", "loading", "Searching descriptions across all families...");
+        setPageStatus(
+            "codeExplorer.runtime.loadingDescriptionSearch",
+            "loading",
+            narrowedFamilyCount > 0 && narrowedFamilyCount < totalFamilyCount
+                ? `Searching descriptions in ${narrowedFamilyCount} likely families...`
+                : "Searching descriptions across all families..."
+        );
 
         try {
-            const data = await loadGlobalDescriptionSearchData();
+            const data = await loadGlobalDescriptionSearchData(candidateFamilies);
             explorerState.data = data;
             explorerState.controls.page = data.pagination?.page || explorerState.controls.page;
             syncCoverageStateWithData(data);
@@ -2050,7 +2183,7 @@ async function fetchGlobalDescriptionRowsForFamily(familyCode) {
     };
 }
 
-async function loadGlobalDescriptionSearchData() {
+async function loadGlobalDescriptionSearchData(candidateFamilies = explorerState.families) {
     const summary = {
         total_codes: 0,
         configurator_valid: 0,
@@ -2059,8 +2192,11 @@ async function loadGlobalDescriptionSearchData() {
         datasheet_blocked: 0,
     };
     const allRows = [];
+    const familiesToSearch = Array.isArray(candidateFamilies) && candidateFamilies.length > 0
+        ? candidateFamilies
+        : explorerState.families;
 
-    for (const family of explorerState.families) {
+    for (const family of familiesToSearch) {
         const familyCode = String(family.codigo || "");
 
         if (familyCode === "") {
