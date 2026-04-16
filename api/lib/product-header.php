@@ -31,7 +31,7 @@ define("JSON_DESC_PATH", dirname(__FILE__, 2) . "/json/descricao");
  *
  * Multiple candidate filenames are tried — the first match wins.
  *
- * @param  string $productType  "barra", "downlight", "shelf", or "dynamic"
+ * @param  string $productType  "barra", "downlight", "shelf", "tubular", or "dynamic"
  * @param  string $productId    Internal product ID (e.g. "48/recessed/01")
  * @param  array  $parts        Decoded reference (from decodeReference())
  * @param  array  $config       User selections: lens, finish, connector_cable, cable_type, end_cap
@@ -88,6 +88,17 @@ function getProductImage(string $productType, string $productId, array $parts, a
             $candidates = [
                 "{$size}_{$lens}_{$cleanFinish}_{$cap}",
                 "{$size}_{$lens}_{$cleanFinish}_{$endCap}",
+                "{$size}_{$lens}_{$cleanFinish}",
+                "{$size}_{$lens}",
+                "{$size}",
+            ];
+            break;
+
+        case "tubular":
+            $folder = "/img/$family/produto/";
+            $cleanFinish = str_replace("+", "_", $finish);
+            $candidates = [
+                "{$size}_{$lens}_{$cleanFinish}_{$cap}",
                 "{$size}_{$lens}_{$cleanFinish}",
                 "{$size}_{$lens}",
                 "{$size}",

@@ -189,7 +189,7 @@ function getLensDiagram(string $productId, string $reference): ?array {
  *
  * The finish name (e.g. "Aluminium — Silver") is fetched from tecit_referencias.
  *
- * @param  string $productType  "barra", "downlight", "shelf", or "dynamic"
+ * @param  string $productType  "barra", "downlight", "shelf", "tubular", or "dynamic"
  * @param  string $productId    Internal product ID
  * @param  string $reference    Full product reference
  * @param  array  $config       User selections: lens, finish, end_cap, lang
@@ -271,6 +271,17 @@ function getFinishAndLens(string $productType, string $productId, string $refere
                 "{$size}_{$lens}_{$cleanFinish}",
                 "{$cleanFinish}_{$cap}",
                 "{$cleanFinish}_{$endCap}",
+                "{$size}_{$lens}",
+                "{$size}",
+            ];
+            break;
+
+        case "tubular":
+            $folder = "/img/$family/acabamentos/";
+            $cleanFinish = str_replace("+", "_", $finish);
+            $candidates = [
+                "{$size}_{$lens}_{$cleanFinish}_{$cap}",
+                "{$size}_{$lens}_{$cleanFinish}",
                 "{$size}_{$lens}",
                 "{$size}",
             ];

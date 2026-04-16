@@ -1403,7 +1403,7 @@ function getCodeExplorerDatasheetReadiness(string $reference, string $productId,
         return $cache[$cacheKey];
     }
 
-    if (!isDatasheetRuntimeSupported($productType)) {
+    if (!isDatasheetRuntimeSupported($productType, $parts["family"] ?? null)) {
         return $cache[$cacheKey] = [
             "datasheet_ready" => false,
             "failure_reason" => "unsupported_datasheet_runtime",

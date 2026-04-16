@@ -44,13 +44,16 @@ Confirmed `Luminos` identity examples:
 
 ## Runtime State
 
-Current live API gap:
+Current live API state:
 
-- family `01` is not mapped in current `getProductType()`
+- family `01` is mapped as `tubular` in the live decoder/runtime
+- datasheet runtime now allows family `01` to enter the PDF pipeline
+- family `01` still fails honestly when required tubular assets are missing
 
 So:
 - family `01` exists in DB/catalog
-- family `01` not yet first-class in live API runtime
+- family `01` is now first-class in live API runtime
+- current blocker is real tubular asset/data completeness, not family mapping
 
 ## Family 01 Segment Map
 
@@ -85,10 +88,11 @@ Future readiness likely depends on:
 
 ## Current Gaps
 
-1. no live API product-type mapping for `01`
-2. no confirmed tubular asset path documented yet
+1. no visible `appdatasheets/img/01` asset tree exists in repo now
+2. no current DAM tubular assets are documented/mapped
 3. official fixed `00` not yet proven as hard runtime rule
 
 ## Best Next Follow-Up
 
-- trace whether old project had dedicated T8 runtime path
+- restore/import real T8 assets
+- compare one old-vs-new T8 gold sample

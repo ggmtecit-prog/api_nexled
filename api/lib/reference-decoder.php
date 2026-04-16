@@ -110,8 +110,16 @@ function getProductType(string $reference): ?string {
     return null;
 }
 
-function isDatasheetRuntimeSupported(?string $productType): bool {
-    return in_array($productType, ["barra", "downlight", "dynamic", "shelf"], true);
+function isDatasheetRuntimeSupported(?string $productType, ?string $familyCode = null): bool {
+    if (in_array($productType, ["barra", "downlight", "dynamic", "shelf"], true)) {
+        return true;
+    }
+
+    if ($productType === "tubular") {
+        return in_array($familyCode, ["01"], true);
+    }
+
+    return false;
 }
 
 
