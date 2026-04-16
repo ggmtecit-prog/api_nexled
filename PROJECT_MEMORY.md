@@ -115,7 +115,7 @@ This means:
 
 | Endpoint | Purpose | Current State |
 |---|---|---|
-| `families` | List product families | Stable, used by frontend |
+| `families` | List product families | Stable, now also returns runtime class + Luminos coverage metadata |
 | `options` | Load family dropdown options | Stable, used by configurator/explorer |
 | `reference` | Resolve description / Luminos combination validity | Stable, Luminos hard validation restored |
 | `decode-reference` | Decode full Tecit code into segments | Stable, matches live normalized code shape |
@@ -192,16 +192,24 @@ Relevant family/mask docs:
 Current code/runtime support is split into 3 states:
 
 - datasheet runtime supported:
-  - `01`, `05`, `11`, `29`, `30`, `31`, `32`, `40`, `48`, `49`, `55`, `58`, `60`
-- family recognized, but datasheet runtime not mapped yet:
-  - none currently in the documented main family docs
-- family documented/researched, but not yet mapped in live runtime:
-  - none in the currently documented main families
+  - `01`, `04`, `05`, `06`, `07`, `09`, `10`, `11`, `29`, `30`, `31`, `32`, `40`, `48`, `49`, `55`, `56`, `58`, `59`, `60`
+- family recognized by runtime class, but datasheet runtime not mapped yet:
+  - tubular-like: `02`, `03`, `08`
+  - spot-like: `12` to `21`
+  - decor-like: `22`, `43`, `51`
+  - dynamic/projector-like: `23`, `41`, `46`, `57`
+  - highbay-like: `24`, `47`
+  - downlight-like: `26`, `27`, `28`, `33`, `34`
+  - luminaire/panel/canopy-like: `25`, `35`, `36`, `37`, `38`, `39`, `50`, `52`, `53`, `54`
+- family selectable in dropdown, but with no current `Luminos` identities:
+  - examples include `02`, `03`, `08`, `12` to `21`, `23` to `28`, `33`, `34`, `39`, `41`, `42`, `45`, `46`, `47`, `51`, `54`, `57`
 
 Important:
 
 - family recognized != PDF supported
 - code-valid != datasheet-ready
+- dropdown family list is broader than the set of families that currently have `Luminos` identities
+- `/api/?endpoint=families` now returns `product_type`, `datasheet_runtime_supported`, `luminos_identity_count`, and `has_luminos_identities`
 
 ## Datasheet Pipeline
 

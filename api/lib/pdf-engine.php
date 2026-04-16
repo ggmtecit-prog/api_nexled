@@ -373,7 +373,7 @@ function generateDatasheet(): void {
         }
     }
 
-    if ($productType === "barra" && in_array($parts["family"], ["31", "40"], true)) {
+    if ($productType === "barra" && requiresStrictBarValidation($parts["family"])) {
         $strictBarError = validateStrictExperimentalBarCompleteness($data, $parts, $sizesFile);
 
         if ($strictBarError !== null) {

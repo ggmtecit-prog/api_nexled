@@ -11,6 +11,8 @@
  * 11037581110010100
  */
 
+require_once dirname(__FILE__) . "/family-registry.php";
+
 const REFERENCE_LENGTH_FAMILY = 2;
 const REFERENCE_LENGTH_SIZE = 4;
 const REFERENCE_LENGTH_COLOR = 2;
@@ -84,42 +86,24 @@ function decodeReference(string $reference): array {
  * Product types control which images, drawings, and PDF sections are used.
  * The mapping lives in correspondenciaProdutos.json (reference only).
  *
- * Known types: "barra", "downlight", "dynamic", "shelf", "tubular"
+ * Known runtime classes include:
+ * "barra", "downlight", "dynamic", "shelf", "tubular",
+ * plus unsupported-but-recognized classes such as "spot", "panel", etc.
  *
  * @param  string $reference  Full product reference code
  * @return string|null  Product type, or null if the family is not mapped
  */
 function getProductType(string $reference): ?string {
     $parts = decodeReference($reference);
-    $family = $parts["family"];
-
-    $map = [
-        "barra"     => ["11", "31", "40", "55", "58", "32", "60"],
-        "downlight" => ["29", "30"],
-        "dynamic"   => ["48"],
-        "shelf"     => ["49"],
-        "tubular"   => ["01", "05"],
-    ];
-
-    foreach ($map as $type => $families) {
-        if (in_array($family, $families)) {
-            return $type;
-        }
-    }
-
-    return null;
+    return getFamilyRegistryProductType($parts["family"]);
 }
 
 function isDatasheetRuntimeSupported(?string $productType, ?string $familyCode = null): bool {
-    if (in_array($productType, ["barra", "downlight", "dynamic", "shelf"], true)) {
-        return true;
+    if ($familyCode === null || trim($familyCode) === "") {
+        return false;
     }
 
-    if ($productType === "tubular") {
-        return in_array($familyCode, ["01", "05"], true);
-    }
-
-    return false;
+    return isFamilyDatasheetRuntimeSupported($familyCode);
 }
 
 
@@ -133,21 +117,7 @@ function isDatasheetRuntimeSupported(?string $productType, ?string $familyCode =
  */
 function getBarSizesFile(string $reference): ?string {
     $parts = decodeReference($reference);
-    $family = $parts["family"];
-
-    $map = [
-        "barras"     => ["11", "55"],
-        "barras_hot" => ["58"],
-        "barras_bt"  => ["32"],
-    ];
-
-    foreach ($map as $file => $families) {
-        if (in_array($family, $families)) {
-            return $file;
-        }
-    }
-
-    return null;
+    return getFamilyBarSizesFile($parts["family"]);
 }
 
 

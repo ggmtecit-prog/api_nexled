@@ -42,8 +42,19 @@ What already works:
 - family `01` now checks DAM product assets when local legacy files are missing
 - family `05` now enters real tubular datasheet runtime with strict asset blocking
 - family `05` now checks DAM product assets when local legacy files are missing
+- additional dropdown families that already exist in `Luminos` now enter existing runtimes:
+  - tubular: `04`, `06`, `07`, `09`
+  - barra: `10`, `56`, `59`
 - family `31` now enters real bar datasheet runtime with strict asset/data blocking
 - family `40` now enters real bar datasheet runtime with strict asset/data blocking
+- the API now has a central family registry in:
+  - `api/lib/family-registry.php`
+- `families` endpoint now exposes:
+  - runtime class
+  - datasheet runtime support flag
+  - `Luminos` identity counts per family
+- first hard limit is now explicit:
+  - not every dropdown family currently has `Luminos` identities behind it
 
 What still does not match official datasheets:
 
