@@ -44,13 +44,16 @@ Confirmed `Luminos` identity examples:
 
 ## Runtime State
 
-Current live API gap:
+Current live API state:
 
-- family `05` is not mapped in current `getProductType()`
+- family `05` is mapped as `tubular` in the live decoder/runtime
+- datasheet runtime now allows family `05` to enter the PDF pipeline
+- family `05` still fails honestly when required tubular assets are missing
 
 So:
 - family `05` exists in DB/catalog
-- family `05` not yet first-class in live API runtime
+- family `05` is now first-class in live API runtime
+- current blocker is real tubular asset/data completeness, not family mapping
 
 ## Family 05 Segment Map
 
@@ -79,16 +82,18 @@ Still not traced in live runtime.
 Future readiness likely depends on:
 
 - `appdatasheets/img/05/...` or T5-specific folders
+- DAM family folder `nexled/10_products/families/05_t5-vc/...`
 - drawings
 - product/LED description JSON
 - common graphs/diagrams where relevant
 
 ## Current Gaps
 
-1. no live API product-type mapping for `05`
-2. no confirmed tubular asset path documented yet
+1. no visible `appdatasheets/img/05` asset tree exists in repo now
+2. family `05` now has DAM path mapping, but no confirmed DAM T5 assets have been loaded yet
 3. official fixed `00` not yet proven as hard runtime rule
 
 ## Best Next Follow-Up
 
-- trace whether old project had dedicated T5 runtime path
+- restore/import real T5 assets into local legacy tree or DAM family `05_t5-vc`
+- compare one old-vs-new T5 gold sample

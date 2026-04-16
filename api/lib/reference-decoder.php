@@ -116,7 +116,7 @@ function isDatasheetRuntimeSupported(?string $productType, ?string $familyCode =
     }
 
     if ($productType === "tubular") {
-        return in_array($familyCode, ["01"], true);
+        return in_array($familyCode, ["01", "05"], true);
     }
 
     return false;

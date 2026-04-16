@@ -137,6 +137,7 @@ INSERT INTO `dam_folders` (
     `folder_id`, `parent_id`, `name`, `path`, `scope`, `kind`, `is_system`, `can_upload`, `can_create_children`, `sort_order`
 ) VALUES
     ('nexled/10_products/families/01_t8-ac', 'nexled/10_products/families', '01_t8-ac', 'nexled/10_products/families/01_t8-ac', 'products', 'system', 1, 0, 1, 10),
+    ('nexled/10_products/families/05_t5-vc', 'nexled/10_products/families', '05_t5-vc', 'nexled/10_products/families/05_t5-vc', 'products', 'system', 1, 0, 1, 50),
     ('nexled/10_products/shared/temperatures', 'nexled/10_products/shared', 'temperatures', 'nexled/10_products/shared/temperatures', 'products', 'system', 1, 1, 0, 10),
     ('nexled/10_products/shared/icons', 'nexled/10_products/shared', 'icons', 'nexled/10_products/shared/icons', 'products', 'system', 1, 1, 0, 20),
     ('nexled/10_products/shared/power-supplies', 'nexled/10_products/shared', 'power-supplies', 'nexled/10_products/shared/power-supplies', 'products', 'system', 1, 1, 0, 30),

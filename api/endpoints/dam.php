@@ -1438,6 +1438,7 @@ function damCurrentFolderKeepSet(): array {
         "nexled/10_products/shared/energy-labels",
         "nexled/10_products/families",
         "nexled/10_products/families/01_t8-ac",
+        "nexled/10_products/families/05_t5-vc",
         "nexled/10_products/families/11_barra-t5",
         "nexled/10_products/families/29_downlight",
         "nexled/10_products/families/30_downlight",
@@ -1871,6 +1872,7 @@ function damFindFamilyFolderByCode($con, string $familyCode): ?array {
 function damFamilyFolderNameByCode(string $familyCode): ?string {
     return match ($familyCode) {
         "01" => "01_t8-ac",
+        "05" => "05_t5-vc",
         "11" => "11_barra-t5",
         "29" => "29_downlight",
         "30" => "30_downlight",

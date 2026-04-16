@@ -192,9 +192,9 @@ Relevant family/mask docs:
 Current code/runtime support is split into 3 states:
 
 - datasheet runtime supported:
-  - `01`, `11`, `32`, `49`, `55`, `58`, `60`, `29`, `30`, `48`
+  - `01`, `05`, `11`, `32`, `49`, `55`, `58`, `60`, `29`, `30`, `48`
 - family recognized, but datasheet runtime not mapped yet:
-  - `05`
+  - none currently in the documented Tubular/Shelf families
 - family documented/researched, but not yet mapped in live runtime:
   - `31`, `40`
 
@@ -296,7 +296,8 @@ Relevant parity docs:
 - Shelf header/drawing/finish/diagram lookup now checks DAM product assets when local legacy files are missing
 - Tubular family `01` is now a real datasheet runtime with strict asset blocking
 - Tubular family `01` product/finish asset lookup now checks DAM product assets when local legacy files are missing
-- Tubular family `05` is still recognized by API/code explorer, but datasheet runtime is not mapped yet
+- Tubular family `05` is now a real datasheet runtime with strict asset blocking
+- Tubular family `05` product/finish asset lookup now checks DAM product assets when local legacy files are missing
 
 ### Explorer / DAM
 
@@ -313,8 +314,6 @@ Relevant parity docs:
 - old configurator family-specific UI logic is not fully restored
 - old missing-data validation sweep is not fully restored
 - code explorer does not scale for full invalid-family matrix on large families
-- some documented families are still code-recognized only, with no datasheet runtime yet:
-  - `05`
 - some researched families still are not mapped in live runtime:
   - `31`, `40`
 - DAM is not yet the complete source of truth for datasheet assets
@@ -371,7 +370,7 @@ Ordered recommendation:
    - complete `49` Shelf asset/data intake and gold-sample compare
    - import/map real Shelf assets into local legacy tree or DAM family `49`
    - import/map real T8 assets into local legacy tree or DAM family `01`
-   - `05`
+   - import/map real T5 assets into local legacy tree or DAM family `05`
 3. restore old missing-data validator behavior
 4. build page-template parity starting from priority families
 5. keep documenting only the families being actively patched
