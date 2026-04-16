@@ -271,6 +271,10 @@ function getStandardDrawing(string $reference, string $productId): array {
 
     $drawing = findImage(IMAGES_BASE_PATH . $folder . $size);
 
+    if ($drawing === null) {
+        $drawing = findDamProductAsset($family, $productId, "technical_drawing", [$size]);
+    }
+
     // Read dimensions string from database: "A:145 B:72 C:70"
     $con   = connectDBLampadas();
     $query = mysqli_query($con,

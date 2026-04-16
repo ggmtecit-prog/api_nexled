@@ -113,6 +113,19 @@ function getProductImage(string $productType, string $productId, array $parts, a
         }
     }
 
+    $damKind = match ($productType) {
+        "shelf" => "product_media_packshot",
+        default => null,
+    };
+
+    if ($damKind !== null) {
+        $damImage = findDamProductAsset($family, $productId, $damKind, $candidates);
+
+        if ($damImage !== null) {
+            return $damImage;
+        }
+    }
+
     return null;
 }
 

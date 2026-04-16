@@ -157,7 +157,11 @@ function getLensDiagram(string $productId, string $reference): ?array {
     $diagramPath = findImage($base . $lens);
 
     if ($diagramPath === null) {
-        return null;
+        $diagramPath = findDamProductAsset($family, $productId, "technical_diagram", [$lens]);
+
+        if ($diagramPath === null) {
+            return null;
+        }
     }
 
     $illuminancePath = findImage($base . "i/$lens");
@@ -282,6 +286,10 @@ function getFinishAndLens(string $productType, string $productId, string $refere
     foreach ($candidates as $name) {
         $image = findImage(IMAGES_BASE_PATH . $folder . $name);
         if ($image !== null) break;
+    }
+
+    if ($image === null && $productType === "shelf") {
+        $image = findDamProductAsset($family, $productId, "technical_finish", $candidates);
     }
 
     if ($image === null) {

@@ -261,3 +261,179 @@ function findImage(string $path): ?string {
 
     return null;
 }
+
+/**
+ * Builds conservative product-slug candidates from an internal product ID.
+ *
+ * Examples:
+ * - ShelfLED/24v/47      -> shelfled-24v-47, shelfled-47
+ * - ShelfLED/24v/47/Eco  -> shelfled-24v-47-eco, shelfled-47-eco, shelfled-47
+ *
+ * These candidates are only used for DAM lookups and must stay permissive
+ * enough to match existing intake choices without inventing new product data.
+ *
+ * @param  string $productId
+ * @return array<int, string>
+ */
+function buildProductSlugCandidates(string $productId): array {
+    $parts = array_values(array_filter(array_map(
+        static fn($value) => trim((string) $value),
+        explode("/", $productId)
+    )));
+
+    if ($parts === []) {
+        return [];
+    }
+
+    $candidates = [];
+    $count = count($parts);
+
+    $candidates[] = nexledNormalizeAssetStem(implode("-", $parts));
+
+    if ($count >= 3) {
+        $candidates[] = nexledNormalizeAssetStem($parts[0] . "-" . $parts[2]);
+    }
+
+    if ($count >= 4) {
+        $candidates[] = nexledNormalizeAssetStem($parts[0] . "-" . $parts[2] . "-" . $parts[3]);
+    }
+
+    if ($count >= 2) {
+        $candidates[] = nexledNormalizeAssetStem($parts[0] . "-" . $parts[1]);
+    }
+
+    return array_values(array_filter(array_unique($candidates)));
+}
+
+/**
+ * Finds a product asset in DAM using family/kind plus conservative slug/filename matching.
+ *
+ * This is a fallback only when legacy local assets are missing.
+ * It never invents assets: no match means null.
+ *
+ * @param  string $familyCode
+ * @param  string $productId
+ * @param  string $kind
+ * @param  array<int, string> $filenameCandidates
+ * @return string|null
+ */
+function findDamProductAsset(string $familyCode, string $productId, string $kind, array $filenameCandidates = []): ?string {
+    if (!function_exists("connectDBDam")) {
+        return null;
+    }
+
+    $con = @connectDBDam();
+
+    if (!$con instanceof mysqli) {
+        return null;
+    }
+
+    $familyCode = trim($familyCode);
+    $kind = trim($kind);
+
+    if ($familyCode === "" || $kind === "") {
+        closeDB($con);
+        return null;
+    }
+
+    $stmt = mysqli_prepare(
+        $con,
+        "SELECT `filename`, `display_name`, `public_id`, `product_slug`, `secure_url`
+         FROM `dam_assets`
+         WHERE `scope` = 'products'
+           AND `resource_type` = 'image'
+           AND `family_code` = ?
+           AND `kind` = ?
+         ORDER BY `id` DESC
+         LIMIT 200"
+    );
+
+    if (!$stmt) {
+        closeDB($con);
+        return null;
+    }
+
+    mysqli_stmt_bind_param($stmt, "ss", $familyCode, $kind);
+    mysqli_stmt_execute($stmt);
+    $result = mysqli_stmt_get_result($stmt);
+
+    $slugCandidates = buildProductSlugCandidates($productId);
+    $stemCandidates = array_values(array_filter(array_unique(array_map(
+        "nexledNormalizeAssetStem",
+        $filenameCandidates
+    ))));
+
+    $bestUrl = null;
+    $bestScore = 0;
+
+    if ($result) {
+        while ($row = mysqli_fetch_assoc($result)) {
+            $secureUrl = trim((string) ($row["secure_url"] ?? ""));
+
+            if ($secureUrl === "") {
+                continue;
+            }
+
+            $score = 0;
+            $rowSlug = nexledNormalizeAssetStem((string) ($row["product_slug"] ?? ""));
+            $rowFilename = nexledNormalizeAssetStem((string) ($row["filename"] ?? ""));
+            $rowDisplayName = nexledNormalizeAssetStem((string) ($row["display_name"] ?? ""));
+            $rowPublicId = strtolower((string) ($row["public_id"] ?? ""));
+
+            if ($rowSlug !== "" && in_array($rowSlug, $slugCandidates, true)) {
+                $score += 100;
+            }
+
+            foreach ($stemCandidates as $stemCandidate) {
+                if ($stemCandidate === "") {
+                    continue;
+                }
+
+                if ($rowFilename === $stemCandidate) {
+                    $score += 60;
+                    break;
+                }
+
+                if ($rowDisplayName === $stemCandidate) {
+                    $score += 50;
+                    break;
+                }
+
+                if (str_contains($rowPublicId, strtolower($stemCandidate))) {
+                    $score += 20;
+                    break;
+                }
+            }
+
+            if ($score > $bestScore) {
+                $bestScore = $score;
+                $bestUrl = $secureUrl;
+            }
+        }
+    }
+
+    mysqli_stmt_close($stmt);
+    closeDB($con);
+
+    return $bestScore > 0 ? $bestUrl : null;
+}
+
+/**
+ * Normalizes a filename/slug candidate into a comparable asset stem.
+ *
+ * @param  string $value
+ * @return string
+ */
+function nexledNormalizeAssetStem(string $value): string {
+    $value = trim($value);
+
+    if ($value === "") {
+        return "";
+    }
+
+    $value = basename($value);
+    $value = preg_replace("/\\.[a-z0-9]+$/i", "", $value) ?? $value;
+    $value = strtolower($value);
+    $value = preg_replace("/[^a-z0-9]+/", "-", $value) ?? "";
+    return trim($value, "-");
+}

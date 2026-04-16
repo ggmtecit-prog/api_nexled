@@ -144,6 +144,7 @@ INSERT INTO `dam_folders` (
     ('nexled/10_products/families/29_downlight', 'nexled/10_products/families', '29_downlight', 'nexled/10_products/families/29_downlight', 'products', 'system', 1, 0, 1, 290),
     ('nexled/10_products/families/30_downlight', 'nexled/10_products/families', '30_downlight', 'nexled/10_products/families/30_downlight', 'products', 'system', 1, 0, 1, 300),
     ('nexled/10_products/families/32_barra-bt', 'nexled/10_products/families', '32_barra-bt', 'nexled/10_products/families/32_barra-bt', 'products', 'system', 1, 0, 1, 320),
+    ('nexled/10_products/families/49_shelfled', 'nexled/10_products/families', '49_shelfled', 'nexled/10_products/families/49_shelfled', 'products', 'system', 1, 0, 1, 490),
     ('nexled/10_products/families/48_dynamic', 'nexled/10_products/families', '48_dynamic', 'nexled/10_products/families/48_dynamic', 'products', 'system', 1, 0, 1, 480),
     ('nexled/10_products/families/55_barra', 'nexled/10_products/families', '55_barra', 'nexled/10_products/families/55_barra', 'products', 'system', 1, 0, 1, 550),
     ('nexled/10_products/families/58_barra-hot', 'nexled/10_products/families', '58_barra-hot', 'nexled/10_products/families/58_barra-hot', 'products', 'system', 1, 0, 1, 580)

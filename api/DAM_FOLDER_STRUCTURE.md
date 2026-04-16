@@ -132,6 +132,24 @@ nexled/
             reports/
             warnings/
             certificates/
+      49_shelfled/
+        <product-slug>/
+          media/
+            packshots/
+            lifestyle/
+            thumbnails/
+          technical/
+            drawings/
+            diagrams/
+            finishes/
+            mounting/
+            wiring/
+          documents/
+            manuals/
+            installation/
+            reports/
+            warnings/
+            certificates/
       55_barra/
         <product-slug>/
           media/
@@ -234,6 +252,7 @@ nexled/
   - `30_downlight`
   - `32_barra-bt`
   - `48_dynamic`
+  - `49_shelfled`
   - `55_barra`
   - `58_barra-hot`
 - Use stable product slugs. If the product code is needed for uniqueness, use `<product-code>_<product-slug>`.
@@ -262,6 +281,7 @@ nexled/
 | `appdatasheets/img/30` | `nexled/10_products/families/30_downlight` |
 | `appdatasheets/img/32` | `nexled/10_products/families/32_barra-bt` |
 | `appdatasheets/img/48` | `nexled/10_products/families/48_dynamic` |
+| `appdatasheets/img/49` | `nexled/10_products/families/49_shelfled` |
 | `appdatasheets/img/55` | `nexled/10_products/families/55_barra` |
 | `appdatasheets/img/58` | `nexled/10_products/families/58_barra-hot` |
 

@@ -1,6 +1,6 @@
 # PROJECT_MEMORY
 
-Last Updated: 2026-04-15
+Last Updated: 2026-04-16
 Status: Active canonical hub
 Audience: AI agents + engineers resuming work
 
@@ -293,6 +293,7 @@ Relevant parity docs:
 - family `60` is now recognized as `barra` in runtime
 - configurator can inject decoded families that are missing from the loaded dropdown list
 - Shelf (`49`) family is now a real datasheet runtime with strict asset blocking instead of fake fallback support
+- Shelf header/drawing/finish/diagram lookup now checks DAM product assets when local legacy files are missing
 - Tubular (`01`, `05`) families are recognized by API/code explorer, but datasheet runtime still stops honestly instead of inventing data
 
 ### Explorer / DAM
@@ -366,6 +367,7 @@ Ordered recommendation:
 1. continue family-by-family parity work instead of broad generic rewrites
 2. finish runtime coverage for documented families:
    - complete `49` Shelf asset/data intake and gold-sample compare
+   - import/map real Shelf assets into local legacy tree or DAM family `49`
    - `01`
    - `05`
 3. restore old missing-data validator behavior

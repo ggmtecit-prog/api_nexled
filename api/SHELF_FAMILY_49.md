@@ -67,6 +67,7 @@ Current live API state:
 
 - family `49` is mapped as `shelf` in the live decoder/runtime
 - datasheet runtime now allows Shelf to enter the PDF pipeline
+- Shelf asset lookup now checks local legacy paths first and DAM product assets second
 - Shelf still fails honestly when required Shelf assets are missing
 
 So today:
@@ -140,11 +141,12 @@ Future Shelf datasheet readiness likely depends on:
 1. no confirmed Shelf legacy datasheet path documented yet
 2. no confirmed Shelf asset folder structure documented yet
 3. current repo has no visible `appdatasheets/img/49` asset tree
-4. catalog mask likely tighter than generic normalized model
+4. current local DAM metadata also has no Shelf assets yet
+5. catalog mask likely tighter than generic normalized model
 
 ## Best Next Follow-Up
 
 1. trace if old project had dedicated Shelf runtime flow
 2. inspect Shelf family option tables in `tecit_referencias`
-3. ingest/restore real Shelf image assets
+3. ingest/restore real Shelf image assets into legacy tree or DAM
 4. compare one old-vs-new Shelf gold sample

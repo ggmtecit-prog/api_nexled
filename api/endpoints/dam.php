@@ -1666,6 +1666,10 @@ function damResolveProductTarget($con, array $payload, string $kind, bool $ensur
     $familyFolder = damFindFamilyFolderByCode($con, $familyCode);
 
     if ($familyFolder === null) {
+        $familyFolder = damEnsureFamilyFolderByCode($con, $familyCode);
+    }
+
+    if ($familyFolder === null) {
         damRespondError(404, "folder_not_found", "Family folder not found.", ["family_code" => $familyCode]);
     }
 
@@ -1722,6 +1726,10 @@ function damResolveSupportRepairGuideTarget($con, array $payload, bool $ensureFo
     }
 
     $familyFolder = damFindFamilyFolderByCode($con, $familyCode);
+
+    if ($familyFolder === null) {
+        $familyFolder = damEnsureFamilyFolderByCode($con, $familyCode);
+    }
 
     if ($familyFolder === null) {
         damRespondError(404, "folder_not_found", "Family folder not found.", ["family_code" => $familyCode]);
@@ -1857,4 +1865,34 @@ function damFindFamilyFolderByCode($con, string $familyCode): ?array {
     mysqli_stmt_close($stmt);
 
     return $row ? damMapFolderRow($row) : null;
+}
+
+function damFamilyFolderNameByCode(string $familyCode): ?string {
+    return match ($familyCode) {
+        "11" => "11_barra-t5",
+        "29" => "29_downlight",
+        "30" => "30_downlight",
+        "32" => "32_barra-bt",
+        "48" => "48_dynamic",
+        "49" => "49_shelfled",
+        "55" => "55_barra",
+        "58" => "58_barra-hot",
+        default => null,
+    };
+}
+
+function damEnsureFamilyFolderByCode($con, string $familyCode): ?array {
+    $folderName = damFamilyFolderNameByCode($familyCode);
+
+    if ($folderName === null) {
+        return null;
+    }
+
+    $baseFolder = damFetchFolderById($con, "nexled/10_products/families");
+
+    if ($baseFolder === null) {
+        return null;
+    }
+
+    return damEnsureFolder($con, $baseFolder["id"], $folderName, "products", 0, 1);
 }

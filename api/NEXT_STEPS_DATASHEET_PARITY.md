@@ -37,6 +37,7 @@ What already works:
   - Tubulares
 - family `60` is recognized by current runtime
 - family `49` now enters real datasheet runtime with strict asset blocking
+- family `49` now checks DAM product assets when local legacy files are missing
 - families `01`, `05` are still recognized by API/explorer, but datasheet runtime is intentionally unsupported
 
 What still does not match official datasheets:
@@ -222,6 +223,7 @@ Why:
 - docs now exist
 - family now enters real datasheet runtime
 - next clear gap is real Shelf asset/data completion
+- Shelf can now consume DAM product assets once imported/mapped
 
 ### Step 2
 
