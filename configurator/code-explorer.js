@@ -65,7 +65,6 @@ const EXPLORER_ERROR_REASON_KEYS = {
 const EXPLORER_VIEW_MODE_SEARCH = "search";
 const EXPLORER_VIEW_MODE_FILTERS = "filters";
 const EXPLORER_SEARCH_TYPE_CODE = "code";
-const EXPLORER_SEARCH_TYPE_NAME = "name";
 const EXPLORER_SEARCH_TYPE_DESCRIPTION = "description";
 
 let apiBasePromise = null;
@@ -320,7 +319,7 @@ function shouldShowExplorerFamilyField(
     viewMode = explorerState.controls.viewMode,
     searchType = explorerState.controls.searchType
 ) {
-    return isExplorerFilterMode(viewMode) || searchType !== EXPLORER_SEARCH_TYPE_CODE;
+    return isExplorerFilterMode(viewMode);
 }
 
 function renderExplorerSearchInputCopy(
@@ -332,19 +331,15 @@ function renderExplorerSearchInputCopy(
     const pageSizeLabel = document.getElementById("explorer-page-size-label");
 
     if (label) {
-        label.textContent = searchType === EXPLORER_SEARCH_TYPE_NAME
-            ? t("codeExplorer.searchNameLabel", {}, "Search By Name")
-            : searchType === EXPLORER_SEARCH_TYPE_DESCRIPTION
-                ? t("codeExplorer.searchDescriptionLabel", {}, "Search By Description")
-                : t("codeExplorer.searchCodeLabel", {}, "Search By Code");
+        label.textContent = searchType === EXPLORER_SEARCH_TYPE_DESCRIPTION
+            ? t("codeExplorer.searchDescriptionLabel", {}, "Search By Description")
+            : t("codeExplorer.searchCodeLabel", {}, "Search By Code");
     }
 
     if (input) {
-        input.placeholder = searchType === EXPLORER_SEARCH_TYPE_NAME
-            ? t("codeExplorer.searchNamePlaceholder", {}, "Enter a name")
-            : searchType === EXPLORER_SEARCH_TYPE_DESCRIPTION
-                ? t("codeExplorer.searchDescriptionPlaceholder", {}, "Enter a description")
-                : t("codeExplorer.searchCodePlaceholder", {}, "Enter a code");
+        input.placeholder = searchType === EXPLORER_SEARCH_TYPE_DESCRIPTION
+            ? t("codeExplorer.searchDescriptionPlaceholder", {}, "Enter a description")
+            : t("codeExplorer.searchCodePlaceholder", {}, "Enter a code");
     }
 
     if (pageSizeLabel) {
@@ -1198,7 +1193,7 @@ async function applyFiltersFromForm() {
         : false;
     let family = shouldShowExplorerFamilyField(viewMode, searchType)
         ? document.getElementById("explorer-family").value
-        : "";
+        : previousFamily;
 
     if (!isFilterMode && searchType === EXPLORER_SEARCH_TYPE_CODE) {
         family = detectFamilyCodeFromReferenceSearch(search);
@@ -1265,9 +1260,7 @@ async function applyFiltersFromForm() {
                 ? "Enter full code with family prefix to load explorer rows."
                 : isFilterMode
                     ? "Select one family to start building valid code rows."
-                    : searchType === EXPLORER_SEARCH_TYPE_DESCRIPTION
-                        ? "Choose one family before searching by description."
-                        : "Choose one family before searching by name."
+                    : "Choose one family in See by filters before searching by description."
         );
         renderCoverage(null);
         renderSummary(null);
@@ -1738,7 +1731,34 @@ function bindStaticEvents() {
         renderPagination();
     });
 
-    window.addEventListener("resize", syncExplorerTableHeadColumns);
+    window.addEventListener("resize", () => {
+        syncExplorerTableHeadColumns();
+        syncExplorerEmptyStateHeight();
+    });
+}
+
+function syncExplorerEmptyStateHeight() {
+    const resultsCardBody = document.getElementById("explorer-results-card-body");
+    const filtersCard = document.getElementById("explorer-filters-card");
+    const emptyState = document.getElementById("explorer-empty-state");
+    const resultsSection = document.getElementById("explorer-code-results-section");
+
+    if (!resultsCardBody) {
+        return;
+    }
+
+    if (
+        !filtersCard ||
+        !emptyState ||
+        emptyState.classList.contains("hidden") ||
+        resultsSection?.classList.contains("hidden")
+    ) {
+        resultsCardBody.style.minHeight = "";
+        return;
+    }
+
+    const filtersHeight = Math.ceil(filtersCard.getBoundingClientRect().height);
+    resultsCardBody.style.minHeight = filtersHeight > 0 ? `${filtersHeight}px` : "";
 }
 
 function syncDraftInvalidControls() {
@@ -1848,7 +1868,9 @@ async function loadFamilies() {
             "neutral",
             !searchNeedsFamily && explorerState.controls.viewMode === EXPLORER_VIEW_MODE_SEARCH
                 ? "Enter a full code with family prefix first."
-                : "Select one family to start building valid code rows."
+                : explorerState.controls.viewMode === EXPLORER_VIEW_MODE_SEARCH
+                    ? "Choose one family in See by filters before searching by description."
+                    : "Select one family to start building valid code rows."
         );
     } catch (error) {
         setPageStatus("codeExplorer.runtime.loadFailedWithMessage", "error", "Unable to load explorer data right now: {message}", {
@@ -1992,6 +2014,8 @@ function renderTable() {
     const body = document.getElementById("explorer-rows");
     const tableRoot = document.getElementById("explorer-data-table");
     const emptyState = document.getElementById("explorer-empty-state");
+    const resultsTitle = document.getElementById("explorer-results-title");
+    const summaryBadges = document.getElementById("explorer-summary-badges");
     const rows = explorerState.data?.rows || [];
     const valueUnavailable = t("codeExplorer.valueUnavailable", {}, "Not available");
     const shouldShowResultsSection = shouldShowExplorerCodeResultsSection(
@@ -2004,6 +2028,9 @@ function renderTable() {
     }
 
     if (!body || !tableRoot || !shouldShowResultsSection) {
+        resultsTitle?.classList.remove("hidden");
+        summaryBadges?.classList.add("hidden");
+        syncExplorerEmptyStateHeight();
         return;
     }
 
@@ -2011,12 +2038,18 @@ function renderTable() {
         body.innerHTML = "";
         tableRoot.classList.add("hidden");
         emptyState?.classList.remove("hidden");
+        resultsTitle?.classList.add("hidden");
+        summaryBadges?.classList.add("hidden");
+        syncExplorerEmptyStateHeight();
         requestAnimationFrame(syncExplorerTableHeadColumns);
         return;
     }
 
     tableRoot.classList.remove("hidden");
     emptyState?.classList.add("hidden");
+    resultsTitle?.classList.remove("hidden");
+    summaryBadges?.classList.remove("hidden");
+    syncExplorerEmptyStateHeight();
     body.innerHTML = rows.map((row) => {
         const datasheetStatus = row.configurator_valid
             ? buildStatusBadge(row.datasheet_ready, t("codeExplorer.statusReadyShort", {}, "Ready"), t("codeExplorer.statusBlockedShort", {}, "Blocked"))

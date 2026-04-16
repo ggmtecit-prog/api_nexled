@@ -22,7 +22,6 @@ const CODE_EXPLORER_SEGMENT_KEYS = ["size", "color", "cri", "series", "lens", "f
 const CODE_EXPLORER_MODE_SEARCH = "search";
 const CODE_EXPLORER_MODE_FILTERS = "filters";
 const CODE_EXPLORER_SEARCH_TYPE_CODE = "code";
-const CODE_EXPLORER_SEARCH_TYPE_NAME = "name";
 const CODE_EXPLORER_SEARCH_TYPE_DESCRIPTION = "description";
 
 function getCodeExplorerMode(mixed $value): string {
@@ -37,7 +36,6 @@ function getCodeExplorerSearchType(mixed $value): string {
     $normalized = trim(strtolower((string) $value));
     $allowed = [
         CODE_EXPLORER_SEARCH_TYPE_CODE,
-        CODE_EXPLORER_SEARCH_TYPE_NAME,
         CODE_EXPLORER_SEARCH_TYPE_DESCRIPTION,
     ];
 
@@ -1363,9 +1361,6 @@ function matchesCodeExplorerSearch(array $row, string $search, string $searchTyp
 
     $needle = mb_strtolower($search, "UTF-8");
     $haystacks = match ($searchType) {
-        CODE_EXPLORER_SEARCH_TYPE_NAME => [
-            $row["description"] ?? "",
-        ],
         CODE_EXPLORER_SEARCH_TYPE_DESCRIPTION => [
             $row["legacy_description"] ?? buildCodeExplorerLegacyDescription($row),
         ],
