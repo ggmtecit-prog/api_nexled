@@ -1486,6 +1486,138 @@ function getCodeExplorerDatasheetReadiness(string $reference, string $productId,
     ];
 }
 
+function getCodeExplorerSafeLensAngles(string $family, string $lens): array {
+    if (!canReadInfoLensAngles()) {
+        return ["beam" => null, "field" => null];
+    }
+
+    $con = connectDBInf();
+    $queryBeam  = mysqli_query($con, "SELECT beam FROM angulos_lente WHERE familia = '$family' AND lente = '$lens'");
+    $queryField = mysqli_query($con, "SELECT field FROM angulos_lente WHERE familia = '$family' AND lente = '$lens'");
+    closeDB($con);
+
+    $beam = ($queryBeam instanceof mysqli_result && mysqli_num_rows($queryBeam) > 0)
+        ? (mysqli_fetch_assoc($queryBeam)["beam"] ?? null)
+        : null;
+    $field = ($queryField instanceof mysqli_result && mysqli_num_rows($queryField) > 0)
+        ? (mysqli_fetch_assoc($queryField)["field"] ?? null)
+        : null;
+
+    return [
+        "beam" => $beam,
+        "field" => $field,
+    ];
+}
+
+function getCodeExplorerSafeIpRating(string $productId): ?string {
+    $con = connectDBLampadas();
+    $query = mysqli_query($con,
+        "SELECT valor_pt FROM caracteristicas
+         WHERE ID = '$productId'
+           AND (texto_pt = 'Grau de protecção' OR texto_pt = 'Grau de proteção')"
+    );
+    closeDB($con);
+
+    if (!($query instanceof mysqli_result) || mysqli_num_rows($query) === 0) {
+        return null;
+    }
+
+    $row = mysqli_fetch_row($query);
+    return str_replace(" ", "", implode("", $row ?: []));
+}
+
+function getCodeExplorerSafeCharacteristics(string $productId, string $ipRating, string $family, string $lens, string $lang): ?array {
+    $idPrefix = explode("/", $productId)[0];
+    $con = connectDBLampadas();
+    $query = mysqli_query($con,
+        "SELECT texto_pt, valor_pt, texto_$lang, valor_$lang
+         FROM caracteristicas
+         WHERE ID = '$productId'
+           AND texto_pt NOT LIKE 'data'
+           AND texto_pt NOT LIKE 'versao'
+           AND texto_pt NOT LIKE 'Dimensões%'
+           AND texto_pt NOT LIKE '$idPrefix%'
+         ORDER BY indice ASC"
+    );
+    closeDB($con);
+
+    if (!($query instanceof mysqli_result) || mysqli_num_rows($query) === 0) {
+        return null;
+    }
+
+    $angles = getCodeExplorerSafeLensAngles($family, $lens);
+    $ipLabels = ["Grau de protecção", "Grau de proteção"];
+    $beamLabel = "Feixe de luz";
+    $fieldLabel = "Abertura de luz";
+    $result = [];
+
+    while ($row = mysqli_fetch_assoc($query)) {
+        $ptLabel = strval($row["texto_pt"] ?? "");
+        $translatedLabel = $row["texto_$lang"] ?? null;
+        $translatedValue = $row["valor_$lang"] ?? null;
+        $label = ($translatedLabel !== null && $translatedLabel !== "")
+            ? strval($translatedLabel)
+            : $ptLabel;
+        $value = ($translatedValue !== null && $translatedValue !== "")
+            ? strval($translatedValue)
+            : strval($row["valor_pt"] ?? "");
+
+        if (in_array($ptLabel, $ipLabels, true) && $ipRating !== "") {
+            $value = $ipRating;
+        }
+
+        if ($ptLabel === $beamLabel && $angles["beam"] !== null) {
+            $value = strval($angles["beam"]);
+        }
+
+        if ($ptLabel === $fieldLabel && $angles["field"] !== null) {
+            $value = strval($angles["field"]);
+        }
+
+        $result[$label] = $value;
+    }
+
+    return $result;
+}
+
+function getCodeExplorerSafeStandardDimensions(string $reference, string $productId): array {
+    $dims = array_fill_keys(["A", "B", "C", "D", "E", "F", "G", "H", "I", "J"], "0");
+    $con = connectDBLampadas();
+    $query = mysqli_query($con,
+        "SELECT valor_pt FROM caracteristicas
+         WHERE ID = '$productId' AND texto_pt LIKE 'Dimensões%'"
+    );
+    closeDB($con);
+
+    if (!($query instanceof mysqli_result) || mysqli_num_rows($query) === 0) {
+        return $dims;
+    }
+
+    $row = mysqli_fetch_assoc($query);
+    $tokens = explode(" ", (string) ($row["valor_pt"] ?? ""));
+
+    foreach ($tokens as $token) {
+        $pair = explode(":", $token);
+
+        if (!empty($pair[0]) && !empty($pair[1]) && array_key_exists($pair[0], $dims)) {
+            $dims[$pair[0]] = $pair[1];
+        }
+    }
+
+    return $dims;
+}
+
+function getCodeExplorerSafeDimensions(string $productType, string $reference, string $productId, ?string $sizesFile, array $config): array {
+    if ($productType === "barra") {
+        return getBarDrawing($reference, $productId, $sizesFile, $config);
+    }
+
+    return array_merge(
+        ["drawing" => getCodeExplorerTechnicalDrawingPath($productType, $reference, $productId, $config)],
+        getCodeExplorerSafeStandardDimensions($reference, $productId)
+    );
+}
+
 function buildCodeExplorerPdfSpecsResponse(string $familyCode, string $familyName, array $options, array $identities, string $reference, string $lang = CODE_EXPLORER_DEFAULT_LANG): array {
     $identityMap = [];
     $parts = decodeReference($reference);
@@ -1547,7 +1679,7 @@ function buildCodeExplorerPdfSpecsResponse(string $familyCode, string $familyNam
     $technicalDrawing = null;
     $colorGraph = null;
     $lensDiagram = null;
-    $finishAndLens = null;
+    $finishImage = null;
     $ipRating = null;
 
     if ($isConfiguratorValid) {
@@ -1567,14 +1699,14 @@ function buildCodeExplorerPdfSpecsResponse(string $familyCode, string $familyNam
             "gasket" => 5,
         ];
         $header = $ledId !== "" ? getProductHeader((string) $productType, $productId, $reference, $ledId, $config) : null;
-        $ipRating = getIpRating($productId, "0");
-        $characteristics = getCharacteristics($productId, (string) ($ipRating ?? ""), $familyCode, $parts["lens"] ?? "", $lang);
-        $technicalDrawing = getTechnicalDrawing((string) $productType, $reference, $productId, getBarSizesFile($reference), $config);
+        $ipRating = getCodeExplorerSafeIpRating($productId);
+        $characteristics = getCodeExplorerSafeCharacteristics($productId, (string) ($ipRating ?? ""), $familyCode, $parts["lens"] ?? "", $lang);
+        $technicalDrawing = getCodeExplorerSafeDimensions((string) $productType, $reference, $productId, getBarSizesFile($reference), $config);
         $colorGraph = $ledId !== "" ? getColorGraph($ledId, $lang) : null;
         $lensDiagram = ($parts["lens"] ?? "0") !== "0"
             ? getLensDiagram($productId, $reference)
             : null;
-        $finishAndLens = getFinishAndLens((string) $productType, $productId, $reference, $config);
+        $finishImage = getCodeExplorerFinishImagePath((string) $productType, $productId, $reference, $config);
     }
 
     $characteristicRows = [];
@@ -1619,7 +1751,7 @@ function buildCodeExplorerPdfSpecsResponse(string $familyCode, string $familyNam
             "description" => $description,
             "legacy_description" => (string) ($row["legacy_description"] ?? ""),
             "header_description" => $headerDescription,
-            "finish_name" => (string) ($finishAndLens["finish_name"] ?? ""),
+            "finish_name" => (string) ($row["segment_labels"]["finish"] ?? ""),
             "ip_rating" => (string) ($ipRating ?? ""),
             "color_graph_label" => (string) ($colorGraph["label"] ?? ""),
         ],
@@ -1632,7 +1764,7 @@ function buildCodeExplorerPdfSpecsResponse(string $familyCode, string $familyNam
             "technical_drawing" => ($technicalDrawing["drawing"] ?? null) !== null,
             "color_graph" => $colorGraph !== null,
             "lens_diagram" => ($parts["lens"] ?? "0") === "0" ? null : ($lensDiagram !== null),
-            "finish_image" => $finishAndLens !== null && !str_contains((string) ($finishAndLens["image"] ?? ""), "/img/placeholders/"),
+            "finish_image" => $finishImage !== null && !str_contains((string) $finishImage, "/img/placeholders/"),
         ],
     ];
 }
