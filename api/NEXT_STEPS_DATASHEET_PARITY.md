@@ -38,7 +38,9 @@ What already works:
 - family `60` is recognized by current runtime
 - family `49` now enters real datasheet runtime with strict asset blocking
 - family `49` now checks DAM product assets when local legacy files are missing
-- families `01`, `05` are still recognized by API/explorer, but datasheet runtime is intentionally unsupported
+- family `01` now enters real tubular datasheet runtime with strict asset blocking
+- family `01` now checks DAM product assets when local legacy files are missing
+- family `05` is still recognized by API/explorer, but datasheet runtime is intentionally unsupported
 
 What still does not match official datasheets:
 
@@ -214,9 +216,10 @@ Do not move to next family until current one is acceptable.
 
 Finish one documented-but-asset-blocked family runtime.
 
-Best current pick:
+Best current picks:
 
 - family `49` Shelf
+- family `01` Tubular
 
 Why:
 
@@ -224,6 +227,10 @@ Why:
 - family now enters real datasheet runtime
 - next clear gap is real Shelf asset/data completion
 - Shelf can now consume DAM product assets once imported/mapped
+
+For Tubular family `01`, the equivalent next gap is:
+
+- import/map real T8 assets into local legacy paths or DAM family `01_t8-ac`
 
 ### Step 2
 

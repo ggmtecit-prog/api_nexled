@@ -192,9 +192,9 @@ Relevant family/mask docs:
 Current code/runtime support is split into 3 states:
 
 - datasheet runtime supported:
-  - `11`, `32`, `49`, `55`, `58`, `60`, `29`, `30`, `48`
+  - `01`, `11`, `32`, `49`, `55`, `58`, `60`, `29`, `30`, `48`
 - family recognized, but datasheet runtime not mapped yet:
-  - `01`, `05`
+  - `05`
 - family documented/researched, but not yet mapped in live runtime:
   - `31`, `40`
 
@@ -294,7 +294,9 @@ Relevant parity docs:
 - configurator can inject decoded families that are missing from the loaded dropdown list
 - Shelf (`49`) family is now a real datasheet runtime with strict asset blocking instead of fake fallback support
 - Shelf header/drawing/finish/diagram lookup now checks DAM product assets when local legacy files are missing
-- Tubular (`01`, `05`) families are recognized by API/code explorer, but datasheet runtime still stops honestly instead of inventing data
+- Tubular family `01` is now a real datasheet runtime with strict asset blocking
+- Tubular family `01` product/finish asset lookup now checks DAM product assets when local legacy files are missing
+- Tubular family `05` is still recognized by API/code explorer, but datasheet runtime is not mapped yet
 
 ### Explorer / DAM
 
@@ -312,7 +314,7 @@ Relevant parity docs:
 - old missing-data validation sweep is not fully restored
 - code explorer does not scale for full invalid-family matrix on large families
 - some documented families are still code-recognized only, with no datasheet runtime yet:
-  - `01`, `05`
+  - `05`
 - some researched families still are not mapped in live runtime:
   - `31`, `40`
 - DAM is not yet the complete source of truth for datasheet assets
@@ -368,7 +370,7 @@ Ordered recommendation:
 2. finish runtime coverage for documented families:
    - complete `49` Shelf asset/data intake and gold-sample compare
    - import/map real Shelf assets into local legacy tree or DAM family `49`
-   - `01`
+   - import/map real T8 assets into local legacy tree or DAM family `01`
    - `05`
 3. restore old missing-data validator behavior
 4. build page-template parity starting from priority families

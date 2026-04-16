@@ -27,6 +27,7 @@ define("JSON_DESC_PATH", dirname(__FILE__, 2) . "/json/descricao");
  * - Barra:     /img/{family}/produto/{lens}/{series}/ or /img/{family}/produto/{lens}/
  * - Downlight: /img/{family}/produto/
  * - Shelf:     /img/{family}/produto/
+ * - Tubular:   /img/{family}/produto/
  * - Dynamic:   /img/{family}/{subtype}/produto/
  *
  * Multiple candidate filenames are tried — the first match wins.
@@ -125,7 +126,7 @@ function getProductImage(string $productType, string $productId, array $parts, a
     }
 
     $damKind = match ($productType) {
-        "shelf" => "product_media_packshot",
+        "shelf", "tubular" => "product_media_packshot",
         default => null,
     };
 

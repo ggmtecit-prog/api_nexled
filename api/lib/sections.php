@@ -185,6 +185,7 @@ function getLensDiagram(string $productId, string $reference): ?array {
  * - Barra:     /img/{family}/acabamentos/{lens}/{series}/ or /{lens}/
  * - Downlight: /img/{family}/acabamentos/
  * - Shelf:     /img/{family}/acabamentos/
+ * - Tubular:   /img/{family}/acabamentos/
  * - Dynamic:   /img/{family}/{subtype}/acabamentos/
  *
  * The finish name (e.g. "Aluminium — Silver") is fetched from tecit_referencias.
@@ -299,7 +300,7 @@ function getFinishAndLens(string $productType, string $productId, string $refere
         if ($image !== null) break;
     }
 
-    if ($image === null && $productType === "shelf") {
+    if ($image === null && in_array($productType, ["shelf", "tubular"], true)) {
         $image = findDamProductAsset($family, $productId, "technical_finish", $candidates);
     }
 

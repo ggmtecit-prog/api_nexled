@@ -82,6 +82,7 @@ Still not traced in live runtime.
 Future readiness likely depends on:
 
 - `appdatasheets/img/01/...` or T8-specific folders
+- DAM family folder `nexled/10_products/families/01_t8-ac/...`
 - drawings
 - product/LED description JSON
 - common graphs/diagrams where relevant
@@ -89,10 +90,10 @@ Future readiness likely depends on:
 ## Current Gaps
 
 1. no visible `appdatasheets/img/01` asset tree exists in repo now
-2. no current DAM tubular assets are documented/mapped
+2. family `01` now has DAM path mapping, but no confirmed DAM T8 assets have been loaded yet
 3. official fixed `00` not yet proven as hard runtime rule
 
 ## Best Next Follow-Up
 
-- restore/import real T8 assets
+- restore/import real T8 assets into local legacy tree or DAM family `01_t8-ac`
 - compare one old-vs-new T8 gold sample

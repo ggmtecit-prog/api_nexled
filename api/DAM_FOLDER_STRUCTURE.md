@@ -42,6 +42,24 @@ nexled/
       power-supplies/
       energy-labels/
     families/
+      01_t8-ac/
+        <product-slug>/
+          media/
+            packshots/
+            lifestyle/
+            thumbnails/
+          technical/
+            drawings/
+            diagrams/
+            finishes/
+            mounting/
+            wiring/
+          documents/
+            manuals/
+            installation/
+            reports/
+            warnings/
+            certificates/
       11_barra-t5/
         <product-slug>/
           media/
@@ -247,6 +265,7 @@ nexled/
 
 - Use lower-case kebab-case for folder names.
 - Preserve family codes in family folders:
+  - `01_t8-ac`
   - `11_barra-t5`
   - `29_downlight`
   - `30_downlight`
