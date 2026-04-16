@@ -300,7 +300,13 @@ function getFinishAndLens(string $productType, string $productId, string $refere
         if ($image !== null) break;
     }
 
-    if ($image === null && in_array($productType, ["shelf", "tubular"], true)) {
+    if (
+        $image === null &&
+        (
+            in_array($productType, ["shelf", "tubular"], true) ||
+            ($productType === "barra" && in_array($family, ["31", "40"], true))
+        )
+    ) {
         $image = findDamProductAsset($family, $productId, "technical_finish", $candidates);
     }
 

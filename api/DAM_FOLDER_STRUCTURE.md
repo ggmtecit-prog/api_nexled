@@ -78,6 +78,42 @@ nexled/
             reports/
             warnings/
             certificates/
+      31_barra-rgb/
+        <product-slug>/
+          media/
+            packshots/
+            lifestyle/
+            thumbnails/
+          technical/
+            drawings/
+            diagrams/
+            finishes/
+            mounting/
+            wiring/
+          documents/
+            manuals/
+            installation/
+            reports/
+            warnings/
+            certificates/
+      40_barra-cct/
+        <product-slug>/
+          media/
+            packshots/
+            lifestyle/
+            thumbnails/
+          technical/
+            drawings/
+            diagrams/
+            finishes/
+            mounting/
+            wiring/
+          documents/
+            manuals/
+            installation/
+            reports/
+            warnings/
+            certificates/
       11_barra-t5/
         <product-slug>/
           media/
@@ -288,6 +324,8 @@ nexled/
   - `11_barra-t5`
   - `29_downlight`
   - `30_downlight`
+  - `31_barra-rgb`
+  - `40_barra-cct`
   - `32_barra-bt`
   - `48_dynamic`
   - `49_shelfled`

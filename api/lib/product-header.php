@@ -125,8 +125,10 @@ function getProductImage(string $productType, string $productId, array $parts, a
         }
     }
 
-    $damKind = match ($productType) {
-        "shelf", "tubular" => "product_media_packshot",
+    $damKind = match (true) {
+        $productType === "shelf",
+        $productType === "tubular" => "product_media_packshot",
+        $productType === "barra" && in_array($family, ["31", "40"], true) => "product_media_packshot",
         default => null,
     };
 

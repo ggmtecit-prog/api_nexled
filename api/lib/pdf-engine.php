@@ -158,6 +158,37 @@ function validateStrictTubularCompleteness(array $data, array $parts): ?string {
     return null;
 }
 
+function validateStrictExperimentalBarCompleteness(array $data, array $parts, ?string $sizesFile): ?string {
+    if ($sizesFile === null || trim($sizesFile) === "") {
+        return "Missing required data: technical drawing profile";
+    }
+
+    $headerImage = $data["header"]["image"] ?? null;
+    if (!is_string($headerImage) || trim($headerImage) === "") {
+        return "Missing required data: product image";
+    }
+
+    $drawingImage = $data["drawing"]["drawing"] ?? null;
+    if (!is_string($drawingImage) || trim($drawingImage) === "") {
+        return "Missing required data: technical drawing";
+    }
+
+    if (($data["color_graph"] ?? null) === null) {
+        return "Missing required data: color graph";
+    }
+
+    if (($parts["lens"] ?? "") !== "0" && ($data["lens_diagram"] ?? null) === null) {
+        return "Missing required data: lens diagram";
+    }
+
+    $finishImage = $data["finish"]["image"] ?? null;
+    if (!is_string($finishImage) || trim($finishImage) === "" || isFinishPlaceholderImage($finishImage)) {
+        return "Missing required data: finish image";
+    }
+
+    return null;
+}
+
 
 
 // ---------------------------------------------------------------------------
@@ -338,6 +369,15 @@ function generateDatasheet(): void {
 
         if ($strictTubularError !== null) {
             respondDatasheetJsonError(422, ["error" => $strictTubularError]);
+            return;
+        }
+    }
+
+    if ($productType === "barra" && in_array($parts["family"], ["31", "40"], true)) {
+        $strictBarError = validateStrictExperimentalBarCompleteness($data, $parts, $sizesFile);
+
+        if ($strictBarError !== null) {
+            respondDatasheetJsonError(422, ["error" => $strictBarError]);
             return;
         }
     }

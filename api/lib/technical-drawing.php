@@ -87,12 +87,13 @@ function loadBarSizesDefinition(?string $sizesFile, string $reference): object {
  *   J = bar connector width
  *
  * @param  string $reference    Full product reference
+ * @param  string $productId    Internal product ID
  * @param  string|null $sizesFile  Sizes JSON filename key (e.g. "barras", "barras_bt")
  * @param  array  $config       User selections: extra_length, option, cable_length,
  *                              connector_cable, end_cap, gasket, cable_type
  * @return array  Keys: drawing (path|null), A–J (dimension values, "0" means not shown)
  */
-function getBarDrawing(string $reference, ?string $sizesFile, array $config): array {
+function getBarDrawing(string $reference, string $productId, ?string $sizesFile, array $config): array {
     $config = normalizeBarAssetConfig($reference, $config);
 
     $parts          = decodeReference($reference);
@@ -123,6 +124,10 @@ function getBarDrawing(string $reference, ?string $sizesFile, array $config): ar
     foreach ($candidates as $name) {
         $drawing = findImage(IMAGES_BASE_PATH . $folder . $name);
         if ($drawing !== null) break;
+    }
+
+    if ($drawing === null && in_array($family, ["31", "40"], true)) {
+        $drawing = findDamProductAsset($family, $productId, "technical_drawing", $candidates);
     }
 
     // --- Read end cap dimensions from sizes JSON ---
@@ -314,7 +319,7 @@ function getStandardDrawing(string $reference, string $productId): array {
  */
 function getTechnicalDrawing(string $productType, string $reference, string $productId, ?string $sizesFile, array $config): array {
     if ($productType === "barra") {
-        return getBarDrawing($reference, $sizesFile, $config);
+        return getBarDrawing($reference, $productId, $sizesFile, $config);
     }
 
     return getStandardDrawing($reference, $productId);

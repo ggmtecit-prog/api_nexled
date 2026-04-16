@@ -217,17 +217,16 @@ This means:
 - family `40` likely has distinct runtime behavior
 - and should not be assumed to behave like the confirmed main bar families without deeper trace
 
-### Current live decoder gap
+### Current live runtime state
 
-Current `api/lib/reference-decoder.php` does **not** map family `40` to `barra`.
+Current `api/lib/reference-decoder.php` now maps family `40` as `barra`.
 
-That means:
+Datasheet runtime now allows family `40` to enter the PDF pipeline, but it
+fails honestly because required bar support data is still missing:
 
-- DB truth says family `40` is real and used
-- catalog says family `40` is a Barra CCT family
-- but live runtime support is currently incomplete or intentionally deferred
-
-This is one of the most important findings for family `40`.
+- no confirmed bar size profile mapping
+- no visible `appdatasheets/img/40/...` asset tree
+- no confirmed DAM family `40` assets loaded yet
 
 ## Datasheet Asset Sources For Family 40
 
@@ -257,14 +256,14 @@ Asset-source certainty for family `40` is lower than for families `11`, `32`, `5
 
 Why:
 
-- current live decoder does not classify family `40`
-- no family-40-specific runtime API patch has been traced yet
+- family `40` now has runtime support, but no family-40-specific size profile is mapped
+- no family-40-specific runtime asset tree is present locally
 - old bar-specific helper groups do not explicitly include `40`
 
 So current datasheet asset rule should be documented as:
 
 - **expected family asset source** = `appdatasheets/img/40/...`
-- **runtime implementation status** = not yet fully traced/confirmed
+- **runtime implementation status** = live runtime support exists, but strict blockers still stop incomplete PDFs
 
 ## Code-Valid vs Datasheet-Ready
 
@@ -284,18 +283,21 @@ For family `40`:
 
 So:
 - family `40` code validity can be confirmed before full datasheet parity exists
-- family `40` datasheet readiness is still partially unknown because runtime family support is incomplete
+- family `40` datasheet readiness is still partially unknown because required size/asset support is incomplete
 
 ## Current Gaps / Risks
 
-- family `40` exists in DB and catalog, but is not yet mapped in current live decoder as a supported product type
+- no confirmed bar size profile mapping for family `40`
 - old frontend special-family behavior for `40` is not yet clearly traced
 - family `40` likely branches into IR vs Wi-Fi style sub-lines, but runtime mapping for that is still not documented
-- datasheet asset folders/lookup rules for `40` still need direct trace
+- no `appdatasheets/img/40` asset tree is currently present
+- no family `40` DAM assets are currently loaded
+- current live runtime correctly blocks family `40` with:
+  - `Missing required data: technical drawing profile`
 
 ## Best Next Follow-Up
 
-1. verify whether family `40` should be added to current runtime product-type mapping
+1. restore a truthful bar size profile mapping for family `40`
 2. trace any old datasheet asset paths for `40`
-3. choose one IR-style and one fixed-`00` sample as gold references
-4. compare old/new behavior once family `40` runtime support is explicitly restored
+3. import/map real family `40` assets into local legacy paths or DAM
+4. choose one IR-style and one fixed-`00` sample as gold references

@@ -227,21 +227,16 @@ Meaning:
 - family `31` is treated as 3-channel RGB product in current technical calculations
 - this is strong confirmation that family `31` needs family-specific parity handling later
 
-### Current live decoder gap
+### Current live runtime state
 
-Current live `reference-decoder.php` still maps bar families only as:
+Current live `reference-decoder.php` now maps family `31` as `barra`.
 
-- `11`
-- `32`
-- `55`
-- `58`
+Datasheet runtime now allows family `31` to enter the PDF pipeline, but it
+fails honestly because required bar support data is still missing:
 
-So family `31` is one clear case where:
-
-- catalog truth exists
-- DB truth exists
-- some live technical logic exists
-- but current live decoder/runtime support is still incomplete
+- no confirmed bar size profile mapping
+- no visible `appdatasheets/img/31/...` asset tree
+- no confirmed DAM family `31` assets loaded yet
 
 ## Datasheet Asset Sources For Family 31
 
@@ -256,8 +251,9 @@ Expected family asset roots would normally be under:
 But current repo check shows:
 
 - no family `31` asset folder is present yet under `appdatasheets/img/31`
+- no family `31` DAM assets are currently loaded either
 
-So family `31` currently has one major datasheet-readiness risk:
+So family `31` currently has major datasheet-readiness risks:
 
 - even valid codes may not be datasheet-ready until asset structure is restored or mapped elsewhere
 
@@ -296,24 +292,26 @@ Family `31` code is datasheet-ready only when:
 Current likely blockers:
 
 - missing family `31` asset folder
-- incomplete live decoder/runtime mapping
+- missing family `31` DAM assets
+- missing technical drawing profile mapping
 - unknown final drawing/image conventions for RGB line
 
 ## Current Gaps / Risks
 
 Biggest open gaps for family `31`:
 
-1. current live decoder does not classify `31` as supported `barra`
+1. no confirmed bar size profile mapping for family `31`
 2. old special frontend runtime behavior not fully traced
 3. no `appdatasheets/img/31` asset folder currently present
-4. RGB-specific asset and PDF rules still undocumented
-5. official mask and normalized live mask have not yet been runtime-tested end-to-end
+4. no family `31` DAM assets are currently loaded
+5. current live runtime correctly blocks family `31` with:
+   - `Missing required data: technical drawing profile`
 
 ## Best Next Follow-Up
 
 Best follow-up after this doc:
 
-1. add family `31` to parity investigation queue after `40/60`
-2. trace old generator/product-image logic for RGB line
-3. verify whether family `31` should be added to live `reference-decoder.php` bar map
+1. restore a truthful bar size profile mapping for family `31`
+2. trace old generator/product-image logic for the RGB line
+3. import/map real family `31` assets into local legacy paths or DAM
 4. document RGB asset structure once source assets are found or restored

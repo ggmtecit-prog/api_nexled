@@ -192,11 +192,11 @@ Relevant family/mask docs:
 Current code/runtime support is split into 3 states:
 
 - datasheet runtime supported:
-  - `01`, `05`, `11`, `32`, `49`, `55`, `58`, `60`, `29`, `30`, `48`
+  - `01`, `05`, `11`, `29`, `30`, `31`, `32`, `40`, `48`, `49`, `55`, `58`, `60`
 - family recognized, but datasheet runtime not mapped yet:
-  - none currently in the documented Tubular/Shelf families
+  - none currently in the documented main family docs
 - family documented/researched, but not yet mapped in live runtime:
-  - `31`, `40`
+  - none in the currently documented main families
 
 Important:
 
@@ -298,6 +298,8 @@ Relevant parity docs:
 - Tubular family `01` product/finish asset lookup now checks DAM product assets when local legacy files are missing
 - Tubular family `05` is now a real datasheet runtime with strict asset blocking
 - Tubular family `05` product/finish asset lookup now checks DAM product assets when local legacy files are missing
+- Barra family `31` is now a real datasheet runtime with strict asset/data blocking
+- Barra family `40` is now a real datasheet runtime with strict asset/data blocking
 
 ### Explorer / DAM
 
@@ -314,8 +316,6 @@ Relevant parity docs:
 - old configurator family-specific UI logic is not fully restored
 - old missing-data validation sweep is not fully restored
 - code explorer does not scale for full invalid-family matrix on large families
-- some researched families still are not mapped in live runtime:
-  - `31`, `40`
 - DAM is not yet the complete source of truth for datasheet assets
 - the repo contains many narrow research docs; they are useful, but they are not all canonical
 - the API is live, but datasheet generation still depends on bundled repo files and legacy-style asset organization
@@ -371,6 +371,7 @@ Ordered recommendation:
    - import/map real Shelf assets into local legacy tree or DAM family `49`
    - import/map real T8 assets into local legacy tree or DAM family `01`
    - import/map real T5 assets into local legacy tree or DAM family `05`
+   - restore real bar size profiles and assets for families `31` and `40`
 3. restore old missing-data validator behavior
 4. build page-template parity starting from priority families
 5. keep documenting only the families being actively patched
