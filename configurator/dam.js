@@ -227,8 +227,11 @@ function bindDamEvents() {
             return;
         }
 
-        damState.assetLinkPanelHidden = !damState.assetLinkPanelHidden;
-        syncAssetLinkPanelVisibility();
+        window.requestAnimationFrame(() => {
+            const isPressed = damElements.toggleLinkingButton.getAttribute("aria-pressed") === "true";
+            damState.assetLinkPanelHidden = !isPressed;
+            syncAssetLinkPanelVisibility({ syncPressed: false });
+        });
     });
 
     damElements.linkSubmitButton.addEventListener("click", handleCreateAssetLink);
@@ -1442,11 +1445,12 @@ function syncAssetLinkControls() {
     damElements.toggleLinkingButton.disabled = !hasAsset;
 }
 
-function syncAssetLinkPanelVisibility() {
+function syncAssetLinkPanelVisibility(options = {}) {
     if (!damElements) {
         return;
     }
 
+    const { syncPressed = true } = options;
     const hasAsset = Boolean(damState.selectedAsset?.id);
     const isHidden = !hasAsset || damState.assetLinkPanelHidden;
     const labelKey = isHidden ? "dam.showAssetLinks" : "dam.hideAssetLinks";
@@ -1454,7 +1458,9 @@ function syncAssetLinkPanelVisibility() {
 
     damElements.linkingPanel.classList.toggle("hidden", isHidden);
     damElements.toggleLinkingButton.setAttribute("aria-expanded", String(!isHidden));
-    damElements.toggleLinkingButton.setAttribute("aria-pressed", String(!isHidden));
+    if (syncPressed) {
+        damElements.toggleLinkingButton.setAttribute("aria-pressed", String(!isHidden));
+    }
     damElements.toggleLinkingLabel.textContent = t(labelKey, labelFallback);
     damElements.toggleLinkingIcon.className = (isHidden ? "ri-eye-line" : "ri-eye-off-line") + " text-icon-lg";
 }
