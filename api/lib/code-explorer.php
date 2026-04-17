@@ -1315,6 +1315,162 @@ function buildCodeExplorerTargetedSearchResponse(string $familyCode, string $fam
     ];
 }
 
+function buildCodeExplorerTargetedPreviewResponse(string $familyCode, string $familyName, array $options, array $identities, string $search, string $statusFilter, int $pageSize, bool $includeInvalid, array $segmentFilters): array {
+    $normalizedSearch = normalizeCodeExplorerReferenceSearch($search);
+    $identity = substr($normalizedSearch, 0, REFERENCE_LENGTH_IDENTITY);
+    $suffixSearch = substr($normalizedSearch, REFERENCE_LENGTH_IDENTITY);
+    $previewLimit = max(1, min($pageSize, 100));
+    $validatorCache = [];
+    $identityMap = [];
+    $pageRows = [];
+    $defaultProductType = getProductType($familyCode . str_repeat("0", REFERENCE_LENGTH_FULL - REFERENCE_LENGTH_FAMILY));
+    $segmentLookups = getCodeExplorerSegmentLabelLookups($options);
+
+    foreach ($identities as $identityData) {
+        $identityMap[$identityData["identity"]] = $identityData;
+    }
+
+    foreach ($options["lens"] as $lens) {
+        foreach ($options["finish"] as $finish) {
+            foreach ($options["cap"] as $cap) {
+                foreach ($options["option"] as $option) {
+                    $reference = $identity . $lens["code"] . $finish["code"] . $cap["code"] . $option["code"];
+
+                    if ($suffixSearch !== "" && !str_starts_with(substr($reference, REFERENCE_LENGTH_IDENTITY), $suffixSearch)) {
+                        continue;
+                    }
+
+                    if (!str_starts_with($reference, $normalizedSearch)) {
+                        continue;
+                    }
+
+                    $parts = decodeReference($reference);
+
+                    if (!matchesCodeExplorerSegmentFilters($parts, $segmentFilters)) {
+                        continue;
+                    }
+
+                    $identityData = $identityMap[$identity] ?? null;
+                    $isConfiguratorValidIdentity = $identityData !== null;
+                    $productId = $isConfiguratorValidIdentity
+                        ? resolveCodeExplorerProductId($familyCode, $identityData, $parts["cap"])
+                        : null;
+                    $isConfiguratorValid = $isConfiguratorValidIdentity && $productId !== null && $productId !== "";
+
+                    if (!$includeInvalid && !$isConfiguratorValid) {
+                        continue;
+                    }
+
+                    $productType = $isConfiguratorValidIdentity
+                        ? ($identityData["product_type"] ?? $defaultProductType)
+                        : $defaultProductType;
+                    $description = $identityData["description"] ?? "";
+                    $readiness = [
+                        "datasheet_ready" => false,
+                        "failure_reason" => "invalid_luminos_combination",
+                    ];
+
+                    if ($isConfiguratorValid) {
+                        $readiness = getCodeExplorerDatasheetReadiness(
+                            $reference,
+                            $productId,
+                            $productType,
+                            $identityData["led_id"] ?? "",
+                            $options,
+                            $validatorCache
+                        );
+                    }
+
+                    $row = [
+                        "reference" => $reference,
+                        "identity" => $identity,
+                        "description" => $description,
+                        "product_type" => $productType,
+                        "product_id" => $productId,
+                        "segments" => [
+                            "family" => $familyCode,
+                            "size" => $parts["size"],
+                            "color" => $parts["color"],
+                            "cri" => $parts["cri"],
+                            "series" => $parts["series"],
+                            "lens" => $parts["lens"],
+                            "finish" => $parts["finish"],
+                            "cap" => $parts["cap"],
+                            "option" => $parts["option"],
+                        ],
+                        "segment_labels" => [
+                            "size" => $segmentLookups["size"][$parts["size"]] ?? $parts["size"],
+                            "color" => $segmentLookups["color"][$parts["color"]] ?? $parts["color"],
+                            "cri" => $segmentLookups["cri"][$parts["cri"]] ?? $parts["cri"],
+                            "series" => $segmentLookups["series"][$parts["series"]] ?? $parts["series"],
+                            "lens" => resolveCodeExplorerOptionLabel($options["lens"], $parts["lens"]),
+                            "finish" => resolveCodeExplorerOptionLabel($options["finish"], $parts["finish"]),
+                            "cap" => resolveCodeExplorerOptionLabel($options["cap"], $parts["cap"]),
+                            "option" => resolveCodeExplorerOptionLabel($options["option"], $parts["option"]),
+                        ],
+                        "configurator_valid" => $isConfiguratorValid,
+                        "datasheet_ready" => $isConfiguratorValid ? $readiness["datasheet_ready"] : false,
+                        "failure_reason" => $isConfiguratorValid ? $readiness["failure_reason"] : "invalid_luminos_combination",
+                    ];
+                    $row["legacy_description"] = buildCodeExplorerLegacyDescription($row);
+
+                    if (!matchesCodeExplorerStatusFilter($row, $statusFilter)) {
+                        continue;
+                    }
+
+                    $pageRows[] = $row;
+
+                    if (count($pageRows) >= $previewLimit) {
+                        return [
+                            "family" => [
+                                "code" => $familyCode,
+                                "name" => $familyName,
+                            ],
+                            "preview" => true,
+                            "filters" => [
+                                "search" => $search,
+                                "search_type" => CODE_EXPLORER_SEARCH_TYPE_CODE,
+                                "status" => $statusFilter,
+                                "include_invalid" => $includeInvalid,
+                                "segment_filters" => $segmentFilters,
+                            ],
+                            "pagination" => [
+                                "page" => 1,
+                                "page_size" => $previewLimit,
+                                "total_pages" => 1,
+                                "total_rows" => count($pageRows),
+                            ],
+                            "rows" => $pageRows,
+                        ];
+                    }
+                }
+            }
+        }
+    }
+
+    return [
+        "family" => [
+            "code" => $familyCode,
+            "name" => $familyName,
+        ],
+        "preview" => true,
+        "filters" => [
+            "search" => $search,
+            "search_type" => CODE_EXPLORER_SEARCH_TYPE_CODE,
+            "status" => $statusFilter,
+            "include_invalid" => $includeInvalid,
+            "segment_filters" => $segmentFilters,
+        ],
+        "pagination" => [
+            "page" => 1,
+            "page_size" => $previewLimit,
+            "total_pages" => 1,
+            "total_rows" => count($pageRows),
+        ],
+        "rows" => $pageRows,
+    ];
+}
+
 function getCodeExplorerSegmentLabelLookups(array $options): array {
     $lookups = [];
 

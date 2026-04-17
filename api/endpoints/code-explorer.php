@@ -53,6 +53,7 @@ $search = sanitizeCodeExplorerSearch($_GET["search"] ?? "");
 $searchType = getCodeExplorerSearchType($_GET["search_type"] ?? CODE_EXPLORER_SEARCH_TYPE_CODE);
 $statusFilter = getCodeExplorerStatusFilter($_GET["status"] ?? CODE_EXPLORER_STATUS_ALL);
 $includeInvalid = getCodeExplorerIncludeInvalid($_GET["include_invalid"] ?? false);
+$identityPreview = getCodeExplorerIncludeInvalid($_GET["identity_preview"] ?? false);
 $hasTargetedReferenceSearch = $searchType === CODE_EXPLORER_SEARCH_TYPE_CODE
     && isCodeExplorerTargetedReferenceSearch($search, $familyMeta["code"]);
 
@@ -63,6 +64,23 @@ $identities = getCodeExplorerLuminosIdentities($familyMeta["code"]);
 $filteredIdentities = getCodeExplorerFilteredIdentities($identities, $segmentFilters);
 
 if ($mode === CODE_EXPLORER_MODE_SEARCH && $hasTargetedReferenceSearch) {
+    if ($identityPreview) {
+        echo json_encode(
+            buildCodeExplorerTargetedPreviewResponse(
+                $familyMeta["code"],
+                $familyMeta["name"],
+                $filteredOptions,
+                $filteredIdentities,
+                $search,
+                $statusFilter,
+                $pageSize,
+                $includeInvalid,
+                $segmentFilters
+            )
+        );
+        exit();
+    }
+
     echo json_encode(
         buildCodeExplorerTargetedSearchResponse(
             $familyMeta["code"],

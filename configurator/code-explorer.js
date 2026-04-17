@@ -91,6 +91,8 @@ let explorerState = {
     familyOptionsByFamily: {},
     data: null,
     selectedReference: "",
+    detailViewMode: "basic",
+    detailViewReference: "",
     coverageExpandedIdentity: "",
     coverageDetailsByIdentity: {},
     detailPdfSpecsByKey: {},
@@ -1289,6 +1291,8 @@ function bindControls() {
         }
 
         explorerState.selectedReference = trigger.dataset.reference || "";
+        explorerState.detailViewReference = explorerState.selectedReference;
+        explorerState.detailViewMode = "basic";
         renderTable();
         renderDetail();
         openCodeDetailModal(trigger);
@@ -1525,7 +1529,7 @@ function buildCoverageIdentityCard(identity) {
                 <div class="flex flex-col gap-12 lg:flex-row lg:items-start lg:justify-between">
                     <div class="flex flex-col gap-8">
                         <div class="flex flex-wrap items-center gap-8">
-                            <code class="text-body-sm font-mono text-black break-all">${escapeHtml(identityCode)}</code>
+                            <code class="text-body-sm text-black break-all">${escapeHtml(identityCode)}</code>
                             ${buildStatusBadge(
                                 identity.configurator_valid === true,
                                 t("codeExplorer.statusConfiguratorValidShort", {}, "Valid"),
@@ -1632,13 +1636,13 @@ function buildCoverageIdentityDetail(identity) {
         `;
     }
 
-    const totalDetailCodes = detailState.totalRows || detailState.rows.length;
-    const truncated = detailState.totalRows > detailState.rows.length || detailState.totalPages > 1;
+    const totalDetailCodes = getCoverageIdentityExpectedTotal(identity, detailState);
+    const truncated = totalDetailCodes > detailState.rows.length || detailState.totalPages > 1;
     const truncatedCopy = truncated
         ? `<p class="text-body-xs text-grey-primary">${escapeHtml(t("codeExplorer.coverageDetailTruncated", {
             shown: detailState.rows.length,
-            total: detailState.totalRows,
-        }, `Showing ${detailState.rows.length} of ${detailState.totalRows} codes.`))}</p>`
+            total: totalDetailCodes,
+        }, `Showing ${detailState.rows.length} of ${totalDetailCodes} codes.`))}</p>`
         : "";
 
     return `
@@ -1655,6 +1659,39 @@ function buildCoverageIdentityDetail(identity) {
             </div>
         </div>
     `;
+}
+
+function getCoverageIdentityExpectedTotal(identity, detailState = null) {
+    const counts = identity?.counts || {};
+
+    switch (explorerState.controls.status) {
+        case "all":
+            return explorerState.controls.includeInvalid
+                ? (Number.parseInt(String(counts.total_codes || detailState?.totalRows || 0), 10) || 0)
+                : (Number.parseInt(String(counts.configurator_valid || detailState?.totalRows || 0), 10) || 0);
+        case "configurator_valid":
+            return Number.parseInt(String(counts.configurator_valid || 0), 10) || 0;
+        case "configurator_invalid":
+            return explorerState.controls.includeInvalid
+                ? (Number.parseInt(String(counts.configurator_invalid || 0), 10) || 0)
+                : 0;
+        case "datasheet_ready":
+            return Number.parseInt(String(counts.datasheet_ready || 0), 10) || 0;
+        case "datasheet_blocked":
+            return Number.parseInt(String(counts.datasheet_blocked || 0), 10) || 0;
+        default:
+            return Number.parseInt(String(counts.total_codes || detailState?.totalRows || 0), 10) || 0;
+    }
+}
+
+function getCoverageIdentityFromCurrentData(identityCode) {
+    const identities = Array.isArray(explorerState.data?.coverage?.identities)
+        ? explorerState.data.coverage.identities
+        : Array.isArray(explorerState.data?.chunk?.items)
+            ? explorerState.data.chunk.items
+            : [];
+
+    return identities.find((identity) => (identity?.identity || "") === identityCode) || null;
 }
 
 function buildCoverageCodeRow(row) {
@@ -1678,7 +1715,7 @@ function buildCoverageCodeRow(row) {
         <div class="rounded-card border border-grey-quaternary/60 bg-white px-12 py-12">
             <div class="flex flex-col gap-8 lg:flex-row lg:items-start lg:justify-between">
                 <div class="flex flex-col gap-6">
-                    <code class="text-body-sm font-mono text-black break-all">${escapeHtml(row.reference || "")}</code>
+                    <code class="text-body-sm text-black break-all">${escapeHtml(row.reference || "")}</code>
                     <p class="text-body-xs text-grey-primary">${escapeHtml(formatCoverageSuffix(row))}</p>
                     <p class="text-body-xs text-grey-primary">${escapeHtml(failureText)}</p>
                 </div>
@@ -1723,8 +1760,22 @@ async function toggleCoverageIdentity(identityCode) {
 
 async function loadCoverageIdentityCodes(identityCode) {
     const family = explorerState.controls.family;
+    const identity = getCoverageIdentityFromCurrentData(identityCode);
+    const expectedTotal = getCoverageIdentityExpectedTotal(identity);
 
     if (!family || !identityCode) {
+        return;
+    }
+
+    if (identity && expectedTotal <= 0) {
+        explorerState.coverageDetailsByIdentity[identityCode] = {
+            status: "ready",
+            rows: [],
+            totalRows: 0,
+            totalPages: 1,
+            errorMessage: "",
+        };
+        renderCoverage(explorerState.data);
         return;
     }
 
@@ -1742,11 +1793,12 @@ async function loadCoverageIdentityCodes(identityCode) {
         family,
         mode: "search",
         page: "1",
-        page_size: "250",
+        page_size: "60",
         search: identityCode,
         search_type: "code",
         status: explorerState.controls.status || "all",
         include_invalid: explorerState.controls.includeInvalid ? "1" : "0",
+        identity_preview: "1",
     });
 
     try {
@@ -1759,8 +1811,8 @@ async function loadCoverageIdentityCodes(identityCode) {
         explorerState.coverageDetailsByIdentity[identityCode] = {
             status: "ready",
             rows: Array.isArray(data?.rows) ? data.rows : [],
-            totalRows: Number.parseInt(String(data?.pagination?.total_rows || 0), 10) || 0,
-            totalPages: Number.parseInt(String(data?.pagination?.total_pages || 0), 10) || 0,
+            totalRows: expectedTotal || (Number.parseInt(String(data?.pagination?.total_rows || 0), 10) || 0),
+            totalPages: expectedTotal > (Array.isArray(data?.rows) ? data.rows.length : 0) ? 2 : 1,
             errorMessage: "",
         };
     } catch (error) {
@@ -1792,7 +1844,7 @@ function bindStaticEvents() {
 
     if (loadPdfSpecsButton) {
         loadPdfSpecsButton.addEventListener("click", () => {
-            void loadDetailPdfSpecs();
+            void toggleDetailComplexView();
         });
     }
 
@@ -2312,7 +2364,7 @@ function renderTable() {
             <tr class="data-table-row">
                 <td class="data-table-cell" data-sort-value="${escapeHtml(row.reference)}">
                     <button type="button" class="link link-sm text-left" data-reference="${escapeHtml(row.reference)}">
-                        <span class="link-label font-mono break-all">${escapeHtml(row.reference)}</span>
+                        <span class="link-label break-all">${escapeHtml(row.reference)}</span>
                     </button>
                 </td>
                 <td class="data-table-cell" data-sort-value="${escapeHtml(description)}">
@@ -2336,78 +2388,89 @@ function renderTable() {
 function renderDetail() {
     const detail = document.getElementById("explorer-detail");
     const empty = document.getElementById("explorer-detail-empty");
+    const modalTitle = document.getElementById("codeExplorerDetailModalTitle");
     const summaryList = document.getElementById("detail-summary-list");
+    const loadingState = document.getElementById("detail-loading-state");
     const statusBadges = document.getElementById("detail-status-badges");
+    const toggleButton = document.getElementById("detail-load-pdf-specs");
+    const toggleButtonLabel = document.getElementById("detail-load-pdf-specs-label");
     const row = getSelectedRow();
     const valueUnavailable = t("codeExplorer.valueUnavailable", {}, "Not available");
 
-    if (!detail || !empty || !summaryList || !statusBadges) {
+    if (!detail || !empty || !summaryList || !loadingState || !statusBadges || !modalTitle || !toggleButton || !toggleButtonLabel) {
         return;
     }
 
     if (!row) {
         detail.classList.add("hidden");
         empty.classList.remove("hidden");
+        loadingState.classList.add("hidden");
+        summaryList.classList.remove("hidden");
+        stopDetailLoadingProgress(true);
         statusBadges.innerHTML = "";
+        modalTitle.textContent = "";
+        toggleButton.disabled = true;
+        toggleButtonLabel.textContent = t("codeExplorer.detailsPdfSpecsButton", {}, "Show more details");
+        explorerState.detailViewMode = "basic";
+        explorerState.detailViewReference = "";
         return;
+    }
+
+    if (explorerState.detailViewReference !== row.reference) {
+        explorerState.detailViewReference = row.reference;
+        explorerState.detailViewMode = "basic";
     }
 
     empty.classList.add("hidden");
     detail.classList.remove("hidden");
-
-    const summaryRows = [
-        buildDetailSpecListItem(
-            t("codeExplorer.tableReference", {}, "Reference"),
-            escapeHtml(row.reference || ""),
-            "font-mono break-all"
-        ),
-        buildDetailSpecListItem(
-            t("codeExplorer.tableIdentity", {}, "Identity"),
-            escapeHtml(row.identity || ""),
-            "font-mono break-all"
-        ),
-        buildDetailSpecListItem(
-            t("codeExplorer.tableDescription", {}, "Description"),
-            escapeHtml(row.description || valueUnavailable)
-        ),
-        buildDetailSpecListItem(
-            t("codeExplorer.tableType", {}, "Type"),
-            escapeHtml(row.product_type || valueUnavailable)
-        ),
-        buildDetailSpecListItem(
-            t("codeExplorer.tableProductId", {}, "Product ID"),
-            escapeHtml(row.product_id || valueUnavailable),
-            "break-all"
-        ),
-    ];
-
-    const segmentRows = SEGMENT_META.map((segment) => {
-        return buildDetailSpecListItem(
-            t(segment.labelKey, {}, segment.fallback),
-            escapeHtml(getSegmentDisplay(row, segment.key)),
-            "font-mono break-all"
-        );
-    });
+    modalTitle.textContent = row.reference || "";
+    const specsState = getDetailPdfSpecsState(row.reference);
+    const isComplexView = explorerState.detailViewMode === "complex";
+    const isLoadingComplex = isComplexView && specsState.status === "loading";
 
     const statusesMarkup = [
-        buildStatusBadge(row.configurator_valid, t("codeExplorer.statusConfiguratorValid", {}, "Configurator valid"), t("codeExplorer.statusConfiguratorInvalid", {}, "Configurator invalid")),
+        buildStatusBadge(
+            row.configurator_valid,
+            t("codeExplorer.statusConfiguratorValid", {}, "Configurator valid"),
+            t("codeExplorer.statusConfiguratorInvalid", {}, "Configurator invalid"),
+            "badge-lg"
+        ),
         row.configurator_valid
-            ? buildStatusBadge(row.datasheet_ready, t("codeExplorer.statusDatasheetReady", {}, "Datasheet ready"), t("codeExplorer.statusDatasheetBlocked", {}, "Datasheet blocked"))
-            : buildNeutralBadge(t("codeExplorer.statusNotApplicable", {}, "Not applicable")),
+            ? buildStatusBadge(
+                row.datasheet_ready,
+                t("codeExplorer.statusDatasheetReady", {}, "Datasheet ready"),
+                t("codeExplorer.statusDatasheetBlocked", {}, "Datasheet blocked"),
+                "badge-lg"
+            )
+            : buildNeutralBadge(t("codeExplorer.statusNotApplicable", {}, "Not applicable"), "badge-lg"),
     ].join("");
 
     statusBadges.innerHTML = statusesMarkup;
+    toggleButton.disabled = !row.configurator_valid || isLoadingComplex;
+    toggleButtonLabel.textContent = isLoadingComplex
+        ? t("codeExplorer.detailsPdfSpecsLoading", {}, "Loading more details...")
+        : isComplexView
+            ? t("codeExplorer.detailsBasicButton", {}, "Show basic details")
+            : t("codeExplorer.detailsPdfSpecsButton", {}, "Show more details");
 
-    const statusRows = [
-        buildDetailSpecListItem(
-            t("codeExplorer.tableFailure", {}, "Failure"),
-            escapeHtml(row.failure_reason ? getFailureReasonText(row.failure_reason) : t("codeExplorer.failure.none", {}, "No blocking reason."))
-        ),
-    ];
+    loadingState.classList.toggle("hidden", !isLoadingComplex);
+    summaryList.classList.toggle("hidden", isLoadingComplex);
 
-    summaryList.innerHTML = [...summaryRows, ...segmentRows, ...statusRows].join("");
+    if (isLoadingComplex) {
+        startDetailLoadingProgress();
+    } else {
+        stopDetailLoadingProgress(true);
+    }
 
-    renderDetailPdfSpecs(row);
+    if (!row.configurator_valid) {
+        explorerState.detailViewMode = "basic";
+        summaryList.innerHTML = buildBasicDetailListMarkup(row, valueUnavailable, specsState);
+        return;
+    }
+
+    summaryList.innerHTML = isComplexView
+        ? buildComplexDetailListMarkup(row, specsState, valueUnavailable)
+        : buildBasicDetailListMarkup(row, valueUnavailable, specsState);
 }
 
 function buildDetailSpecListItem(label, valueMarkup, valueClasses = "") {
@@ -2417,6 +2480,99 @@ function buildDetailSpecListItem(label, valueMarkup, valueClasses = "") {
             <dd class="list-value ${valueClasses}">${valueMarkup}</dd>
         </div>
     `;
+}
+
+const detailLoadingProgressMotion = {
+    frameId: null,
+    current: 64,
+    direction: 1,
+    lastTime: 0,
+};
+
+function syncDetailLoadingProgress(progress) {
+    if (!progress) {
+        return;
+    }
+
+    const roundedValue = Math.round(Number(progress.value || 0));
+    progress.textContent = `${roundedValue}%`;
+    progress.setAttribute("aria-valuetext", `${roundedValue}%`);
+}
+
+function stopDetailLoadingProgress(reset = false) {
+    if (typeof detailLoadingProgressMotion.frameId === "number") {
+        cancelAnimationFrame(detailLoadingProgressMotion.frameId);
+        detailLoadingProgressMotion.frameId = null;
+    }
+
+    detailLoadingProgressMotion.lastTime = 0;
+
+    if (!reset) {
+        return;
+    }
+
+    const progress = document.getElementById("detail-loading-progress");
+
+    if (!progress) {
+        return;
+    }
+
+    detailLoadingProgressMotion.current = 64;
+    detailLoadingProgressMotion.direction = 1;
+    progress.value = "64";
+    syncDetailLoadingProgress(progress);
+}
+
+function startDetailLoadingProgress() {
+    const progress = document.getElementById("detail-loading-progress");
+
+    if (!progress || typeof detailLoadingProgressMotion.frameId === "number") {
+        return;
+    }
+
+    const reducedMotionQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const min = Number(progress.dataset.progressMin || 0);
+    const max = Number(progress.dataset.progressMax || progress.max || 100);
+    const duration = Math.max(Number(progress.dataset.progressDuration || 3200), 1200);
+    const travel = Math.max(max - min, 1);
+
+    detailLoadingProgressMotion.current = Number(progress.value || min);
+    detailLoadingProgressMotion.direction = 1;
+    detailLoadingProgressMotion.lastTime = 0;
+    syncDetailLoadingProgress(progress);
+
+    if (reducedMotionQuery.matches) {
+        return;
+    }
+
+    const animate = (time) => {
+        if (!document.body.contains(progress)) {
+            stopDetailLoadingProgress();
+            return;
+        }
+
+        if (!detailLoadingProgressMotion.lastTime) {
+            detailLoadingProgressMotion.lastTime = time;
+        }
+
+        const delta = time - detailLoadingProgressMotion.lastTime;
+        detailLoadingProgressMotion.lastTime = time;
+        detailLoadingProgressMotion.current += ((travel / duration) * delta) * detailLoadingProgressMotion.direction;
+
+        if (detailLoadingProgressMotion.current >= max) {
+            detailLoadingProgressMotion.current = max;
+            detailLoadingProgressMotion.direction = -1;
+        } else if (detailLoadingProgressMotion.current <= min) {
+            detailLoadingProgressMotion.current = min;
+            detailLoadingProgressMotion.direction = 1;
+        }
+
+        progress.value = String(detailLoadingProgressMotion.current);
+        syncDetailLoadingProgress(progress);
+        detailLoadingProgressMotion.frameId = requestAnimationFrame(animate);
+    };
+
+    detailLoadingProgressMotion.frameId = requestAnimationFrame(animate);
 }
 
 function getCurrentExplorerLanguage() {
@@ -2443,39 +2599,54 @@ function getDetailPdfSpecsState(reference, lang = getCurrentExplorerLanguage()) 
     };
 }
 
-function buildDetailPdfSpecsRows(rows) {
-    return rows.map((row) => {
-        return `
-            <div class="flex items-start justify-between gap-12 px-12 py-10">
-                <span class="text-body-sm text-grey-primary">${escapeHtml(row.label || "")}</span>
-                <span class="text-body-sm text-black text-right">${escapeHtml(row.value || t("codeExplorer.valueUnavailable", {}, "Not available"))}</span>
-            </div>
-        `;
-    }).join("");
-}
+function buildBasicDetailListMarkup(row, valueUnavailable, specsState = null) {
+    const summaryRows = [
+        buildDetailSpecListItem(
+            t("codeExplorer.tableIdentity", {}, "Identity"),
+            escapeHtml(row.identity || ""),
+            "break-all"
+        ),
+        buildDetailSpecListItem(
+            t("codeExplorer.tableDescription", {}, "Description"),
+            escapeHtml(row.description || valueUnavailable)
+        ),
+        buildDetailSpecListItem(
+            t("codeExplorer.tableType", {}, "Type"),
+            escapeHtml(row.product_type || valueUnavailable)
+        ),
+        buildDetailSpecListItem(
+            t("codeExplorer.tableProductId", {}, "Product ID"),
+            escapeHtml(row.product_id || valueUnavailable),
+            "break-all"
+        ),
+    ];
 
-function buildDetailPdfSpecsSection(title, rows, emptyMessage = "") {
-    if (!Array.isArray(rows) || rows.length === 0) {
-        if (!emptyMessage) {
-            return "";
-        }
+    const segmentRows = SEGMENT_META.map((segment) => {
+        return buildDetailSpecListItem(
+            t(segment.labelKey, {}, segment.fallback),
+            escapeHtml(getSegmentDisplay(row, segment.key)),
+            "break-all"
+        );
+    });
 
-        return `
-            <div class="flex flex-col gap-8">
-                <span class="input-label">${escapeHtml(title)}</span>
-                <p class="text-body-sm text-grey-primary">${escapeHtml(emptyMessage)}</p>
-            </div>
-        `;
+    const statusRows = [
+        buildDetailSpecListItem(
+            t("codeExplorer.tableFailure", {}, "Failure"),
+            escapeHtml(row.failure_reason ? getFailureReasonText(row.failure_reason) : t("codeExplorer.failure.none", {}, "No blocking reason."))
+        ),
+    ];
+
+    if (specsState?.status === "error") {
+        statusRows.push(
+            buildDetailSpecListItem(
+                t("codeExplorer.detailsMoreErrorLabel", {}, "More details"),
+                escapeHtml(specsState.errorMessage || t("codeExplorer.detailsPdfSpecsError", {}, "Unable to load more details right now.")),
+                "text-red-700"
+            )
+        );
     }
 
-    return `
-        <div class="flex flex-col gap-8">
-            <span class="input-label">${escapeHtml(title)}</span>
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-8">
-                ${buildDetailPdfSpecsRows(rows)}
-            </div>
-        </div>
-    `;
+    return [...summaryRows, ...segmentRows, ...statusRows].join("");
 }
 
 function buildDetailPdfAssetStatusRow(label, available) {
@@ -2487,125 +2658,122 @@ function buildDetailPdfAssetStatusRow(label, available) {
         statusMarkup = buildStatusBadge(false, t("codeExplorer.detailsPdfAssetAvailable", {}, "Available"), t("codeExplorer.detailsPdfAssetMissing", {}, "Missing"));
     }
 
-    return `
-        <div class="flex items-start justify-between gap-12 px-12 py-10">
-            <span class="text-body-sm text-grey-primary">${escapeHtml(label)}</span>
-            <span>${statusMarkup}</span>
-        </div>
-    `;
+    return buildDetailSpecListItem(label, statusMarkup);
 }
 
-function renderDetailPdfSpecs(row = getSelectedRow()) {
-    const button = document.getElementById("detail-load-pdf-specs");
-    const content = document.getElementById("detail-pdf-specs-content");
-
-    if (!button || !content) {
-        return;
-    }
-
-    if (!row) {
-        button.disabled = true;
-        content.innerHTML = "";
-        return;
-    }
-
-    if (!row.configurator_valid) {
-        button.disabled = true;
-        content.innerHTML = `
-            <p class="text-body-sm text-grey-primary">${escapeHtml(t("codeExplorer.detailsPdfSpecsUnavailable", {}, "PDF specs are available only for configurator-valid codes."))}</p>
-        `;
-        return;
-    }
-
-    const specsState = getDetailPdfSpecsState(row.reference);
-    button.disabled = specsState.status === "loading";
-
-    if (specsState.status === "idle") {
-        content.innerHTML = "";
-        return;
-    }
-
-    if (specsState.status === "loading") {
-        content.innerHTML = `
-            <div class="flex items-center gap-8 text-grey-primary">
-                <i class="ri-loader-4-line animate-spin text-icon-sm" aria-hidden="true"></i>
-                <span class="text-body-sm">${escapeHtml(t("codeExplorer.detailsPdfSpecsLoading", {}, "Loading PDF specs..."))}</span>
-            </div>
-        `;
-        return;
-    }
-
-    if (specsState.status === "error") {
-        content.innerHTML = `
-            <p class="text-body-sm text-red-700">${escapeHtml(specsState.errorMessage || t("codeExplorer.detailsPdfSpecsError", {}, "Unable to load PDF specs right now."))}</p>
-        `;
-        return;
+function buildComplexDetailListMarkup(row, specsState, valueUnavailable) {
+    if (specsState.status === "loading" || specsState.status === "idle") {
+        return "";
     }
 
     const payload = specsState.data || {};
-    const summaryRows = [
-        {
-            label: t("codeExplorer.detailsPdfHeaderDescriptionLabel", {}, "Header description"),
-            value: payload.summary?.header_description || payload.summary?.description || t("codeExplorer.valueUnavailable", {}, "Not available"),
-        },
-        {
-            label: t("codeExplorer.detailsPdfFinishNameLabel", {}, "Finish"),
-            value: payload.summary?.finish_name || t("codeExplorer.valueUnavailable", {}, "Not available"),
-        },
-        {
-            label: t("codeExplorer.detailsPdfIpRatingLabel", {}, "IP rating"),
-            value: payload.summary?.ip_rating || t("codeExplorer.valueUnavailable", {}, "Not available"),
-        },
-        {
-            label: t("codeExplorer.detailsPdfLedIdLabel", {}, "LED ID"),
-            value: payload.summary?.led_id || t("codeExplorer.valueUnavailable", {}, "Not available"),
-        },
-        {
-            label: t("codeExplorer.detailsPdfColorGraphLabel", {}, "Color graph"),
-            value: payload.summary?.color_graph_label || t("codeExplorer.valueUnavailable", {}, "Not available"),
-        },
-    ].filter((item) => item.value && item.value !== t("codeExplorer.valueUnavailable", {}, "Not available"));
+    const rows = [
+        buildDetailSpecListItem(
+            t("codeExplorer.tableIdentity", {}, "Identity"),
+            escapeHtml(row.identity || ""),
+            "break-all"
+        ),
+        buildDetailSpecListItem(
+            t("codeExplorer.tableDescription", {}, "Description"),
+            escapeHtml(row.description || valueUnavailable)
+        ),
+        buildDetailSpecListItem(
+            t("codeExplorer.tableType", {}, "Type"),
+            escapeHtml(row.product_type || valueUnavailable)
+        ),
+        buildDetailSpecListItem(
+            t("codeExplorer.tableProductId", {}, "Product ID"),
+            escapeHtml(row.product_id || valueUnavailable),
+            "break-all"
+        ),
+        buildDetailSpecListItem(
+            t("codeExplorer.detailsPdfHeaderDescriptionLabel", {}, "Header description"),
+            escapeHtml(payload.summary?.header_description || payload.summary?.description || valueUnavailable)
+        ),
+        buildDetailSpecListItem(
+            t("codeExplorer.detailsPdfFinishNameLabel", {}, "Finish"),
+            escapeHtml(payload.summary?.finish_name || valueUnavailable)
+        ),
+        buildDetailSpecListItem(
+            t("codeExplorer.detailsPdfIpRatingLabel", {}, "IP rating"),
+            escapeHtml(payload.summary?.ip_rating || valueUnavailable)
+        ),
+        buildDetailSpecListItem(
+            t("codeExplorer.detailsPdfLedIdLabel", {}, "LED ID"),
+            escapeHtml(payload.summary?.led_id || valueUnavailable)
+        ),
+        buildDetailSpecListItem(
+            t("codeExplorer.detailsPdfColorGraphLabel", {}, "Color graph"),
+            escapeHtml(payload.summary?.color_graph_label || valueUnavailable)
+        ),
+    ];
 
-    const assetRows = [
+    (payload.characteristics || []).forEach((item) => {
+        rows.push(
+            buildDetailSpecListItem(
+                item.label || "",
+                escapeHtml(item.value || valueUnavailable)
+            )
+        );
+    });
+
+    (payload.dimensions || []).forEach((item) => {
+        rows.push(
+            buildDetailSpecListItem(
+                item.label || "",
+                escapeHtml(item.value || valueUnavailable)
+            )
+        );
+    });
+
+    rows.push(
         buildDetailPdfAssetStatusRow(t("codeExplorer.detailsPdfAssetHeaderImage", {}, "Header image"), payload.assets?.header_image),
         buildDetailPdfAssetStatusRow(t("codeExplorer.detailsPdfAssetTechnicalDrawing", {}, "Technical drawing"), payload.assets?.technical_drawing),
         buildDetailPdfAssetStatusRow(t("codeExplorer.detailsPdfAssetColorGraph", {}, "Color graph"), payload.assets?.color_graph),
         buildDetailPdfAssetStatusRow(t("codeExplorer.detailsPdfAssetLensDiagram", {}, "Lens diagram"), payload.assets?.lens_diagram),
-        buildDetailPdfAssetStatusRow(t("codeExplorer.detailsPdfAssetFinishImage", {}, "Finish image"), payload.assets?.finish_image),
-    ].join("");
+        buildDetailPdfAssetStatusRow(t("codeExplorer.detailsPdfAssetFinishImage", {}, "Finish image"), payload.assets?.finish_image)
+    );
 
-    content.innerHTML = [
-        buildDetailPdfSpecsSection(
-            t("codeExplorer.detailsPdfOverviewTitle", {}, "PDF Summary"),
-            summaryRows,
-            t("codeExplorer.detailsPdfOverviewEmpty", {}, "No PDF summary data found.")
-        ),
-        buildDetailPdfSpecsSection(
-            t("codeExplorer.detailsPdfCharacteristicsTitle", {}, "Technical characteristics"),
-            payload.characteristics || [],
-            t("codeExplorer.detailsPdfCharacteristicsEmpty", {}, "No technical characteristics found.")
-        ),
-        buildDetailPdfSpecsSection(
-            t("codeExplorer.detailsPdfDimensionsTitle", {}, "Dimensions"),
-            payload.dimensions || [],
-            t("codeExplorer.detailsPdfDimensionsEmpty", {}, "No drawing dimensions found.")
-        ),
-        `
-            <div class="flex flex-col gap-8">
-                <span class="input-label">${escapeHtml(t("codeExplorer.detailsPdfAssetsTitle", {}, "PDF assets"))}</span>
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-8">
-                    ${assetRows}
-                </div>
-            </div>
-        `,
-    ].filter(Boolean).join("");
+    if (row.failure_reason) {
+        rows.push(
+            buildDetailSpecListItem(
+                t("codeExplorer.tableFailure", {}, "Failure"),
+                escapeHtml(getFailureReasonText(row.failure_reason))
+            )
+        );
+    }
+
+    return rows.join("");
+}
+
+async function toggleDetailComplexView() {
+    const row = getSelectedRow();
+
+    if (!row || !row.configurator_valid) {
+        renderDetail();
+        return;
+    }
+
+    if (explorerState.detailViewReference !== row.reference) {
+        explorerState.detailViewReference = row.reference;
+        explorerState.detailViewMode = "basic";
+    }
+
+    if (explorerState.detailViewMode === "complex") {
+        explorerState.detailViewMode = "basic";
+        renderDetail();
+        return;
+    }
+
+    explorerState.detailViewMode = "complex";
+    await loadDetailPdfSpecs();
 }
 
 async function loadDetailPdfSpecs(force = false) {
     const row = getSelectedRow();
 
     if (!row || !row.configurator_valid) {
-        renderDetailPdfSpecs(row);
+        renderDetail();
         return;
     }
 
@@ -2614,7 +2782,7 @@ async function loadDetailPdfSpecs(force = false) {
     const currentState = explorerState.detailPdfSpecsByKey[cacheKey];
 
     if (!force && (currentState?.status === "loading" || currentState?.status === "loaded")) {
-        renderDetailPdfSpecs(row);
+        renderDetail();
         return;
     }
 
@@ -2623,7 +2791,7 @@ async function loadDetailPdfSpecs(force = false) {
         data: null,
         errorMessage: "",
     };
-    renderDetailPdfSpecs(row);
+    renderDetail();
 
     try {
         const params = new URLSearchParams({
@@ -2646,13 +2814,14 @@ async function loadDetailPdfSpecs(force = false) {
             data: null,
             errorMessage: getExplorerErrorMessage(error),
         };
+        explorerState.detailViewMode = "basic";
 
         if (error.status >= 500 || error.status === 401 || error.status === 403) {
             setApiBadge("warning", "shared.badge.apiDegraded", "API degraded");
         }
     }
 
-    renderDetailPdfSpecs(getSelectedRow());
+    renderDetail();
 }
 
 function openCodeDetailModal(trigger) {
@@ -2730,7 +2899,7 @@ function renderTecitCodeLogicFamilies() {
     list.innerHTML = families.map((family) => {
         return `
             <div class="list-item">
-                <dt class="list-key"><code class="text-body font-mono">${escapeHtml(family.code)}</code></dt>
+                <dt class="list-key"><code class="text-body">${escapeHtml(family.code)}</code></dt>
                 <dd class="list-value">${escapeHtml(family.name || family.code)}</dd>
             </div>
         `;
@@ -2893,14 +3062,14 @@ function getFailureReasonText(reason) {
     return key ? t(key, {}, reason) : reason;
 }
 
-function buildStatusBadge(isPositive, positiveLabel, negativeLabel) {
+function buildStatusBadge(isPositive, positiveLabel, negativeLabel, sizeClass = "badge-sm") {
     const toneClass = isPositive ? "badge-success" : "badge-warning";
     const label = isPositive ? positiveLabel : negativeLabel;
-    return `<span class="badge ${toneClass} badge-sm">${escapeHtml(label)}</span>`;
+    return `<span class="badge ${toneClass} ${sizeClass}">${escapeHtml(label)}</span>`;
 }
 
-function buildNeutralBadge(label) {
-    return `<span class="badge badge-neutral badge-sm">${escapeHtml(label)}</span>`;
+function buildNeutralBadge(label, sizeClass = "badge-sm") {
+    return `<span class="badge badge-neutral ${sizeClass}">${escapeHtml(label)}</span>`;
 }
 
 function setApiBadge(tone, key, fallback) {
