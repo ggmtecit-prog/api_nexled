@@ -16,7 +16,8 @@ const EXPLORER_TABLE_HEAD_FALLBACK_COLUMNS = [
     "minmax(0, 0.9fr)",
     "minmax(0, 0.9fr)",
     "minmax(0, 0.9fr)",
-    "minmax(0, 1.8fr)",
+    "minmax(0, 1.55fr)",
+    "minmax(0, 1.05fr)",
 ].join(" ");
 const COVERAGE_TABLE_HEAD_FALLBACK_COLUMNS = [
     "minmax(0, 1.15fr)",
@@ -73,6 +74,8 @@ const EXPLORER_SEARCH_TYPE_CODE = "code";
 const EXPLORER_SEARCH_TYPE_DESCRIPTION = "description";
 const EXPLORER_SEARCH_ENTRY_LIMIT = 10;
 const EXPLORER_BATCH_GROUP_ROW_LIMIT = 25;
+const EXPLORER_SEARCH_DEFAULT_PAGE_SIZE = 10;
+const EXPLORER_FILTER_DEFAULT_PAGE_SIZE = 5;
 
 let apiBasePromise = null;
 let hasSuccessfulApiContact = false;
@@ -113,7 +116,7 @@ let explorerState = {
         searchEntries: [],
         status: "all",
         page: 1,
-        pageSize: 5,
+        pageSize: EXPLORER_SEARCH_DEFAULT_PAGE_SIZE,
         includeInvalid: false,
         segmentFilters: {
             size: "",
@@ -131,6 +134,7 @@ document.addEventListener("DOMContentLoaded", () => {
 function initializeCodeExplorer() {
     familyCombobox = setupExplorerFamilyCombobox();
     setupExplorerSelectDropdowns();
+    bindSystemTooltips();
     bindControls();
     bindStaticEvents();
     renderApiBadge();
@@ -146,6 +150,51 @@ function initializeCodeExplorer() {
     renderExplorerSearchEntries();
     loadFamilies();
     checkApiHealth();
+}
+
+function bindSystemTooltips(root = document) {
+    const wrappers = root.querySelectorAll(".tooltip-wrapper");
+
+    wrappers.forEach((wrapper) => {
+        if (wrapper.dataset.tooltipBound === "true") {
+            return;
+        }
+
+        const tooltip = wrapper.querySelector(".tooltip");
+
+        if (!tooltip) {
+            return;
+        }
+
+        tooltip.style.whiteSpace = "nowrap";
+        tooltip.style.overflowWrap = "normal";
+        tooltip.style.wordBreak = "normal";
+
+        const showTooltip = () => {
+            wrapper.style.zIndex = "var(--z-tooltip)";
+            tooltip.style.opacity = "1";
+            tooltip.style.transform = "translateX(-50%) scale(1) translateY(0)";
+        };
+
+        const hideTooltip = () => {
+            wrapper.style.zIndex = "";
+            tooltip.style.opacity = "0";
+            tooltip.style.transform = "translateX(-50%) scale(var(--scale-press)) translateY(var(--press-offset))";
+        };
+
+        wrapper.addEventListener("mouseenter", showTooltip);
+        wrapper.addEventListener("mouseleave", hideTooltip);
+        wrapper.addEventListener("focusin", showTooltip);
+        wrapper.addEventListener("focusout", (event) => {
+            if (wrapper.contains(event.relatedTarget)) {
+                return;
+            }
+
+            hideTooltip();
+        });
+
+        wrapper.dataset.tooltipBound = "true";
+    });
 }
 
 function getEmptyExplorerSegmentFilters() {
@@ -357,41 +406,24 @@ function isExplorerBatchData(data = explorerState.data) {
 
 function renderExplorerSearchEntries(entries = explorerState.controls.searchEntries) {
     const wrap = document.getElementById("explorer-search-tokens-wrap");
-    const list = document.getElementById("explorer-search-tokens");
     const count = document.getElementById("explorer-search-token-count");
     const input = document.getElementById("explorer-search");
     const parsedEntries = Array.isArray(entries) && entries.length > 0
         ? entries
         : parseExplorerSearchEntries(input?.value || explorerState.controls.search);
 
-    if (!wrap || !list || !count) {
+    if (!wrap || !count) {
         return;
     }
 
     if (parsedEntries.length === 0) {
         wrap.classList.add("hidden");
-        list.innerHTML = "";
         count.textContent = "0";
         return;
     }
 
     wrap.classList.remove("hidden");
     count.textContent = String(parsedEntries.length);
-
-    const visibleEntries = parsedEntries.slice(0, 8);
-    const overflow = parsedEntries.length - visibleEntries.length;
-
-    list.innerHTML = visibleEntries.map((entry) => {
-        const isCode = entry.type === EXPLORER_SEARCH_TYPE_CODE;
-        const tone = isCode ? "badge-neutral" : "badge-info";
-        const typeLabel = isCode
-            ? t("codeExplorer.batchTypeCode", {}, "Code")
-            : t("codeExplorer.batchTypeDescription", {}, "Description");
-
-        return `<span class="badge ${tone} badge-sm">${escapeHtml(`${typeLabel}: ${entry.raw}`)}</span>`;
-    }).join("") + (overflow > 0
-        ? `<span class="badge badge-neutral badge-sm">${escapeHtml(t("codeExplorer.searchParsedOverflow", { count: overflow }, `+${overflow} more`))}</span>`
-        : "");
 }
 
 function normalizeExplorerDescriptionText(value) {
@@ -1384,6 +1416,14 @@ function bindControls() {
     updateExplorerInvalidGuidance();
 
     document.getElementById("explorer-rows").addEventListener("click", (event) => {
+        const actionTrigger = event.target.closest("[data-explorer-action]");
+
+        if (actionTrigger) {
+            event.preventDefault();
+            handleExplorerRowActionClick(actionTrigger);
+            return;
+        }
+
         const trigger = event.target.closest("[data-reference]");
 
         if (!trigger) {
@@ -1468,8 +1508,8 @@ async function applyFiltersFromForm() {
         : "all";
     explorerState.controls.includeInvalid = includeInvalid;
     explorerState.controls.pageSize = isFilterMode
-        ? (Number.parseInt(document.getElementById("explorer-page-size").value, 10) || 5)
-        : 5;
+        ? (Number.parseInt(document.getElementById("explorer-page-size").value, 10) || EXPLORER_FILTER_DEFAULT_PAGE_SIZE)
+        : EXPLORER_SEARCH_DEFAULT_PAGE_SIZE;
     explorerState.controls.segmentFilters = isFilterMode
         ? readExplorerSegmentFiltersFromForm()
         : getEmptyExplorerSegmentFilters();
@@ -2774,11 +2814,44 @@ async function loadBatchExplorerSearchData(entries = explorerState.controls.sear
 function toggleLoading(isLoading) {
     const loading = document.getElementById("explorer-loading");
 
-    if (!loading) {
+    if (loading) {
+        loading.classList.toggle("hidden", !isLoading);
+    }
+
+    if (isLoading && pageStatusState) {
+        setExplorerLoadingOverlayMessage(
+            t(pageStatusState.key, pageStatusState.vars, pageStatusState.fallback)
+        );
+    }
+
+    setExplorerLoadingOverlayOpen(isLoading);
+}
+
+function setExplorerLoadingOverlayOpen(isOpen) {
+    const overlay = document.getElementById("explorer-loading-overlay");
+
+    if (!overlay) {
         return;
     }
 
-    loading.classList.toggle("hidden", !isLoading);
+    overlay.classList.toggle("is-open", isOpen);
+    overlay.setAttribute("aria-hidden", String(!isOpen));
+    overlay.inert = !isOpen;
+
+    document.body.classList.toggle(
+        "modal-open",
+        Array.from(document.querySelectorAll(".modal-overlay")).some((item) => item.classList.contains("is-open"))
+    );
+}
+
+function setExplorerLoadingOverlayMessage(message) {
+    const copy = document.getElementById("explorer-loading-copy");
+
+    if (!copy) {
+        return;
+    }
+
+    copy.textContent = String(message || "");
 }
 
 function renderSummary(data) {
@@ -2883,11 +2956,117 @@ function renderTable() {
                 <td class="data-table-cell" data-sort-value="${escapeHtml(failureReason)}">
                     <span class="text-body-sm">${escapeHtml(failureReason)}</span>
                 </td>
+                <td class="data-table-cell">
+                    ${buildExplorerRowActions(row)}
+                </td>
             </tr>
         `;
     }).join("");
 
+    bindSystemTooltips(body);
     requestAnimationFrame(syncExplorerTableHeadColumns);
+}
+
+function getExplorerConfiguratorUrl(reference, shouldGenerate = false) {
+    const params = new URLSearchParams({
+        reference,
+    });
+
+    if (shouldGenerate) {
+        params.set("generate", "1");
+    }
+
+    return `configurator.html?${params.toString()}`;
+}
+
+function getExplorerCodeRepairUrl(reference) {
+    const params = new URLSearchParams({
+        reference,
+    });
+
+    return `code-editor.html?${params.toString()}`;
+}
+
+function buildExplorerRowActions(row) {
+    const datasheetDisabled = !(row?.configurator_valid === true && row?.datasheet_ready === true);
+    const datasheetLabel = datasheetDisabled
+        ? t("codeExplorer.actionsDatasheetDisabled", {}, "Datasheet generation is only available for datasheet-ready codes.")
+        : t("codeExplorer.actionsDatasheet", {}, "Generate datasheet");
+    const configuratorLabel = t("codeExplorer.actionsConfigurator", {}, "Open in configurator");
+    const repairLabel = t("codeExplorer.actionsRepair", {}, "Open code editor");
+
+    return `
+        <div class="flex justify-end">
+            <div class="data-table-actions inline-flex">
+                <span class="tooltip-wrapper shrink-0">
+                    <button
+                        type="button"
+                        class="btn btn-secondary btn-icon btn-xs shrink-0"
+                        data-explorer-action="datasheet"
+                        data-reference="${escapeHtml(row.reference || "")}"
+                        aria-label="${escapeHtml(t("codeExplorer.actionsDatasheet", {}, "Generate datasheet"))}"
+                        ${datasheetDisabled ? "disabled" : ""}
+                    >
+                        <i class="ri-file-pdf-line text-icon-md" aria-hidden="true"></i>
+                    </button>
+                    <div class="tooltip tooltip-black tooltip-xs">
+                        <span>${escapeHtml(datasheetLabel)}</span>
+                    </div>
+                </span>
+                <span class="tooltip-wrapper shrink-0">
+                    <button
+                        type="button"
+                        class="btn btn-secondary btn-icon btn-xs shrink-0"
+                        data-explorer-action="configurator"
+                        data-reference="${escapeHtml(row.reference || "")}"
+                        aria-label="${escapeHtml(configuratorLabel)}"
+                    >
+                        <i class="ri-settings-4-line text-icon-md" aria-hidden="true"></i>
+                    </button>
+                    <div class="tooltip tooltip-black tooltip-xs">
+                        <span>${escapeHtml(configuratorLabel)}</span>
+                    </div>
+                </span>
+                <span class="tooltip-wrapper shrink-0">
+                    <button
+                        type="button"
+                        class="btn btn-secondary btn-icon btn-xs shrink-0"
+                        data-explorer-action="repair"
+                        data-reference="${escapeHtml(row.reference || "")}"
+                        aria-label="${escapeHtml(repairLabel)}"
+                    >
+                        <i class="ri-hammer-line text-icon-md" aria-hidden="true"></i>
+                    </button>
+                    <div class="tooltip tooltip-black tooltip-xs">
+                        <span>${escapeHtml(repairLabel)}</span>
+                    </div>
+                </span>
+            </div>
+        </div>
+    `;
+}
+
+function handleExplorerRowActionClick(trigger) {
+    const action = String(trigger?.dataset?.explorerAction || "").trim();
+    const reference = String(trigger?.dataset?.reference || "").trim();
+
+    if (!action || !reference) {
+        return;
+    }
+
+    if (action === "datasheet") {
+        window.open(getExplorerConfiguratorUrl(reference, true), "_blank", "noopener");
+        return;
+    }
+
+    if (action === "configurator") {
+        window.location.href = getExplorerConfiguratorUrl(reference, false);
+        return;
+    }
+
+    if (action === "repair") {
+        window.location.href = getExplorerCodeRepairUrl(reference);
+    }
 }
 
 function renderDetail() {
@@ -3525,7 +3704,19 @@ function syncExplorerTableHeadColumns() {
     }
 
     const widths = Array.from(firstRow.cells)
-        .map((cell) => Math.ceil(cell.getBoundingClientRect().width))
+        .map((cell, index, cells) => {
+            if (index === cells.length - 1) {
+                const actions = cell.querySelector(".data-table-actions");
+
+                if (actions) {
+                    const cellStyles = window.getComputedStyle(cell);
+                    const paddingInline = (Number.parseFloat(cellStyles.paddingLeft) || 0) + (Number.parseFloat(cellStyles.paddingRight) || 0);
+                    return Math.ceil(actions.getBoundingClientRect().width + paddingInline);
+                }
+            }
+
+            return Math.ceil(cell.getBoundingClientRect().width);
+        })
         .filter((width) => width > 0);
 
     if (widths.length !== firstRow.cells.length) {
@@ -3686,8 +3877,14 @@ function applyPageStatusState() {
         return;
     }
 
+    const message = t(pageStatusState.key, pageStatusState.vars, pageStatusState.fallback);
+
+    if (pageStatusState.tone === "loading") {
+        setExplorerLoadingOverlayMessage(message);
+    }
+
     applyStatusText(
-        t(pageStatusState.key, pageStatusState.vars, pageStatusState.fallback),
+        message,
         pageStatusState.tone,
         pageStatusState.key
     );

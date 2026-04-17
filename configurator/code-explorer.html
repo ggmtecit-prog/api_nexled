@@ -227,12 +227,11 @@
                                 <label id="explorer-search-label" class="input-label ml-12" for="explorer-search" data-i18n="codeExplorer.searchInputLabel">Search</label>
                                 <textarea id="explorer-search" class="input input-sm min-h-120 resize-y" rows="5" placeholder="Enter one code or description per line" data-i18n-placeholder="codeExplorer.searchInputPlaceholder"></textarea>
                                 <p id="explorer-search-hint" class="text-body-xs text-grey-primary" data-i18n="codeExplorer.searchInputHint">Paste one or many items. Use one line per code or description. Commas, semicolons, and tabs also work.</p>
-                                <div id="explorer-search-tokens-wrap" class="hidden flex flex-col gap-8">
+                                <div id="explorer-search-tokens-wrap" class="hidden">
                                     <div class="flex flex-wrap items-center gap-8">
                                         <span class="input-label" data-i18n="codeExplorer.searchParsedLabel">Detected searches</span>
                                         <span id="explorer-search-token-count" class="badge badge-neutral badge-sm">0</span>
                                     </div>
-                                    <div id="explorer-search-tokens" class="flex flex-wrap gap-8"></div>
                                 </div>
                             </div>
                             <div id="explorer-family-field" class="hidden">
@@ -414,14 +413,14 @@
                         <div class="xl:col-span-12">
                             <div class="card overflow-hidden">
                                 <div id="explorer-results-card-body" class="card-body flex flex-col gap-16">
-                                    <div class="flex flex-col gap-12 lg:flex-row lg:items-center lg:justify-start lg:gap-16">
+                                    <div class="flex flex-col gap-12 lg:flex-row lg:items-center lg:justify-between lg:gap-16">
                                         <div id="explorer-results-title" class="shrink-0">
                                             <h2 class="text-h2 text-black flex items-center gap-8">
                                                 <span data-i18n="codeExplorer.summaryTotal">Total codes</span>
                                                 <span id="summary-total">0</span>
                                             </h2>
                                         </div>
-                                        <div id="explorer-summary-badges" class="hidden flex flex-wrap items-center gap-12 lg:justify-start">
+                                        <div id="explorer-summary-badges" class="hidden flex flex-wrap items-center gap-12 lg:justify-end">
                                             <div class="badge badge-primary badge-md">
                                                 <span data-i18n="codeExplorer.summaryConfigurator">Configurator valid</span>
                                                 <span id="summary-configurator">0</span>
@@ -439,7 +438,7 @@
                                                 <span id="summary-blocked">0</span>
                                             </div>
                                         </div>
-                                        <div id="explorer-batch-summary-badges" class="hidden flex flex-wrap items-center gap-12 lg:justify-start">
+                                        <div id="explorer-batch-summary-badges" class="hidden flex flex-wrap items-center gap-12 lg:justify-end">
                                             <div class="badge badge-neutral badge-lg">
                                                 <span data-i18n="codeExplorer.batchSummaryQueries">Queries</span>
                                                 <span id="batch-summary-total-queries">0</span>
@@ -504,9 +503,14 @@
                                                         <span class="data-table-heading-label" data-i18n="codeExplorer.tableFailure">Failure</span>
                                                     </div>
                                                 </div>
+                                                <div class="data-table-heading" role="columnheader">
+                                                    <div class="data-table-heading-content">
+                                                        <span class="data-table-heading-label" data-i18n="codeExplorer.tableActions">Actions</span>
+                                                    </div>
+                                                </div>
                                             </div>
                                             <div class="data-table-wrap custom-scrollbar">
-                                                <table class="data-table-table min-w-max">
+                                                <table class="data-table-table w-full">
                                                     <thead class="sr-only">
                                                         <tr>
                                                             <th scope="col" data-i18n="codeExplorer.tableReference">Reference</th>
@@ -515,6 +519,7 @@
                                                             <th scope="col" data-i18n="codeExplorer.tableConfigurator">Configurator</th>
                                                             <th scope="col" data-i18n="codeExplorer.tableDatasheet">Datasheet</th>
                                                             <th scope="col" data-i18n="codeExplorer.tableFailure">Failure</th>
+                                                            <th scope="col" data-i18n="codeExplorer.tableActions">Actions</th>
                                                         </tr>
                                                     </thead>
                                                     <tbody id="explorer-rows"></tbody>
@@ -522,30 +527,29 @@
                                             </div>
                                         </div>
                                         <div id="explorer-batch-results" class="hidden flex flex-col gap-12"></div>
+                                        <div id="explorer-pagination-wrap" class="hidden flex justify-center">
+                                            <nav id="explorer-pagination" class="pagination inline-flex w-fit max-w-full" data-pagination data-pagination-bound="true" aria-label="Results pagination">
+                                                <button id="explorer-prev" type="button" class="pagination-link pagination-prev" data-pagination-prev aria-label="Previous page" disabled>
+                                                    <i class="ri-arrow-left-s-line text-icon-md" aria-hidden="true"></i>
+                                                    <span data-i18n="codeExplorer.paginationPrev">Prev</span>
+                                                </button>
+                                                <ol id="explorer-pagination-list" class="pagination-list">
+                                                    <li class="pagination-item">
+                                                        <button type="button" class="pagination-link" data-page="1" aria-current="page">1</button>
+                                                    </li>
+                                                </ol>
+                                                <button id="explorer-next" type="button" class="pagination-link pagination-next" data-pagination-next aria-label="Next page" disabled>
+                                                    <span data-i18n="codeExplorer.paginationNext">Next</span>
+                                                    <i class="ri-arrow-right-s-line text-icon-md" aria-hidden="true"></i>
+                                                </button>
+                                            </nav>
+                                        </div>
 
                                     </div>
                                 </div>
                             </div>
                         </div>
                     </section>
-
-                    <div id="explorer-pagination-wrap" class="hidden flex justify-end">
-                        <nav id="explorer-pagination" class="pagination" data-pagination data-pagination-bound="true" aria-label="Results pagination">
-                            <button id="explorer-prev" type="button" class="pagination-link pagination-prev" data-pagination-prev aria-label="Previous page" disabled>
-                                <i class="ri-arrow-left-s-line text-icon-md" aria-hidden="true"></i>
-                                <span data-i18n="codeExplorer.paginationPrev">Prev</span>
-                            </button>
-                            <ol id="explorer-pagination-list" class="pagination-list">
-                                <li class="pagination-item">
-                                    <button type="button" class="pagination-link" data-page="1" aria-current="page">1</button>
-                                </li>
-                            </ol>
-                            <button id="explorer-next" type="button" class="pagination-link pagination-next" data-pagination-next aria-label="Next page" disabled>
-                                <span data-i18n="codeExplorer.paginationNext">Next</span>
-                                <i class="ri-arrow-right-s-line text-icon-md" aria-hidden="true"></i>
-                            </button>
-                        </nav>
-                    </div>
                 </div>
             </section>
 
@@ -719,10 +723,24 @@
         </div>
     </div>
 
+    <div class="modal-overlay" id="explorer-loading-overlay" aria-hidden="true" inert>
+        <div id="explorer-loading-status" class="flex flex-col items-center justify-center m-auto" role="status" aria-live="polite" aria-busy="true">
+            <div class="flex flex-col items-center justify-center gap-16 text-center">
+                <div class="spinner spinner-white spinner-lg" aria-hidden="true">
+                    <svg class="w-full h-full" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+                        <path class="spinner-track" d="M 50 5 L 75 5 A 20 20 0 0 1 95 25 L 95 75 A 20 20 0 0 1 75 95 L 25 95 A 20 20 0 0 1 5 75 L 5 25 A 20 20 0 0 1 25 5 L 50 5 Z" />
+                        <path class="spinner-anim" d="M 50 5 L 75 5 A 20 20 0 0 1 95 25 L 95 75 A 20 20 0 0 1 75 95 L 25 95 A 20 20 0 0 1 5 75 L 5 25 A 20 20 0 0 1 25 5 L 50 5 Z" />
+                    </svg>
+                </div>
+                <p id="explorer-loading-copy" class="text-body-lg text-white" data-i18n="codeExplorer.runtime.loadingRows">Loading family codes...</p>
+            </div>
+        </div>
+    </div>
+
     <script src="locales/en.js?v=20260417-detail-toggle"></script>
     <script src="locales/pt.js?v=20260417-detail-toggle"></script>
     <script src="i18n.js?v=20260414-code-explorer"></script>
     <script src="app-shell.js?v=20260414-code-explorer"></script>
-    <script src="code-explorer.js?v=20260417-batch-search"></script>
+    <script src="code-explorer.js?v=20260417-search-loading-overlay"></script>
 </body>
 </html>
