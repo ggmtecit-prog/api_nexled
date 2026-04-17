@@ -330,7 +330,7 @@ async function loadCodeRepairContext(reference, options = {}) {
         codeRepairState.data = payload;
         codeRepairState.loadedLanguage = getCodeRepairLanguage();
         codeRepairElements.referenceInput.value = codeRepairState.reference;
-        history.replaceState({}, "", "code-editor.html?reference=" + encodeURIComponent(codeRepairState.reference));
+        history.replaceState({}, "", "code-repair.html?reference=" + encodeURIComponent(codeRepairState.reference));
         setCodeRepairApiBadge("success", "shared.badge.apiReady", "API ready");
         setCodeRepairRuntimeStatus(getCodeRepairLoadedMessage(payload), getCodeRepairLoadedTone(payload));
     } catch (error) {
@@ -365,7 +365,9 @@ async function checkCodeRepairApiHealth() {
 
     try {
         const payload = await codeRepairApiRequest("/?endpoint=health");
-        if (payload?.ok) {
+        const damReady = payload?.services?.dam !== false;
+
+        if (payload?.ok && damReady) {
             setCodeRepairApiBadge("success", "shared.badge.apiReady", "API ready");
         } else {
             setCodeRepairApiBadge("warning", "shared.badge.apiDegraded", "API degraded");
@@ -1768,11 +1770,17 @@ async function codeRepairApiRequest(path, options = {}) {
 }
 
 function getCodeRepairApiBase() {
-    const hostname = String(window.location.hostname || "").toLowerCase();
+    const protocol = String(window.location.protocol || "").toLowerCase();
+    const origin = String(window.location.origin || "").trim();
+    const pathname = String(window.location.pathname || "");
 
-    if (hostname === "localhost" || hostname === "127.0.0.1") {
-        const projectBase = window.location.pathname.replace(/\/configurator\/[^/]+$/, "");
-        return window.location.origin + projectBase + "/api";
+    if (
+        (protocol === "http:" || protocol === "https:")
+        && origin !== ""
+        && /\/configurator\/[^/]+$/.test(pathname)
+    ) {
+        const projectBase = pathname.replace(/\/configurator\/[^/]+$/, "");
+        return origin + (projectBase || "") + "/api";
     }
 
     return CODE_REPAIR_DEFAULT_API_BASE.replace(/\/+$/, "");

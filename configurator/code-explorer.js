@@ -2984,7 +2984,7 @@ function getExplorerCodeRepairUrl(reference) {
         reference,
     });
 
-    return `code-editor.html?${params.toString()}`;
+    return `code-repair.html?${params.toString()}`;
 }
 
 function buildExplorerRowActions(row) {
