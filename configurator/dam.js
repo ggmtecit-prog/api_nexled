@@ -3,6 +3,7 @@ const DAM_I18N_EVENT = "nexled:i18n-applied";
 const DAM_ROOT_FOLDER_ID = "nexled";
 const DAM_DEFAULT_FOLDER_ID = "nexled/datasheet";
 const DAM_ROLE_OPTIONS = ["packshot", "finish", "drawing", "diagram", "diagram-inv", "mounting", "connector", "temperature", "energy-label", "icon", "logo", "power-supply", "product-photo", "lifestyle", "datasheet-pdf", "eprel-label", "eprel-fiche", "brand-logo", "brand-asset", "hero", "banner", "category", "support-asset", "web-asset"];
+const DAM_GRID_THUMB_TRANSFORM = "c_fit,w_240,h_240,dpr_auto,f_auto,q_auto";
 
 const damState = {
     tree: [],
@@ -17,6 +18,8 @@ const damState = {
     selectedAssetLinkActionBusy: false,
     searchQuery: "",
     createFolderParentId: "",
+    treeErrorMessage: "",
+    folderErrorMessage: "",
 };
 
 let treeRequestToken = 0;
@@ -54,6 +57,7 @@ window.addEventListener(DAM_I18N_EVENT, () => {
 function getDamElements() {
     const fileGrid = document.getElementById("fileGrid");
     const emptyState = document.getElementById("emptyState");
+    const emptyStateLabel = document.querySelector("[data-dam-empty-state-label]");
     const searchInput = document.getElementById("searchInput");
     const breadcrumb = document.querySelector("[data-dam-breadcrumb]");
     const rootDropdown = document.querySelector("[data-dam-root-dropdown]");
@@ -92,13 +96,14 @@ function getDamElements() {
     const copyAssetUrlButton = document.querySelector("[data-dam-copy-asset-url]");
     const assetStatus = document.querySelector("[data-dam-asset-status]");
 
-    if (!fileGrid || !emptyState || !searchInput || !breadcrumb || !rootDropdown || !rootValue || !rootMenu || !refreshTreeButton || !openCreateFolderButton || !createFolderModal || !createFolderInput || !createFolderParentDropdown || !createFolderParentValue || !createFolderParentMenu || !createFolderButton || !folderActionStatus || !uploadTrigger || !uploadInput || !uploadStatus || !assetModal || !assetModalPanel || !closeAssetModalButton || !assetPreview || !emptyAsset || !assetName || !assetType || !assetSize || !assetFormat || !assetFolder || !linkFamilyCodeInput || !linkProductCodeInput || !linkRoleSelect || !linkSortOrderInput || !linkSubmitButton || !linksList || !emptyLinks || !openAssetButton || !copyAssetUrlButton || !assetStatus) {
+    if (!fileGrid || !emptyState || !emptyStateLabel || !searchInput || !breadcrumb || !rootDropdown || !rootValue || !rootMenu || !refreshTreeButton || !openCreateFolderButton || !createFolderModal || !createFolderInput || !createFolderParentDropdown || !createFolderParentValue || !createFolderParentMenu || !createFolderButton || !folderActionStatus || !uploadTrigger || !uploadInput || !uploadStatus || !assetModal || !assetModalPanel || !closeAssetModalButton || !assetPreview || !emptyAsset || !assetName || !assetType || !assetSize || !assetFormat || !assetFolder || !linkFamilyCodeInput || !linkProductCodeInput || !linkRoleSelect || !linkSortOrderInput || !linkSubmitButton || !linksList || !emptyLinks || !openAssetButton || !copyAssetUrlButton || !assetStatus) {
         return null;
     }
 
     return {
         fileGrid,
         emptyState,
+        emptyStateLabel,
         searchInput,
         breadcrumb,
         rootDropdown,
@@ -246,6 +251,8 @@ async function loadDamTree(preserveSelection = true) {
         }
 
         damState.tree = Array.isArray(response?.data?.folders) ? response.data.folders : [];
+        damState.treeErrorMessage = "";
+        damState.folderErrorMessage = "";
         renderRootDropdown();
 
         const nextFolderId = resolveInitialFolderId(preserveSelection);
@@ -263,6 +270,7 @@ async function loadDamTree(preserveSelection = true) {
         updateFolderSummary();
         renderDamList();
         syncFolderActionButtons();
+        setFolderActionStatus("");
     } catch (error) {
         console.error(error);
 
@@ -270,16 +278,20 @@ async function loadDamTree(preserveSelection = true) {
             return;
         }
 
+        const message = getDamErrorMessage(error, t("dam.treeLoadFailed", "Unable to load folders."));
         damState.tree = [];
         damState.currentFolderId = "";
         damState.currentFolder = null;
         damState.folders = [];
         damState.assets = [];
+        damState.treeErrorMessage = message;
+        damState.folderErrorMessage = message;
         clearSelectedAsset();
         renderRootDropdown();
         renderDamList();
         updateFolderSummary();
         syncFolderActionButtons();
+        setFolderActionStatus(message);
     }
 }
 
@@ -310,10 +322,12 @@ async function loadDamFolder(folderId) {
         damState.currentFolder = response?.data?.folder || null;
         damState.folders = Array.isArray(response?.data?.folders) ? response.data.folders : [];
         damState.assets = Array.isArray(response?.data?.assets) ? response.data.assets : [];
+        damState.folderErrorMessage = "";
         updateFolderSummary();
         renderRootDropdown();
         renderDamList();
         syncFolderActionButtons();
+        setFolderActionStatus("");
     } catch (error) {
         console.error(error);
 
@@ -321,6 +335,7 @@ async function loadDamFolder(folderId) {
             return;
         }
 
+        const message = getDamErrorMessage(error, t("dam.folderLoadFailed", "Unable to load folder contents."));
         damState.currentFolder = {
             id: folderId,
             name: folderId.split("/").pop() || folderId,
@@ -331,10 +346,12 @@ async function loadDamFolder(folderId) {
         };
         damState.folders = [];
         damState.assets = [];
+        damState.folderErrorMessage = message;
         updateFolderSummary();
         renderRootDropdown();
         renderDamList();
         syncFolderActionButtons();
+        setFolderActionStatus(message);
     }
 }
 
@@ -697,7 +714,7 @@ function renderRootDropdown() {
     damElements.rootMenu.innerHTML = "";
 
     if (rootFolders.length === 0) {
-        damElements.rootValue.textContent = t("dam.loadingFolders", "Loading folders...");
+        damElements.rootValue.textContent = damState.treeErrorMessage || t("dam.loadingFolders", "Loading folders...");
         damElements.rootDropdown.classList.remove("has-value");
         return;
     }
@@ -755,8 +772,12 @@ function renderDamList() {
         return;
     }
 
+    clearDamCardHeights();
+
     damElements.fileGrid.innerHTML = "";
     const itemCount = damState.folders.length + damState.assets.length;
+    const emptyMessage = damState.folderErrorMessage || damState.treeErrorMessage || t("dam.emptyFolder", "This folder is empty");
+    damElements.emptyStateLabel.textContent = emptyMessage;
 
     if (itemCount === 0) {
         damElements.emptyState.classList.remove("hidden");
@@ -774,6 +795,11 @@ function renderDamList() {
     });
 
     damElements.fileGrid.appendChild(fragment);
+}
+
+function clearDamCardHeights() {
+    document.querySelector("[data-dam-main-card]")?.style.removeProperty("min-height");
+    document.querySelector("[data-dam-side-card]")?.style.removeProperty("min-height");
 }
 
 function createFolderCard(folder) {
@@ -807,9 +833,7 @@ function createAssetCard(asset) {
         selectAssetById(asset.id);
     });
 
-    const icon = document.createElement("i");
-    icon.className = getAssetIconClass(asset) + " text-icon-xxl text-grey-primary";
-    icon.setAttribute("aria-hidden", "true");
+    const preview = createAssetGridPreview(asset);
 
     const name = document.createElement("span");
     name.className = "text-body-sm text-center leading-tight text-grey-primary break-all";
@@ -828,10 +852,62 @@ function createAssetCard(asset) {
         openAssetDetailsModal(asset.id, triggerButton);
     }));
 
-    wrapper.appendChild(icon);
+    wrapper.appendChild(preview);
     wrapper.appendChild(name);
     wrapper.appendChild(overlay);
     return wrapper;
+}
+
+function createAssetGridPreview(asset) {
+    const preview = document.createElement("div");
+    preview.className = "relative flex w-full items-center justify-center overflow-hidden rounded-8";
+    preview.style.aspectRatio = "1 / 1";
+    preview.style.minHeight = "120px";
+    preview.style.backgroundColor = "rgba(15, 23, 42, 0.03)";
+
+    const fallback = createAssetGridPreviewFallback(asset);
+    preview.appendChild(fallback);
+
+    const thumbnailUrl = resolveAssetThumbnailUrl(asset);
+    if (!thumbnailUrl) {
+        return preview;
+    }
+
+    fallback.hidden = true;
+
+    const image = document.createElement("img");
+    image.src = thumbnailUrl;
+    image.alt = asset.display_name || asset.filename || "Asset thumbnail";
+    image.className = "h-full w-full object-contain";
+    image.loading = "lazy";
+    image.decoding = "async";
+    image.fetchPriority = "low";
+    image.width = 240;
+    image.height = 240;
+
+    image.addEventListener("load", () => {
+        fallback.hidden = true;
+    });
+
+    image.addEventListener("error", () => {
+        image.remove();
+        fallback.hidden = false;
+    });
+
+    preview.appendChild(image);
+    return preview;
+}
+
+function createAssetGridPreviewFallback(asset) {
+    const fallback = document.createElement("div");
+    fallback.className = "flex h-full w-full items-center justify-center rounded-8";
+
+    const icon = document.createElement("i");
+    icon.className = getAssetIconClass(asset) + " text-icon-xxl text-grey-primary";
+    icon.setAttribute("aria-hidden", "true");
+
+    fallback.appendChild(icon);
+    return fallback;
 }
 
 function createAssetActionButton(iconClass, label, handler, disabled = false) {
@@ -1489,6 +1565,45 @@ function formatDamRoleLabel(role) {
         .filter(Boolean)
         .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
         .join(" ");
+}
+
+function resolveAssetThumbnailUrl(asset) {
+    const explicitThumbnailUrl = normalizeDamAssetUrl(asset?.thumbnail_url);
+    const secureUrl = normalizeDamAssetUrl(asset?.secure_url);
+
+    if (String(asset?.resource_type || "").toLowerCase() !== "image") {
+        return "";
+    }
+
+    if (explicitThumbnailUrl && explicitThumbnailUrl !== secureUrl) {
+        return explicitThumbnailUrl;
+    }
+
+    return buildCloudinaryThumbnailUrl(secureUrl);
+}
+
+function normalizeDamAssetUrl(value) {
+    return typeof value === "string" ? value.trim() : "";
+}
+
+function buildCloudinaryThumbnailUrl(url) {
+    if (!url) {
+        return "";
+    }
+
+    const uploadMarker = "/image/upload/";
+    const parts = url.split(uploadMarker);
+
+    if (parts.length !== 2) {
+        return url;
+    }
+
+    const [base, remainder] = parts;
+    if (!remainder || !remainder.startsWith("v")) {
+        return url;
+    }
+
+    return base + uploadMarker + DAM_GRID_THUMB_TRANSFORM + "/" + remainder;
 }
 
 function syncRootDropdownSelection(folderId) {

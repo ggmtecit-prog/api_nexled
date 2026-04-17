@@ -84,6 +84,15 @@
                             </a>
                         </div>
                         <div class="dropdown dropdown-minimal dropdown-md">
+                            <a href="code-editor.html" class="dropdown-trigger">
+                                <span class="flex items-center gap-8">
+                                    <i class="ri-hammer-line text-icon-md" aria-hidden="true"></i>
+                                    <span class="dropdown-value" data-i18n="shared.nav.codeRepair">Code Repair</span>
+                                </span>
+                                <i class="ri-arrow-right-s-line dropdown-arrow" aria-hidden="true"></i>
+                            </a>
+                        </div>
+                        <div class="dropdown dropdown-minimal dropdown-md">
                             <a href="dam.html" class="dropdown-trigger">
                                 <span class="flex items-center gap-8">
                                     <i class="ri-folder-line text-icon-md" aria-hidden="true"></i>
@@ -161,6 +170,15 @@
                                 <span class="flex items-center gap-8">
                                     <i class="ri-table-line text-icon-md" aria-hidden="true"></i>
                                     <span class="dropdown-value" data-i18n="shared.nav.codeExplorer">Code Explorer</span>
+                                </span>
+                                <i class="ri-arrow-right-s-line dropdown-arrow" aria-hidden="true"></i>
+                            </a>
+                        </div>
+                        <div class="dropdown dropdown-minimal dropdown-sm">
+                            <a href="code-editor.html" class="dropdown-trigger">
+                                <span class="flex items-center gap-8">
+                                    <i class="ri-hammer-line text-icon-md" aria-hidden="true"></i>
+                                    <span class="dropdown-value" data-i18n="shared.nav.codeRepair">Code Repair</span>
                                 </span>
                                 <i class="ri-arrow-right-s-line dropdown-arrow" aria-hidden="true"></i>
                             </a>
@@ -581,7 +599,7 @@
                             </div>
                             <div class="flex flex-col gap-4">
                                 <span class="text-label text-grey-primary" data-i18n="configurator.tecitCodeLogicPatternLabel">Reference Pattern</span>
-                                <code class="text-body font-mono text-black break-all" data-i18n="configurator.tecitCodeLogicPattern">11 | 0375 | 81 | 1 | 1 | 0 | 01 | 01 | 00</code>
+                                <code class="text-body text-black break-all" data-i18n="configurator.tecitCodeLogicPattern">11 | 0375 | 81 | 1 | 1 | 0 | 01 | 01 | 00</code>
                             </div>
                         </div>
                     </div>
@@ -595,15 +613,15 @@
                             <div id="tecitCodeLogicLegendPanel" class="accordion-content" role="region" aria-labelledby="tecitCodeLogicLegendTrigger">
                                 <div class="accordion-body">
                                     <dl class="list list-spec list-md panel border-0 bg-transparent">
-                                        <div class="list-item"><dt class="list-key"><code class="text-body font-mono">11</code></dt><dd class="list-value" data-i18n="configurator.tecitCodeLogicFamily">Family (2 chars)</dd></div>
-                                        <div class="list-item"><dt class="list-key"><code class="text-body font-mono">0375</code></dt><dd class="list-value" data-i18n="configurator.tecitCodeLogicSize">Size (4 chars)</dd></div>
-                                        <div class="list-item"><dt class="list-key"><code class="text-body font-mono">81</code></dt><dd class="list-value" data-i18n="configurator.tecitCodeLogicColor">Color (2 chars)</dd></div>
-                                        <div class="list-item"><dt class="list-key"><code class="text-body font-mono">1</code></dt><dd class="list-value" data-i18n="configurator.tecitCodeLogicCri">CRI (1 char)</dd></div>
-                                        <div class="list-item"><dt class="list-key"><code class="text-body font-mono">1</code></dt><dd class="list-value" data-i18n="configurator.tecitCodeLogicSeries">Series (1 char)</dd></div>
-                                        <div class="list-item"><dt class="list-key"><code class="text-body font-mono">0</code></dt><dd class="list-value" data-i18n="configurator.tecitCodeLogicLens">Lens (1 char)</dd></div>
-                                        <div class="list-item"><dt class="list-key"><code class="text-body font-mono">01</code></dt><dd class="list-value" data-i18n="configurator.tecitCodeLogicFinish">Finish (2 chars)</dd></div>
-                                        <div class="list-item"><dt class="list-key"><code class="text-body font-mono">01</code></dt><dd class="list-value" data-i18n="configurator.tecitCodeLogicCap">Cap (2 chars)</dd></div>
-                                        <div class="list-item"><dt class="list-key"><code class="text-body font-mono">00</code></dt><dd class="list-value" data-i18n="configurator.tecitCodeLogicOption">Option (2 chars)</dd></div>
+                                        <div class="list-item"><dt class="list-key"><code class="text-body">11</code></dt><dd class="list-value" data-i18n="configurator.tecitCodeLogicFamily">Family (2 chars)</dd></div>
+                                        <div class="list-item"><dt class="list-key"><code class="text-body">0375</code></dt><dd class="list-value" data-i18n="configurator.tecitCodeLogicSize">Size (4 chars)</dd></div>
+                                        <div class="list-item"><dt class="list-key"><code class="text-body">81</code></dt><dd class="list-value" data-i18n="configurator.tecitCodeLogicColor">Color (2 chars)</dd></div>
+                                        <div class="list-item"><dt class="list-key"><code class="text-body">1</code></dt><dd class="list-value" data-i18n="configurator.tecitCodeLogicCri">CRI (1 char)</dd></div>
+                                        <div class="list-item"><dt class="list-key"><code class="text-body">1</code></dt><dd class="list-value" data-i18n="configurator.tecitCodeLogicSeries">Series (1 char)</dd></div>
+                                        <div class="list-item"><dt class="list-key"><code class="text-body">0</code></dt><dd class="list-value" data-i18n="configurator.tecitCodeLogicLens">Lens (1 char)</dd></div>
+                                        <div class="list-item"><dt class="list-key"><code class="text-body">01</code></dt><dd class="list-value" data-i18n="configurator.tecitCodeLogicFinish">Finish (2 chars)</dd></div>
+                                        <div class="list-item"><dt class="list-key"><code class="text-body">01</code></dt><dd class="list-value" data-i18n="configurator.tecitCodeLogicCap">Cap (2 chars)</dd></div>
+                                        <div class="list-item"><dt class="list-key"><code class="text-body">00</code></dt><dd class="list-value" data-i18n="configurator.tecitCodeLogicOption">Option (2 chars)</dd></div>
                                     </dl>
                                 </div>
                             </div>
@@ -617,10 +635,10 @@
                             <div id="tecitCodeLogicExamplesPanel" class="accordion-content" role="region" aria-labelledby="tecitCodeLogicExamplesTrigger">
                                 <div class="accordion-body">
                                     <dl class="list list-spec list-md panel border-0 bg-transparent">
-                                        <div class="list-item"><dt class="list-key" data-i18n="configurator.tecitCodeLogicExampleBarra">Barra sample</dt><dd class="list-value"><code class="text-body font-mono break-all">11037581110010100</code></dd></div>
-                                        <div class="list-item"><dt class="list-key" data-i18n="configurator.tecitCodeLogicExampleBarraLens">Barra sample with lens</dt><dd class="list-value"><code class="text-body font-mono break-all">11007502111010100</code></dd></div>
-                                        <div class="list-item"><dt class="list-key" data-i18n="configurator.tecitCodeLogicExampleDownlight">Downlight sample</dt><dd class="list-value"><code class="text-body font-mono break-all">29012022191010000</code></dd></div>
-                                        <div class="list-item"><dt class="list-key" data-i18n="configurator.tecitCodeLogicExampleDynamic">Dynamic sample</dt><dd class="list-value"><code class="text-body font-mono break-all">48007002110010000</code></dd></div>
+                                        <div class="list-item"><dt class="list-key" data-i18n="configurator.tecitCodeLogicExampleBarra">Barra sample</dt><dd class="list-value"><code class="text-body break-all">11037581110010100</code></dd></div>
+                                        <div class="list-item"><dt class="list-key" data-i18n="configurator.tecitCodeLogicExampleBarraLens">Barra sample with lens</dt><dd class="list-value"><code class="text-body break-all">11007502111010100</code></dd></div>
+                                        <div class="list-item"><dt class="list-key" data-i18n="configurator.tecitCodeLogicExampleDownlight">Downlight sample</dt><dd class="list-value"><code class="text-body break-all">29012022191010000</code></dd></div>
+                                        <div class="list-item"><dt class="list-key" data-i18n="configurator.tecitCodeLogicExampleDynamic">Dynamic sample</dt><dd class="list-value"><code class="text-body break-all">48007002110010000</code></dd></div>
                                     </dl>
                                 </div>
                             </div>
@@ -692,6 +710,6 @@
     <script src="locales/pt.js?v=20260415-tecit-length"></script>
     <script src="i18n.js?v=20260414-code-explorer"></script>
     <script src="app-shell.js?v=20260414-code-explorer"></script>
-    <script src="script.js?v=20260415-tecit-length"></script>
+    <script src="script.js?v=20260417-deep-link-actions"></script>
 </body>
 </html>

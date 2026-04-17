@@ -84,6 +84,15 @@
                             </a>
                         </div>
                         <div class="dropdown dropdown-minimal dropdown-md">
+                            <a href="code-editor.html" class="dropdown-trigger">
+                                <span class="flex items-center gap-8">
+                                    <i class="ri-hammer-line text-icon-md" aria-hidden="true"></i>
+                                    <span class="dropdown-value" data-i18n="shared.nav.codeRepair">Code Repair</span>
+                                </span>
+                                <i class="ri-arrow-right-s-line dropdown-arrow" aria-hidden="true"></i>
+                            </a>
+                        </div>
+                        <div class="dropdown dropdown-minimal dropdown-md">
                             <a href="dam.html" class="dropdown-trigger" aria-current="page">
                                 <span class="flex items-center gap-8">
                                     <i class="ri-folder-line text-icon-md" aria-hidden="true"></i>
@@ -165,6 +174,15 @@
                                 <i class="ri-arrow-right-s-line dropdown-arrow" aria-hidden="true"></i>
                             </a>
                         </div>
+                        <div class="dropdown dropdown-minimal dropdown-sm">
+                            <a href="code-editor.html" class="dropdown-trigger">
+                                <span class="flex items-center gap-8">
+                                    <i class="ri-hammer-line text-icon-md" aria-hidden="true"></i>
+                                    <span class="dropdown-value" data-i18n="shared.nav.codeRepair">Code Repair</span>
+                                </span>
+                                <i class="ri-arrow-right-s-line dropdown-arrow" aria-hidden="true"></i>
+                            </a>
+                        </div>
 
                         <div class="dropdown dropdown-minimal dropdown-sm">
                             <a href="dam.html" class="dropdown-trigger" aria-current="page">
@@ -208,7 +226,7 @@
     </aside>
 
     <div class="flex-1 min-w-0 flex flex-col lg:h-screen overflow-y-auto">
-        <main class="flex-1 px-16 pt-32 pb-32 sm:px-20 sm:pt-40 sm:pb-40 md:px-24 md:pt-48 md:pb-48 lg:pl-16 lg:pr-8 lg:pt-64 lg:pb-64 w-full">
+        <main class="flex-1 px-16 pt-32 pb-32 sm:px-20 sm:pt-40 sm:pb-40 md:px-24 md:pt-48 md:pb-48 lg:px-32 lg:pt-64 lg:pb-64 w-full">
             <h2 class="text-h1 font-medium text-black pb-24 pt-24" data-reveal="hero" data-i18n="dam.heading">
                 DAM Library
             </h2>
@@ -223,18 +241,24 @@
                         <input type="text" id="searchInput" placeholder="Search assets..." class="input-icon-field" aria-label="Search assets" data-i18n-placeholder="dam.searchPlaceholder" data-i18n-aria-label="dam.searchAria">
                     </div>
 
-                    <div class="card overflow-hidden">
+                    <div class="card overflow-hidden" data-dam-main-card>
                         <div class="card-body pt-64">
-                            <div class="flex flex-col gap-16">
-                                <nav aria-label="DAM breadcrumb" class="w-full" data-i18n-aria-label="dam.breadcrumbAria">
+                            <div class="flex flex-col gap-24">
+                                <nav aria-label="DAM breadcrumb" class="w-full px-32" data-i18n-aria-label="dam.breadcrumbAria">
                                     <ol class="breadcrumb" data-dam-breadcrumb></ol>
                                 </nav>
 
                                 <div id="fileGrid" class="grid grid-cols-2 gap-24 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 md:gap-32"></div>
 
-                                <div id="emptyState" class="hidden flex flex-col items-center gap-16 py-64">
-                                    <i class="ri-folder-open-line text-icon-xxl text-grey-quaternary" aria-hidden="true"></i>
-                                    <span class="text-body-md text-grey-secondary" data-i18n="dam.emptyFolder">This folder is empty</span>
+                                <div id="emptyState" class="hidden flex flex-1 items-center justify-center py-64">
+                                    <div class="empty-state empty-state-lg w-full max-w-2xl border-0 bg-transparent" role="status" aria-live="polite">
+                                        <span class="empty-state-icon icon-box icon-box-empty-state">
+                                            <i class="ri-folder-open-line text-icon-lg" aria-hidden="true"></i>
+                                        </span>
+                                        <div class="empty-state-copy">
+                                            <h3 class="empty-state-title" data-dam-empty-state-label data-i18n="dam.emptyFolder">This folder is empty</h3>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -242,24 +266,27 @@
                 </div>
 
                 <div class="flex w-full flex-col gap-24 lg:col-span-3 lg:sticky lg:top-56" data-reveal="section">
-                    <div class="card overflow-visible">
-                        <div class="card-body p-24">
-                            <h3 class="card-title" data-i18n="dam.quickActions">Library Actions</h3>
+                    <div class="card overflow-visible w-full h-full flex flex-col" data-dam-side-card>
+                        <div class="card-body px-24 pt-24 pb-16 h-full flex flex-col">
+                            <div class="flex flex-col gap-24">
+                                <h3 class="card-title" data-i18n="dam.quickActions">Library Actions</h3>
 
-                            <div class="flex items-center gap-12 pt-24">
-                                <div class="dropdown dropdown-sm w-full flex-1 has-value" data-dam-root-dropdown>
-                                    <button type="button" class="dropdown-trigger" aria-haspopup="listbox" aria-expanded="false" aria-label="Select main folder" data-i18n-aria-label="dam.topFolderControl">
-                                        <span class="dropdown-value" data-dam-root-value data-i18n="dam.loadingFolders">Loading folders...</span>
-                                        <i class="ri-arrow-down-s-line dropdown-arrow" aria-hidden="true"></i>
+                                <div class="flex items-center gap-12">
+                                    <div class="dropdown dropdown-sm w-full flex-1 has-value" data-dam-root-dropdown>
+                                        <button type="button" class="dropdown-trigger" aria-haspopup="listbox" aria-expanded="false" aria-label="Select main folder" data-i18n-aria-label="dam.topFolderControl">
+                                            <span class="dropdown-value" data-dam-root-value data-i18n="dam.loadingFolders">Loading folders...</span>
+                                            <i class="ri-arrow-down-s-line dropdown-arrow" aria-hidden="true"></i>
+                                        </button>
+                                        <ul class="dropdown-menu custom-scrollbar" role="listbox" aria-label="Main DAM folders" data-i18n-aria-label="dam.topFolderOptions" data-dam-root-menu></ul>
+                                    </div>
+                                    <button type="button" class="btn btn-secondary btn-sm shrink-0" aria-label="Refresh folders" data-i18n-aria-label="dam.refreshTree" data-dam-refresh-tree>
+                                        <i class="ri-refresh-line text-icon-md" aria-hidden="true"></i>
                                     </button>
-                                    <ul class="dropdown-menu custom-scrollbar" role="listbox" aria-label="Main DAM folders" data-i18n-aria-label="dam.topFolderOptions" data-dam-root-menu></ul>
                                 </div>
-                                <button type="button" class="btn btn-secondary btn-sm shrink-0" aria-label="Refresh folders" data-i18n-aria-label="dam.refreshTree" data-dam-refresh-tree>
-                                    <i class="ri-refresh-line text-icon-md" aria-hidden="true"></i>
-                                </button>
                             </div>
 
-                            <div class="flex flex-col gap-12 pt-24 items-stretch">
+                            <div class="mt-auto flex flex-col gap-12 pt-32 items-stretch">
+                                <span class="text-body-xs text-grey-primary min-h-16" data-dam-upload-status></span>
                                 <button type="button" class="btn btn-secondary btn-sm w-full justify-center" data-modal-target="damCreateFolderModal" data-dam-open-create-folder>
                                     <i class="ri-folder-add-line text-icon-sm" aria-hidden="true"></i>
                                     <span data-i18n="dam.createFolder">Create Folder</span>
@@ -269,11 +296,10 @@
                                     <i class="ri-upload-2-line text-icon-sm" aria-hidden="true"></i>
                                     <span data-i18n="dam.uploadAssets">Upload Assets</span>
                                 </button>
-                                <button type="button" class="btn btn-secondary btn-sm w-full justify-center" data-modal-target="damFolderPolicyModal">
+                                <button type="button" class="btn btn-ghost btn-sm w-full justify-center" data-modal-target="damFolderPolicyModal">
                                     <i class="ri-information-line text-icon-sm" aria-hidden="true"></i>
                                     <span data-i18n="dam.folderPolicyButton">Folder Policy</span>
                                 </button>
-                                <span class="text-body-xs text-grey-primary min-h-16" data-dam-upload-status></span>
                             </div>
                         </div>
                     </div>
@@ -288,7 +314,7 @@
                 <div>
                     <h2 id="damAssetDetailsTitle" class="modal-title" data-i18n="dam.assetDetails">Asset Details</h2>
                 </div>
-                <button type="button" class="btn btn-secondary btn-icon btn-xs" aria-label="Close asset details" data-i18n-aria-label="dam.closeAssetDetails" data-dam-close-asset-modal>
+                <button type="button" class="btn btn-ghost btn-icon btn-xs" aria-label="Close asset details" data-i18n-aria-label="dam.closeAssetDetails" data-dam-close-asset-modal>
                     <i class="ri-close-line text-icon-md" aria-hidden="true"></i>
                 </button>
             </div>
@@ -302,26 +328,28 @@
                         </div>
                     </div>
 
-                    <div class="flex flex-col gap-8">
-                        <div class="flex flex-col gap-2">
-                            <span class="input-label" data-i18n="dam.assetName">Asset Name</span>
-                            <span class="text-body-sm text-black break-all" data-dam-asset-name>-</span>
-                        </div>
-                        <div class="flex flex-col gap-2">
-                            <span class="input-label" data-i18n="dam.assetType">Asset Type</span>
-                            <span class="text-body-sm text-black break-all" data-dam-asset-type>-</span>
-                        </div>
-                        <div class="flex flex-col gap-2">
-                            <span class="input-label" data-i18n="dam.assetSize">File Size</span>
-                            <span class="text-body-sm text-black break-all" data-dam-asset-size>-</span>
-                        </div>
-                        <div class="flex flex-col gap-2">
-                            <span class="input-label" data-i18n="dam.assetFormat">Format</span>
-                            <span class="text-body-sm text-black break-all" data-dam-asset-format>-</span>
-                        </div>
-                        <div class="flex flex-col gap-2">
-                            <span class="input-label" data-i18n="dam.assetFolderPath">Folder Path</span>
-                            <span class="text-body-sm text-black break-all" data-dam-asset-folder>-</span>
+                    <div class="panel border-0 bg-transparent">
+                        <div class="list list-spec list-md">
+                            <div class="list-item">
+                                <span class="list-key" data-i18n="dam.assetName">Asset Name</span>
+                                <span class="list-value break-all" data-dam-asset-name>-</span>
+                            </div>
+                            <div class="list-item">
+                                <span class="list-key" data-i18n="dam.assetType">Asset Type</span>
+                                <span class="list-value break-all" data-dam-asset-type>-</span>
+                            </div>
+                            <div class="list-item">
+                                <span class="list-key" data-i18n="dam.assetSize">File Size</span>
+                                <span class="list-value break-all" data-dam-asset-size>-</span>
+                            </div>
+                            <div class="list-item">
+                                <span class="list-key" data-i18n="dam.assetFormat">Format</span>
+                                <span class="list-value break-all" data-dam-asset-format>-</span>
+                            </div>
+                            <div class="list-item">
+                                <span class="list-key" data-i18n="dam.assetFolderPath">Folder Path</span>
+                                <span class="list-value break-all" data-dam-asset-folder>-</span>
+                            </div>
                         </div>
                     </div>
 
@@ -455,11 +483,6 @@
                 </div>
             </div>
 
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary btn-sm" data-close-modal data-modal-initial-focus>
-                    <span data-i18n="dam.folderPolicyCloseAction">Close</span>
-                </button>
-            </div>
         </div>
     </div>
 

@@ -114,6 +114,10 @@ let statusToastTimers = {
     dismiss: null,
     hide: null,
 };
+let configuratorDeepLinkState = {
+    applied: false,
+    loading: false,
+};
 
 document.addEventListener("DOMContentLoaded", () => {
     try {
@@ -1321,6 +1325,7 @@ async function loadFamilies() {
         }
 
         setStatusKey("configurator.runtime.chooseFamilyToBegin", "neutral", {}, "Choose a family to begin.");
+        void applyConfiguratorDeepLinkIfNeeded();
     } catch (error) {
         familyCombobox?.renderOptions([]);
         familyCombobox?.setDisabled(true);
@@ -1427,6 +1432,71 @@ function sanitizeTecitCode(value) {
     return String(value || "")
         .toUpperCase()
         .replace(/[^A-Z0-9]/g, "");
+}
+
+function getConfiguratorDeepLinkReference() {
+    const params = new URLSearchParams(window.location.search);
+    return sanitizeTecitCode(params.get("reference") || "");
+}
+
+function shouldAutoGenerateFromDeepLink() {
+    const params = new URLSearchParams(window.location.search);
+    return params.get("generate") === "1";
+}
+
+async function waitForConfiguratorDescription(reference, timeoutMs = 5000) {
+    const startedAt = Date.now();
+
+    while (Date.now() - startedAt < timeoutMs) {
+        const currentReference = sanitizeTecitCode(document.getElementById("output-reference")?.value || "");
+        const currentDescription = String(document.getElementById("output-description")?.value || "").trim();
+
+        if (currentReference === reference && currentDescription) {
+            return true;
+        }
+
+        await new Promise((resolve) => window.setTimeout(resolve, 120));
+    }
+
+    return false;
+}
+
+async function applyConfiguratorDeepLinkIfNeeded() {
+    const reference = getConfiguratorDeepLinkReference();
+
+    if (!reference || configuratorDeepLinkState.applied || configuratorDeepLinkState.loading) {
+        return;
+    }
+
+    const input = document.getElementById("output-reference");
+
+    if (!input) {
+        return;
+    }
+
+    configuratorDeepLinkState.loading = true;
+    input.value = reference;
+
+    try {
+        const applied = await loadTecitCodeIntoForm("output-reference");
+
+        configuratorDeepLinkState.applied = true;
+
+        if (!applied || !shouldAutoGenerateFromDeepLink()) {
+            return;
+        }
+
+        const hasDescription = await waitForConfiguratorDescription(reference);
+
+        if (!hasDescription) {
+            setStatusKey("configurator.runtime.descriptionLoadFailed", "error", {}, "The reference was built, but the description could not be loaded.");
+            return;
+        }
+
+        await generateDatasheet();
+    } finally {
+        configuratorDeepLinkState.loading = false;
+    }
 }
 
 function setTecitCodeControlsDisabled(isDisabled) {
@@ -1543,7 +1613,7 @@ async function loadTecitCodeIntoForm(sourceInputId = "output-reference") {
     const reference = sanitizeTecitCode(input?.value || "");
 
     if (!input) {
-        return;
+        return false;
     }
 
     input.value = reference;
@@ -1554,7 +1624,7 @@ async function loadTecitCodeIntoForm(sourceInputId = "output-reference") {
     if (!reference) {
         setStatusKey("configurator.runtime.tecitCodeMissing", "error", {}, "Enter a Tecit code first.");
         input.focus();
-        return;
+        return false;
     }
 
     setTecitCodeControlsDisabled(true);
@@ -1592,19 +1662,19 @@ async function loadTecitCodeIntoForm(sourceInputId = "output-reference") {
 
         if (Number(data?.length) !== Number(data?.expected_length)) {
             setStatusKey("configurator.runtime.tecitCodeInvalid", "error", {}, "This Tecit code cannot be applied. A full live reference must contain exactly 17 characters.");
-            return;
+            return false;
         }
 
         if (data?.warnings?.includes("unknown_family") || !data?.segments?.family) {
             setStatusKey("configurator.runtime.tecitCodeFamilyMissing", "error", {}, "This Tecit code uses a family that is not available in the configurator.");
-            return;
+            return false;
         }
 
         const result = await applyDecodedReferenceToForm(data);
 
         if (!result.familyMatched) {
             setStatusKey("configurator.runtime.tecitCodeFamilyMissing", "error", {}, "This Tecit code uses a family that is not available in the configurator.");
-            return;
+            return false;
         }
 
         if (result.unresolved.length > 0) {
@@ -1614,7 +1684,7 @@ async function loadTecitCodeIntoForm(sourceInputId = "output-reference") {
                 { fields: result.unresolved.join(", ") },
                 "Tecit code loaded, but these fields could not be matched: " + result.unresolved.join(", ")
             );
-            return;
+            return false;
         }
 
         if (result.reference !== data.reference) {
@@ -1624,7 +1694,7 @@ async function loadTecitCodeIntoForm(sourceInputId = "output-reference") {
                 { reference: result.reference },
                 "Tecit code loaded, but rebuilt reference differs: " + result.reference
             );
-            return;
+            return false;
         }
 
         if (data?.error_code === "invalid_luminos_combination") {
@@ -1636,13 +1706,15 @@ async function loadTecitCodeIntoForm(sourceInputId = "output-reference") {
                 {},
                 "The family, size, color, CRI, and series combination does not exist in the Luminos view."
             );
-            return;
+            return false;
         }
 
         setStatusKey("configurator.runtime.tecitCodeApplied", "success", {}, "Tecit code loaded. Manufacturing fields were filled.");
+        return true;
     } catch (error) {
         setStatusKey("configurator.runtime.tecitCodeApplyFailed", "error", {}, "Unable to decode Tecit code right now.");
         console.error(error);
+        return false;
     } finally {
         setTecitCodeControlsDisabled(false);
     }

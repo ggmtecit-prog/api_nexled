@@ -2993,7 +2993,7 @@ function buildExplorerRowActions(row) {
         ? t("codeExplorer.actionsDatasheetDisabled", {}, "Datasheet generation is only available for datasheet-ready codes.")
         : t("codeExplorer.actionsDatasheet", {}, "Generate datasheet");
     const configuratorLabel = t("codeExplorer.actionsConfigurator", {}, "Open in configurator");
-    const repairLabel = t("codeExplorer.actionsRepair", {}, "Open code editor");
+    const repairLabel = t("codeExplorer.actionsRepair", {}, "Open code repair");
 
     return `
         <div class="flex justify-end">
