@@ -457,6 +457,12 @@ function shouldShowExplorerFamilyField(
     return isExplorerFilterMode(viewMode);
 }
 
+function hasExplorerSelectedFamily(
+    family = document.getElementById("explorer-family")?.value || explorerState.controls.family
+) {
+    return String(family || "").trim() !== "";
+}
+
 function renderExplorerSearchInputCopy(
     viewMode = explorerState.controls.viewMode
 ) {
@@ -482,6 +488,7 @@ function renderExplorerSearchInputCopy(
 function applyExplorerViewMode(viewMode = explorerState.controls.viewMode) {
     const searchType = detectExplorerSearchType(document.getElementById("explorer-search")?.value || explorerState.controls.search);
     const showFilters = isExplorerFilterMode(viewMode);
+    const showFamilyScopedControls = showFilters && hasExplorerSelectedFamily();
     const textSearchField = document.getElementById("explorer-text-search-field");
     const familyField = document.getElementById("explorer-family-field");
     const chunkControlsRow = document.getElementById("explorer-chunk-controls-row");
@@ -501,15 +508,15 @@ function applyExplorerViewMode(viewMode = explorerState.controls.viewMode) {
     }
 
     if (chunkControlsRow) {
-        chunkControlsRow.classList.toggle("hidden", !showFilters);
+        chunkControlsRow.classList.toggle("hidden", !showFamilyScopedControls);
     }
 
     if (includeInvalidField) {
-        includeInvalidField.classList.toggle("hidden", !showFilters);
+        includeInvalidField.classList.toggle("hidden", !showFamilyScopedControls);
     }
 
     if (drilldownField) {
-        drilldownField.classList.toggle("hidden", !showFilters);
+        drilldownField.classList.toggle("hidden", !showFamilyScopedControls);
     }
 
     renderExplorerSearchInputCopy(viewMode);
@@ -1200,12 +1207,15 @@ function bindControls() {
         renderPagination();
 
         if (!selectedFamily) {
+            applyExplorerViewMode(explorerState.controls.viewMode);
             return;
         }
 
         try {
             await loadExplorerFamilyOptions(selectedFamily, true);
+            applyExplorerViewMode(explorerState.controls.viewMode);
         } catch (error) {
+            applyExplorerViewMode(explorerState.controls.viewMode);
             setPageStatus("codeExplorer.runtime.loadFailedWithMessage", "error", "Unable to load explorer data right now: {message}", {
                 message: getExplorerErrorMessage(error),
             });
@@ -2323,8 +2333,15 @@ function renderTable() {
 function renderDetail() {
     const detail = document.getElementById("explorer-detail");
     const empty = document.getElementById("explorer-detail-empty");
+    const summaryList = document.getElementById("detail-summary-list");
+    const segmentsList = document.getElementById("detail-segments");
+    const statusList = document.getElementById("detail-status-list");
     const row = getSelectedRow();
     const valueUnavailable = t("codeExplorer.valueUnavailable", {}, "Not available");
+
+    if (!detail || !empty || !summaryList || !segmentsList || !statusList) {
+        return;
+    }
 
     if (!row) {
         detail.classList.add("hidden");
@@ -2335,32 +2352,64 @@ function renderDetail() {
     empty.classList.add("hidden");
     detail.classList.remove("hidden");
 
-    document.getElementById("detail-reference").textContent = row.reference || "";
-    document.getElementById("detail-identity").textContent = row.identity || "";
-    document.getElementById("detail-description").textContent = row.description || valueUnavailable;
-    document.getElementById("detail-type").textContent = row.product_type || valueUnavailable;
-    document.getElementById("detail-product-id").textContent = row.product_id || valueUnavailable;
+    summaryList.innerHTML = [
+        buildDetailSpecListItem(
+            t("codeExplorer.tableReference", {}, "Reference"),
+            `<code class="text-body font-mono text-black break-all">${escapeHtml(row.reference || "")}</code>`
+        ),
+        buildDetailSpecListItem(
+            t("codeExplorer.tableIdentity", {}, "Identity"),
+            `<code class="text-body font-mono text-black break-all">${escapeHtml(row.identity || "")}</code>`
+        ),
+        buildDetailSpecListItem(
+            t("codeExplorer.tableDescription", {}, "Description"),
+            `<span class="text-body text-black">${escapeHtml(row.description || valueUnavailable)}</span>`
+        ),
+        buildDetailSpecListItem(
+            t("codeExplorer.tableType", {}, "Type"),
+            `<span class="text-body text-black">${escapeHtml(row.product_type || valueUnavailable)}</span>`
+        ),
+        buildDetailSpecListItem(
+            t("codeExplorer.tableProductId", {}, "Product ID"),
+            `<span class="text-body text-black break-all">${escapeHtml(row.product_id || valueUnavailable)}</span>`
+        ),
+    ].join("");
 
-    document.getElementById("detail-segments").innerHTML = SEGMENT_META.map((segment) => {
-        return `
-            <div class="flex items-start justify-between gap-12 rounded-card border border-grey-quaternary/60 bg-white px-12 py-10">
-                <span class="text-body-sm text-grey-primary">${escapeHtml(t(segment.labelKey, {}, segment.fallback))}</span>
-                <code class="text-body-sm font-mono text-black text-right">${escapeHtml(getSegmentDisplay(row, segment.key))}</code>
-            </div>
-        `;
+    segmentsList.innerHTML = SEGMENT_META.map((segment) => {
+        return buildDetailSpecListItem(
+            t(segment.labelKey, {}, segment.fallback),
+            `<code class="text-body font-mono text-black break-all">${escapeHtml(getSegmentDisplay(row, segment.key))}</code>`
+        );
     }).join("");
 
-    document.getElementById("detail-statuses").innerHTML = [
+    const statusesMarkup = [
         buildStatusBadge(row.configurator_valid, t("codeExplorer.statusConfiguratorValid", {}, "Configurator valid"), t("codeExplorer.statusConfiguratorInvalid", {}, "Configurator invalid")),
         row.configurator_valid
             ? buildStatusBadge(row.datasheet_ready, t("codeExplorer.statusDatasheetReady", {}, "Datasheet ready"), t("codeExplorer.statusDatasheetBlocked", {}, "Datasheet blocked"))
             : buildNeutralBadge(t("codeExplorer.statusNotApplicable", {}, "Not applicable")),
     ].join("");
 
-    document.getElementById("detail-failure").textContent = row.failure_reason
-        ? getFailureReasonText(row.failure_reason)
-        : t("codeExplorer.failure.none", {}, "No blocking reason.");
+    statusList.innerHTML = [
+        buildDetailSpecListItem(
+            t("codeExplorer.detailsStatuses", {}, "Statuses"),
+            `<div class="flex flex-wrap items-center gap-8">${statusesMarkup}</div>`
+        ),
+        buildDetailSpecListItem(
+            t("codeExplorer.tableFailure", {}, "Failure"),
+            `<span class="text-body text-grey-primary">${escapeHtml(row.failure_reason ? getFailureReasonText(row.failure_reason) : t("codeExplorer.failure.none", {}, "No blocking reason."))}</span>`
+        ),
+    ].join("");
+
     renderDetailPdfSpecs(row);
+}
+
+function buildDetailSpecListItem(label, valueMarkup) {
+    return `
+        <div class="list-item">
+            <dt class="list-key">${escapeHtml(label)}</dt>
+            <dd class="list-value">${valueMarkup}</dd>
+        </div>
+    `;
 }
 
 function getCurrentExplorerLanguage() {
@@ -2390,7 +2439,7 @@ function getDetailPdfSpecsState(reference, lang = getCurrentExplorerLanguage()) 
 function buildDetailPdfSpecsRows(rows) {
     return rows.map((row) => {
         return `
-            <div class="flex items-start justify-between gap-12 rounded-card border border-grey-quaternary/60 bg-white px-12 py-10">
+            <div class="flex items-start justify-between gap-12 px-12 py-10">
                 <span class="text-body-sm text-grey-primary">${escapeHtml(row.label || "")}</span>
                 <span class="text-body-sm text-black text-right">${escapeHtml(row.value || t("codeExplorer.valueUnavailable", {}, "Not available"))}</span>
             </div>
@@ -2432,7 +2481,7 @@ function buildDetailPdfAssetStatusRow(label, available) {
     }
 
     return `
-        <div class="flex items-start justify-between gap-12 rounded-card border border-grey-quaternary/60 bg-white px-12 py-10">
+        <div class="flex items-start justify-between gap-12 px-12 py-10">
             <span class="text-body-sm text-grey-primary">${escapeHtml(label)}</span>
             <span>${statusMarkup}</span>
         </div>

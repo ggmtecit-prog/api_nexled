@@ -222,7 +222,7 @@
                         </div>
                     </div>
                     <div class="card-body pt-64 flex flex-col gap-20">
-                            <form id="explorer-filters" class="mt-4 flex flex-col gap-16">
+                            <form id="explorer-filters" class="mt-24 flex flex-col gap-16">
                             <div id="explorer-text-search-field">
                                 <label id="explorer-search-label" class="input-label ml-12" for="explorer-search" data-i18n="codeExplorer.searchInputLabel">Search</label>
                                 <input id="explorer-search" type="text" class="input input-sm" placeholder="Enter a code or description" data-i18n-placeholder="codeExplorer.searchInputPlaceholder">
@@ -503,7 +503,7 @@
     </div>
 
     <div class="modal-overlay" id="codeExplorerDetailModal" aria-hidden="true">
-        <div class="modal" role="dialog" aria-modal="true" aria-labelledby="codeExplorerDetailModalTitle" aria-describedby="codeExplorerDetailModalBody">
+        <div class="modal max-h-full overflow-hidden" role="dialog" aria-modal="true" aria-labelledby="codeExplorerDetailModalTitle" aria-describedby="codeExplorerDetailModalBody">
             <div class="modal-header">
                 <div>
                     <h2 id="codeExplorerDetailModalTitle" class="modal-title" data-i18n="codeExplorer.detailsTitle">Code Detail</h2>
@@ -513,37 +513,30 @@
                 </button>
             </div>
 
-            <div id="codeExplorerDetailModalBody" class="modal-body overflow-y-auto">
+            <div id="codeExplorerDetailModalBody" class="modal-body flex-1 min-h-0 overflow-y-auto overflow-x-hidden">
                 <div class="flex flex-col gap-16">
                     <p class="text-body-sm text-grey-primary" data-i18n="codeExplorer.detailsHint">Select a row to inspect the full segment breakdown and readiness result.</p>
 
-                    <div id="explorer-detail-empty" class="panel panel-sm">
+                    <div id="explorer-detail-empty" class="flex flex-col gap-8">
                         <p class="text-body-sm text-grey-primary" data-i18n="codeExplorer.detailsEmpty">No code selected yet.</p>
                     </div>
 
                     <div id="explorer-detail" class="hidden flex flex-col gap-16">
-                        <div class="panel panel-sm flex flex-col gap-8">
-                            <div class="flex flex-col gap-2"><span class="input-label" data-i18n="codeExplorer.tableReference">Reference</span><code id="detail-reference" class="text-body-sm font-mono text-black break-all"></code></div>
-                            <div class="flex flex-col gap-2"><span class="input-label" data-i18n="codeExplorer.tableIdentity">Identity</span><code id="detail-identity" class="text-body-sm font-mono text-black break-all"></code></div>
-                            <div class="flex flex-col gap-2"><span class="input-label" data-i18n="codeExplorer.tableDescription">Description</span><p id="detail-description" class="text-body-sm text-black"></p></div>
-                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-8">
-                                <div class="flex flex-col gap-2"><span class="input-label" data-i18n="codeExplorer.tableType">Type</span><p id="detail-type" class="text-body-sm text-black"></p></div>
-                                <div class="flex flex-col gap-2"><span class="input-label" data-i18n="codeExplorer.tableProductId">Product ID</span><p id="detail-product-id" class="text-body-sm text-black break-all"></p></div>
-                            </div>
+                        <div class="flex flex-col gap-8">
+                            <dl id="detail-summary-list" class="list list-spec list-md"></dl>
                         </div>
 
-                        <div class="panel panel-sm flex flex-col gap-8">
+                        <div class="flex flex-col gap-8">
                             <span class="input-label" data-i18n="codeExplorer.detailsSegments">Decoded Segments</span>
-                            <div id="detail-segments" class="grid grid-cols-1 sm:grid-cols-2 gap-8"></div>
+                            <dl id="detail-segments" class="list list-spec list-md"></dl>
                         </div>
 
-                        <div class="panel panel-sm flex flex-col gap-8">
+                        <div class="flex flex-col gap-8">
                             <span class="input-label" data-i18n="codeExplorer.detailsStatuses">Statuses</span>
-                            <div class="flex flex-wrap gap-8" id="detail-statuses"></div>
-                            <p id="detail-failure" class="text-body-sm text-grey-primary"></p>
+                            <dl id="detail-status-list" class="list list-spec list-md"></dl>
                         </div>
 
-                        <div class="panel panel-sm flex flex-col gap-12">
+                        <div class="flex flex-col gap-12">
                             <div class="flex flex-col gap-8 sm:flex-row sm:items-center sm:justify-between">
                                 <div class="flex flex-col gap-4">
                                     <span class="input-label" data-i18n="codeExplorer.detailsPdfSpecsTitle">PDF Specs</span>
