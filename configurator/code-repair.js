@@ -203,7 +203,6 @@ function getCodeRepairElements() {
         || !segmentsList
         || !characteristicsList
         || !dimensionsList
-        || !openConfiguratorLink
         || !loadingOverlay
         || !loadingCopy
     ) {
@@ -280,12 +279,14 @@ function syncCodeRepairActionState() {
     codeRepairElements.loadButton.disabled = !canLoad;
     codeRepairElements.revalidateButton.disabled = !canRevalidate;
 
-    if (activeReference !== "") {
-        codeRepairElements.openConfiguratorLink.href = "configurator.html?reference=" + encodeURIComponent(activeReference);
-        codeRepairElements.openConfiguratorLink.setAttribute("aria-disabled", "false");
-    } else {
-        codeRepairElements.openConfiguratorLink.href = "#";
-        codeRepairElements.openConfiguratorLink.setAttribute("aria-disabled", "true");
+    if (codeRepairElements.openConfiguratorLink) {
+        if (activeReference !== "") {
+            codeRepairElements.openConfiguratorLink.href = "configurator.html?reference=" + encodeURIComponent(activeReference);
+            codeRepairElements.openConfiguratorLink.setAttribute("aria-disabled", "false");
+        } else {
+            codeRepairElements.openConfiguratorLink.href = "#";
+            codeRepairElements.openConfiguratorLink.setAttribute("aria-disabled", "true");
+        }
     }
 }
 
