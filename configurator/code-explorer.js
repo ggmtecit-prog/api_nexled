@@ -129,6 +129,7 @@ function initializeCodeExplorer() {
     renderSummary(null);
     renderTable();
     renderDetail();
+    renderTecitCodeLogicFamilies();
     renderPagination();
     loadFamilies();
     checkApiHealth();
@@ -1801,6 +1802,7 @@ function bindStaticEvents() {
         applyExplorerViewMode(explorerState.controls.viewMode);
         renderExplorerSegmentFilterOptions(explorerState.familyOptionsByFamily[explorerState.controls.family] || null);
         refreshExplorerSelectDropdowns();
+        renderTecitCodeLogicFamilies();
         renderResultsMeta();
         renderCoverage(explorerState.data);
         renderSummary(explorerState.data);
@@ -1978,6 +1980,7 @@ function populateFamilies() {
     syncExplorerSelectDropdown("explorer-page-size");
     syncDraftInvalidControls();
     updateExplorerInvalidGuidance();
+    renderTecitCodeLogicFamilies();
 }
 
 async function loadExplorerData() {
@@ -2334,53 +2337,57 @@ function renderDetail() {
     const detail = document.getElementById("explorer-detail");
     const empty = document.getElementById("explorer-detail-empty");
     const summaryList = document.getElementById("detail-summary-list");
-    const segmentsList = document.getElementById("detail-segments");
-    const statusList = document.getElementById("detail-status-list");
+    const statusBadges = document.getElementById("detail-status-badges");
     const row = getSelectedRow();
     const valueUnavailable = t("codeExplorer.valueUnavailable", {}, "Not available");
 
-    if (!detail || !empty || !summaryList || !segmentsList || !statusList) {
+    if (!detail || !empty || !summaryList || !statusBadges) {
         return;
     }
 
     if (!row) {
         detail.classList.add("hidden");
         empty.classList.remove("hidden");
+        statusBadges.innerHTML = "";
         return;
     }
 
     empty.classList.add("hidden");
     detail.classList.remove("hidden");
 
-    summaryList.innerHTML = [
+    const summaryRows = [
         buildDetailSpecListItem(
             t("codeExplorer.tableReference", {}, "Reference"),
-            `<code class="text-body font-mono text-black break-all">${escapeHtml(row.reference || "")}</code>`
+            escapeHtml(row.reference || ""),
+            "font-mono break-all"
         ),
         buildDetailSpecListItem(
             t("codeExplorer.tableIdentity", {}, "Identity"),
-            `<code class="text-body font-mono text-black break-all">${escapeHtml(row.identity || "")}</code>`
+            escapeHtml(row.identity || ""),
+            "font-mono break-all"
         ),
         buildDetailSpecListItem(
             t("codeExplorer.tableDescription", {}, "Description"),
-            `<span class="text-body text-black">${escapeHtml(row.description || valueUnavailable)}</span>`
+            escapeHtml(row.description || valueUnavailable)
         ),
         buildDetailSpecListItem(
             t("codeExplorer.tableType", {}, "Type"),
-            `<span class="text-body text-black">${escapeHtml(row.product_type || valueUnavailable)}</span>`
+            escapeHtml(row.product_type || valueUnavailable)
         ),
         buildDetailSpecListItem(
             t("codeExplorer.tableProductId", {}, "Product ID"),
-            `<span class="text-body text-black break-all">${escapeHtml(row.product_id || valueUnavailable)}</span>`
+            escapeHtml(row.product_id || valueUnavailable),
+            "break-all"
         ),
-    ].join("");
+    ];
 
-    segmentsList.innerHTML = SEGMENT_META.map((segment) => {
+    const segmentRows = SEGMENT_META.map((segment) => {
         return buildDetailSpecListItem(
             t(segment.labelKey, {}, segment.fallback),
-            `<code class="text-body font-mono text-black break-all">${escapeHtml(getSegmentDisplay(row, segment.key))}</code>`
+            escapeHtml(getSegmentDisplay(row, segment.key)),
+            "font-mono break-all"
         );
-    }).join("");
+    });
 
     const statusesMarkup = [
         buildStatusBadge(row.configurator_valid, t("codeExplorer.statusConfiguratorValid", {}, "Configurator valid"), t("codeExplorer.statusConfiguratorInvalid", {}, "Configurator invalid")),
@@ -2389,25 +2396,25 @@ function renderDetail() {
             : buildNeutralBadge(t("codeExplorer.statusNotApplicable", {}, "Not applicable")),
     ].join("");
 
-    statusList.innerHTML = [
-        buildDetailSpecListItem(
-            t("codeExplorer.detailsStatuses", {}, "Statuses"),
-            `<div class="flex flex-wrap items-center gap-8">${statusesMarkup}</div>`
-        ),
+    statusBadges.innerHTML = statusesMarkup;
+
+    const statusRows = [
         buildDetailSpecListItem(
             t("codeExplorer.tableFailure", {}, "Failure"),
-            `<span class="text-body text-grey-primary">${escapeHtml(row.failure_reason ? getFailureReasonText(row.failure_reason) : t("codeExplorer.failure.none", {}, "No blocking reason."))}</span>`
+            escapeHtml(row.failure_reason ? getFailureReasonText(row.failure_reason) : t("codeExplorer.failure.none", {}, "No blocking reason."))
         ),
-    ].join("");
+    ];
+
+    summaryList.innerHTML = [...summaryRows, ...segmentRows, ...statusRows].join("");
 
     renderDetailPdfSpecs(row);
 }
 
-function buildDetailSpecListItem(label, valueMarkup) {
+function buildDetailSpecListItem(label, valueMarkup, valueClasses = "") {
     return `
         <div class="list-item">
             <dt class="list-key">${escapeHtml(label)}</dt>
-            <dd class="list-value">${valueMarkup}</dd>
+            <dd class="list-value ${valueClasses}">${valueMarkup}</dd>
         </div>
     `;
 }
@@ -2514,9 +2521,7 @@ function renderDetailPdfSpecs(row = getSelectedRow()) {
     button.disabled = specsState.status === "loading";
 
     if (specsState.status === "idle") {
-        content.innerHTML = `
-            <p class="text-body-sm text-grey-primary">${escapeHtml(t("codeExplorer.detailsPdfSpecsIdle", {}, "Click the button to load the same specs used by the datasheet."))}</p>
-        `;
+        content.innerHTML = "";
         return;
     }
 
@@ -2693,6 +2698,43 @@ function renderResultsMeta() {
     if (!meta) {
         return;
     }
+}
+
+function renderTecitCodeLogicFamilies() {
+    const list = document.getElementById("codeExplorerLogicFamiliesList");
+
+    if (!list) {
+        return;
+    }
+
+    const families = Array.isArray(explorerState.families)
+        ? explorerState.families
+            .map((family) => ({
+                code: String(family?.codigo || "").trim(),
+                name: String(family?.nome || "").trim(),
+            }))
+            .filter((family) => family.code !== "")
+            .sort((left, right) => left.code.localeCompare(right.code, undefined, { numeric: true }))
+        : [];
+
+    if (families.length === 0) {
+        list.innerHTML = `
+            <div class="list-item">
+                <dt class="list-key">${escapeHtml(t("configurator.familyLabel", {}, "Family"))}</dt>
+                <dd class="list-value text-grey-primary">${escapeHtml(t("configurator.tecitCodeLogicFamiliesEmpty", {}, "No families loaded yet."))}</dd>
+            </div>
+        `;
+        return;
+    }
+
+    list.innerHTML = families.map((family) => {
+        return `
+            <div class="list-item">
+                <dt class="list-key"><code class="text-body font-mono">${escapeHtml(family.code)}</code></dt>
+                <dd class="list-value">${escapeHtml(family.name || family.code)}</dd>
+            </div>
+        `;
+    }).join("");
 }
 
 function renderPagination() {
