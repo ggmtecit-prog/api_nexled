@@ -144,6 +144,38 @@ Future Shelf datasheet readiness likely depends on:
 4. current local DAM metadata also has no Shelf assets yet
 5. catalog mask likely tighter than generic normalized model
 
+## 2026-04-17 Blocker Verification
+
+Family `49` was re-checked directly before DAM rollout work resumed.
+
+What is now confirmed:
+
+- valid live Shelf references do exist, for example:
+  - `49045024110010100`
+  - `49045024112010100`
+  - `49045024111010100`
+- these decode and resolve to real DB products such as:
+  - `ShelfLED/24v/47`
+- live datasheet runtime reaches the strict missing-data gate and fails honestly with:
+  - `Missing required data: product image`
+- local DAM state is still empty for Shelf:
+  - `dam_asset_links` count for family `49` = `0`
+  - no `dam_assets` rows were found with Shelf-like names
+- current repo still has no `appdatasheets/img/49` tree
+- sibling legacy app at `C:\xampp\htdocs\appDatasheets\img` also has no `49` folder
+
+Meaning:
+
+- family `49` is **not** blocked by decoder/runtime/product-ID logic anymore
+- family `49` is blocked by missing real image source files
+- safe next move is asset recovery/discovery, not API rewrite
+
+Operational rule:
+
+- do not make family `49` DAM-primary until real Shelf assets are recovered
+- do not invent placeholder imports for Shelf just to advance rollout state
+- skip to next family batch until a real Shelf asset source is provided
+
 ## Best Next Follow-Up
 
 1. trace if old project had dedicated Shelf runtime flow

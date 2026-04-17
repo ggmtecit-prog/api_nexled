@@ -7,7 +7,8 @@
  * - The product photo
  * - The description text block (product + LED + purpose + energy class)
  *
- * Images live in appdatasheets/img/ organised by family and product type.
+ * Runtime now resolves DAM first for migrated families, with legacy local
+ * disk fallback kept only for families still outside DAM rollout.
  * Description texts come from JSON files in api/json/descricao/.
  *
  * Image lookup is fuzzy: several candidate filenames are tried in order,
@@ -118,25 +119,21 @@ function getProductImage(string $productType, string $productId, array $parts, a
             return null;
     }
 
-    foreach ($candidates as $filename) {
-        $image = findImage(IMAGES_BASE_PATH . $folder . $filename);
-        if ($image !== null) {
-            return $image;
-        }
+    $damImage = findDamProductAsset($family, $productId, "packshot", $candidates);
+
+    if ($damImage !== null) {
+        return $damImage;
     }
 
-    $damKind = match (true) {
-        $productType === "shelf",
-        $productType === "tubular" => "product_media_packshot",
-        $productType === "barra" && in_array($family, ["31", "40"], true) => "product_media_packshot",
-        default => null,
-    };
+    if (isDamPrimaryFamily($family)) {
+        return null;
+    }
 
-    if ($damKind !== null) {
-        $damImage = findDamProductAsset($family, $productId, $damKind, $candidates);
+    foreach ($candidates as $filename) {
+        $image = findImage(IMAGES_BASE_PATH . $folder . $filename);
 
-        if ($damImage !== null) {
-            return $damImage;
+        if ($image !== null) {
+            return $image;
         }
     }
 

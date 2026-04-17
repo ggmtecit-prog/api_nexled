@@ -12,8 +12,52 @@ if (!defined("IMAGES_BASE_PATH")) {
     define("IMAGES_BASE_PATH", dirname(__FILE__, 3) . "/appdatasheets");
 }
 
+if (!defined("DAM_RUNTIME_PRIMARY_FAMILIES")) {
+    define("DAM_RUNTIME_PRIMARY_FAMILIES", ["11", "29", "30", "32", "48", "55", "58"]);
+}
+
+if (!defined("DAM_PRIMARY_SHARED_ROLES")) {
+    define("DAM_PRIMARY_SHARED_ROLES", ["energy-label", "icon", "logo", "power-supply", "temperature"]);
+}
+
 if (!defined("PDF_RASTER_CACHE_PATH")) {
     define("PDF_RASTER_CACHE_PATH", sys_get_temp_dir() . DIRECTORY_SEPARATOR . "nexled-pdf-raster-cache");
+}
+
+if (!defined("PDF_REMOTE_CACHE_PATH")) {
+    define("PDF_REMOTE_CACHE_PATH", PDF_RASTER_CACHE_PATH . DIRECTORY_SEPARATOR . "remote");
+}
+
+/**
+ * Returns true when runtime should resolve this family from DAM only.
+ *
+ * @param  string|null $familyCode
+ * @return bool
+ */
+function isDamPrimaryFamily(?string $familyCode): bool {
+    $familyCode = trim((string) $familyCode);
+
+    if ($familyCode === "") {
+        return false;
+    }
+
+    return in_array($familyCode, DAM_RUNTIME_PRIMARY_FAMILIES, true);
+}
+
+/**
+ * Returns true when shared datasheet assets should resolve from DAM only.
+ *
+ * @param  string $role
+ * @return bool
+ */
+function isDamPrimarySharedRole(string $role): bool {
+    $role = trim($role);
+
+    if ($role === "") {
+        return false;
+    }
+
+    return in_array($role, DAM_PRIMARY_SHARED_ROLES, true);
 }
 
 
@@ -96,6 +140,24 @@ function ensurePdfRasterCacheDirectory(): ?string {
     }
 
     error_log("NexLed datasheet: unable to create raster cache directory at " . PDF_RASTER_CACHE_PATH);
+    return null;
+}
+
+/**
+ * Ensures the PDF remote-asset cache directory exists.
+ *
+ * @return string|null
+ */
+function ensurePdfRemoteCacheDirectory(): ?string {
+    if (is_dir(PDF_REMOTE_CACHE_PATH)) {
+        return PDF_REMOTE_CACHE_PATH;
+    }
+
+    if (@mkdir(PDF_REMOTE_CACHE_PATH, 0777, true) || is_dir(PDF_REMOTE_CACHE_PATH)) {
+        return PDF_REMOTE_CACHE_PATH;
+    }
+
+    error_log("NexLed datasheet: unable to create remote cache directory at " . PDF_REMOTE_CACHE_PATH);
     return null;
 }
 
@@ -263,6 +325,177 @@ function findImage(string $path): ?string {
 }
 
 /**
+ * Returns true when the value points to a remote HTTP(S) asset.
+ *
+ * @param  string $value
+ * @return bool
+ */
+function isRemoteAssetUrl(string $value): bool {
+    return preg_match("#^https?://#i", trim($value)) === 1;
+}
+
+/**
+ * Converts a Cloudinary SVG delivery URL into a PNG delivery URL for PDF use.
+ *
+ * @param  string $url
+ * @return string
+ */
+function getCloudinaryRasterizedUrl(string $url): string {
+    $normalizedUrl = trim($url);
+
+    if (
+        !isRemoteAssetUrl($normalizedUrl) ||
+        stripos($normalizedUrl, "cloudinary.com") === false ||
+        !preg_match("/\\.svg(?:\\?|$)/i", $normalizedUrl)
+    ) {
+        return $url;
+    }
+
+    $transformedUrl = preg_replace("#/upload/#", "/upload/f_png/", $normalizedUrl, 1);
+
+    if (!is_string($transformedUrl) || $transformedUrl === "") {
+        return $url;
+    }
+
+    $transformedUrl = preg_replace("/\\.svg(\\?.*)?$/i", ".png$1", $transformedUrl);
+    return is_string($transformedUrl) && $transformedUrl !== "" ? $transformedUrl : $url;
+}
+
+/**
+ * Downloads a remote DAM asset into a temp cache so TCPDF can consume it.
+ *
+ * @param  string $url
+ * @return string|null
+ */
+function cacheRemoteAssetForPdf(string $url): ?string {
+    if (!isRemoteAssetUrl($url)) {
+        return null;
+    }
+
+    $cacheDir = ensurePdfRemoteCacheDirectory();
+
+    if ($cacheDir === null) {
+        return null;
+    }
+
+    $parsedPath = (string) (parse_url($url, PHP_URL_PATH) ?? "");
+    $extension = strtolower(pathinfo($parsedPath, PATHINFO_EXTENSION));
+    $allowedExtensions = ["png", "jpg", "jpeg", "gif", "svg", "webp", "pdf"];
+
+    if (!in_array($extension, $allowedExtensions, true)) {
+        $extension = "bin";
+    }
+
+    $cachePath = $cacheDir . DIRECTORY_SEPARATOR . sha1($url) . "." . $extension;
+
+    if (is_file($cachePath) && filesize($cachePath) > 0) {
+        return $cachePath;
+    }
+
+    $content = null;
+    $contentType = null;
+
+    if (function_exists("curl_init")) {
+        $curl = curl_init($url);
+
+        if ($curl !== false) {
+            curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
+            curl_setopt($curl, CURLOPT_FOLLOWLOCATION, true);
+            curl_setopt($curl, CURLOPT_TIMEOUT, 15);
+            curl_setopt($curl, CURLOPT_CONNECTTIMEOUT, 10);
+            curl_setopt($curl, CURLOPT_USERAGENT, "NexLed PDF Asset Resolver");
+            curl_setopt($curl, CURLOPT_HEADER, true);
+
+            $response = curl_exec($curl);
+
+            if (is_string($response)) {
+                $headerSize = (int) curl_getinfo($curl, CURLINFO_HEADER_SIZE);
+                $content = substr($response, $headerSize);
+                $contentType = (string) curl_getinfo($curl, CURLINFO_CONTENT_TYPE);
+            }
+
+            curl_close($curl);
+        }
+    }
+
+    if (!is_string($content)) {
+        $context = stream_context_create([
+            "http" => [
+                "method" => "GET",
+                "timeout" => 15,
+                "ignore_errors" => true,
+                "header" => "User-Agent: NexLed PDF Asset Resolver\r\n",
+            ],
+        ]);
+
+        $download = @file_get_contents($url, false, $context);
+
+        if (is_string($download)) {
+            $content = $download;
+
+            if (isset($http_response_header) && is_array($http_response_header)) {
+                foreach ($http_response_header as $headerLine) {
+                    if (stripos($headerLine, "Content-Type:") === 0) {
+                        $contentType = trim(substr($headerLine, strlen("Content-Type:")));
+                        break;
+                    }
+                }
+            }
+        }
+    }
+
+    if (!is_string($content) || $content === "") {
+        return null;
+    }
+
+    if ($extension === "bin") {
+        $contentType = strtolower(trim((string) $contentType));
+        $extension = match (true) {
+            str_contains($contentType, "image/svg") => "svg",
+            str_contains($contentType, "image/png") => "png",
+            str_contains($contentType, "image/jpeg") => "jpg",
+            str_contains($contentType, "image/gif") => "gif",
+            str_contains($contentType, "image/webp") => "webp",
+            str_contains($contentType, "application/pdf") => "pdf",
+            default => "bin",
+        };
+        $cachePath = $cacheDir . DIRECTORY_SEPARATOR . sha1($url) . "." . $extension;
+    }
+
+    if (@file_put_contents($cachePath, $content) === false) {
+        return null;
+    }
+
+    return $cachePath;
+}
+
+/**
+ * Normalizes a PDF asset path so remote DAM URLs become local cache files.
+ *
+ * @param  string $path
+ * @return string
+ */
+function getPdfSafeAssetPath(string $path): string {
+    $resolvedPath = trim($path);
+
+    if ($resolvedPath === "") {
+        return $path;
+    }
+
+    if (isRemoteAssetUrl($resolvedPath)) {
+        $cachedPath = cacheRemoteAssetForPdf(getCloudinaryRasterizedUrl($resolvedPath));
+
+        if ($cachedPath !== null) {
+            $resolvedPath = $cachedPath;
+        } else {
+            return $path;
+        }
+    }
+
+    return getPdfRenderableImagePath($resolvedPath);
+}
+
+/**
  * Builds conservative product-slug candidates from an internal product ID.
  *
  * Examples:
@@ -385,7 +618,7 @@ function findDamProductAsset(string $familyCode, string $productId, string $kind
             $score = 0;
             $rowFilename = nexledNormalizeAssetStem((string) ($row["filename"] ?? ""));
             $rowDisplayName = nexledNormalizeAssetStem((string) ($row["display_name"] ?? ""));
-            $rowPublicId = strtolower((string) ($row["public_id"] ?? ""));
+            $rowPublicId = nexledNormalizeAssetStem((string) ($row["public_id"] ?? ""));
             $rowProductCode = nexledNormalizeAssetStem((string) ($row["product_code"] ?? ""));
 
             if ($rowProductCode !== "" && in_array($rowProductCode, $slugCandidates, true)) {
@@ -402,8 +635,24 @@ function findDamProductAsset(string $familyCode, string $productId, string $kind
                     break;
                 }
 
+                if (
+                    str_ends_with($rowFilename, "-" . $stemCandidate) ||
+                    str_ends_with($rowFilename, $stemCandidate)
+                ) {
+                    $score += 55;
+                    break;
+                }
+
                 if ($rowDisplayName === $stemCandidate) {
                     $score += 50;
+                    break;
+                }
+
+                if (
+                    str_ends_with($rowDisplayName, "-" . $stemCandidate) ||
+                    str_ends_with($rowDisplayName, $stemCandidate)
+                ) {
+                    $score += 45;
                     break;
                 }
 
@@ -424,6 +673,149 @@ function findDamProductAsset(string $familyCode, string $productId, string $kind
     closeDB($con);
 
     return $bestScore > 0 ? $bestUrl : null;
+}
+
+/**
+ * Finds a shared DAM asset by role plus filename/display/public_id matching.
+ *
+ * Shared assets are not linked through dam_asset_links. They are selected
+ * directly from dam_assets by `kind`.
+ *
+ * @param  string $role
+ * @param  array<int, string> $filenameCandidates
+ * @param  array<int, string> $preferredFormats
+ * @return string|null
+ */
+function findDamSharedAsset(string $role, array $filenameCandidates = [], array $preferredFormats = []): ?string {
+    if (!function_exists("connectDBDam")) {
+        return null;
+    }
+
+    $con = @connectDBDam();
+
+    if (!$con instanceof mysqli) {
+        return null;
+    }
+
+    $role = trim($role);
+
+    if ($role === "") {
+        closeDB($con);
+        return null;
+    }
+
+    $stmt = mysqli_prepare(
+        $con,
+        "SELECT `filename`, `display_name`, `public_id`, `secure_url`, `format`
+         FROM `dam_assets`
+         WHERE `resource_type` = 'image'
+           AND `kind` = ?
+         ORDER BY `id` DESC
+         LIMIT 300"
+    );
+
+    if (!$stmt) {
+        closeDB($con);
+        return null;
+    }
+
+    mysqli_stmt_bind_param($stmt, "s", $role);
+    mysqli_stmt_execute($stmt);
+    $result = mysqli_stmt_get_result($stmt);
+
+    $stemCandidates = array_values(array_filter(array_unique(array_map(
+        "nexledNormalizeAssetStem",
+        $filenameCandidates
+    ))));
+
+    $formatPriority = array_values(array_filter(array_map(
+        static fn($value) => strtolower(trim((string) $value)),
+        $preferredFormats
+    )));
+
+    $bestUrl = null;
+    $bestScore = 0;
+
+    if ($result) {
+        while ($row = mysqli_fetch_assoc($result)) {
+            $secureUrl = trim((string) ($row["secure_url"] ?? ""));
+
+            if ($secureUrl === "") {
+                continue;
+            }
+
+            $score = 0;
+            $rowFilename = nexledNormalizeAssetStem((string) ($row["filename"] ?? ""));
+            $rowDisplayName = nexledNormalizeAssetStem((string) ($row["display_name"] ?? ""));
+            $rowPublicId = strtolower((string) ($row["public_id"] ?? ""));
+            $rowFormat = strtolower(trim((string) ($row["format"] ?? "")));
+
+            foreach ($stemCandidates as $stemCandidate) {
+                if ($stemCandidate === "") {
+                    continue;
+                }
+
+                if ($rowFilename === $stemCandidate) {
+                    $score += 80;
+                    break;
+                }
+
+                if ($rowDisplayName === $stemCandidate) {
+                    $score += 70;
+                    break;
+                }
+
+                if (str_contains($rowPublicId, strtolower($stemCandidate))) {
+                    $score += 30;
+                    break;
+                }
+            }
+
+            foreach ($formatPriority as $index => $preferredFormat) {
+                if ($rowFormat === $preferredFormat) {
+                    $score += max(1, 12 - $index);
+                    break;
+                }
+            }
+
+            if ($score > $bestScore) {
+                $bestScore = $score;
+                $bestUrl = $secureUrl;
+            }
+        }
+    }
+
+    mysqli_stmt_close($stmt);
+    closeDB($con);
+
+    return $bestScore > 0 ? $bestUrl : null;
+}
+
+/**
+ * Resolves a shared asset from DAM first, then local disk.
+ *
+ * @param  string $role
+ * @param  array<int, string> $filenameCandidates
+ * @param  string|null $localBasePath
+ * @param  array<int, string> $preferredFormats
+ * @return string|null
+ */
+function findDamOrLocalSharedAsset(string $role, array $filenameCandidates, ?string $localBasePath = null, array $preferredFormats = []): ?string {
+    $damAsset = findDamSharedAsset($role, $filenameCandidates, $preferredFormats);
+
+    if ($damAsset !== null) {
+        return $damAsset;
+    }
+
+    if (isDamPrimarySharedRole($role)) {
+        return null;
+    }
+
+    if ($localBasePath !== null && trim($localBasePath) !== "") {
+        return findImage($localBasePath);
+    }
+
+    return null;
 }
 
 /**

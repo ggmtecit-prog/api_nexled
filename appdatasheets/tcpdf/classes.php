@@ -8,10 +8,28 @@ class NEXLEDPDF extends TCPDF {
 
         $pdf->Line(10, 20, 200, 20, array('width' => 0.2, 'color' => array(0, 0, 0)));
 
-        $pdf->Image(dirname(__DIR__) . "/img/logos/nexled.png", 10, 7, 30, 0, 'PNG', '', '', true, 300);
+        $nexledLogo = function_exists("findDamOrLocalSharedAsset")
+            ? findDamOrLocalSharedAsset("logo", ["nexled"], dirname(__DIR__) . "/img/logos/nexled", ["png", "svg"])
+            : dirname(__DIR__) . "/img/logos/nexled.png";
+        $nexledLogo = is_string($nexledLogo) && function_exists("getPdfSafeAssetPath")
+            ? getPdfSafeAssetPath($nexledLogo)
+            : $nexledLogo;
+
+        if (is_string($nexledLogo) && trim($nexledLogo) !== "") {
+            $pdf->Image($nexledLogo, 10, 7, 30, 0, 'PNG', '', '', true, 300);
+        }
 
         if($empresa !== "0") {
-            $pdf->Image(dirname(__DIR__) . "/img/logos/$empresa.png", 170, 7, 30, 0, 'PNG', '', '', true, 300);
+            $companyLogo = function_exists("findDamOrLocalSharedAsset")
+                ? findDamOrLocalSharedAsset("logo", [$empresa], dirname(__DIR__) . "/img/logos/$empresa", ["png", "svg"])
+                : dirname(__DIR__) . "/img/logos/$empresa.png";
+            $companyLogo = is_string($companyLogo) && function_exists("getPdfSafeAssetPath")
+                ? getPdfSafeAssetPath($companyLogo)
+                : $companyLogo;
+
+            if (is_string($companyLogo) && trim($companyLogo) !== "") {
+                $pdf->Image($companyLogo, 170, 7, 30, 0, 'PNG', '', '', true, 300);
+            }
         }
 
         $html = <<<EOD
@@ -29,7 +47,16 @@ class NEXLEDPDF extends TCPDF {
         
         $pdf->Line(10, 275, 200, 275, array('width' => 0.2, 'color' => array(0, 0, 0)));
 
-        $pdf->Image(dirname(__DIR__) . "/img/logos/tecit.png", 10, 280, 25, 0, 'PNG', '', '', true, 300);
+        $tecitLogo = function_exists("findDamOrLocalSharedAsset")
+            ? findDamOrLocalSharedAsset("logo", ["tecit"], dirname(__DIR__) . "/img/logos/tecit", ["png", "svg"])
+            : dirname(__DIR__) . "/img/logos/tecit.png";
+        $tecitLogo = is_string($tecitLogo) && function_exists("getPdfSafeAssetPath")
+            ? getPdfSafeAssetPath($tecitLogo)
+            : $tecitLogo;
+
+        if (is_string($tecitLogo) && trim($tecitLogo) !== "") {
+            $pdf->Image($tecitLogo, 10, 280, 25, 0, 'PNG', '', '', true, 300);
+        }
         
 
         $pdf->SetY(-18);

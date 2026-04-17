@@ -120,14 +120,16 @@ function getBarDrawing(string $reference, string $productId, ?string $sizesFile,
         $cap,
     ];
 
-    $drawing = null;
-    foreach ($candidates as $name) {
-        $drawing = findImage(IMAGES_BASE_PATH . $folder . $name);
-        if ($drawing !== null) break;
-    }
+    $drawing = findDamProductAsset($family, $productId, "drawing", $candidates);
 
-    if ($drawing === null && in_array($family, ["31", "40"], true)) {
-        $drawing = findDamProductAsset($family, $productId, "technical_drawing", $candidates);
+    if ($drawing === null && !isDamPrimaryFamily($family)) {
+        foreach ($candidates as $name) {
+            $drawing = findImage(IMAGES_BASE_PATH . $folder . $name);
+
+            if ($drawing !== null) {
+                break;
+            }
+        }
     }
 
     // --- Read end cap dimensions from sizes JSON ---
@@ -274,10 +276,10 @@ function getStandardDrawing(string $reference, string $productId): array {
         $folder = "/img/$family/desenhos/";
     }
 
-    $drawing = findImage(IMAGES_BASE_PATH . $folder . $size);
+    $drawing = findDamProductAsset($family, $productId, "drawing", [$size]);
 
-    if ($drawing === null) {
-        $drawing = findDamProductAsset($family, $productId, "technical_drawing", [$size]);
+    if ($drawing === null && !isDamPrimaryFamily($family)) {
+        $drawing = findImage(IMAGES_BASE_PATH . $folder . $size);
     }
 
     // Read dimensions string from database: "A:145 B:72 C:70"

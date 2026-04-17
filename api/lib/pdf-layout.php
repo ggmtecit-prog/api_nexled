@@ -15,23 +15,24 @@
  */
 
 define("DATASHEET_JSON_PATH", dirname(__FILE__, 2) . "/json/datasheet.json");
-define("ICONS_PATH",          dirname(__FILE__, 3) . "/appdatasheets/img/icones/");
-define("ENERGY_CLASS_PATH",   dirname(__FILE__, 3) . "/appdatasheets/img/classe-energetica/");
 
 function toPdfAssetSrc(?string $path): string {
     if (!is_string($path) || trim($path) === "") {
         return "";
     }
 
-    if (
-        preg_match("#^(https?:)?//#i", $path) ||
-        str_starts_with($path, "data:") ||
-        str_starts_with($path, "file://")
-    ) {
+    if (str_starts_with($path, "data:") || str_starts_with($path, "file://")) {
         return $path;
     }
 
-    $resolved = realpath($path) ?: $path;
+    $resolved = function_exists("getPdfSafeAssetPath")
+        ? getPdfSafeAssetPath($path)
+        : (realpath($path) ?: $path);
+
+    if (preg_match("#^(https?:)?//#i", $resolved)) {
+        return $resolved;
+    }
+
     $preferredSvg = resolveLegacySvgPath($resolved);
 
     if ($preferredSvg !== null) {
@@ -42,18 +43,6 @@ function toPdfAssetSrc(?string $path): string {
 
     $normalized = str_replace("\\", "/", $resolved);
     $extension = strtolower(pathinfo($resolved, PATHINFO_EXTENSION));
-
-    if ($extension === "svg") {
-        if (preg_match("/^[A-Za-z]:\\//", $normalized)) {
-            return "file:///" . $normalized;
-        }
-
-        if (str_starts_with($normalized, "/")) {
-            return "file://" . $normalized;
-        }
-
-        return "file://" . $normalized;
-    }
 
     if (is_file($resolved)) {
         $contents = file_get_contents($resolved);
@@ -82,6 +71,26 @@ function toPdfAssetSrc(?string $path): string {
     }
 
     return $normalized;
+}
+
+function getPdfEnergyLabelPath(string $energyClass): ?string {
+    return findDamOrLocalSharedAsset(
+        "energy-label",
+        [$energyClass],
+        dirname(__FILE__, 3) . "/appdatasheets/img/classe-energetica/" . $energyClass,
+        ["svg", "png"]
+    );
+}
+
+function getPdfIconPath(string $iconFile): ?string {
+    $baseName = pathinfo($iconFile, PATHINFO_FILENAME);
+
+    return findDamOrLocalSharedAsset(
+        "icon",
+        [$iconFile, $baseName],
+        dirname(__FILE__, 3) . "/appdatasheets/img/icones/" . $baseName,
+        ["svg", "png"]
+    );
 }
 
 function buildPdfImageTag(?string $path, string $attributes = ""): string {
@@ -223,7 +232,7 @@ function normalizeSvgDimensionValue(string $value): string {
  * @return string  HTML
  */
 function buildHeader(array $header, string $energyClass): string {
-    $energyClassImg = toPdfAssetSrc(ENERGY_CLASS_PATH . $energyClass . ".svg");
+    $energyClassImg = getPdfEnergyLabelPath($energyClass);
     $productImageTag = buildPdfImageTag($header["image"] ?? null);
     $energyClassTag = buildPdfImageTag($energyClassImg, "width=\"40\"");
 
@@ -358,7 +367,7 @@ function buildLuminotechnicalNotes(string $reference, string $ipRating, object $
         $current = -($cols - count($symbolFiles) - $i);
         $symbols .= "<td colspan=\"5\" style=\"text-align:right;\">";
         if (isset($symbolFiles[$current])) {
-            $symbols .= buildPdfImageTag(ICONS_PATH . $symbolFiles[$current], "width=\"30\"");
+            $symbols .= buildPdfImageTag(getPdfIconPath($symbolFiles[$current]), "width=\"30\"");
         }
         $symbols .= "</td>";
     }

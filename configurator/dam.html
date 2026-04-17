@@ -309,17 +309,17 @@
     </div>
 
     <div class="modal-overlay" id="damAssetDetailsModal" aria-hidden="true" data-dam-asset-modal>
-        <div class="modal max-h-screen overflow-hidden" role="dialog" aria-modal="true" aria-labelledby="damAssetDetailsTitle" aria-describedby="damAssetDetailsBody" tabindex="-1" data-dam-asset-modal-panel>
+        <div class="modal max-h-full overflow-hidden" role="dialog" aria-modal="true" aria-labelledby="damAssetDetailsTitle" aria-describedby="damAssetDetailsBody" tabindex="-1" data-dam-asset-modal-panel>
             <div class="modal-header">
                 <div>
-                    <h2 id="damAssetDetailsTitle" class="modal-title" data-i18n="dam.assetDetails">Asset Details</h2>
+                    <h2 id="damAssetDetailsTitle" class="modal-title" data-i18n="dam.assetDetails" data-dam-asset-modal-title>Asset Details</h2>
                 </div>
                 <button type="button" class="btn btn-ghost btn-icon btn-xs" aria-label="Close asset details" data-i18n-aria-label="dam.closeAssetDetails" data-dam-close-asset-modal>
                     <i class="ri-close-line text-icon-md" aria-hidden="true"></i>
                 </button>
             </div>
 
-            <div id="damAssetDetailsBody" class="modal-body overflow-y-auto pr-4">
+            <div id="damAssetDetailsBody" class="modal-body flex-1 min-h-0 overflow-y-auto overflow-x-hidden">
                 <div class="flex flex-col gap-16">
                     <div class="panel panel-sm flex h-72 sm:h-80 lg:h-96 items-center justify-center overflow-hidden" data-dam-asset-preview>
                         <div class="flex flex-col items-center gap-12 text-center" data-dam-empty-asset>
@@ -328,34 +328,42 @@
                         </div>
                     </div>
 
-                    <div class="panel border-0 bg-transparent">
-                        <div class="list list-spec list-md">
-                            <div class="list-item">
-                                <span class="list-key" data-i18n="dam.assetName">Asset Name</span>
-                                <span class="list-value break-all" data-dam-asset-name>-</span>
+                    <div class="grid gap-16 lg:grid-cols-3 lg:items-start">
+                        <div class="panel border-0 bg-transparent lg:col-span-2">
+                            <div class="list list-spec list-md" data-dam-asset-meta-list>
+                                <div class="list-item">
+                                    <span class="list-key" data-i18n="dam.assetSize">File Size</span>
+                                    <span class="list-value break-all" data-dam-asset-size>-</span>
+                                </div>
+                                <div class="list-item">
+                                    <span class="list-key" data-i18n="dam.assetFormat">Format</span>
+                                    <span class="list-value break-all" data-dam-asset-format>-</span>
+                                </div>
+                                <div class="list-item">
+                                    <span class="list-key" data-i18n="dam.assetFolderPath">Folder Path</span>
+                                    <span class="list-value break-all" data-dam-asset-folder>-</span>
+                                </div>
                             </div>
-                            <div class="list-item">
-                                <span class="list-key" data-i18n="dam.assetType">Asset Type</span>
-                                <span class="list-value break-all" data-dam-asset-type>-</span>
-                            </div>
-                            <div class="list-item">
-                                <span class="list-key" data-i18n="dam.assetSize">File Size</span>
-                                <span class="list-value break-all" data-dam-asset-size>-</span>
-                            </div>
-                            <div class="list-item">
-                                <span class="list-key" data-i18n="dam.assetFormat">Format</span>
-                                <span class="list-value break-all" data-dam-asset-format>-</span>
-                            </div>
-                            <div class="list-item">
-                                <span class="list-key" data-i18n="dam.assetFolderPath">Folder Path</span>
-                                <span class="list-value break-all" data-dam-asset-folder>-</span>
-                            </div>
+                        </div>
+
+                        <div class="flex flex-col gap-12 lg:col-span-1">
+                            <button type="button" class="btn btn-secondary btn-sm justify-center" data-dam-open-asset disabled>
+                                <i class="ri-eye-line text-icon-sm" aria-hidden="true"></i>
+                                <span data-i18n="dam.assetAction.preview">Preview</span>
+                            </button>
+                            <button type="button" class="btn btn-secondary btn-sm justify-center" data-dam-copy-asset-url disabled>
+                                <i class="ri-link text-icon-sm" aria-hidden="true"></i>
+                                <span data-i18n="dam.copyAssetUrl">Copy Asset URL</span>
+                            </button>
+                            <button type="button" class="btn btn-secondary btn-sm btn-toggle" data-toggle-pressed data-dam-toggle-linking aria-expanded="false" aria-pressed="false" aria-controls="damAssetLinkingPanel">
+                                <i class="ri-eye-line text-icon-lg" aria-hidden="true" data-dam-toggle-linking-icon></i>
+                                <span data-dam-toggle-linking-label>Show linking</span>
+                            </button>
                         </div>
                     </div>
 
-                    <div class="panel panel-sm flex flex-col gap-16">
+                    <div class="flex flex-col gap-16" id="damAssetLinkingPanel" data-dam-linking-panel>
                         <div class="flex flex-col gap-8">
-                            <span class="input-label" data-i18n="dam.linkAssetTitle">Link Asset</span>
                             <div class="grid gap-12 sm:grid-cols-2">
                                 <div class="flex flex-col gap-6">
                                     <label class="input-label" for="dam-link-family-code" data-i18n="dam.linkFamilyCode">Family Code</label>
@@ -383,21 +391,9 @@
                         </div>
 
                         <div class="flex flex-col gap-8">
-                            <span class="input-label" data-i18n="dam.currentLinksTitle">Current Links</span>
                             <div class="flex flex-col gap-8" data-dam-links-list></div>
                             <span class="text-body-sm text-grey-primary" data-dam-empty-links data-i18n="dam.noLinks">No links yet.</span>
                         </div>
-                    </div>
-
-                    <div class="flex flex-wrap gap-12">
-                        <button type="button" class="btn btn-secondary btn-sm" data-dam-open-asset disabled>
-                            <i class="ri-eye-line text-icon-sm" aria-hidden="true"></i>
-                            <span data-i18n="dam.assetAction.preview">Preview</span>
-                        </button>
-                        <button type="button" class="btn btn-secondary btn-sm" data-dam-copy-asset-url disabled>
-                            <i class="ri-link text-icon-sm" aria-hidden="true"></i>
-                            <span data-i18n="dam.copyAssetUrl">Copy Asset URL</span>
-                        </button>
                     </div>
 
                     <span class="text-body-xs text-grey-primary min-h-16" data-dam-asset-status></span>

@@ -4,6 +4,7 @@ const DAM_ROOT_FOLDER_ID = "nexled";
 const DAM_DEFAULT_FOLDER_ID = "nexled/datasheet";
 const DAM_ROLE_OPTIONS = ["packshot", "finish", "drawing", "diagram", "diagram-inv", "mounting", "connector", "temperature", "energy-label", "icon", "logo", "power-supply", "product-photo", "lifestyle", "datasheet-pdf", "eprel-label", "eprel-fiche", "brand-logo", "brand-asset", "hero", "banner", "category", "support-asset", "web-asset"];
 const DAM_GRID_THUMB_TRANSFORM = "c_fit,w_240,h_240,dpr_auto,f_auto,q_auto";
+const DAM_GRID_PDF_FETCH_TRANSFORM = "c_fit,w_240,h_240,f_auto,q_auto";
 
 const damState = {
     tree: [],
@@ -16,6 +17,7 @@ const damState = {
     selectedAssetLinks: [],
     selectedAssetLinksLoading: false,
     selectedAssetLinkActionBusy: false,
+    assetLinkPanelHidden: true,
     searchQuery: "",
     createFolderParentId: "",
     treeErrorMessage: "",
@@ -77,11 +79,11 @@ function getDamElements() {
     const uploadStatus = document.querySelector("[data-dam-upload-status]");
     const assetModal = document.querySelector("[data-dam-asset-modal]");
     const assetModalPanel = document.querySelector("[data-dam-asset-modal-panel]");
+    const assetModalTitle = document.querySelector("[data-dam-asset-modal-title]");
     const closeAssetModalButton = document.querySelector("[data-dam-close-asset-modal]");
     const assetPreview = document.querySelector("[data-dam-asset-preview]");
     const emptyAsset = document.querySelector("[data-dam-empty-asset]");
-    const assetName = document.querySelector("[data-dam-asset-name]");
-    const assetType = document.querySelector("[data-dam-asset-type]");
+    const assetMetaList = document.querySelector("[data-dam-asset-meta-list]");
     const assetSize = document.querySelector("[data-dam-asset-size]");
     const assetFormat = document.querySelector("[data-dam-asset-format]");
     const assetFolder = document.querySelector("[data-dam-asset-folder]");
@@ -94,9 +96,13 @@ function getDamElements() {
     const emptyLinks = document.querySelector("[data-dam-empty-links]");
     const openAssetButton = document.querySelector("[data-dam-open-asset]");
     const copyAssetUrlButton = document.querySelector("[data-dam-copy-asset-url]");
+    const toggleLinkingButton = document.querySelector("[data-dam-toggle-linking]");
+    const toggleLinkingIcon = document.querySelector("[data-dam-toggle-linking-icon]");
+    const toggleLinkingLabel = document.querySelector("[data-dam-toggle-linking-label]");
+    const linkingPanel = document.querySelector("[data-dam-linking-panel]");
     const assetStatus = document.querySelector("[data-dam-asset-status]");
 
-    if (!fileGrid || !emptyState || !emptyStateLabel || !searchInput || !breadcrumb || !rootDropdown || !rootValue || !rootMenu || !refreshTreeButton || !openCreateFolderButton || !createFolderModal || !createFolderInput || !createFolderParentDropdown || !createFolderParentValue || !createFolderParentMenu || !createFolderButton || !folderActionStatus || !uploadTrigger || !uploadInput || !uploadStatus || !assetModal || !assetModalPanel || !closeAssetModalButton || !assetPreview || !emptyAsset || !assetName || !assetType || !assetSize || !assetFormat || !assetFolder || !linkFamilyCodeInput || !linkProductCodeInput || !linkRoleSelect || !linkSortOrderInput || !linkSubmitButton || !linksList || !emptyLinks || !openAssetButton || !copyAssetUrlButton || !assetStatus) {
+    if (!fileGrid || !emptyState || !emptyStateLabel || !searchInput || !breadcrumb || !rootDropdown || !rootValue || !rootMenu || !refreshTreeButton || !openCreateFolderButton || !createFolderModal || !createFolderInput || !createFolderParentDropdown || !createFolderParentValue || !createFolderParentMenu || !createFolderButton || !folderActionStatus || !uploadTrigger || !uploadInput || !uploadStatus || !assetModal || !assetModalPanel || !assetModalTitle || !closeAssetModalButton || !assetPreview || !emptyAsset || !assetMetaList || !assetSize || !assetFormat || !assetFolder || !linkFamilyCodeInput || !linkProductCodeInput || !linkRoleSelect || !linkSortOrderInput || !linkSubmitButton || !linksList || !emptyLinks || !openAssetButton || !copyAssetUrlButton || !toggleLinkingButton || !toggleLinkingIcon || !toggleLinkingLabel || !linkingPanel || !assetStatus) {
         return null;
     }
 
@@ -123,11 +129,11 @@ function getDamElements() {
         uploadStatus,
         assetModal,
         assetModalPanel,
+        assetModalTitle,
         closeAssetModalButton,
         assetPreview,
         emptyAsset,
-        assetName,
-        assetType,
+        assetMetaList,
         assetSize,
         assetFormat,
         assetFolder,
@@ -140,6 +146,10 @@ function getDamElements() {
         emptyLinks,
         openAssetButton,
         copyAssetUrlButton,
+        toggleLinkingButton,
+        toggleLinkingIcon,
+        toggleLinkingLabel,
+        linkingPanel,
         assetStatus,
     };
 }
@@ -210,6 +220,15 @@ function bindDamEvents() {
             console.error(error);
             setAssetStatus(t("dam.copyAssetUrlFailed", "Unable to copy asset URL."));
         }
+    });
+
+    damElements.toggleLinkingButton.addEventListener("click", () => {
+        if (!damState.selectedAsset?.id) {
+            return;
+        }
+
+        damState.assetLinkPanelHidden = !damState.assetLinkPanelHidden;
+        syncAssetLinkPanelVisibility();
     });
 
     damElements.linkSubmitButton.addEventListener("click", handleCreateAssetLink);
@@ -840,10 +859,10 @@ function createAssetCard(asset) {
     name.textContent = asset.display_name || asset.filename;
 
     const overlay = document.createElement("div");
-    overlay.className = "pointer-events-none absolute inset-0 flex items-center justify-center gap-12 rounded-8 bg-white/90 opacity-0 transition-opacity group-hover:opacity-100 group-hover:pointer-events-auto";
+    overlay.className = "pointer-events-none absolute inset-0 flex items-center justify-center gap-12 rounded-lg bg-white/90 opacity-0 transition-opacity group-hover:opacity-100 group-hover:pointer-events-auto";
 
     overlay.appendChild(createAssetActionButton("ri-download-line", t("dam.assetAction.download", "Download"), () => {
-        window.open(asset.secure_url, "_blank", "noopener");
+        void handleAssetDownload(asset);
     }));
     overlay.appendChild(createAssetActionButton("ri-external-link-line", t("dam.openInNewTab", "Open in New Tab"), () => {
         window.open(asset.secure_url, "_blank", "noopener");
@@ -852,18 +871,17 @@ function createAssetCard(asset) {
         openAssetDetailsModal(asset.id, triggerButton);
     }));
 
+    preview.appendChild(overlay);
     wrapper.appendChild(preview);
     wrapper.appendChild(name);
-    wrapper.appendChild(overlay);
     return wrapper;
 }
 
 function createAssetGridPreview(asset) {
     const preview = document.createElement("div");
-    preview.className = "relative flex w-full items-center justify-center overflow-hidden rounded-8";
+    preview.className = "relative flex w-full items-center justify-center overflow-visible rounded-lg";
     preview.style.aspectRatio = "1 / 1";
     preview.style.minHeight = "120px";
-    preview.style.backgroundColor = "rgba(15, 23, 42, 0.03)";
 
     const fallback = createAssetGridPreviewFallback(asset);
     preview.appendChild(fallback);
@@ -873,12 +891,12 @@ function createAssetGridPreview(asset) {
         return preview;
     }
 
-    fallback.hidden = true;
+    fallback.classList.add("hidden");
 
     const image = document.createElement("img");
     image.src = thumbnailUrl;
     image.alt = asset.display_name || asset.filename || "Asset thumbnail";
-    image.className = "h-full w-full object-contain";
+    image.className = "block h-full w-full rounded-lg border border-grey-secondary bg-grey-secondary object-cover object-center";
     image.loading = "lazy";
     image.decoding = "async";
     image.fetchPriority = "low";
@@ -886,12 +904,12 @@ function createAssetGridPreview(asset) {
     image.height = 240;
 
     image.addEventListener("load", () => {
-        fallback.hidden = true;
+        fallback.classList.add("hidden");
     });
 
     image.addEventListener("error", () => {
         image.remove();
-        fallback.hidden = false;
+        fallback.classList.remove("hidden");
     });
 
     preview.appendChild(image);
@@ -900,7 +918,7 @@ function createAssetGridPreview(asset) {
 
 function createAssetGridPreviewFallback(asset) {
     const fallback = document.createElement("div");
-    fallback.className = "flex h-full w-full items-center justify-center rounded-8";
+    fallback.className = "flex h-full w-full items-center justify-center rounded-lg border border-grey-secondary bg-grey-secondary";
 
     const icon = document.createElement("i");
     icon.className = getAssetIconClass(asset) + " text-icon-xxl text-grey-primary";
@@ -912,7 +930,7 @@ function createAssetGridPreviewFallback(asset) {
 
 function createAssetActionButton(iconClass, label, handler, disabled = false) {
     const wrapper = document.createElement("span");
-    wrapper.className = "tooltip-wrapper group/tip";
+    wrapper.className = "tooltip-wrapper group/tip relative z-0";
 
     const button = document.createElement("button");
     button.type = "button";
@@ -942,9 +960,82 @@ function createAssetActionButton(iconClass, label, handler, disabled = false) {
     tooltip.className = "pointer-events-none absolute left-1/2 top-full mt-8 -translate-x-1/2 whitespace-nowrap rounded-xs bg-black px-8 py-4 text-body-xs text-white opacity-0 transition-all shadow-btn-default group-hover/tip:opacity-100";
     tooltip.textContent = label;
 
+    const showTooltipLayer = () => {
+        wrapper.style.zIndex = "var(--z-tooltip)";
+        tooltip.style.zIndex = "var(--z-tooltip)";
+    };
+
+    const hideTooltipLayer = () => {
+        wrapper.style.zIndex = "";
+        tooltip.style.zIndex = "";
+    };
+
+    wrapper.addEventListener("mouseenter", showTooltipLayer);
+    wrapper.addEventListener("mouseleave", hideTooltipLayer);
+    wrapper.addEventListener("focusin", showTooltipLayer);
+    wrapper.addEventListener("focusout", (event) => {
+        if (wrapper.contains(event.relatedTarget)) {
+            return;
+        }
+
+        hideTooltipLayer();
+    });
+
     wrapper.appendChild(button);
     wrapper.appendChild(tooltip);
     return wrapper;
+}
+
+async function handleAssetDownload(asset) {
+    const secureUrl = normalizeDamAssetUrl(asset?.secure_url);
+    const downloadName = resolveAssetDownloadFilename(asset);
+
+    if (!secureUrl) {
+        return;
+    }
+
+    try {
+        const response = await fetch(secureUrl, {
+            method: "GET",
+            mode: "cors",
+            credentials: "omit",
+        });
+
+        if (!response.ok) {
+            throw new Error("Asset download failed.");
+        }
+
+        const blob = await response.blob();
+        triggerAssetDownload(URL.createObjectURL(blob), downloadName);
+        return;
+    } catch (error) {
+        console.error(error);
+    }
+
+    triggerAssetDownload(buildCloudinaryDownloadUrl(secureUrl, downloadName), downloadName);
+}
+
+function triggerAssetDownload(url, filename) {
+    const link = document.createElement("a");
+    link.href = url;
+    link.rel = "noopener";
+    link.download = filename || "asset";
+    link.style.display = "none";
+
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+
+    if (typeof url === "string" && url.startsWith("blob:")) {
+        window.setTimeout(() => {
+            URL.revokeObjectURL(url);
+        }, 1000);
+    }
+}
+
+function resolveAssetDownloadFilename(asset) {
+    const displayName = String(asset?.display_name || asset?.filename || "").trim();
+    return displayName !== "" ? displayName : "asset";
 }
 
 function selectAssetById(assetId) {
@@ -953,6 +1044,7 @@ function selectAssetById(assetId) {
     damState.selectedAssetLinks = [];
     damState.selectedAssetLinksLoading = false;
     damState.selectedAssetLinkActionBusy = false;
+    damState.assetLinkPanelHidden = true;
     resetAssetLinkForm();
     if (damState.selectedAsset && damElements) {
         damElements.linkRoleSelect.value = getDefaultAssetLinkRole(damState.selectedAsset);
@@ -966,6 +1058,7 @@ function clearSelectedAsset() {
     damState.selectedAssetLinks = [];
     damState.selectedAssetLinksLoading = false;
     damState.selectedAssetLinkActionBusy = false;
+    damState.assetLinkPanelHidden = true;
     resetAssetLinkForm();
     renderSelectedAsset();
 }
@@ -1174,8 +1267,7 @@ function renderSelectedAsset() {
 
     if (!asset) {
         damElements.assetPreview.appendChild(damElements.emptyAsset);
-        damElements.assetName.textContent = "-";
-        damElements.assetType.textContent = "-";
+        damElements.assetModalTitle.textContent = t("dam.assetDetails", "Asset Details");
         damElements.assetSize.textContent = "-";
         damElements.assetFormat.textContent = "-";
         damElements.assetFolder.textContent = "-";
@@ -1184,13 +1276,16 @@ function renderSelectedAsset() {
         resetAssetLinkForm();
         renderSelectedAssetLinks();
         syncAssetLinkControls();
+        syncAssetLinkPanelVisibility();
         setAssetStatus("");
         return;
     }
 
-    if (asset.resource_type === "image" && asset.secure_url) {
+    const previewImageUrl = resolveSelectedAssetPreviewUrl(asset);
+
+    if (previewImageUrl) {
         const image = document.createElement("img");
-        image.src = asset.secure_url;
+        image.src = previewImageUrl;
         image.alt = asset.display_name || asset.filename || "Asset preview";
         image.className = "h-full max-h-full w-full max-w-full rounded-8 object-contain";
         damElements.assetPreview.appendChild(image);
@@ -1211,8 +1306,8 @@ function renderSelectedAsset() {
         damElements.assetPreview.appendChild(fallback);
     }
 
-    damElements.assetName.textContent = asset.display_name || asset.filename || "-";
-    damElements.assetType.textContent = asset.resource_type || "-";
+    const assetDisplayName = asset.display_name || asset.filename || t("dam.assetDetails", "Asset Details");
+    damElements.assetModalTitle.textContent = assetDisplayName;
     damElements.assetSize.textContent = formatBytes(asset.bytes) || "-";
     damElements.assetFormat.textContent = String(asset.format || "-").toUpperCase();
     damElements.assetFolder.textContent = asset.asset_folder || "-";
@@ -1223,6 +1318,7 @@ function renderSelectedAsset() {
     }
     renderSelectedAssetLinks();
     syncAssetLinkControls();
+    syncAssetLinkPanelVisibility();
     setAssetStatus("");
 }
 
@@ -1231,6 +1327,7 @@ function renderSelectedAssetLinks() {
         return;
     }
 
+    damElements.assetMetaList.querySelectorAll("[data-dam-dynamic-link-row]").forEach((row) => row.remove());
     damElements.linksList.innerHTML = "";
 
     if (!damState.selectedAsset) {
@@ -1255,25 +1352,54 @@ function renderSelectedAssetLinks() {
     const fragment = document.createDocumentFragment();
 
     damState.selectedAssetLinks.forEach((link) => {
-        const item = document.createElement("div");
-        item.className = "panel panel-sm flex flex-col gap-8";
+        const targetItem = document.createElement("div");
+        targetItem.className = "list-item";
+        targetItem.dataset.damDynamicLinkRow = "true";
 
-        const header = document.createElement("div");
-        header.className = "flex flex-wrap items-start justify-between gap-12";
+        const targetKey = document.createElement("span");
+        targetKey.className = "list-key";
+        targetKey.textContent = t("dam.linkTargetLabel", "Linked To");
 
-        const content = document.createElement("div");
-        content.className = "flex min-w-0 flex-1 flex-col gap-2";
+        const targetValue = document.createElement("span");
+        targetValue.className = "list-value break-all";
+        targetValue.textContent = buildAssetLinkTargetText(link);
 
-        const target = document.createElement("span");
-        target.className = "text-body-sm text-black break-all";
-        target.textContent = buildAssetLinkTargetText(link);
+        targetItem.appendChild(targetKey);
+        targetItem.appendChild(targetValue);
 
-        const meta = document.createElement("span");
-        meta.className = "text-body-xs text-grey-primary break-all";
-        meta.textContent = formatDamRoleLabel(link.role || "") + " · " + t("dam.linkSortMeta", "Sort") + ": " + String(link.sort_order ?? 0);
+        const roleItem = document.createElement("div");
+        roleItem.className = "list-item";
+        roleItem.dataset.damDynamicLinkRow = "true";
 
-        content.appendChild(target);
-        content.appendChild(meta);
+        const roleKey = document.createElement("span");
+        roleKey.className = "list-key";
+        roleKey.textContent = t("dam.linkRole", "Role");
+
+        const roleValue = document.createElement("span");
+        roleValue.className = "list-value break-all";
+        roleValue.textContent = formatDamRoleLabel(link.role || "");
+
+        roleItem.appendChild(roleKey);
+        roleItem.appendChild(roleValue);
+
+        const sortItem = document.createElement("div");
+        sortItem.className = "list-item";
+        sortItem.dataset.damDynamicLinkRow = "true";
+
+        const sortKey = document.createElement("span");
+        sortKey.className = "list-key";
+        sortKey.textContent = t("dam.linkSortOrder", "Sort Order");
+
+        const sortValue = document.createElement("span");
+        sortValue.className = "list-value break-all";
+        sortValue.textContent = String(link.sort_order ?? 0);
+
+        sortItem.appendChild(sortKey);
+        sortItem.appendChild(sortValue);
+
+        damElements.assetMetaList.appendChild(targetItem);
+        damElements.assetMetaList.appendChild(roleItem);
+        damElements.assetMetaList.appendChild(sortItem);
 
         const button = document.createElement("button");
         button.type = "button";
@@ -1291,10 +1417,10 @@ function renderSelectedAssetLinks() {
 
         button.appendChild(icon);
         button.appendChild(label);
-        header.appendChild(content);
-        header.appendChild(button);
-        item.appendChild(header);
-        fragment.appendChild(item);
+        const buttonRow = document.createElement("div");
+        buttonRow.className = "flex justify-end border-b border-grey-secondary/60 pb-8 last:border-b-0 last:pb-0";
+        buttonRow.appendChild(button);
+        fragment.appendChild(buttonRow);
     });
 
     damElements.linksList.appendChild(fragment);
@@ -1313,6 +1439,24 @@ function syncAssetLinkControls() {
     damElements.linkRoleSelect.disabled = disabled;
     damElements.linkSortOrderInput.disabled = disabled;
     damElements.linkSubmitButton.disabled = disabled;
+    damElements.toggleLinkingButton.disabled = !hasAsset;
+}
+
+function syncAssetLinkPanelVisibility() {
+    if (!damElements) {
+        return;
+    }
+
+    const hasAsset = Boolean(damState.selectedAsset?.id);
+    const isHidden = !hasAsset || damState.assetLinkPanelHidden;
+    const labelKey = isHidden ? "dam.showAssetLinks" : "dam.hideAssetLinks";
+    const labelFallback = isHidden ? "Show linking" : "Hide linking";
+
+    damElements.linkingPanel.classList.toggle("hidden", isHidden);
+    damElements.toggleLinkingButton.setAttribute("aria-expanded", String(!isHidden));
+    damElements.toggleLinkingButton.setAttribute("aria-pressed", String(!isHidden));
+    damElements.toggleLinkingLabel.textContent = t(labelKey, labelFallback);
+    damElements.toggleLinkingIcon.className = (isHidden ? "ri-eye-line" : "ri-eye-off-line") + " text-icon-lg";
 }
 
 function resetAssetLinkForm() {
@@ -1393,8 +1537,20 @@ function setUploadStatus(message) {
 
 function setAssetStatus(message) {
     if (damElements) {
-        damElements.assetStatus.textContent = message;
+    damElements.assetStatus.textContent = message;
     }
+}
+
+function resolveSelectedAssetPreviewUrl(asset) {
+    const resourceType = String(asset?.resource_type || "").toLowerCase();
+    const format = String(asset?.format || "").toLowerCase();
+    const secureUrl = normalizeDamAssetUrl(asset?.secure_url);
+
+    if (resourceType === "image" && format !== "pdf" && secureUrl) {
+        return secureUrl;
+    }
+
+    return resolveAssetThumbnailUrl(asset);
 }
 
 function getDamErrorMessage(error, fallback) {
@@ -1570,16 +1726,18 @@ function formatDamRoleLabel(role) {
 function resolveAssetThumbnailUrl(asset) {
     const explicitThumbnailUrl = normalizeDamAssetUrl(asset?.thumbnail_url);
     const secureUrl = normalizeDamAssetUrl(asset?.secure_url);
+    const resourceType = String(asset?.resource_type || "").toLowerCase();
+    const format = String(asset?.format || "").toLowerCase();
 
-    if (String(asset?.resource_type || "").toLowerCase() !== "image") {
-        return "";
-    }
-
-    if (explicitThumbnailUrl && explicitThumbnailUrl !== secureUrl) {
+    if (explicitThumbnailUrl) {
         return explicitThumbnailUrl;
     }
 
-    return buildCloudinaryThumbnailUrl(secureUrl);
+    if (resourceType === "image" && format !== "pdf" && secureUrl) {
+        return secureUrl;
+    }
+
+    return "";
 }
 
 function normalizeDamAssetUrl(value) {
@@ -1604,6 +1762,68 @@ function buildCloudinaryThumbnailUrl(url) {
     }
 
     return base + uploadMarker + DAM_GRID_THUMB_TRANSFORM + "/" + remainder;
+}
+
+function buildCloudinaryDownloadUrl(url, filename = "") {
+    if (!url) {
+        return "";
+    }
+
+    const uploadMarker = "/upload/";
+    const parts = url.split(uploadMarker);
+
+    if (parts.length !== 2) {
+        return url;
+    }
+
+    const [base, remainder] = parts;
+    if (!remainder) {
+        return url;
+    }
+
+    const attachmentQualifier = buildCloudinaryAttachmentQualifier(filename);
+    return base + uploadMarker + attachmentQualifier + "/" + remainder;
+}
+
+function buildCloudinaryAttachmentQualifier(filename) {
+    const baseName = buildCloudinaryAttachmentBaseName(filename);
+    return baseName ? "fl_attachment:" + encodeURIComponent(baseName) : "fl_attachment";
+}
+
+function buildCloudinaryAttachmentBaseName(filename) {
+    const rawName = String(filename || "").trim();
+
+    if (!rawName) {
+        return "";
+    }
+
+    const lastDotIndex = rawName.lastIndexOf(".");
+    if (lastDotIndex <= 0) {
+        return rawName;
+    }
+
+    return rawName.slice(0, lastDotIndex);
+}
+
+function buildCloudinaryFetchThumbnailUrl(url) {
+    if (!url) {
+        return "";
+    }
+
+    try {
+        const parsedUrl = new URL(url);
+        const pathSegments = parsedUrl.pathname.split("/").filter(Boolean);
+        const cloudName = pathSegments[0] || "";
+
+        if (!cloudName) {
+            return "";
+        }
+
+        return parsedUrl.origin + "/" + cloudName + "/image/fetch/" + DAM_GRID_PDF_FETCH_TRANSFORM + "/" + encodeURIComponent(url);
+    } catch (error) {
+        console.error(error);
+        return "";
+    }
 }
 
 function syncRootDropdownSelection(folderId) {

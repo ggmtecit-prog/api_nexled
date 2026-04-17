@@ -93,6 +93,34 @@ Future readiness likely depends on:
 2. family `05` now has DAM path mapping, but no confirmed DAM T5 assets have been loaded yet
 3. official fixed `00` not yet proven as hard runtime rule
 
+## 2026-04-17 Blocker Verification
+
+Family `05` was re-checked directly during DAM rollout continuation.
+
+What is now confirmed:
+
+- valid live T5 references do exist, for example:
+  - `05025725111010100`
+- this decodes and resolves to a real DB product:
+  - `T5/24v/30/3s`
+- live datasheet runtime reaches the strict missing-data gate and fails honestly with:
+  - `Missing required data: product image`
+- local DAM state is still empty for family `05`:
+  - `dam_asset_links` count for family `05` = `0`
+- no `appdatasheets/img/05` tree exists in this repo
+- sibling legacy app at `C:\xampp\htdocs\appDatasheets\img` also has no `05` folder
+
+Meaning:
+
+- family `05` is **not** blocked by decoder/runtime/product-ID logic anymore
+- family `05` is blocked by missing real T5 image source files
+- safe next move is asset recovery/discovery, not API rewrite
+
+Operational rule:
+
+- do not make family `05` DAM-primary until real T5 assets are recovered
+- do not invent placeholder imports for T5 just to advance rollout state
+
 ## Best Next Follow-Up
 
 - restore/import real T5 assets into local legacy tree or DAM family `05_t5-vc`

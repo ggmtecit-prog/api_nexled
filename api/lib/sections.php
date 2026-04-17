@@ -38,14 +38,23 @@ if (!defined("COLOR_GRAPH_ALIASES")) {
     ]);
 }
 
-function getFinishPlaceholderImage(): ?string {
+function getFinishPlaceholderImage(?string $family = null): ?string {
+    if ($family !== null && isDamPrimaryFamily($family)) {
+        return null;
+    }
+
     $placeholder = findImage(FINISH_PLACEHOLDER_PATH);
 
     if ($placeholder !== null) {
         return $placeholder;
     }
 
-    return findImage(IMAGES_BASE_PATH . "/img/logos/nexled");
+    return findDamOrLocalSharedAsset(
+        "logo",
+        ["nexled"],
+        IMAGES_BASE_PATH . "/img/logos/nexled",
+        ["png", "svg"]
+    );
 }
 
 function isFinishPlaceholderImage(?string $path): bool {
@@ -102,10 +111,20 @@ function getColorGraph(string $ledId, string $lang): ?array {
         return null;
     }
 
-    $image = findImage(IMAGES_BASE_PATH . "/img/temperaturas/" . $ledId);
+    $image = findDamOrLocalSharedAsset(
+        "temperature",
+        [$ledId],
+        IMAGES_BASE_PATH . "/img/temperaturas/" . $ledId,
+        ["svg", "png"]
+    );
 
     if ($image === null && $aliasLedId !== $ledId) {
-        $image = findImage(IMAGES_BASE_PATH . "/img/temperaturas/" . $aliasLedId);
+        $image = findDamOrLocalSharedAsset(
+            "temperature",
+            [$aliasLedId],
+            IMAGES_BASE_PATH . "/img/temperaturas/" . $aliasLedId,
+            ["svg", "png"]
+        );
     }
 
     if ($image === null) {
@@ -154,17 +173,21 @@ function getLensDiagram(string $productId, string $reference): ?array {
         $base = IMAGES_BASE_PATH . "/img/$family/diagramas/";
     }
 
-    $diagramPath = findImage($base . $lens);
+    $diagramPath = findDamProductAsset($family, $productId, "diagram", [$lens]);
 
-    if ($diagramPath === null) {
-        $diagramPath = findDamProductAsset($family, $productId, "technical_diagram", [$lens]);
-
-        if ($diagramPath === null) {
-            return null;
-        }
+    if ($diagramPath === null && !isDamPrimaryFamily($family)) {
+        $diagramPath = findImage($base . $lens);
     }
 
-    $illuminancePath = findImage($base . "i/$lens");
+    if ($diagramPath === null) {
+        return null;
+    }
+
+    $illuminancePath = findDamProductAsset($family, $productId, "diagram-inv", [$lens]);
+
+    if ($illuminancePath === null && !isDamPrimaryFamily($family)) {
+        $illuminancePath = findImage($base . "i/$lens");
+    }
 
     return [
         "diagram"     => $diagramPath,
@@ -294,24 +317,20 @@ function getFinishAndLens(string $productType, string $productId, string $refere
             break;
     }
 
-    $image = null;
-    foreach ($candidates as $name) {
-        $image = findImage(IMAGES_BASE_PATH . $folder . $name);
-        if ($image !== null) break;
-    }
+    $image = findDamProductAsset($family, $productId, "finish", $candidates);
 
-    if (
-        $image === null &&
-        (
-            in_array($productType, ["shelf", "tubular"], true) ||
-            ($productType === "barra" && in_array($family, ["31", "40"], true))
-        )
-    ) {
-        $image = findDamProductAsset($family, $productId, "technical_finish", $candidates);
+    if ($image === null && !isDamPrimaryFamily($family)) {
+        foreach ($candidates as $name) {
+            $image = findImage(IMAGES_BASE_PATH . $folder . $name);
+
+            if ($image !== null) {
+                break;
+            }
+        }
     }
 
     if ($image === null) {
-        $image = getFinishPlaceholderImage();
+        $image = getFinishPlaceholderImage($family);
 
         if ($image === null) {
             return null;
@@ -369,12 +388,25 @@ function getFixing(string $reference, string $lens, string $cableType, string $e
         $fixingId,
     ];
 
-    $image  = null;
-    $render = null;
+    $imageCandidates = $candidates;
+    $renderCandidates = array_map(
+        static fn($value) => $value . "_render",
+        $candidates
+    );
 
-    foreach ($candidates as $name) {
-        if ($image  === null) $image  = findImage($folder . $name);
-        if ($render === null) $render = findImage($folder . $name . "_render");
+    $image = findDamProductAsset($family, "", "mounting", $imageCandidates);
+    $render = findDamProductAsset($family, "", "mounting", $renderCandidates);
+
+    if (!isDamPrimaryFamily($family)) {
+        foreach ($candidates as $name) {
+            if ($image === null) {
+                $image = findImage($folder . $name);
+            }
+
+            if ($render === null) {
+                $render = findImage($folder . $name . "_render");
+            }
+        }
     }
 
     if ($image === null || $render === null) {
@@ -419,8 +451,18 @@ function getPowerSupply(string $supplyId, string $lang): ?array {
 
     $folder = IMAGES_BASE_PATH . "/img/fontes/";
 
-    $image   = findImage($folder . $supplyId);
-    $drawing = findImage($folder . $supplyId . "_desenho");
+    $image = findDamOrLocalSharedAsset(
+        "power-supply",
+        [$supplyId],
+        $folder . $supplyId,
+        ["png", "svg"]
+    );
+    $drawing = findDamOrLocalSharedAsset(
+        "power-supply",
+        [$supplyId . "_desenho"],
+        $folder . $supplyId . "_desenho",
+        ["svg", "png"]
+    );
 
     if ($image === null || $drawing === null) {
         return null;
@@ -477,18 +519,20 @@ function getConnectionCable(string $reference, string $cableId, string $connecto
         "{$cap}_{$cableId}",
     ];
 
-    $image = null;
-    foreach ($candidates as $name) {
-        $image = findImage($folder . $name);
-        if ($image !== null) break;
+    $image = findDamProductAsset($family, "", "connector", $candidates);
+
+    if ($image === null && !isDamPrimaryFamily($family)) {
+        foreach ($candidates as $name) {
+            $image = findImage($folder . $name);
+
+            if ($image !== null) {
+                break;
+            }
+        }
     }
 
     if ($image === null) {
-        $image = findDamProductAsset($family, "", "connector", $candidates);
-
-        if ($image === null) {
-            return null;
-        }
+        return null;
     }
 
     // Look up cable ID template from JSON, substitute connector, then fetch description from DB

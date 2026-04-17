@@ -460,13 +460,59 @@ Relevant parity docs:
   - current DAM totals after full roadmap rollout:
     - assets `724`
     - links `638`
+  - DAM UI auth/error state was fixed:
+    - local dev auth override restored through `api/auth.php`
+    - `configurator/dam.js` now shows real API/auth errors instead of fake endless "Loading folders..."
+  - datasheet runtime/PDF cutover is now live for DAM roadmap scope:
+    - rollout families `11`, `29`, `30`, `32`, `48`, `55`, `58` resolve product assets from DAM first and do not fall back to local `appdatasheets/img/`
+    - shared datasheet assets now resolve from DAM first and do not fall back to local `appdatasheets/img/`:
+      - logos
+      - icons
+      - energy labels
+      - temperatures
+      - power supplies
+    - remote DAM assets are cached/rasterized for TCPDF through `api/lib/images.php`
+  - smoke script added:
+    - `scripts/smoke-dam-datasheets.ps1`
+    - generates sample PDFs for families `11`, `29`, `30`, `32`, `48`, `55`, `58`
+  - smoke results after DAM-first runtime cutover:
+    - sample PDFs generated successfully for all 7 roadmap families
+    - output files live under `output/pdf/`
+    - shared assets like energy labels, logos, and power-supply imagery resolved from DAM during smoke
+  - important runtime truth now:
+    - DAM is authoritative for shared datasheet assets and for roadmap rollout families listed above
+    - local `appdatasheets/img/` is still kept on disk, but runtime dependency remains only for non-rollout families/out-of-scope legacy cases
+  - remaining validation gap:
+    - this environment could generate PDFs, but it could not visually render/export pages because Poppler/ImageMagick/Ghostscript/MuPDF/PyMuPDF tooling was unavailable
+    - manual visual PDF comparison is still needed before declaring full parity
+  - family `49` Shelf rollout was attempted next and is blocked by missing asset source:
+    - valid Shelf references decode correctly and resolve to real DB products
+    - sample Shelf datasheet run fails with `Missing required data: product image`
+    - `dam_asset_links` count for family `49` is `0`
+    - no Shelf-like rows were found in `dam_assets`
+    - no `appdatasheets/img/49` tree exists in this repo
+    - sibling legacy app `C:\\xampp\\htdocs\\appDatasheets\\img` also has no `49` folder
+    - result: Shelf is blocked by missing real image files, not by runtime logic
+  - Batch 2 tubular families `01` and `05` were checked next and show same blocker pattern:
+    - valid references decode correctly and resolve to real DB products
+    - sample datasheet runs fail with `Missing required data: product image`
+    - `dam_asset_links` count for family `01` is `0`
+    - `dam_asset_links` count for family `05` is `0`
+    - no `appdatasheets/img/01` or `appdatasheets/img/05` trees exist in this repo
+    - sibling legacy app `C:\\xampp\\htdocs\\appDatasheets\\img` also has no `01` or `05` folders
+    - result: families `01` and `05` are blocked by missing real image files, not by runtime logic
+  - wider legacy asset inventory now looks conclusive:
+    - `C:\\xampp\\htdocs\\appDatasheets\\img` contains only family folders `11`, `29`, `30`, `32`, `48`, `55`, `58` plus shared asset folders
+    - candidate next families like `31`, `40`, and `60` also have no local image folders there
+    - result: all remaining non-rollout families currently appear blocked by missing real source images on this machine
+
 - next DAM step:
   - family rollout slice is complete for roadmap scope
-  - next work is validation and resolver phase:
-    - browser-smoke DAM UI on real data
-    - verify product-assets lookups against real datasheet generation
-    - only then start DAM-first PDF resolver work
-- keep DAM non-authoritative for PDF/runtime until broader validation is complete
+  - next work is visual parity validation on generated PDFs and remaining non-rollout families
+  - Batch 1 family `49` is deferred until real Shelf assets are recovered
+  - Batch 2 families `01` and `05` are also deferred until real tubular assets are recovered
+  - next active DAM rollout cannot proceed until an external source of real family images is recovered
+  - do not delete `appdatasheets/img/` yet
 
 ## Recommended Next Steps
 
