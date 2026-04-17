@@ -18,6 +18,13 @@ const EXPLORER_TABLE_HEAD_FALLBACK_COLUMNS = [
     "minmax(0, 0.9fr)",
     "minmax(0, 1.8fr)",
 ].join(" ");
+const COVERAGE_TABLE_HEAD_FALLBACK_COLUMNS = [
+    "minmax(0, 1.15fr)",
+    "minmax(0, 1.45fr)",
+    "minmax(0, 1.3fr)",
+    "minmax(0, 1.15fr)",
+    "minmax(0, 1.55fr)",
+].join(" ");
 const API_BADGE_BASE_CLASS = "badge badge-md shrink-0";
 const API_BADGE_VARIANT_CLASS = {
     neutral: "badge-neutral",
@@ -64,6 +71,8 @@ const EXPLORER_VIEW_MODE_SEARCH = "search";
 const EXPLORER_VIEW_MODE_FILTERS = "filters";
 const EXPLORER_SEARCH_TYPE_CODE = "code";
 const EXPLORER_SEARCH_TYPE_DESCRIPTION = "description";
+const EXPLORER_SEARCH_ENTRY_LIMIT = 10;
+const EXPLORER_BATCH_GROUP_ROW_LIMIT = 25;
 
 let apiBasePromise = null;
 let hasSuccessfulApiContact = false;
@@ -101,6 +110,7 @@ let explorerState = {
         searchType: EXPLORER_SEARCH_TYPE_CODE,
         family: "",
         search: "",
+        searchEntries: [],
         status: "all",
         page: 1,
         pageSize: 5,
@@ -133,6 +143,7 @@ function initializeCodeExplorer() {
     renderDetail();
     renderTecitCodeLogicFamilies();
     renderPagination();
+    renderExplorerSearchEntries();
     loadFamilies();
     checkApiHealth();
 }
@@ -297,6 +308,90 @@ function detectExplorerSearchType(search = explorerState.controls.search) {
     return /^\d{2,17}$/.test(normalizedSearch)
         ? EXPLORER_SEARCH_TYPE_CODE
         : EXPLORER_SEARCH_TYPE_DESCRIPTION;
+}
+
+function parseExplorerSearchEntries(search = explorerState.controls.search) {
+    const source = String(search ?? "").replace(/\r/g, "\n");
+    const parts = source
+        .split(/[\n,;\t]+/g)
+        .map((part) => part.trim())
+        .filter(Boolean);
+    const seen = new Set();
+    const entries = [];
+
+    parts.forEach((part) => {
+        const type = detectExplorerSearchType(part);
+        const raw = type === EXPLORER_SEARCH_TYPE_CODE
+            ? part.replace(/\s+/g, "").toUpperCase()
+            : part.replace(/\s+/g, " ").trim();
+        const normalizedKey = type === EXPLORER_SEARCH_TYPE_CODE
+            ? raw
+            : normalizeExplorerDescriptionText(raw);
+        const dedupeKey = `${type}:${normalizedKey}`;
+
+        if (raw === "" || normalizedKey === "" || seen.has(dedupeKey)) {
+            return;
+        }
+
+        seen.add(dedupeKey);
+        entries.push({
+            id: `query-${entries.length + 1}`,
+            raw,
+            type,
+            familyCode: type === EXPLORER_SEARCH_TYPE_CODE
+                ? detectFamilyCodeFromReferenceSearch(raw)
+                : "",
+        });
+    });
+
+    return entries;
+}
+
+function isExplorerBatchSearch(entries = explorerState.controls.searchEntries) {
+    return Array.isArray(entries) && entries.length > 1;
+}
+
+function isExplorerBatchData(data = explorerState.data) {
+    return Array.isArray(data?.batch?.groups) && data.batch.groups.length > 0;
+}
+
+function renderExplorerSearchEntries(entries = explorerState.controls.searchEntries) {
+    const wrap = document.getElementById("explorer-search-tokens-wrap");
+    const list = document.getElementById("explorer-search-tokens");
+    const count = document.getElementById("explorer-search-token-count");
+    const input = document.getElementById("explorer-search");
+    const parsedEntries = Array.isArray(entries) && entries.length > 0
+        ? entries
+        : parseExplorerSearchEntries(input?.value || explorerState.controls.search);
+
+    if (!wrap || !list || !count) {
+        return;
+    }
+
+    if (parsedEntries.length === 0) {
+        wrap.classList.add("hidden");
+        list.innerHTML = "";
+        count.textContent = "0";
+        return;
+    }
+
+    wrap.classList.remove("hidden");
+    count.textContent = String(parsedEntries.length);
+
+    const visibleEntries = parsedEntries.slice(0, 8);
+    const overflow = parsedEntries.length - visibleEntries.length;
+
+    list.innerHTML = visibleEntries.map((entry) => {
+        const isCode = entry.type === EXPLORER_SEARCH_TYPE_CODE;
+        const tone = isCode ? "badge-neutral" : "badge-info";
+        const typeLabel = isCode
+            ? t("codeExplorer.batchTypeCode", {}, "Code")
+            : t("codeExplorer.batchTypeDescription", {}, "Description");
+
+        return `<span class="badge ${tone} badge-sm">${escapeHtml(`${typeLabel}: ${entry.raw}`)}</span>`;
+    }).join("") + (overflow > 0
+        ? `<span class="badge badge-neutral badge-sm">${escapeHtml(t("codeExplorer.searchParsedOverflow", { count: overflow }, `+${overflow} more`))}</span>`
+        : "");
 }
 
 function normalizeExplorerDescriptionText(value) {
@@ -489,7 +584,8 @@ function renderExplorerSearchInputCopy(
 }
 
 function applyExplorerViewMode(viewMode = explorerState.controls.viewMode) {
-    const searchType = detectExplorerSearchType(document.getElementById("explorer-search")?.value || explorerState.controls.search);
+    const searchEntries = parseExplorerSearchEntries(document.getElementById("explorer-search")?.value || explorerState.controls.search);
+    const searchType = searchEntries[0]?.type || detectExplorerSearchType(document.getElementById("explorer-search")?.value || explorerState.controls.search);
     const showFilters = isExplorerFilterMode(viewMode);
     const showFamilyScopedControls = showFilters && hasExplorerSelectedFamily();
     const textSearchField = document.getElementById("explorer-text-search-field");
@@ -501,6 +597,7 @@ function applyExplorerViewMode(viewMode = explorerState.controls.viewMode) {
 
     explorerState.controls.viewMode = viewMode;
     explorerState.controls.searchType = searchType;
+    explorerState.controls.searchEntries = searchEntries;
 
     if (textSearchField) {
         textSearchField.classList.toggle("hidden", showFilters);
@@ -523,6 +620,7 @@ function applyExplorerViewMode(viewMode = explorerState.controls.viewMode) {
     }
 
     renderExplorerSearchInputCopy(viewMode);
+    renderExplorerSearchEntries(searchEntries);
     syncDraftInvalidControls();
     syncAppliedInvalidSummaryCard();
     updateExplorerInvalidGuidance();
@@ -1173,6 +1271,8 @@ function bindControls() {
     });
 
     document.getElementById("explorer-search").addEventListener("input", () => {
+        explorerState.controls.searchEntries = parseExplorerSearchEntries(document.getElementById("explorer-search")?.value || "");
+        renderExplorerSearchEntries(explorerState.controls.searchEntries);
         updateExplorerInvalidGuidance();
     });
 
@@ -1298,14 +1398,41 @@ function bindControls() {
         openCodeDetailModal(trigger);
     });
 
-    document.getElementById("coverage-identity-list").addEventListener("click", (event) => {
-        const trigger = event.target.closest("[data-identity-toggle]");
+    document.getElementById("explorer-batch-results")?.addEventListener("click", (event) => {
+        const trigger = event.target.closest("[data-reference]");
 
         if (!trigger) {
             return;
         }
 
-        void toggleCoverageIdentity(trigger.dataset.identity || "");
+        explorerState.selectedReference = trigger.dataset.reference || "";
+        explorerState.detailViewReference = explorerState.selectedReference;
+        explorerState.detailViewMode = "basic";
+        renderTable();
+        renderDetail();
+        openCodeDetailModal(trigger);
+    });
+
+    document.getElementById("explorer-coverage-section").addEventListener("click", (event) => {
+        const referenceTrigger = event.target.closest("[data-reference]");
+
+        if (referenceTrigger) {
+            explorerState.selectedReference = referenceTrigger.dataset.reference || "";
+            explorerState.detailViewReference = explorerState.selectedReference;
+            explorerState.detailViewMode = "basic";
+            renderTable();
+            renderDetail();
+            openCodeDetailModal(referenceTrigger);
+            return;
+        }
+
+        const identityTrigger = event.target.closest("[data-identity-toggle]");
+
+        if (!identityTrigger) {
+            return;
+        }
+
+        void toggleCoverageIdentity(identityTrigger.dataset.identity || "");
     });
 }
 
@@ -1313,9 +1440,11 @@ async function applyFiltersFromForm() {
     const rawSearch = document.getElementById("explorer-search").value.trim();
     const viewMode = getExplorerViewModeFromForm();
     const isFilterMode = isExplorerFilterMode(viewMode);
+    const searchEntries = isFilterMode ? [] : parseExplorerSearchEntries(rawSearch);
+    const isBatchSearch = !isFilterMode && isExplorerBatchSearch(searchEntries);
     const searchType = isFilterMode
         ? EXPLORER_SEARCH_TYPE_CODE
-        : detectExplorerSearchType(rawSearch);
+        : (searchEntries[0]?.type || detectExplorerSearchType(rawSearch));
     const search = isFilterMode ? "" : rawSearch;
     const previousFamily = explorerState.controls.family;
     const includeInvalid = isFilterMode
@@ -1325,13 +1454,14 @@ async function applyFiltersFromForm() {
         ? document.getElementById("explorer-family").value
         : "";
 
-    if (!isFilterMode && searchType === EXPLORER_SEARCH_TYPE_CODE) {
+    if (!isBatchSearch && !isFilterMode && searchType === EXPLORER_SEARCH_TYPE_CODE) {
         family = detectFamilyCodeFromReferenceSearch(search);
     }
 
     explorerState.controls.viewMode = viewMode;
     explorerState.controls.searchType = searchType;
     explorerState.controls.search = search;
+    explorerState.controls.searchEntries = searchEntries;
     explorerState.controls.family = family;
     explorerState.controls.status = isFilterMode
         ? document.getElementById("explorer-status").value
@@ -1393,7 +1523,23 @@ async function applyFiltersFromForm() {
         return;
     }
 
-    if (!explorerState.controls.family && !isGlobalExplorerDescriptionSearch(viewMode, searchType, family)) {
+    if (!isFilterMode && searchEntries.length > EXPLORER_SEARCH_ENTRY_LIMIT) {
+        resetCoverageInteractions();
+        explorerState.data = null;
+        explorerState.selectedReference = "";
+        setPageStatus("codeExplorer.runtime.batchSearchLimit", "warning", "Use up to {count} codes or descriptions per batch search.", {
+            count: EXPLORER_SEARCH_ENTRY_LIMIT,
+        });
+        renderCoverage(null);
+        renderSummary(null);
+        renderTable();
+        renderDetail();
+        renderResultsMeta();
+        renderPagination();
+        return;
+    }
+
+    if (!isBatchSearch && !explorerState.controls.family && !isGlobalExplorerDescriptionSearch(viewMode, searchType, family)) {
         resetCoverageInteractions();
         explorerState.data = null;
         explorerState.selectedReference = "";
@@ -1454,7 +1600,8 @@ function syncCoverageStateWithData(data) {
 
 function renderCoverage(data) {
     const section = document.getElementById("explorer-coverage-section");
-    const list = document.getElementById("coverage-identity-list");
+    const body = document.getElementById("coverage-rows");
+    const tableRoot = document.getElementById("coverage-data-table");
     const currentViewMode = getExplorerViewModeFromForm();
     const shouldShow = isExplorerFilterMode(currentViewMode);
     const legacyFilterResponse = isLegacyFilterResponse(data, currentViewMode);
@@ -1470,14 +1617,15 @@ function renderCoverage(data) {
         datasheet_ready_ratio: 0,
     };
 
-    if (!section || !list) {
+    if (!section || !body || !tableRoot) {
         return;
     }
 
     section.classList.toggle("hidden", !shouldShow);
 
     if (!shouldShow) {
-        list.innerHTML = "";
+        body.innerHTML = "";
+        tableRoot.classList.add("hidden");
         renderCoverageSummary(summary);
         return;
     }
@@ -1485,16 +1633,22 @@ function renderCoverage(data) {
     renderCoverageSummary(summary);
 
     if (legacyFilterResponse) {
-        list.innerHTML = "";
+        body.innerHTML = "";
+        tableRoot.classList.add("hidden");
+        requestAnimationFrame(syncCoverageTableHeadColumns);
         return;
     }
 
     if (identities.length === 0) {
-        list.innerHTML = "";
+        body.innerHTML = "";
+        tableRoot.classList.add("hidden");
+        requestAnimationFrame(syncCoverageTableHeadColumns);
         return;
     }
 
-    list.innerHTML = identities.map((identity) => buildCoverageIdentityCard(identity)).join("");
+    tableRoot.classList.remove("hidden");
+    body.innerHTML = identities.map((identity) => buildCoverageIdentityRows(identity)).join("");
+    requestAnimationFrame(syncCoverageTableHeadColumns);
 }
 
 function renderCoverageSummary(summary) {
@@ -1506,51 +1660,57 @@ function renderCoverageSummary(summary) {
     document.getElementById("coverage-ready-rate").textContent = formatPercent(summary.datasheet_ready_ratio);
 }
 
-function buildCoverageIdentityCard(identity) {
+function buildCoverageIdentityRows(identity) {
     const identityCode = identity.identity || "";
     const counts = identity.counts || {};
     const isExpanded = explorerState.coverageExpandedIdentity === identityCode;
-    const description = identity.description
-        ? `<p class="text-body-sm text-black">${escapeHtml(identity.description)}</p>`
-        : "";
-    const productMeta = identity.product_type || identity.product_id
-        ? `<p class="text-body-xs text-grey-primary">${escapeHtml([identity.product_type, identity.product_id].filter(Boolean).join(" / "))}</p>`
-        : "";
+    const valueUnavailable = t("codeExplorer.valueUnavailable", {}, "Not available");
+    const productMeta = [identity.product_type, identity.product_id].filter(Boolean).join(" / ");
+    const coverageBadges = [
+        `<span class="badge badge-success badge-sm">${escapeHtml(`${formatNumber(counts.datasheet_ready)} ${t("codeExplorer.coverageCountReady", {}, "ready")}`)}</span>`,
+        `<span class="badge badge-warning badge-sm">${escapeHtml(`${formatNumber(counts.datasheet_blocked)} ${t("codeExplorer.coverageCountBlocked", {}, "blocked")}`)}</span>`,
+        counts.configurator_invalid > 0 ? `<span class="badge badge-danger badge-sm">${escapeHtml(`${formatNumber(counts.configurator_invalid)} ${t("codeExplorer.coverageCountInvalid", {}, "invalid")}`)}</span>` : "",
+        `<span class="badge badge-neutral badge-sm">${escapeHtml(`${formatPercent(identity.ready_ratio)} ${t("codeExplorer.coverageCountRate", {}, "ready")}`)}</span>`,
+    ].filter(Boolean).join("");
+    const statusBadges = [
+        buildStatusBadge(
+            identity.configurator_valid === true,
+            t("codeExplorer.statusConfiguratorValidShort", {}, "Valid"),
+            t("codeExplorer.statusConfiguratorInvalidShort", {}, "Invalid")
+        ),
+        identity.configurator_valid === true ? getCoverageIdentityStatusBadge(identity.status) : "",
+    ].filter(Boolean).join("");
 
     return `
-        <div class="panel panel-sm flex flex-col gap-12">
-            <button
-                type="button"
-                class="flex w-full flex-col gap-12 text-left"
-                data-identity-toggle
-                data-identity="${escapeHtml(identityCode)}"
-                aria-expanded="${isExpanded ? "true" : "false"}"
-            >
-                <div class="flex flex-col gap-12 lg:flex-row lg:items-start lg:justify-between">
-                    <div class="flex flex-col gap-8">
-                        <div class="flex flex-wrap items-center gap-8">
-                            <code class="text-body-sm text-black break-all">${escapeHtml(identityCode)}</code>
-                            ${buildStatusBadge(
-                                identity.configurator_valid === true,
-                                t("codeExplorer.statusConfiguratorValidShort", {}, "Valid"),
-                                t("codeExplorer.statusConfiguratorInvalidShort", {}, "Invalid")
-                            )}
-                            ${identity.configurator_valid === true ? getCoverageIdentityStatusBadge(identity.status) : ""}
-                        </div>
-                        <p class="text-body-sm text-grey-primary">${escapeHtml(getCoverageIdentitySegmentSummary(identity))}</p>
-                        ${description}
-                        ${productMeta}
-                    </div>
-                    <div class="flex flex-wrap gap-8 lg:justify-end">
-                        <span class="badge badge-success badge-sm">${escapeHtml(`${formatNumber(counts.datasheet_ready)} ${t("codeExplorer.coverageCountReady", {}, "ready")}`)}</span>
-                        <span class="badge badge-warning badge-sm">${escapeHtml(`${formatNumber(counts.datasheet_blocked)} ${t("codeExplorer.coverageCountBlocked", {}, "blocked")}`)}</span>
-                        ${counts.configurator_invalid > 0 ? `<span class="badge badge-danger badge-sm">${escapeHtml(`${formatNumber(counts.configurator_invalid)} ${t("codeExplorer.coverageCountInvalid", {}, "invalid")}`)}</span>` : ""}
-                        <span class="badge badge-neutral badge-sm">${escapeHtml(`${formatPercent(identity.ready_ratio)} ${t("codeExplorer.coverageCountRate", {}, "ready")}`)}</span>
-                    </div>
+        <tr class="data-table-row">
+            <td class="data-table-cell" data-sort-value="${escapeHtml(identityCode)}">
+                <button
+                    type="button"
+                    class="link link-sm text-left"
+                    data-identity-toggle
+                    data-identity="${escapeHtml(identityCode)}"
+                    aria-expanded="${isExpanded ? "true" : "false"}"
+                >
+                    <span class="link-label break-all">${escapeHtml(identityCode)}</span>
+                </button>
+            </td>
+            <td class="data-table-cell" data-sort-value="${escapeHtml(identity.description || valueUnavailable)}">
+                <div class="flex flex-col gap-4">
+                    <span class="text-body-sm">${escapeHtml(identity.description || valueUnavailable)}</span>
+                    ${productMeta ? `<span class="text-body-xs text-grey-primary">${escapeHtml(productMeta)}</span>` : ""}
                 </div>
-            </button>
-            ${isExpanded ? buildCoverageIdentityDetail(identity) : ""}
-        </div>
+            </td>
+            <td class="data-table-cell" data-sort-value="${escapeHtml(getCoverageIdentitySegmentSummary(identity))}">
+                <span class="text-body-sm">${escapeHtml(getCoverageIdentitySegmentSummary(identity) || valueUnavailable)}</span>
+            </td>
+            <td class="data-table-cell">
+                <div class="flex flex-wrap gap-8">${statusBadges}</div>
+            </td>
+            <td class="data-table-cell">
+                <div class="flex flex-wrap gap-8">${coverageBadges}</div>
+            </td>
+        </tr>
+        ${isExpanded ? buildCoverageIdentityDetailRow(identity) : ""}
     `;
 }
 
@@ -1608,13 +1768,24 @@ function getCoverageIdentitySegmentDisplay(identity, key) {
     return `${value} - ${label}`;
 }
 
-function buildCoverageIdentityDetail(identity) {
+function buildCoverageIdentityDetailRow(identity) {
+    return `
+        <tr class="data-table-row">
+            <td class="data-table-cell" colspan="5">
+                ${buildCoverageIdentityDetailContent(identity)}
+            </td>
+        </tr>
+    `;
+}
+
+function buildCoverageIdentityDetailContent(identity) {
     const identityCode = identity.identity || "";
     const detailState = explorerState.coverageDetailsByIdentity[identityCode] || null;
+    const valueUnavailable = t("codeExplorer.valueUnavailable", {}, "Not available");
 
     if (!detailState || detailState.status === "loading") {
         return `
-            <div class="rounded-card border border-grey-quaternary/60 bg-grey-tertiary/40 px-16 py-14">
+            <div class="flex flex-col gap-12 border-t border-grey-quaternary/60 pt-12">
                 <p class="text-body-sm text-grey-primary">${escapeHtml(t("codeExplorer.coverageDetailLoading", {}, "Loading codes for this identity..."))}</p>
             </div>
         `;
@@ -1622,7 +1793,7 @@ function buildCoverageIdentityDetail(identity) {
 
     if (detailState.status === "error") {
         return `
-            <div class="rounded-card border border-red-200 bg-red-50 px-16 py-14">
+            <div class="flex flex-col gap-12 border-t border-grey-quaternary/60 pt-12">
                 <p class="text-body-sm text-red-700">${escapeHtml(detailState.errorMessage || t("codeExplorer.coverageDetailError", {}, "Unable to load identity codes right now."))}</p>
             </div>
         `;
@@ -1630,7 +1801,7 @@ function buildCoverageIdentityDetail(identity) {
 
     if ((detailState.rows?.length || 0) === 0) {
         return `
-            <div class="rounded-card border border-grey-quaternary/60 bg-grey-tertiary/40 px-16 py-14">
+            <div class="flex flex-col gap-12 border-t border-grey-quaternary/60 pt-12">
                 <p class="text-body-sm text-grey-primary">${escapeHtml(t("codeExplorer.coverageDetailEmpty", {}, "No codes found under this identity."))}</p>
             </div>
         `;
@@ -1654,8 +1825,23 @@ function buildCoverageIdentityDetail(identity) {
                 </div>
                 ${truncatedCopy}
             </div>
-            <div class="flex max-h-96 flex-col gap-8 overflow-y-auto pr-4">
-                ${detailState.rows.map((row) => buildCoverageCodeRow(row)).join("")}
+            <div class="panel border-0 bg-transparent data-table data-table-sm w-full">
+                <div class="data-table-wrap custom-scrollbar max-h-96">
+                    <table class="data-table-table min-w-max">
+                        <thead>
+                            <tr>
+                                <th scope="col" class="data-table-heading"><div class="data-table-heading-content"><span class="data-table-heading-label">${escapeHtml(t("codeExplorer.tableReference", {}, "Reference"))}</span></div></th>
+                                <th scope="col" class="data-table-heading"><div class="data-table-heading-content"><span class="data-table-heading-label">${escapeHtml(t("codeExplorer.coverageTableSuffix", {}, "Suffix"))}</span></div></th>
+                                <th scope="col" class="data-table-heading"><div class="data-table-heading-content"><span class="data-table-heading-label">${escapeHtml(t("codeExplorer.tableConfigurator", {}, "Configurator"))}</span></div></th>
+                                <th scope="col" class="data-table-heading"><div class="data-table-heading-content"><span class="data-table-heading-label">${escapeHtml(t("codeExplorer.tableDatasheet", {}, "Datasheet"))}</span></div></th>
+                                <th scope="col" class="data-table-heading"><div class="data-table-heading-content"><span class="data-table-heading-label">${escapeHtml(t("codeExplorer.tableFailure", {}, "Failure"))}</span></div></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${detailState.rows.map((row) => buildCoverageCodeTableRow(row, valueUnavailable)).join("")}
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
     `;
@@ -1694,7 +1880,7 @@ function getCoverageIdentityFromCurrentData(identityCode) {
     return identities.find((identity) => (identity?.identity || "") === identityCode) || null;
 }
 
-function buildCoverageCodeRow(row) {
+function buildCoverageCodeTableRow(row, valueUnavailable) {
     const configuratorBadge = buildStatusBadge(
         row.configurator_valid === true,
         t("codeExplorer.statusConfiguratorValidShort", {}, "Valid"),
@@ -1712,19 +1898,21 @@ function buildCoverageCodeRow(row) {
         : getFailureReasonText(row.failure_reason);
 
     return `
-        <div class="rounded-card border border-grey-quaternary/60 bg-white px-12 py-12">
-            <div class="flex flex-col gap-8 lg:flex-row lg:items-start lg:justify-between">
-                <div class="flex flex-col gap-6">
-                    <code class="text-body-sm text-black break-all">${escapeHtml(row.reference || "")}</code>
-                    <p class="text-body-xs text-grey-primary">${escapeHtml(formatCoverageSuffix(row))}</p>
-                    <p class="text-body-xs text-grey-primary">${escapeHtml(failureText)}</p>
-                </div>
-                <div class="flex flex-wrap gap-8">
-                    ${configuratorBadge}
-                    ${datasheetBadge}
-                </div>
-            </div>
-        </div>
+        <tr class="data-table-row">
+            <td class="data-table-cell">
+                <button type="button" class="link link-sm text-left" data-reference="${escapeHtml(row.reference || "")}">
+                    <span class="link-label break-all">${escapeHtml(row.reference || valueUnavailable)}</span>
+                </button>
+            </td>
+            <td class="data-table-cell">
+                <span class="text-body-sm">${escapeHtml(formatCoverageSuffix(row) || valueUnavailable)}</span>
+            </td>
+            <td class="data-table-cell">${configuratorBadge}</td>
+            <td class="data-table-cell">${datasheetBadge}</td>
+            <td class="data-table-cell">
+                <span class="text-body-sm">${escapeHtml(failureText)}</span>
+            </td>
+        </tr>
     `;
 }
 
@@ -1865,6 +2053,7 @@ function bindStaticEvents() {
 
     window.addEventListener("resize", () => {
         syncExplorerTableHeadColumns();
+        syncCoverageTableHeadColumns();
         syncExplorerEmptyStateHeight();
     });
 }
@@ -1918,6 +2107,14 @@ function syncAppliedInvalidSummaryCard() {
             "hidden",
             !isExplorerFilterMode(explorerState.controls.viewMode) || explorerState.controls.includeInvalid !== true
         );
+    }
+}
+
+function syncBlockedSummaryCard(blockedCount) {
+    const blockedSummaryCard = document.getElementById("summary-blocked-card");
+
+    if (blockedSummaryCard) {
+        blockedSummaryCard.classList.toggle("hidden", Number(blockedCount || 0) <= 0);
     }
 }
 
@@ -2036,6 +2233,59 @@ function populateFamilies() {
 }
 
 async function loadExplorerData() {
+    if (isExplorerBatchSearch()) {
+        const batchEntries = explorerState.controls.searchEntries;
+
+        toggleLoading(true);
+        setPageStatus("codeExplorer.runtime.loadingBatchSearch", "loading", "Searching {count} codes or descriptions...", {
+            count: batchEntries.length,
+        });
+
+        try {
+            const data = await loadBatchExplorerSearchData(batchEntries);
+            explorerState.data = data;
+            explorerState.controls.page = 1;
+            syncCoverageStateWithData(data);
+
+            const firstRow = Array.isArray(data.rows) && data.rows.length > 0 ? data.rows[0] : null;
+            const selectedExists = data.rows?.some((row) => row.reference === explorerState.selectedReference);
+            explorerState.selectedReference = selectedExists ? explorerState.selectedReference : (firstRow?.reference || "");
+
+            renderCoverage(data);
+            renderSummary(data);
+            renderTable();
+            renderDetail();
+            renderResultsMeta();
+            renderPagination();
+
+            if ((data.batch?.summary?.matched_queries || 0) > 0) {
+                setPageStatus("codeExplorer.runtime.loadedBatchRows", "success", "Batch search results loaded.");
+            } else {
+                setPageStatus("codeExplorer.runtime.noRows", "neutral", "No rows match current filters.");
+            }
+        } catch (error) {
+            resetCoverageInteractions();
+            explorerState.data = null;
+            explorerState.selectedReference = "";
+            renderCoverage(null);
+            renderSummary(null);
+            renderTable();
+            renderDetail();
+            renderResultsMeta();
+            renderPagination();
+            setPageStatus("codeExplorer.runtime.loadFailedWithMessage", "error", "Unable to load explorer data right now: {message}", {
+                message: getExplorerErrorMessage(error),
+            });
+
+            if (error.status >= 500 || error.status === 401 || error.status === 403) {
+                setApiBadge("warning", "shared.badge.apiDegraded", "API degraded");
+            }
+        } finally {
+            toggleLoading(false);
+        }
+        return;
+    }
+
     if (isGlobalExplorerDescriptionSearch()) {
         const candidateFamilies = getExplorerDescriptionCandidateFamilies();
         const narrowedFamilyCount = Array.isArray(candidateFamilies) ? candidateFamilies.length : 0;
@@ -2168,16 +2418,16 @@ async function loadExplorerData() {
     }
 }
 
-async function fetchGlobalDescriptionRowsForFamily(familyCode) {
+async function fetchExplorerSearchRowsForFamily(familyCode, search, searchType, status = "all") {
     const pageSize = 250;
     const baseParams = {
         endpoint: "code-explorer",
         family: familyCode,
         mode: EXPLORER_VIEW_MODE_SEARCH,
         page_size: String(pageSize),
-        search: explorerState.controls.search,
-        search_type: EXPLORER_SEARCH_TYPE_DESCRIPTION,
-        status: explorerState.controls.status,
+        search,
+        search_type: searchType,
+        status,
         include_invalid: "0",
     };
     const rows = [];
@@ -2215,6 +2465,15 @@ async function fetchGlobalDescriptionRowsForFamily(familyCode) {
         },
         rows,
     };
+}
+
+async function fetchGlobalDescriptionRowsForFamily(familyCode) {
+    return fetchExplorerSearchRowsForFamily(
+        familyCode,
+        explorerState.controls.search,
+        EXPLORER_SEARCH_TYPE_DESCRIPTION,
+        explorerState.controls.status
+    );
 }
 
 async function loadGlobalDescriptionSearchData(candidateFamilies = explorerState.families) {
@@ -2284,6 +2543,234 @@ async function loadGlobalDescriptionSearchData(candidateFamilies = explorerState
     };
 }
 
+async function fetchBatchCodeSearchGroup(entry) {
+    if (!entry.familyCode) {
+        return {
+            id: entry.id,
+            query: entry.raw,
+            detected_type: entry.type,
+            family: null,
+            total_rows: 0,
+            rows: [],
+            error_message: t("codeExplorer.batchInvalidCode", {}, "Code search needs a valid 2-digit family prefix."),
+        };
+    }
+
+    const payload = await fetchExplorerSearchRowsForFamily(
+        entry.familyCode,
+        entry.raw,
+        EXPLORER_SEARCH_TYPE_CODE,
+        "all"
+    );
+
+    return {
+        id: entry.id,
+        query: entry.raw,
+        detected_type: entry.type,
+        family: payload?.family || { code: entry.familyCode, name: entry.familyCode },
+        total_rows: Number.parseInt(String(payload?.rows?.length || 0), 10) || 0,
+        rows: Array.isArray(payload?.rows) ? payload.rows : [],
+        error_message: "",
+    };
+}
+
+async function fetchBatchDescriptionSearchFamilyPayload(entry, familyCode) {
+    return fetchExplorerSearchRowsForFamily(
+        familyCode,
+        entry.raw,
+        EXPLORER_SEARCH_TYPE_DESCRIPTION,
+        "all"
+    );
+}
+
+async function fetchBatchDescriptionSearchGroup(entry) {
+    const candidateFamilies = getExplorerDescriptionCandidateFamilies(entry.raw)
+        .map((family) => ({
+            code: String(family?.codigo || "").trim(),
+            name: String(family?.nome || "").trim(),
+        }))
+        .filter((family) => family.code !== "");
+
+    if (candidateFamilies.length === 0) {
+        return {
+            id: entry.id,
+            query: entry.raw,
+            detected_type: entry.type,
+            family: null,
+            total_rows: 0,
+            rows: [],
+            candidate_families: [],
+            matched_families: [],
+            error_message: "",
+        };
+    }
+
+    const payloads = await Promise.allSettled(
+        candidateFamilies.map((family) => fetchBatchDescriptionSearchFamilyPayload(entry, family.code))
+    );
+    const previewRows = [];
+    const matchedFamilies = [];
+    let totalRows = 0;
+    let firstErrorMessage = "";
+
+    payloads.forEach((result, index) => {
+        if (result.status !== "fulfilled") {
+            if (firstErrorMessage === "") {
+                firstErrorMessage = getExplorerErrorMessage(result.reason);
+            }
+            return;
+        }
+
+        const payload = result.value;
+        const family = payload?.family || candidateFamilies[index];
+        const familyRows = Array.isArray(payload?.rows) ? payload.rows : [];
+        const familyTotalRows = Number.parseInt(String(familyRows.length || 0), 10) || 0;
+
+        totalRows += familyTotalRows;
+
+        if (familyTotalRows > 0) {
+            matchedFamilies.push({
+                code: String(family?.code || candidateFamilies[index]?.code || "").trim(),
+                name: String(family?.name || candidateFamilies[index]?.name || "").trim(),
+            });
+        }
+
+        if (familyRows.length > 0) {
+            previewRows.push(...familyRows);
+        }
+    });
+
+    previewRows.sort((left, right) => String(left.reference || "").localeCompare(String(right.reference || "")));
+
+    return {
+        id: entry.id,
+        query: entry.raw,
+        detected_type: entry.type,
+        family: matchedFamilies.length === 1 ? matchedFamilies[0] : null,
+        total_rows: totalRows,
+        rows: previewRows,
+        candidate_families: candidateFamilies,
+        matched_families: matchedFamilies,
+        error_message: totalRows === 0 ? firstErrorMessage : "",
+    };
+}
+
+async function loadBatchExplorerSearchData(entries = explorerState.controls.searchEntries) {
+    const searchEntries = Array.isArray(entries) ? entries : [];
+    const settledGroups = await Promise.allSettled(
+        searchEntries.map((entry) => (
+            entry.type === EXPLORER_SEARCH_TYPE_CODE
+                ? fetchBatchCodeSearchGroup(entry)
+                : fetchBatchDescriptionSearchGroup(entry)
+        ))
+    );
+    const groups = settledGroups.map((result, index) => {
+        if (result.status === "fulfilled") {
+            return result.value;
+        }
+
+        const entry = searchEntries[index];
+
+        return {
+            id: entry?.id || `query-${index + 1}`,
+            query: entry?.raw || "",
+            detected_type: entry?.type || EXPLORER_SEARCH_TYPE_DESCRIPTION,
+            family: null,
+            total_rows: 0,
+            rows: [],
+            error_message: getExplorerErrorMessage(result.reason),
+            candidate_families: [],
+            matched_families: [],
+        };
+    });
+    const uniqueRowsMap = new Map();
+
+    groups.forEach((group) => {
+        (Array.isArray(group.rows) ? group.rows : []).forEach((row) => {
+            const reference = String(row?.reference || "").trim();
+
+            if (reference === "") {
+                return;
+            }
+
+            if (!uniqueRowsMap.has(reference)) {
+                uniqueRowsMap.set(reference, {
+                    ...row,
+                    matched_queries: [group.query],
+                });
+                return;
+            }
+
+            const existing = uniqueRowsMap.get(reference);
+
+            if (!existing.matched_queries.includes(group.query)) {
+                existing.matched_queries.push(group.query);
+            }
+        });
+    });
+
+    const allRows = Array.from(uniqueRowsMap.values()).sort((left, right) => String(left.reference || "").localeCompare(String(right.reference || "")));
+    const totalRows = allRows.length;
+    const totalPages = Math.max(1, Math.ceil(totalRows / explorerState.controls.pageSize));
+    const safePage = Math.min(Math.max(explorerState.controls.page, 1), totalPages);
+    const offset = (safePage - 1) * explorerState.controls.pageSize;
+    const pageRows = allRows.slice(offset, offset + explorerState.controls.pageSize);
+    const matchedQueries = groups.filter((group) => (group.total_rows || 0) > 0).length;
+    const unmatchedQueries = groups.length - matchedQueries;
+    const summary = allRows.reduce((accumulator, row) => {
+        accumulator.total_codes += 1;
+
+        if (row.configurator_valid) {
+            accumulator.configurator_valid += 1;
+
+            if (row.datasheet_ready) {
+                accumulator.datasheet_ready += 1;
+            } else {
+                accumulator.datasheet_blocked += 1;
+            }
+        } else {
+            accumulator.configurator_invalid += 1;
+        }
+
+        return accumulator;
+    }, {
+        total_codes: 0,
+        configurator_valid: 0,
+        configurator_invalid: 0,
+        datasheet_ready: 0,
+        datasheet_blocked: 0,
+    });
+
+    return {
+        family: null,
+        summary,
+        batch: {
+            summary: {
+                total_queries: groups.length,
+                matched_queries: matchedQueries,
+                unmatched_queries: unmatchedQueries,
+                total_rows: pageRows.length,
+                total_matches: groups.reduce((count, group) => count + (Number.parseInt(String(group.total_rows || 0), 10) || 0), 0),
+            },
+            groups,
+        },
+        filters: {
+            search: searchEntries.map((entry) => entry.raw).join("\n"),
+            search_type: "batch",
+            status: "all",
+            include_invalid: false,
+            segment_filters: getEmptyExplorerSegmentFilters(),
+        },
+        pagination: {
+            page: safePage,
+            page_size: explorerState.controls.pageSize,
+            total_pages: totalPages,
+            total_rows: totalRows,
+        },
+        rows: pageRows,
+    };
+}
+
 function toggleLoading(isLoading) {
     const loading = document.getElementById("explorer-loading");
 
@@ -2302,22 +2789,35 @@ function renderSummary(data) {
         datasheet_ready: 0,
         datasheet_blocked: 0,
     };
+    const batchSummary = data?.batch?.summary || {
+        total_queries: 0,
+        matched_queries: 0,
+        unmatched_queries: 0,
+        total_rows: 0,
+    };
 
     document.getElementById("summary-total").textContent = formatNumber(summary.total_codes);
     document.getElementById("summary-configurator").textContent = formatNumber(summary.configurator_valid);
     document.getElementById("summary-invalid").textContent = formatNumber(summary.configurator_invalid);
     document.getElementById("summary-ready").textContent = formatNumber(summary.datasheet_ready);
     document.getElementById("summary-blocked").textContent = formatNumber(summary.datasheet_blocked);
+    document.getElementById("batch-summary-total-queries").textContent = formatNumber(batchSummary.total_queries);
+    document.getElementById("batch-summary-matched-queries").textContent = formatNumber(batchSummary.matched_queries);
+    document.getElementById("batch-summary-unmatched-queries").textContent = formatNumber(batchSummary.unmatched_queries);
+    document.getElementById("batch-summary-total-rows").textContent = formatNumber(batchSummary.total_rows);
     syncAppliedInvalidSummaryCard();
+    syncBlockedSummaryCard(summary.datasheet_blocked);
 }
 
 function renderTable() {
     const codeResultsSection = document.getElementById("explorer-code-results-section");
     const body = document.getElementById("explorer-rows");
     const tableRoot = document.getElementById("explorer-data-table");
+    const batchRoot = document.getElementById("explorer-batch-results");
     const emptyState = document.getElementById("explorer-empty-state");
     const resultsTitle = document.getElementById("explorer-results-title");
     const summaryBadges = document.getElementById("explorer-summary-badges");
+    const batchSummaryBadges = document.getElementById("explorer-batch-summary-badges");
     const rows = explorerState.data?.rows || [];
     const valueUnavailable = t("codeExplorer.valueUnavailable", {}, "Not available");
     const shouldShowResultsSection = shouldShowExplorerCodeResultsSection(
@@ -2329,12 +2829,17 @@ function renderTable() {
         codeResultsSection.classList.toggle("hidden", !shouldShowResultsSection);
     }
 
-    if (!body || !tableRoot || !shouldShowResultsSection) {
+    if (!body || !tableRoot || !batchRoot || !shouldShowResultsSection) {
         resultsTitle?.classList.remove("hidden");
         summaryBadges?.classList.add("hidden");
+        batchSummaryBadges?.classList.add("hidden");
         syncExplorerEmptyStateHeight();
         return;
     }
+
+    batchRoot.classList.add("hidden");
+    batchRoot.innerHTML = "";
+    batchSummaryBadges?.classList.add("hidden");
 
     if (rows.length === 0) {
         body.innerHTML = "";
@@ -2484,9 +2989,9 @@ function buildDetailSpecListItem(label, valueMarkup, valueClasses = "") {
 
 const detailLoadingProgressMotion = {
     frameId: null,
-    current: 64,
-    direction: 1,
-    lastTime: 0,
+    current: 0,
+    startedAt: 0,
+    completing: false,
 };
 
 function syncDetailLoadingProgress(progress) {
@@ -2497,6 +3002,12 @@ function syncDetailLoadingProgress(progress) {
     const roundedValue = Math.round(Number(progress.value || 0));
     progress.textContent = `${roundedValue}%`;
     progress.setAttribute("aria-valuetext", `${roundedValue}%`);
+
+    const output = document.getElementById("detail-loading-progress-output");
+
+    if (output) {
+        output.textContent = `${roundedValue}%`;
+    }
 }
 
 function stopDetailLoadingProgress(reset = false) {
@@ -2505,7 +3016,8 @@ function stopDetailLoadingProgress(reset = false) {
         detailLoadingProgressMotion.frameId = null;
     }
 
-    detailLoadingProgressMotion.lastTime = 0;
+    detailLoadingProgressMotion.startedAt = 0;
+    detailLoadingProgressMotion.completing = false;
 
     if (!reset) {
         return;
@@ -2517,28 +3029,22 @@ function stopDetailLoadingProgress(reset = false) {
         return;
     }
 
-    detailLoadingProgressMotion.current = 64;
-    detailLoadingProgressMotion.direction = 1;
-    progress.value = "64";
+    detailLoadingProgressMotion.current = 0;
+    progress.value = "0";
     syncDetailLoadingProgress(progress);
 }
 
 function startDetailLoadingProgress() {
     const progress = document.getElementById("detail-loading-progress");
 
-    if (!progress || typeof detailLoadingProgressMotion.frameId === "number") {
+    if (!progress || typeof detailLoadingProgressMotion.frameId === "number" || detailLoadingProgressMotion.completing) {
         return;
     }
 
     const reducedMotionQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
-    const min = Number(progress.dataset.progressMin || 0);
-    const max = Number(progress.dataset.progressMax || progress.max || 100);
-    const duration = Math.max(Number(progress.dataset.progressDuration || 3200), 1200);
-    const travel = Math.max(max - min, 1);
-
-    detailLoadingProgressMotion.current = Number(progress.value || min);
-    detailLoadingProgressMotion.direction = 1;
-    detailLoadingProgressMotion.lastTime = 0;
+    detailLoadingProgressMotion.current = 0;
+    detailLoadingProgressMotion.startedAt = performance.now();
+    progress.value = "0";
     syncDetailLoadingProgress(progress);
 
     if (reducedMotionQuery.matches) {
@@ -2551,21 +3057,11 @@ function startDetailLoadingProgress() {
             return;
         }
 
-        if (!detailLoadingProgressMotion.lastTime) {
-            detailLoadingProgressMotion.lastTime = time;
-        }
-
-        const delta = time - detailLoadingProgressMotion.lastTime;
-        detailLoadingProgressMotion.lastTime = time;
-        detailLoadingProgressMotion.current += ((travel / duration) * delta) * detailLoadingProgressMotion.direction;
-
-        if (detailLoadingProgressMotion.current >= max) {
-            detailLoadingProgressMotion.current = max;
-            detailLoadingProgressMotion.direction = -1;
-        } else if (detailLoadingProgressMotion.current <= min) {
-            detailLoadingProgressMotion.current = min;
-            detailLoadingProgressMotion.direction = 1;
-        }
+        const elapsed = Math.max(time - detailLoadingProgressMotion.startedAt, 0);
+        detailLoadingProgressMotion.current = Math.min(
+            94,
+            94 * (1 - Math.exp(-elapsed / 1400))
+        );
 
         progress.value = String(detailLoadingProgressMotion.current);
         syncDetailLoadingProgress(progress);
@@ -2573,6 +3069,59 @@ function startDetailLoadingProgress() {
     };
 
     detailLoadingProgressMotion.frameId = requestAnimationFrame(animate);
+}
+
+function completeDetailLoadingProgress() {
+    const progress = document.getElementById("detail-loading-progress");
+
+    if (!progress) {
+        return Promise.resolve();
+    }
+
+    const reducedMotionQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
+    stopDetailLoadingProgress(false);
+    detailLoadingProgressMotion.completing = true;
+
+    if (reducedMotionQuery.matches) {
+        detailLoadingProgressMotion.current = 100;
+        progress.value = "100";
+        syncDetailLoadingProgress(progress);
+        return new Promise((resolve) => {
+            requestAnimationFrame(() => {
+                detailLoadingProgressMotion.completing = false;
+                resolve();
+            });
+        });
+    }
+
+    const startValue = Number(progress.value || detailLoadingProgressMotion.current || 0);
+    const duration = 220;
+
+    return new Promise((resolve) => {
+        const startTime = performance.now();
+
+        const animate = (time) => {
+            const elapsed = Math.max(time - startTime, 0);
+            const ratio = Math.min(elapsed / duration, 1);
+            const eased = 1 - Math.pow(1 - ratio, 3);
+            const nextValue = startValue + ((100 - startValue) * eased);
+
+            detailLoadingProgressMotion.current = nextValue;
+            progress.value = String(nextValue);
+            syncDetailLoadingProgress(progress);
+
+            if (ratio < 1) {
+                detailLoadingProgressMotion.frameId = requestAnimationFrame(animate);
+                return;
+            }
+
+            detailLoadingProgressMotion.frameId = null;
+            detailLoadingProgressMotion.completing = false;
+            resolve();
+        };
+
+        detailLoadingProgressMotion.frameId = requestAnimationFrame(animate);
+    });
 }
 
 function getCurrentExplorerLanguage() {
@@ -2802,6 +3351,7 @@ async function loadDetailPdfSpecs(force = false) {
             lang,
         });
         const payload = await apiFetch("/?" + params.toString());
+        await completeDetailLoadingProgress();
 
         explorerState.detailPdfSpecsByKey[cacheKey] = {
             status: "loaded",
@@ -2809,6 +3359,7 @@ async function loadDetailPdfSpecs(force = false) {
             errorMessage: "",
         };
     } catch (error) {
+        await completeDetailLoadingProgress();
         explorerState.detailPdfSpecsByKey[cacheKey] = {
             status: "error",
             data: null,
@@ -2985,6 +3536,34 @@ function syncExplorerTableHeadColumns() {
     tableRoot.style.setProperty("--data-table-head-columns", widths.map((width) => `${width}px`).join(" "));
 }
 
+function syncCoverageTableHeadColumns() {
+    const tableRoot = document.getElementById("coverage-data-table");
+    const table = tableRoot?.querySelector(".data-table-table");
+    const body = table?.tBodies?.[0];
+
+    if (!tableRoot || !table || !body) {
+        return;
+    }
+
+    const firstRow = Array.from(body.rows).find((row) => row.cells.length === 5);
+
+    if (!firstRow) {
+        tableRoot.style.setProperty("--data-table-head-columns", COVERAGE_TABLE_HEAD_FALLBACK_COLUMNS);
+        return;
+    }
+
+    const widths = Array.from(firstRow.cells)
+        .map((cell) => Math.ceil(cell.getBoundingClientRect().width))
+        .filter((width) => width > 0);
+
+    if (widths.length !== firstRow.cells.length) {
+        tableRoot.style.setProperty("--data-table-head-columns", COVERAGE_TABLE_HEAD_FALLBACK_COLUMNS);
+        return;
+    }
+
+    tableRoot.style.setProperty("--data-table-head-columns", widths.map((width) => `${width}px`).join(" "));
+}
+
 function getExplorerCurrentPage() {
     const dataPage = Number.parseInt(String(explorerState.data?.pagination?.page || ""), 10);
     const controlPage = Number.parseInt(String(explorerState.controls.page || ""), 10);
@@ -3039,7 +3618,17 @@ function revealExplorerActivePage(list) {
 
 function getSelectedRow() {
     const rows = explorerState.data?.rows || [];
-    return rows.find((row) => row.reference === explorerState.selectedReference) || null;
+    const directMatch = rows.find((row) => row.reference === explorerState.selectedReference);
+
+    if (directMatch) {
+        return directMatch;
+    }
+
+    const coverageDetailMatch = Object.values(explorerState.coverageDetailsByIdentity || {})
+        .flatMap((detailState) => Array.isArray(detailState?.rows) ? detailState.rows : [])
+        .find((row) => row.reference === explorerState.selectedReference);
+
+    return coverageDetailMatch || null;
 }
 
 function getSegmentDisplay(row, key) {
