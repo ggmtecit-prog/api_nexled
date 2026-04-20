@@ -7,6 +7,8 @@
  * Used by product-header.php, technical-drawing.php, and others.
  */
 
+require_once dirname(__FILE__) . "/cloudinary.php";
+
 // Base path to the image folder — change here when images move to their final location
 if (!defined("IMAGES_BASE_PATH")) {
     define("IMAGES_BASE_PATH", dirname(__FILE__, 3) . "/appdatasheets");
