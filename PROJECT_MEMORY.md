@@ -194,6 +194,7 @@ Relevant family/mask docs:
 - [api/T8_FAMILY_ONBOARDING_PLAN.md](api/T8_FAMILY_ONBOARDING_PLAN.md)
 - [api/T8_ASSET_INVENTORY.md](api/T8_ASSET_INVENTORY.md)
 - [api/PRODUCT_ONBOARDING_MEMORY.md](api/PRODUCT_ONBOARDING_MEMORY.md)
+- [api/EPREL_SHARED_LOGIC.md](api/EPREL_SHARED_LOGIC.md)
 
 ### Current Family Runtime Snapshot
 
@@ -274,6 +275,19 @@ Important:
   - the code is valid and the needed supporting assets/data exist
 
 This separation is essential. Many debugging mistakes come from mixing these two concepts.
+
+### EPREL / Central API Rule
+
+Keep this split hard:
+
+- Central API = truth
+- EPREL = workflow/import client
+
+Meaning:
+
+- Central API should decide which full refs are real and ready
+- EPREL should page through those rows and import them
+- EPREL should not brute-force family combinations on its own
 
 ### Current Parity Gap
 
@@ -403,7 +417,14 @@ Relevant parity docs:
 - current invalid full-family matrix explodes combinatorially on large families
 - likely next design is narrower drill-down rather than brute-force full family matrix
 
-### 5. DAM Future Work
+### 5. EPREL Family Import
+
+- EPREL needs real family import, not synthetic family search
+- Central API already has reusable readiness logic, but not yet a clean ready-only family import contract
+- next shared-logic goal is:
+  - Central API exposes ready-only family rows
+  - EPREL imports those rows page by page
+### 6. DAM Future Work
 
 - Phase 1 cutover is done locally:
   - schema/backend/UI link flow working
@@ -559,6 +580,11 @@ Ordered recommendation:
 3. restore old missing-data validator behavior
 4. build page-template parity starting from priority families
 5. keep documenting only the families being actively patched
+6. build a clean Central API truth endpoint for EPREL family import:
+   - real rows only
+   - ready rows only
+   - paginated
+   - no synthetic family matrix
 6. redesign code explorer invalid mode around narrower slices/drill-down
 7. continue DAM only after PDF/API parity priorities are stable
 
@@ -580,8 +606,9 @@ For a new AI session, start here:
 1. `PROJECT_MEMORY.md`
 2. [api/NEXT_STEPS_DATASHEET_PARITY.md](api/NEXT_STEPS_DATASHEET_PARITY.md)
 3. [api/OFFICIAL_DATASHEET_LAYOUT_SPEC.md](api/OFFICIAL_DATASHEET_LAYOUT_SPEC.md)
-4. the family doc relevant to the current task
-5. then the narrow implementation files for that subsystem
+4. [api/EPREL_SHARED_LOGIC.md](api/EPREL_SHARED_LOGIC.md) for EPREL/import work
+5. the family doc relevant to the current task
+6. then the narrow implementation files for that subsystem
 
 Best family docs to start with for current Barra work:
 
@@ -602,12 +629,14 @@ Best non-Barra docs to start with for current expansion work:
 ### Canonical Context
 
 - `PROJECT_MEMORY.md`
+- [api/EPREL_SHARED_LOGIC.md](api/EPREL_SHARED_LOGIC.md)
 
 ### Active Planning / Active Current-State Docs
 
 - [api/NEXT_STEPS_DATASHEET_PARITY.md](api/NEXT_STEPS_DATASHEET_PARITY.md)
 - [api/OFFICIAL_DATASHEET_LAYOUT_SPEC.md](api/OFFICIAL_DATASHEET_LAYOUT_SPEC.md)
 - [api/CODE_VALIDITY_EXPLORER_PLAN.md](api/CODE_VALIDITY_EXPLORER_PLAN.md)
+- [EPREL_NEXT_AI_PROMPT.md](EPREL_NEXT_AI_PROMPT.md)
 - [DAM_CUTOVER_CHECKLIST.md](DAM_CUTOVER_CHECKLIST.md)
 - [DAM_IMPLEMENTATION_GUIDE.md](DAM_IMPLEMENTATION_GUIDE.md)
 - [DAM_ROADMAP.md](DAM_ROADMAP.md)
