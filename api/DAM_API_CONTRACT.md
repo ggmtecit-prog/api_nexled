@@ -17,10 +17,25 @@ This contract replaces the current coarse `endpoint=assets` model for DAM UI wor
 - Cloudinary `asset_folder` is canonical storage location.
 - Local database remains source of truth for app metadata and empty folders.
 - DAM metadata lives in separate database: `nexled_dam`.
+- The API Cloudinary config must point to the same cloud that really stores DAM media.
+- Current DAM asset cloud used by this repo is `dofqiejpw`.
+- Pointing Railway/API to another cloud name causes deterministic DAM URLs to 404 even when local DAM metadata looks correct.
 - Product databases remain untouched:
   - `tecit_referencias`
   - `tecit_lampadas`
   - `info_nexled_2024`
+
+## Cloudinary Config Invariant
+
+These values must stay aligned:
+
+- `CLOUDINARY_CLOUD_NAME`
+- `CLOUDINARY_URL`
+- `DAM_CLOUDINARY_URL`
+- `CLOUDINARY_ADMIN_URL`
+- `DAM_CLOUDINARY_ADMIN_URL`
+
+If one environment uses a different cloud name than the one where DAM assets were uploaded, the API may still build valid-looking deterministic URLs, but TCPDF will receive a Cloudinary `404 Resource not found` HTML page instead of an image.
 
 ## Auth
 

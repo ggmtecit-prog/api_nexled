@@ -1,6 +1,6 @@
 # PROJECT_MEMORY
 
-Last Updated: 2026-04-16
+Last Updated: 2026-04-20
 Status: Active canonical hub
 Audience: AI agents + engineers resuming work
 
@@ -109,6 +109,10 @@ This means:
 - Railway runtime uses env-based DB/auth/cloudinary config
 - local fallback still exists through `appdatasheets/config.php` for legacy/dev cases
 - secrets must stay out of docs and tracked memory files
+- current DAM/Cloudinary truth:
+  - assets verified in cloud `dofqiejpw`
+  - if Railway uses another cloud name, deterministic DAM URLs 404
+  - `.env.railway` must stay aligned with the real DAM asset cloud
 
 ## Current Endpoints and Pages
 
