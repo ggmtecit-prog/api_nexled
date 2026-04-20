@@ -263,7 +263,17 @@ function cloudinaryDamExactAssetUrl(string $folderPath, string $assetName, strin
         return $resolvedUrl;
     }
 
-    return cloudinaryBuildPublicAssetUrl($publicId, $assetName, $resourceType);
+    $publicUrl = cloudinaryBuildPublicAssetUrl($publicId, $assetName, $resourceType);
+
+    if ($publicUrl === null) {
+        return null;
+    }
+
+    if (!cloudinaryRemoteAssetExists($publicUrl)) {
+        return null;
+    }
+
+    return $publicUrl;
 }
 
 /**
@@ -301,6 +311,44 @@ function cloudinaryBuildPublicAssetUrl(string $publicId, string $assetName, stri
 
     $encodedPublicId = implode("/", array_map("rawurlencode", explode("/", $publicId)));
     return "https://res.cloudinary.com/{$cloudName}/{$resourceType}/upload/{$encodedPublicId}.{$extension}";
+}
+
+/**
+ * Returns whether a remote Cloudinary asset URL responds like a real asset.
+ *
+ * Used only for deterministic public-id fallback, so local fallback can still
+ * run when the configured cloud/account does not actually contain the asset.
+ *
+ * @param  string $url
+ * @return bool
+ */
+function cloudinaryRemoteAssetExists(string $url): bool {
+    static $cache = [];
+
+    $url = trim($url);
+
+    if ($url === "") {
+        return false;
+    }
+
+    if (array_key_exists($url, $cache)) {
+        return $cache[$url];
+    }
+
+    $ch = curl_init($url);
+    curl_setopt($ch, CURLOPT_NOBODY, true);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
+    curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 5);
+    curl_setopt($ch, CURLOPT_TIMEOUT, 10);
+    curl_exec($ch);
+    $httpCode = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    $contentType = strtolower((string) curl_getinfo($ch, CURLINFO_CONTENT_TYPE));
+    curl_close($ch);
+
+    $exists = $httpCode >= 200 && $httpCode < 300 && !str_contains($contentType, "text/html");
+    $cache[$url] = $exists;
+    return $exists;
 }
 
 /**
