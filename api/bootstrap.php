@@ -106,6 +106,62 @@ if (!function_exists("connectDBDam")) {
     }
 }
 
+if (!function_exists("tryConnectDBDam")) {
+    function tryConnectDBDam() {
+        $databaseName = getRuntimeDatabaseName(["DAM_DB_NAME"], ["nexled_dam"]);
+
+        if (!hasDamRuntimeDatabaseConfig() && !hasRuntimeDatabaseConfig()) {
+            if (!function_exists("mysqli_connect")) {
+                error_log("NexLed API bootstrap failed: The MySQLi extension is not available.");
+                return null;
+            }
+
+            $connection = @mysqli_connect("localhost", "root", "", $databaseName);
+
+            if ($connection === false || mysqli_connect_errno()) {
+                error_log(
+                    "NexLed API database connection failed for {$databaseName}: " .
+                    (mysqli_connect_error() ?: "Unable to connect to the database.")
+                );
+                return null;
+            }
+
+            mysqli_set_charset($connection, "utf8");
+            return $connection;
+        }
+
+        if (!function_exists("mysqli_init") || !function_exists("mysqli_real_connect")) {
+            error_log("NexLed API bootstrap failed: The MySQLi extension is not available.");
+            return null;
+        }
+
+        $lastError = "Unable to connect to the database.";
+
+        foreach (resolveRuntimeCredentialCandidates(["DAM_DB_USER", "MYSQLUSER"], ["DAM_DB_PASS", "MYSQLPASSWORD"]) as $credentials) {
+            $config = getDedicatedRuntimeDatabaseConfig(
+                $databaseName,
+                $credentials["user"],
+                $credentials["password"],
+                ["DAM_DB_HOST", "DB_HOST", "MYSQLHOST"],
+                ["DAM_DB_PORT", "DB_PORT", "MYSQLPORT"]
+            );
+            [$connection, $errorMessage] = openRuntimeDatabaseConnection($config, true);
+
+            if ($connection !== null) {
+                mysqli_set_charset($connection, "utf8");
+                return $connection;
+            }
+
+            if ($errorMessage !== "") {
+                $lastError = $errorMessage;
+            }
+        }
+
+        error_log("NexLed API database connection failed for {$databaseName}: {$lastError}");
+        return null;
+    }
+}
+
 if (!function_exists("str_contains")) {
     function str_contains($haystack, $needle) {
         return strpos($haystack, $needle) !== false;

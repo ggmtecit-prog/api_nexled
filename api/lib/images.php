@@ -551,11 +551,11 @@ function buildProductSlugCandidates(string $productId): array {
  * @return string|null
  */
 function findDamProductAsset(string $familyCode, string $productId, string $kind, array $filenameCandidates = []): ?string {
-    if (!function_exists("connectDBDam")) {
+    if (!function_exists("tryConnectDBDam")) {
         return null;
     }
 
-    $con = @connectDBDam();
+    $con = tryConnectDBDam();
 
     if (!$con instanceof mysqli) {
         return null;
@@ -687,11 +687,11 @@ function findDamProductAsset(string $familyCode, string $productId, string $kind
  * @return string|null
  */
 function findDamSharedAsset(string $role, array $filenameCandidates = [], array $preferredFormats = []): ?string {
-    if (!function_exists("connectDBDam")) {
+    if (!function_exists("tryConnectDBDam")) {
         return null;
     }
 
-    $con = @connectDBDam();
+    $con = tryConnectDBDam();
 
     if (!$con instanceof mysqli) {
         return null;
