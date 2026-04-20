@@ -225,6 +225,14 @@ Important:
   - `01054425121010100`
   - `01054491111010100`
 - plain Pink `01054481111010100` remains blocked honestly until `3014PINK` graph truth is recovered
+- family `05` proven base T5 VC refs now include:
+  - `05025725111010100`
+  - `05025727111010100`
+  - `05025732111010100`
+- family `05` special-branch truth currently is:
+  - Pink HE row proven in live `Luminos`
+  - base ECO not proven
+  - plain Pink not proven
 - durable onboarding lessons now live in:
   - [api/PRODUCT_ONBOARDING_MEMORY.md](api/PRODUCT_ONBOARDING_MEMORY.md)
 
@@ -323,6 +331,7 @@ Relevant parity docs:
 - Tubular family `01` product/finish asset lookup now checks DAM product assets when local legacy files are missing
 - Tubular family `05` is now a real datasheet runtime with strict asset blocking
 - Tubular family `05` product/finish asset lookup now checks DAM product assets when local legacy files are missing
+- family `05` base T5 VC branch is now proven end-to-end with DAM-backed assets and working sample refs
 - Barra family `31` is now a real datasheet runtime with strict asset/data blocking
 - Barra family `40` is now a real datasheet runtime with strict asset/data blocking
 
@@ -379,6 +388,8 @@ Relevant parity docs:
   - `32`
   - `29`
   - `30`
+  - `01`
+  - `05`
 
 ### 3. API Runtime Parity vs Old App
 
@@ -527,7 +538,10 @@ Relevant parity docs:
   - family rollout slice is complete for roadmap scope
   - next work is visual parity validation on generated PDFs and remaining non-rollout families
   - Batch 1 family `49` is deferred until real Shelf assets are recovered
-  - Batch 2 families `01` and `05` are also deferred until real tubular assets are recovered
+  - family `05` base T5 VC no longer needs asset recovery for the proven branch
+  - next T5 work is special-branch truth:
+    - Pink HE candidate onboarding
+    - ECO remains blocked until live `Luminos` proof exists
   - next active DAM rollout cannot proceed until an external source of real family images is recovered
   - do not delete `appdatasheets/img/` yet
 

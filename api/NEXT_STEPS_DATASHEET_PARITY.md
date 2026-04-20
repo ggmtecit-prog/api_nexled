@@ -53,6 +53,14 @@ What already works:
 - public DAM asset delivery now falls back to the verified asset cloud `dofqiejpw` when env still uses legacy placeholder `NexledApi`
 - family `05` now enters real tubular datasheet runtime with strict asset blocking
 - family `05` now checks DAM product assets when local legacy files are missing
+- family `05` base T5 VC refs are now proven working:
+  - `05025725111010100`
+  - `05025727111010100`
+  - `05025732111010100`
+- family `05` special-branch audit result:
+  - Pink HE row proven in live truth
+  - ECO not proven
+  - plain Pink not proven
 - additional dropdown families that already exist in `Luminos` now enter existing runtimes:
   - tubular: `04`, `06`, `07`, `09`
   - barra: `10`, `56`, `59`
@@ -261,9 +269,11 @@ For Tubular family `01`, the equivalent next gap is:
 - expand/map more real T8 assets into local legacy paths or DAM family `01_t8-ac`
 - compare seeded sample `01018025111010100` old vs new and lock as first T8 gold sample
 
-For Tubular family `05`, the equivalent next gap is:
+For Tubular family `05`, the equivalent next gap is now:
 
-- import/map real T5 assets into local legacy paths or DAM family `05_t5-vc`
+- lock one base T5 VC gold sample old-vs-new
+- onboard T5 Pink HE only if user wants the branch next
+- keep T5 ECO out until live `Luminos` proof exists
 
 For Barra families `31` and `40`, the equivalent next gaps are:
 

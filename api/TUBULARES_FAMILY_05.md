@@ -48,12 +48,16 @@ Current live API state:
 
 - family `05` is mapped as `tubular` in the live decoder/runtime
 - datasheet runtime now allows family `05` to enter the PDF pipeline
-- family `05` still fails honestly when required tubular assets are missing
+- base family `05` DAM asset path is now implemented for:
+  - product image
+  - finish image
+  - technical drawing
+  - lens diagram
 
 So:
 - family `05` exists in DB/catalog
 - family `05` is now first-class in live API runtime
-- current blocker is real tubular asset/data completeness, not family mapping
+- base T5 VC path is no longer blocked by missing core assets
 
 ## Family 05 Segment Map
 
@@ -78,20 +82,25 @@ Best current rule:
 
 ## Datasheet Asset Source
 
-Still not traced in live runtime.
-Future readiness likely depends on:
+Current proven base family `05` runtime uses:
 
-- `appdatasheets/img/05/...` or T5-specific folders
-- DAM family folder `nexled/10_products/families/05_t5-vc/...`
-- drawings
-- product/LED description JSON
-- common graphs/diagrams where relevant
+- DAM-first deterministic shared asset paths:
+  - `nexled/datasheet/packshots/generic`
+  - `nexled/datasheet/finishes/clear`
+  - `nexled/datasheet/finishes/frost`
+  - `nexled/datasheet/drawings`
+  - `nexled/datasheet/diagrams`
+- shared DAM/local fallback assets for:
+  - color graphs
+  - energy labels
+  - logos/icons
+- local fallback remains allowed when DAM/shared asset is missing
 
 ## Current Gaps
 
-1. no visible `appdatasheets/img/05` asset tree exists in repo now
-2. family `05` now has DAM path mapping, but no confirmed DAM T5 assets have been loaded yet
-3. official fixed `00` not yet proven as hard runtime rule
+1. official fixed `00` not yet proven as hard runtime rule
+2. T5 Pink HE is code-valid in live truth, but special Pink packshot path is not onboarded yet
+3. T5 ECO is not yet proven in live `Luminos`, so it must stay out of scope
 
 ## 2026-04-17 Blocker Verification
 
@@ -121,7 +130,64 @@ Operational rule:
 - do not make family `05` DAM-primary until real T5 assets are recovered
 - do not invent placeholder imports for T5 just to advance rollout state
 
+## 2026-04-20 Base T5 VC Rollout
+
+Family `05` was then completed for the base T5 VC branch.
+
+What is now proven:
+
+- these refs generate real PDFs successfully:
+  - `05025725111010100`
+  - `05025727111010100`
+  - `05025732111010100`
+- the base product id remains:
+  - `T5/24v/30/3s`
+- shared graphs already resolve for:
+  - `CW503`
+  - `CW653`
+  - `WW303HE`
+- T5 VC DAM assets were uploaded into the real asset cloud `dofqiejpw`
+- proven asset classes now in DAM:
+  - base clear/frost packshots
+  - base finish image
+  - base drawings
+  - clear/frost diagrams
+
+Meaning:
+
+- family `05` base T5 VC path is now datasheet-ready
+- family `05` is no longer just runtime-supported; it has a proven working PDF branch
+
+## 2026-04-20 Pink / ECO Audit
+
+Special T5 branches were checked next against live API truth.
+
+What is proven:
+
+- Pink HE row is real in live `Luminos`:
+  - `05025791111010100`
+  - description: `LLED T5 VC 15 x 288mm Talho HE`
+- plain Pink is **not** proven for this family/size:
+  - `05025781111010100` returns `invalid_luminos_combination`
+- ECO base branch is **not** proven for this family/size:
+  - `05025725121010100` returns `invalid_luminos_combination`
+- Pink HE ECO is also **not** proven for this family/size:
+  - `05025791121010100` returns `invalid_luminos_combination`
+
+Asset candidates do exist in source dump:
+
+- `new_data_img/T5/Pink/T5_Pink.png`
+- `new_data_img/T5/Pink/T5_Pink_tecto.png`
+- `new_data_img/T5/2025/T5.png`
+- `new_data_img/T5/2025/T5_01.png`
+
+But rule stays:
+
+- images alone do not make a branch valid
+- Pink/ECO onboarding for family `05` must wait for proven live `Luminos` rows and then branch-specific asset mapping
+
 ## Best Next Follow-Up
 
-- restore/import real T5 assets into local legacy tree or DAM family `05_t5-vc`
-- compare one old-vs-new T5 gold sample
+- lock one base T5 VC gold sample old-vs-new
+- if user wants more T5 coverage, onboard Pink HE next
+- keep ECO out of scope until live `Luminos` truth is proven

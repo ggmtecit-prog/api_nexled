@@ -149,6 +149,62 @@ Reason:
 
 Do not fake this with a random alias.
 
+## Family 05 T5 Lessons
+
+### Scope Truth
+
+Current T5 rollout scope:
+
+- `05 = T5 VC` active
+- other T5 families stay legacy/out of current onboarding scope
+
+### Proven Working Branches
+
+These refs are now the proven base `05` working set:
+
+- `05025725111010100`
+- `05025727111010100`
+- `05025732111010100`
+
+This proves:
+
+- base T5 VC code-valid path works
+- base T5 VC DAM asset path works
+- base T5 VC PDF generation works
+
+### Special-Branch Audit
+
+Live truth checked next:
+
+- Pink HE is real:
+  - `05025791111010100`
+  - description: `LLED T5 VC 15 x 288mm Talho HE`
+- base ECO is not proven for the checked branch:
+  - `05025725121010100` -> `invalid_luminos_combination`
+- Pink HE ECO is not proven for the checked branch:
+  - `05025791121010100` -> `invalid_luminos_combination`
+- plain Pink is not proven for the checked branch:
+  - `05025781111010100` -> `invalid_luminos_combination`
+
+So current safe rule:
+
+- base T5 VC = working
+- Pink HE = code-valid candidate
+- ECO = not proven, keep out
+- plain Pink = not proven, keep out
+
+### Asset Rule
+
+For family `05`, base assets are now in DAM/shared paths:
+
+- generic T5 packshots
+- clear/frost finishes
+- T5 drawings
+- clear/frost diagrams
+
+Do not onboard T5 Pink/ECO only because image candidates exist in `new_data_img`.
+Need live `Luminos` truth first, then branch-specific DAM mapping.
+
 ## Deterministic DAM Asset Pattern
 
 For special T8 branches, runtime now depends on deterministic DAM-style assets such as:
