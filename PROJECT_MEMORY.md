@@ -187,6 +187,8 @@ Relevant family/mask docs:
 - [api/TUBULARES_CODE_MASK_MATRIX.md](api/TUBULARES_CODE_MASK_MATRIX.md)
 - [api/TUBULARES_FAMILY_01.md](api/TUBULARES_FAMILY_01.md)
 - [api/TUBULARES_FAMILY_05.md](api/TUBULARES_FAMILY_05.md)
+- [api/T8_FAMILY_ONBOARDING_PLAN.md](api/T8_FAMILY_ONBOARDING_PLAN.md)
+- [api/T8_ASSET_INVENTORY.md](api/T8_ASSET_INVENTORY.md)
 
 ### Current Family Runtime Snapshot
 
@@ -211,6 +213,9 @@ Important:
 - code-valid != datasheet-ready
 - dropdown family list is broader than the set of families that currently have `Luminos` identities
 - `/api/?endpoint=families` now returns `product_type`, `datasheet_runtime_supported`, `luminos_identity_count`, and `has_luminos_identities`
+- T8 rollout is currently scoped to `01 = T8 AC` only
+- `02 = T8 VC` and `03 = T8 CC` are legacy and out of current onboarding scope
+- first curated T8 runtime asset set now exists for `01` under `appdatasheets/img/01/...`
 
 ## Datasheet Pipeline
 
@@ -493,14 +498,15 @@ Relevant parity docs:
     - no `appdatasheets/img/49` tree exists in this repo
     - sibling legacy app `C:\\xampp\\htdocs\\appDatasheets\\img` also has no `49` folder
     - result: Shelf is blocked by missing real image files, not by runtime logic
-  - Batch 2 tubular families `01` and `05` were checked next and show same blocker pattern:
+  - Batch 2 tubular families `01` and `05` were checked next:
     - valid references decode correctly and resolve to real DB products
-    - sample datasheet runs fail with `Missing required data: product image`
-    - `dam_asset_links` count for family `01` is `0`
-    - `dam_asset_links` count for family `05` is `0`
-    - no `appdatasheets/img/01` or `appdatasheets/img/05` trees exist in this repo
-    - sibling legacy app `C:\\xampp\\htdocs\\appDatasheets\\img` also has no `01` or `05` folders
-    - result: families `01` and `05` are blocked by missing real image files, not by runtime logic
+    - family `05` still fits the old blocked-by-missing-assets pattern
+    - family `01` now has first curated local runtime assets under `appdatasheets/img/01/...`
+    - local sample `01018025111010100` now generates a real PDF successfully
+    - one PDF-path bug was fixed during this work:
+      - local SVG assets must be passed to TCPDF as absolute paths, not inline base64 blobs
+    - `dam_asset_links` count for family `01` is still `0`
+    - result: family `01` has one working seeded sample path, while `05` is still blocked by missing real assets
   - wider legacy asset inventory now looks conclusive:
     - `C:\\xampp\\htdocs\\appDatasheets\\img` contains only family folders `11`, `29`, `30`, `32`, `48`, `55`, `58` plus shared asset folders
     - candidate next families like `31`, `40`, and `60` also have no local image folders there

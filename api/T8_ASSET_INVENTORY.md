@@ -9,15 +9,15 @@ Purpose:
 Scope:
 - `new_data_img/T8`
 - immediate runtime target: family `01`
-- later review target: families `02` and `03`
+- families `02` and `03` are legacy and out of current rollout scope
 
 ## Current Known DB Truth
 
 Current best confirmed state:
 
 - family `01` = `T8 AC`
-- family `02` = `T8 VC`
-- family `03` = `T8 CC`
+- family `02` = `T8 VC` legacy
+- family `03` = `T8 CC` legacy
 
 From current runtime and previous audits:
 
@@ -28,7 +28,8 @@ From current runtime and previous audits:
 Operational consequence:
 
 - `01` can be made fully datasheet-ready now
-- `02` and `03` should not be treated as fully valid until DB truth changes
+- `02` and `03` should be ignored for current onboarding work
+- first curated `01` runtime asset set is now seeded in `appdatasheets/img/01/...`
 
 ## Folder Shape
 
@@ -247,7 +248,7 @@ Prefer:
 
 1. no runtime-safe filename scheme exists yet for these assets
 2. duplicate product renders need manual selection
-3. `02` and `03` still lack proven `Luminos` support
+3. `02` and `03` are legacy and still lack proven `Luminos` support
 4. cap/mounting mapping for `fixo`, `rotativo`, `fn curto`, `sem pinos` not yet proven against DB/options
 
 ## Recommended Next Step
@@ -258,6 +259,7 @@ Use this inventory to onboard family `01` only:
 2. map one product image
 3. map one finish image
 4. map one base drawing
+5. ignore `02/03` unless project scope changes later
 5. map clear/frost diagrams
 6. verify strict tubular validator passes only with real assets
 

@@ -247,7 +247,8 @@ Why:
 
 For Tubular family `01`, the equivalent next gap is:
 
-- import/map real T8 assets into local legacy paths or DAM family `01_t8-ac`
+- expand/map more real T8 assets into local legacy paths or DAM family `01_t8-ac`
+- compare seeded sample `01018025111010100` old vs new and lock as first T8 gold sample
 
 For Tubular family `05`, the equivalent next gap is:
 

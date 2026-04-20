@@ -6,10 +6,10 @@ Purpose:
 - separate code-valid work from asset-readiness work
 
 Scope:
-- T8 cluster only
+- T8 onboarding now means family `01` only
 - family `01` = `T8 AC`
-- family `02` = `T8 VC`
-- family `03` = `T8 CC`
+- family `02` = `T8 VC` legacy
+- family `03` = `T8 CC` legacy
 
 ## Assumptions
 
@@ -36,13 +36,14 @@ Use this order when sources disagree:
 ### Family coverage
 
 - `01` already has real `Luminos` identities and already enters tubular datasheet runtime
-- `02` currently shows no `Luminos` identities
-- `03` currently shows no `Luminos` identities
+- `02` is legacy and currently shows no `Luminos` identities
+- `03` is legacy and currently shows no `Luminos` identities
 
 So:
 
 - `01` can become fully working now
-- `02` and `03` may still be selectable in dropdown, but cannot be treated as fully valid until DB truth exists
+- `02` and `03` must be ignored for current onboarding scope
+- `02/03` may still remain selectable in some legacy UI states, but must not be treated as active T8 rollout targets
 
 ### Asset coverage
 
@@ -79,21 +80,23 @@ Family onboarding is done only when all are true:
 ### Phase 1 - DB Truth Audit
 
 Goal:
-- prove exactly what `01/02/03` mean in current DB
+- prove exactly what `01` means in current DB
+- keep `02/03` explicitly outside current rollout scope
 
 Tasks:
-- verify `Familias` rows for `01/02/03`
-- verify `Luminos` counts for each family
+- verify `Familias` row for `01`
+- verify `Luminos` counts for `01`
 - collect sample `Luminos.ref` and `Luminos.ID`
-- verify `options` output for each family
+- verify `options` output for `01`
+- keep one short note that `02/03` are legacy, DB-empty for now, and ignored
 
 Expected result:
 - `01` confirmed code-valid family
-- `02/03` either confirmed valid or explicitly marked DB-empty
+- `02/03` explicitly marked legacy/out-of-scope
 
 Verification:
-- sample valid refs exist for each supported family
-- if no `Luminos`, family must not be treated as code-valid
+- sample valid refs exist for `01`
+- `02/03` remain non-target legacy families until DB truth changes
 
 ### Phase 2 - Asset Inventory
 
@@ -173,7 +176,8 @@ Tasks:
 - verify generate flow only succeeds when datasheet-ready
 
 For `02/03`:
-- if still no `Luminos`, show truthful unsupported/not-valid state
+- treat as legacy
+- do not onboard
 - do not fake support from asset presence alone
 
 Verification:
@@ -200,17 +204,17 @@ Verification:
 
 Best next steps:
 
-1. audit DB truth for `01/02/03`
+1. lock `01` as the only active T8 family
 2. inventory `new_data_img/T8`
 3. build `T8_ASSET_INVENTORY.md`
-4. patch `01` only first
+4. patch `01` only
 
 ## Important Warnings
 
 Do not:
 
 - assume all T8 families are valid because T8 assets exist
-- enable `02/03` runtime without `Luminos` truth
+- onboard `02/03` while they are legacy/out-of-scope
 - import random duplicate assets without mapping
 - generate PDFs with fake technical data
 
@@ -220,4 +224,4 @@ If family has:
 
 - `Luminos` identities + options + runtime + assets -> fully supported
 - `Luminos` identities + runtime but missing assets -> supported but blocked honest
-- no `Luminos` identities -> selectable only, not code-valid yet
+- legacy + no `Luminos` identities -> ignored for current rollout

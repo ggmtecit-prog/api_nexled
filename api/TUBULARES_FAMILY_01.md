@@ -78,8 +78,7 @@ Best current rule:
 
 ## Datasheet Asset Source
 
-Still not traced in live runtime.
-Future readiness likely depends on:
+Current live runtime now uses:
 
 - `appdatasheets/img/01/...` or T8-specific folders
 - DAM family folder `nexled/10_products/families/01_t8-ac/...`
@@ -89,13 +88,14 @@ Future readiness likely depends on:
 
 ## Current Gaps
 
-1. no visible `appdatasheets/img/01` asset tree exists in repo now
+1. only first curated `01` asset set is seeded in `appdatasheets/img/01/...`
 2. family `01` now has DAM path mapping, but no confirmed DAM T8 assets have been loaded yet
 3. official fixed `00` not yet proven as hard runtime rule
+4. broader `01` size/lens/cap coverage still needs import/mapping
 
-## 2026-04-17 Blocker Verification
+## 2026-04-20 Smoke Verification
 
-Family `01` was re-checked directly during DAM rollout continuation.
+Family `01` was re-checked directly after first T8 asset import.
 
 What is now confirmed:
 
@@ -103,18 +103,24 @@ What is now confirmed:
   - `01018025111010100`
 - this decodes and resolves to a real DB product:
   - `T8/PC/22/3s`
-- live datasheet runtime reaches the strict missing-data gate and fails honestly with:
-  - `Missing required data: product image`
+- first curated local asset set now exists in repo:
+  - `appdatasheets/img/01/produto/...`
+  - `appdatasheets/img/01/acabamentos/...`
+  - `appdatasheets/img/01/desenhos/0180.svg`
+  - `appdatasheets/img/01/diagramas/1.svg`
+  - `appdatasheets/img/01/diagramas/2.svg`
 - local DAM state is still empty for family `01`:
   - `dam_asset_links` count for family `01` = `0`
-- no `appdatasheets/img/01` tree exists in this repo
 - sibling legacy app at `C:\xampp\htdocs\appDatasheets\img` also has no `01` folder
+- local datasheet POST for `01018025111010100` now returns a real PDF successfully
+- one PDF-path bug was found and fixed during this test:
+  - local SVG assets must be passed to TCPDF as absolute paths, not inline base64 blobs
 
 Meaning:
 
 - family `01` is **not** blocked by decoder/runtime/product-ID logic anymore
-- family `01` is blocked by missing real T8 image source files
-- safe next move is asset recovery/discovery, not API rewrite
+- family `01` now has one working seeded sample path
+- remaining work is broader asset coverage and parity, not first-runtime rescue
 
 Operational rule:
 
@@ -123,5 +129,5 @@ Operational rule:
 
 ## Best Next Follow-Up
 
-- restore/import real T8 assets into local legacy tree or DAM family `01_t8-ac`
+- expand/import more real T8 assets into local legacy tree or DAM family `01_t8-ac`
 - compare one old-vs-new T8 gold sample
