@@ -46,6 +46,18 @@ function toPdfAssetSrc(?string $path): string {
 
     if (is_file($resolved)) {
         if ($extension === "svg") {
+            if (PHP_OS_FAMILY === "Windows") {
+                return $normalized;
+            }
+
+            if (preg_match("/^[A-Za-z]:\\//", $normalized)) {
+                return "file:///" . $normalized;
+            }
+
+            if (str_starts_with($normalized, "/")) {
+                return "file://" . $normalized;
+            }
+
             return $normalized;
         }
 
