@@ -299,7 +299,7 @@ function cloudinaryDamSanitizePublicIdSegment(string $value): string {
  * @return string|null
  */
 function cloudinaryBuildPublicAssetUrl(string $publicId, string $assetName, string $resourceType = "image"): ?string {
-    $cloudName = trim(cloudinaryConfigValue("CLOUDINARY_CLOUD_NAME"));
+    $cloudName = cloudinaryAssetCloudName();
     $publicId = trim($publicId);
     $assetName = trim($assetName);
     $resourceType = trim($resourceType);
@@ -311,6 +311,35 @@ function cloudinaryBuildPublicAssetUrl(string $publicId, string $assetName, stri
 
     $encodedPublicId = implode("/", array_map("rawurlencode", explode("/", $publicId)));
     return "https://res.cloudinary.com/{$cloudName}/{$resourceType}/upload/{$encodedPublicId}.{$extension}";
+}
+
+/**
+ * Returns the Cloudinary cloud name used for public DAM asset delivery.
+ *
+ * The production asset cloud for this repo is currently `dofqiejpw`.
+ * Some environments still use the legacy placeholder cloud name
+ * `NexledApi`, which does not contain the DAM media set. When that happens
+ * we fall back to the verified DAM asset cloud so public deterministic URLs
+ * still resolve.
+ *
+ * @return string
+ */
+function cloudinaryAssetCloudName(): string {
+    $override = trim((string) (getRuntimeEnvValue("DAM_ASSET_CLOUD_NAME")
+        ?? getRuntimeEnvValue("CLOUDINARY_ASSET_CLOUD_NAME")
+        ?? ""));
+
+    if ($override !== "") {
+        return $override;
+    }
+
+    $configuredCloud = trim(cloudinaryConfigValue("CLOUDINARY_CLOUD_NAME"));
+
+    if ($configuredCloud !== "" && strcasecmp($configuredCloud, "NexledApi") !== 0) {
+        return $configuredCloud;
+    }
+
+    return "dofqiejpw";
 }
 
 /**
