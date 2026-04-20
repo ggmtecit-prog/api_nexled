@@ -257,7 +257,13 @@ function cloudinaryDamExactAssetUrl(string $folderPath, string $assetName, strin
     }
 
     $publicId = cloudinaryDamBuildPublicId($folderPath, $assetName);
-    return cloudinaryFindResourceSecureUrl($publicId, $resourceType);
+    $resolvedUrl = cloudinaryFindResourceSecureUrl($publicId, $resourceType);
+
+    if ($resolvedUrl !== null) {
+        return $resolvedUrl;
+    }
+
+    return cloudinaryBuildPublicAssetUrl($publicId, $assetName, $resourceType);
 }
 
 /**
@@ -269,6 +275,32 @@ function cloudinaryDamSanitizePublicIdSegment(string $value): string {
     $value = preg_replace("/[^a-z0-9]+/", "_", $value) ?? "";
     $value = trim($value, "_");
     return $value !== "" ? $value : "asset";
+}
+
+/**
+ * Builds a direct public Cloudinary URL for a known public_id + filename.
+ *
+ * This avoids depending on the DAM metadata DB or Admin API lookups when the
+ * asset naming is deterministic and the asset is already public in Cloudinary.
+ *
+ * @param  string $publicId
+ * @param  string $assetName
+ * @param  string $resourceType
+ * @return string|null
+ */
+function cloudinaryBuildPublicAssetUrl(string $publicId, string $assetName, string $resourceType = "image"): ?string {
+    $cloudName = trim(cloudinaryConfigValue("CLOUDINARY_CLOUD_NAME"));
+    $publicId = trim($publicId);
+    $assetName = trim($assetName);
+    $resourceType = trim($resourceType);
+    $extension = strtolower(pathinfo($assetName, PATHINFO_EXTENSION));
+
+    if ($cloudName === "" || $publicId === "" || $assetName === "" || $resourceType === "" || $extension === "") {
+        return null;
+    }
+
+    $encodedPublicId = implode("/", array_map("rawurlencode", explode("/", $publicId)));
+    return "https://res.cloudinary.com/{$cloudName}/{$resourceType}/upload/{$encodedPublicId}.{$extension}";
 }
 
 /**
