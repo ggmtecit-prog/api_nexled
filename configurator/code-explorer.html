@@ -610,15 +610,22 @@
                     </div>
 
                     <div id="explorer-detail" class="hidden flex flex-col gap-16">
-                        <div class="flex flex-col gap-8 sm:flex-row sm:items-center sm:justify-between">
-                            <div id="detail-status-badges" class="flex flex-wrap items-center gap-8"></div>
-                            <button id="detail-load-pdf-specs" type="button" class="btn btn-secondary btn-xs self-start sm:self-auto">
-                                <i class="ri-file-list-3-line text-icon-sm" aria-hidden="true"></i>
-                                <span id="detail-load-pdf-specs-label" data-i18n="codeExplorer.detailsPdfSpecsButton">Show more details</span>
-                            </button>
+                        <div class="flex flex-col gap-16 lg:flex-row lg:items-start lg:justify-between">
+                            <div class="flex min-w-0 flex-col gap-8">
+                                <p id="detail-description" class="text-title-lg text-black break-words"></p>
+                                <div id="detail-meta-badges" class="flex flex-wrap gap-8"></div>
+                            </div>
+
+                            <div class="flex flex-col gap-8 lg:items-end">
+                                <div id="detail-status-badges" class="flex flex-wrap items-center gap-8"></div>
+                                <button id="detail-load-pdf-specs" type="button" class="btn btn-secondary btn-xs self-start lg:self-auto">
+                                    <i class="ri-file-list-3-line text-icon-sm" aria-hidden="true"></i>
+                                    <span id="detail-load-pdf-specs-label" data-i18n="codeExplorer.detailsPdfSpecsButton">Show more details</span>
+                                </button>
+                            </div>
                         </div>
 
-                        <div id="detail-loading-state" class="hidden w-full max-w-narrow self-end" aria-live="polite">
+                        <div id="detail-loading-state" class="hidden w-full" aria-live="polite">
                             <div class="flex flex-col gap-8">
                                 <div class="flex items-center justify-between gap-12">
                                     <span id="detail-loading-progress-label" class="text-body-sm text-grey-primary" data-i18n="codeExplorer.detailsPdfSpecsLoading">Loading more details...</span>

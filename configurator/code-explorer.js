@@ -3073,6 +3073,8 @@ function renderDetail() {
     const detail = document.getElementById("explorer-detail");
     const empty = document.getElementById("explorer-detail-empty");
     const modalTitle = document.getElementById("codeExplorerDetailModalTitle");
+    const detailDescription = document.getElementById("detail-description");
+    const detailMetaBadges = document.getElementById("detail-meta-badges");
     const summaryList = document.getElementById("detail-summary-list");
     const loadingState = document.getElementById("detail-loading-state");
     const statusBadges = document.getElementById("detail-status-badges");
@@ -3081,7 +3083,7 @@ function renderDetail() {
     const row = getSelectedRow();
     const valueUnavailable = t("codeExplorer.valueUnavailable", {}, "Not available");
 
-    if (!detail || !empty || !summaryList || !loadingState || !statusBadges || !modalTitle || !toggleButton || !toggleButtonLabel) {
+    if (!detail || !empty || !detailDescription || !detailMetaBadges || !summaryList || !loadingState || !statusBadges || !modalTitle || !toggleButton || !toggleButtonLabel) {
         return;
     }
 
@@ -3092,6 +3094,8 @@ function renderDetail() {
         summaryList.classList.remove("hidden");
         stopDetailLoadingProgress(true);
         statusBadges.innerHTML = "";
+        detailDescription.textContent = "";
+        detailMetaBadges.innerHTML = "";
         modalTitle.textContent = "";
         toggleButton.disabled = true;
         toggleButtonLabel.textContent = t("codeExplorer.detailsPdfSpecsButton", {}, "Show more details");
@@ -3108,6 +3112,8 @@ function renderDetail() {
     empty.classList.add("hidden");
     detail.classList.remove("hidden");
     modalTitle.textContent = row.reference || "";
+    detailDescription.textContent = row.description || valueUnavailable;
+    detailMetaBadges.innerHTML = buildDetailMetaBadgesMarkup(row, valueUnavailable);
     const specsState = getDetailPdfSpecsState(row.reference);
     const isComplexView = explorerState.detailViewMode === "complex";
     const isLoadingComplex = isComplexView && specsState.status === "loading";
@@ -3163,7 +3169,26 @@ function buildDetailSpecListItem(label, valueMarkup, valueClasses = "") {
             <dt class="list-key">${escapeHtml(label)}</dt>
             <dd class="list-value ${valueClasses}">${valueMarkup}</dd>
         </div>
-    `;
+      `;
+}
+
+function buildDetailMetaBadgesMarkup(row, valueUnavailable) {
+    const badges = [
+        buildNeutralBadge(
+            `${t("codeExplorer.tableIdentity", {}, "Identity")} ${row.identity || valueUnavailable}`,
+            "badge-md"
+        ),
+        buildNeutralBadge(
+            `${t("codeExplorer.tableType", {}, "Type")} ${row.product_type || valueUnavailable}`,
+            "badge-md"
+        ),
+        buildNeutralBadge(
+            `${t("codeExplorer.tableProductId", {}, "Product ID")} ${row.product_id || valueUnavailable}`,
+            "badge-md"
+        ),
+    ];
+
+    return badges.join("");
 }
 
 const detailLoadingProgressMotion = {
@@ -3328,27 +3353,6 @@ function getDetailPdfSpecsState(reference, lang = getCurrentExplorerLanguage()) 
 }
 
 function buildBasicDetailListMarkup(row, valueUnavailable, specsState = null) {
-    const summaryRows = [
-        buildDetailSpecListItem(
-            t("codeExplorer.tableIdentity", {}, "Identity"),
-            escapeHtml(row.identity || ""),
-            "break-all"
-        ),
-        buildDetailSpecListItem(
-            t("codeExplorer.tableDescription", {}, "Description"),
-            escapeHtml(row.description || valueUnavailable)
-        ),
-        buildDetailSpecListItem(
-            t("codeExplorer.tableType", {}, "Type"),
-            escapeHtml(row.product_type || valueUnavailable)
-        ),
-        buildDetailSpecListItem(
-            t("codeExplorer.tableProductId", {}, "Product ID"),
-            escapeHtml(row.product_id || valueUnavailable),
-            "break-all"
-        ),
-    ];
-
     const segmentRows = SEGMENT_META.map((segment) => {
         return buildDetailSpecListItem(
             t(segment.labelKey, {}, segment.fallback),
@@ -3374,7 +3378,7 @@ function buildBasicDetailListMarkup(row, valueUnavailable, specsState = null) {
         );
     }
 
-    return [...summaryRows, ...segmentRows, ...statusRows].join("");
+    return [...segmentRows, ...statusRows].join("");
 }
 
 function buildDetailPdfAssetStatusRow(label, available) {
@@ -3396,24 +3400,6 @@ function buildComplexDetailListMarkup(row, specsState, valueUnavailable) {
 
     const payload = specsState.data || {};
     const rows = [
-        buildDetailSpecListItem(
-            t("codeExplorer.tableIdentity", {}, "Identity"),
-            escapeHtml(row.identity || ""),
-            "break-all"
-        ),
-        buildDetailSpecListItem(
-            t("codeExplorer.tableDescription", {}, "Description"),
-            escapeHtml(row.description || valueUnavailable)
-        ),
-        buildDetailSpecListItem(
-            t("codeExplorer.tableType", {}, "Type"),
-            escapeHtml(row.product_type || valueUnavailable)
-        ),
-        buildDetailSpecListItem(
-            t("codeExplorer.tableProductId", {}, "Product ID"),
-            escapeHtml(row.product_id || valueUnavailable),
-            "break-all"
-        ),
         buildDetailSpecListItem(
             t("codeExplorer.detailsPdfHeaderDescriptionLabel", {}, "Header description"),
             escapeHtml(payload.summary?.header_description || payload.summary?.description || valueUnavailable)
