@@ -122,6 +122,10 @@ function getBarDrawing(string $reference, string $productId, ?string $sizesFile,
 
     $drawing = findDamProductAsset($family, $productId, "drawing", $candidates);
 
+    if ($drawing === null && $family === "01") {
+        $drawing = cloudinaryDamExactAssetUrl("nexled/datasheet/drawings", "t8-fixo.svg");
+    }
+
     if ($drawing === null) {
         foreach ($candidates as $name) {
             $drawing = findImage(IMAGES_BASE_PATH . $folder . $name);

@@ -315,6 +315,13 @@ function getFinishAndLens(string $productType, string $productId, string $refere
 
     $image = findDamProductAsset($family, $productId, "finish", $candidates);
 
+    if ($image === null && $family === "01") {
+        $finishFolder = strtolower(trim((string) $lens)) === "frost"
+            ? "nexled/datasheet/finishes/frost"
+            : "nexled/datasheet/finishes/clear";
+        $image = cloudinaryDamExactAssetUrl($finishFolder, "acabamento-t8-alu.png");
+    }
+
     if ($image === null) {
         foreach ($candidates as $name) {
             $image = findImage(IMAGES_BASE_PATH . $folder . $name);

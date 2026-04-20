@@ -121,6 +121,10 @@ function getProductImage(string $productType, string $productId, array $parts, a
 
     $damImage = findDamProductAsset($family, $productId, "packshot", $candidates);
 
+    if ($damImage === null && $family === "01") {
+        $damImage = getTubularFamily01DamPackshot($productId);
+    }
+
     if ($damImage !== null) {
         return $damImage;
     }
@@ -131,6 +135,37 @@ function getProductImage(string $productType, string $productId, array $parts, a
         if ($image !== null) {
             return $image;
         }
+    }
+
+    return null;
+}
+
+/**
+ * Resolves family 01 T8 special packshots directly from Cloudinary DAM naming
+ * when the DAM metadata DB is unavailable.
+ *
+ * @param  string $productId
+ * @return string|null
+ */
+function getTubularFamily01DamPackshot(string $productId): ?string {
+    $productId = trim($productId);
+
+    if ($productId === "") {
+        return null;
+    }
+
+    $folderPath = "nexled/datasheet/packshots/generic";
+
+    if (preg_match("#^T8/AL/[0-9]+/2s$#i", $productId) === 1) {
+        return cloudinaryDamExactAssetUrl($folderPath, "T8_ECO.png");
+    }
+
+    if (preg_match("#^T8PINK/AL/[0-9]+/3s$#i", $productId) === 1) {
+        return cloudinaryDamExactAssetUrl($folderPath, "T8_Pink_tecto.png");
+    }
+
+    if (preg_match("#^T8PINK/[0-9]+/3s$#i", $productId) === 1) {
+        return cloudinaryDamExactAssetUrl($folderPath, "T8_Pink.png");
     }
 
     return null;

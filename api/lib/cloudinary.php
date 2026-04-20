@@ -172,6 +172,106 @@ function cloudinaryDelete(string $publicId, string $resourceType): bool {
 }
 
 /**
+ * Returns a secure Cloudinary URL for one exact public_id, or null if missing.
+ *
+ * @param  string $publicId
+ * @param  string $resourceType
+ * @return string|null
+ */
+function cloudinaryFindResourceSecureUrl(string $publicId, string $resourceType = "image"): ?string {
+    if (cloudinaryMissingAdminConfig() !== []) {
+        return null;
+    }
+
+    $publicId = trim($publicId);
+    $resourceType = trim($resourceType);
+
+    if ($publicId === "" || $resourceType === "") {
+        return null;
+    }
+
+    $credentials = cloudinaryAdminCredentials();
+    $url = "https://api.cloudinary.com/v1_1/" . cloudinaryConfigValue("CLOUDINARY_CLOUD_NAME")
+         . "/resources/$resourceType/upload?public_ids[]=" . urlencode($publicId);
+    $auth = base64_encode($credentials["api_key"] . ":" . $credentials["api_secret"]);
+
+    $ch = curl_init($url);
+    curl_setopt($ch, CURLOPT_HTTPHEADER, ["Authorization: Basic $auth"]);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    $response = curl_exec($ch);
+    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    curl_close($ch);
+
+    if ($httpCode !== 200 || !is_string($response)) {
+        return null;
+    }
+
+    $data = json_decode($response, true);
+    $resources = is_array($data["resources"] ?? null) ? $data["resources"] : [];
+
+    foreach ($resources as $resource) {
+        if (($resource["public_id"] ?? "") !== $publicId) {
+            continue;
+        }
+
+        $secureUrl = trim((string) ($resource["secure_url"] ?? ""));
+
+        if ($secureUrl !== "") {
+            return $secureUrl;
+        }
+    }
+
+    return null;
+}
+
+/**
+ * Builds the deterministic DAM public_id used by the upload/link model.
+ *
+ * @param  string $folderPath
+ * @param  string $assetName
+ * @return string
+ */
+function cloudinaryDamBuildPublicId(string $folderPath, string $assetName): string {
+    $segments = array_values(array_filter(explode("/", trim($folderPath, "/"))));
+    $tail = array_slice($segments, -4);
+    $flatTail = implode("_", array_map("cloudinaryDamSanitizePublicIdSegment", $tail));
+    $base = cloudinaryDamSanitizePublicIdSegment($assetName);
+    $hash = substr(sha1(trim($folderPath, "/") . "|" . $assetName), 0, 8);
+    return substr("dam_" . trim($flatTail . "_" . $base . "_" . $hash, "_"), 0, 255);
+}
+
+/**
+ * Resolves one DAM asset by exact folder path + filename, without DAM DB metadata.
+ *
+ * @param  string $folderPath
+ * @param  string $assetName
+ * @param  string $resourceType
+ * @return string|null
+ */
+function cloudinaryDamExactAssetUrl(string $folderPath, string $assetName, string $resourceType = "image"): ?string {
+    $folderPath = trim($folderPath, "/");
+    $assetName = trim($assetName);
+
+    if ($folderPath === "" || $assetName === "") {
+        return null;
+    }
+
+    $publicId = cloudinaryDamBuildPublicId($folderPath, $assetName);
+    return cloudinaryFindResourceSecureUrl($publicId, $resourceType);
+}
+
+/**
+ * @param  string $value
+ * @return string
+ */
+function cloudinaryDamSanitizePublicIdSegment(string $value): string {
+    $value = strtolower(trim($value));
+    $value = preg_replace("/[^a-z0-9]+/", "_", $value) ?? "";
+    $value = trim($value, "_");
+    return $value !== "" ? $value : "asset";
+}
+
+/**
  * Create a folder in Cloudinary and treat existing folders as success.
  *
  * @param  string $folderPath
