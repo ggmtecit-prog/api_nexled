@@ -39,10 +39,6 @@ if (!defined("COLOR_GRAPH_ALIASES")) {
 }
 
 function getFinishPlaceholderImage(?string $family = null): ?string {
-    if ($family !== null && isDamPrimaryFamily($family)) {
-        return null;
-    }
-
     $placeholder = findImage(FINISH_PLACEHOLDER_PATH);
 
     if ($placeholder !== null) {
@@ -175,7 +171,7 @@ function getLensDiagram(string $productId, string $reference): ?array {
 
     $diagramPath = findDamProductAsset($family, $productId, "diagram", [$lens]);
 
-    if ($diagramPath === null && !isDamPrimaryFamily($family)) {
+    if ($diagramPath === null) {
         $diagramPath = findImage($base . $lens);
     }
 
@@ -185,7 +181,7 @@ function getLensDiagram(string $productId, string $reference): ?array {
 
     $illuminancePath = findDamProductAsset($family, $productId, "diagram-inv", [$lens]);
 
-    if ($illuminancePath === null && !isDamPrimaryFamily($family)) {
+    if ($illuminancePath === null) {
         $illuminancePath = findImage($base . "i/$lens");
     }
 
@@ -319,7 +315,7 @@ function getFinishAndLens(string $productType, string $productId, string $refere
 
     $image = findDamProductAsset($family, $productId, "finish", $candidates);
 
-    if ($image === null && !isDamPrimaryFamily($family)) {
+    if ($image === null) {
         foreach ($candidates as $name) {
             $image = findImage(IMAGES_BASE_PATH . $folder . $name);
 
@@ -397,15 +393,13 @@ function getFixing(string $reference, string $lens, string $cableType, string $e
     $image = findDamProductAsset($family, "", "mounting", $imageCandidates);
     $render = findDamProductAsset($family, "", "mounting", $renderCandidates);
 
-    if (!isDamPrimaryFamily($family)) {
-        foreach ($candidates as $name) {
-            if ($image === null) {
-                $image = findImage($folder . $name);
-            }
+    foreach ($candidates as $name) {
+        if ($image === null) {
+            $image = findImage($folder . $name);
+        }
 
-            if ($render === null) {
-                $render = findImage($folder . $name . "_render");
-            }
+        if ($render === null) {
+            $render = findImage($folder . $name . "_render");
         }
     }
 
@@ -521,7 +515,7 @@ function getConnectionCable(string $reference, string $cableId, string $connecto
 
     $image = findDamProductAsset($family, "", "connector", $candidates);
 
-    if ($image === null && !isDamPrimaryFamily($family)) {
+    if ($image === null) {
         foreach ($candidates as $name) {
             $image = findImage($folder . $name);
 

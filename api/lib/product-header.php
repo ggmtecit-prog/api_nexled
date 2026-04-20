@@ -125,10 +125,6 @@ function getProductImage(string $productType, string $productId, array $parts, a
         return $damImage;
     }
 
-    if (isDamPrimaryFamily($family)) {
-        return null;
-    }
-
     foreach ($candidates as $filename) {
         $image = findImage(IMAGES_BASE_PATH . $folder . $filename);
 

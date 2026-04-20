@@ -807,10 +807,6 @@ function findDamOrLocalSharedAsset(string $role, array $filenameCandidates, ?str
         return $damAsset;
     }
 
-    if (isDamPrimarySharedRole($role)) {
-        return null;
-    }
-
     if ($localBasePath !== null && trim($localBasePath) !== "") {
         return findImage($localBasePath);
     }

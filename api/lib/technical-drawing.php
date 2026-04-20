@@ -122,7 +122,7 @@ function getBarDrawing(string $reference, string $productId, ?string $sizesFile,
 
     $drawing = findDamProductAsset($family, $productId, "drawing", $candidates);
 
-    if ($drawing === null && !isDamPrimaryFamily($family)) {
+    if ($drawing === null) {
         foreach ($candidates as $name) {
             $drawing = findImage(IMAGES_BASE_PATH . $folder . $name);
 
@@ -278,7 +278,7 @@ function getStandardDrawing(string $reference, string $productId): array {
 
     $drawing = findDamProductAsset($family, $productId, "drawing", [$size]);
 
-    if ($drawing === null && !isDamPrimaryFamily($family)) {
+    if ($drawing === null) {
         $drawing = findImage(IMAGES_BASE_PATH . $folder . $size);
     }
 
