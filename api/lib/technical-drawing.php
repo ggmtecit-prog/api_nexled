@@ -124,6 +124,9 @@ function getBarDrawing(string $reference, string $productId, ?string $sizesFile,
 
     if ($drawing === null && $family === "01") {
         $drawing = cloudinaryDamExactAssetUrl("nexled/datasheet/drawings", "t8-fixo.svg");
+    } elseif ($drawing === null && $family === "05") {
+        $drawingAsset = $parts["cap"] === "02" ? "t5_sfio.svg" : "t5.svg";
+        $drawing = cloudinaryDamExactAssetUrl("nexled/datasheet/drawings", $drawingAsset);
     }
 
     if ($drawing === null) {
@@ -284,6 +287,9 @@ function getStandardDrawing(string $reference, string $productId): array {
 
     if ($drawing === null && $family === "01") {
         $drawing = cloudinaryDamExactAssetUrl("nexled/datasheet/drawings", "t8-fixo.svg");
+    } elseif ($drawing === null && $family === "05") {
+        $drawingAsset = $parts["cap"] === "02" ? "t5_sfio.svg" : "t5.svg";
+        $drawing = cloudinaryDamExactAssetUrl("nexled/datasheet/drawings", $drawingAsset);
     }
 
     if ($drawing === null) {

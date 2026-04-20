@@ -175,6 +175,11 @@ function getLensDiagram(string $productId, string $reference): ?array {
         $diagramPath = findImage($base . $lens);
     }
 
+    if ($diagramPath === null && $family === "05") {
+        $diagramAsset = $lens === "2" ? "t5_frost.svg" : "t5_clear.svg";
+        $diagramPath = cloudinaryDamExactAssetUrl("nexled/datasheet/diagrams", $diagramAsset);
+    }
+
     if ($diagramPath === null) {
         return null;
     }
@@ -320,6 +325,11 @@ function getFinishAndLens(string $productType, string $productId, string $refere
             ? "nexled/datasheet/finishes/frost"
             : "nexled/datasheet/finishes/clear";
         $image = cloudinaryDamExactAssetUrl($finishFolder, "acabamento-t8-alu.png");
+    } elseif ($image === null && $family === "05") {
+        $finishFolder = strtolower(trim((string) $lens)) === "frost"
+            ? "nexled/datasheet/finishes/frost"
+            : "nexled/datasheet/finishes/clear";
+        $image = cloudinaryDamExactAssetUrl($finishFolder, "acabamento-t5-alu.png");
     }
 
     if ($image === null) {

@@ -125,6 +125,10 @@ function getProductImage(string $productType, string $productId, array $parts, a
         $damImage = getTubularFamily01DamPackshot($productId);
     }
 
+    if ($damImage === null && $family === "05") {
+        $damImage = getTubularFamily05DamPackshot($parts, $config);
+    }
+
     if ($damImage !== null) {
         return $damImage;
     }
@@ -169,6 +173,29 @@ function getTubularFamily01DamPackshot(string $productId): ?string {
     }
 
     return null;
+}
+
+/**
+ * Resolves family 05 T5 packshots directly from Cloudinary DAM naming when
+ * DAM metadata is unavailable.
+ *
+ * @param  array $parts
+ * @param  array $config
+ * @return string|null
+ */
+function getTubularFamily05DamPackshot(array $parts, array $config): ?string {
+    $folderPath = "nexled/datasheet/packshots/generic";
+    $lens = strtolower(trim((string) ($config["lens"] ?? "")));
+    $cap = trim((string) ($parts["cap"] ?? ""));
+
+    $assetName = match (true) {
+        $lens === "frost" && $cap === "02" => "T5_Frost_Alu_LB.png",
+        $lens === "frost" => "T5_Frost_Alu.png",
+        $cap === "02" => "T5_Clear_Alu_LB.png",
+        default => "T5_Clear_Alu.png",
+    };
+
+    return cloudinaryDamExactAssetUrl($folderPath, $assetName);
 }
 
 
