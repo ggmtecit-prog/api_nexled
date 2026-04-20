@@ -282,6 +282,10 @@ function getStandardDrawing(string $reference, string $productId): array {
 
     $drawing = findDamProductAsset($family, $productId, "drawing", [$size]);
 
+    if ($drawing === null && $family === "01") {
+        $drawing = cloudinaryDamExactAssetUrl("nexled/datasheet/drawings", "t8-fixo.svg");
+    }
+
     if ($drawing === null) {
         $drawing = findImage(IMAGES_BASE_PATH . $folder . $size);
     }
