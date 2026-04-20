@@ -193,6 +193,7 @@ Relevant family/mask docs:
 - [api/TUBULARES_FAMILY_05.md](api/TUBULARES_FAMILY_05.md)
 - [api/T8_FAMILY_ONBOARDING_PLAN.md](api/T8_FAMILY_ONBOARDING_PLAN.md)
 - [api/T8_ASSET_INVENTORY.md](api/T8_ASSET_INVENTORY.md)
+- [api/PRODUCT_ONBOARDING_MEMORY.md](api/PRODUCT_ONBOARDING_MEMORY.md)
 
 ### Current Family Runtime Snapshot
 
@@ -219,7 +220,13 @@ Important:
 - `/api/?endpoint=families` now returns `product_type`, `datasheet_runtime_supported`, `luminos_identity_count`, and `has_luminos_identities`
 - T8 rollout is currently scoped to `01 = T8 AC` only
 - `02 = T8 VC` and `03 = T8 CC` are legacy and out of current onboarding scope
-- first curated T8 runtime asset set now exists for `01` under `appdatasheets/img/01/...`
+- family `01` proven working refs now include:
+  - `01018025111010100`
+  - `01054425121010100`
+  - `01054491111010100`
+- plain Pink `01054481111010100` remains blocked honestly until `3014PINK` graph truth is recovered
+- durable onboarding lessons now live in:
+  - [api/PRODUCT_ONBOARDING_MEMORY.md](api/PRODUCT_ONBOARDING_MEMORY.md)
 
 ## Datasheet Pipeline
 

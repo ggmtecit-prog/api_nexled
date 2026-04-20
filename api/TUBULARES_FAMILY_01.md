@@ -52,6 +52,7 @@ Current live API state:
 - family `01` is mapped as `tubular` in the live decoder/runtime
 - datasheet runtime now allows family `01` to enter the PDF pipeline
 - family `01` now resolves DAM-first product assets for multiple real branches
+- family `01` now has multiple proven working branches
 - family `01` still fails honestly when required tubular assets or graphs are missing
 
 So:
@@ -141,6 +142,10 @@ What is now confirmed:
   - DAM color graph
   - diagram path
   - with strict validator passing
+- live/public DAM delivery now uses the real verified asset cloud:
+  - `dofqiejpw`
+- deterministic DAM URLs are now HEAD-checked before use
+- this prevents TCPDF from crashing on Cloudinary 404 HTML pages
 - plain Pink rows are real in `Luminos` but still blocked honestly:
   - example `01054481111010100`
   - product id `T8PINK/60/3s`
@@ -154,6 +159,10 @@ Meaning:
   - base HE T8
   - HE ECO T8
   - Talho HE Pink T8
+- proven working refs:
+  - `01018025111010100`
+  - `01054425121010100`
+  - `01054491111010100`
 - plain Pink is **not** fully implemented yet because no proven `3014PINK` graph rule has been recovered
 
 Meaning:
@@ -166,6 +175,8 @@ Operational rule:
 
 - do not make family `01` DAM-primary until real T8 assets are recovered
 - do not invent placeholder imports for T8 just to advance rollout state
+- keep `3014PINK` blocked until a real graph source is proven
+- use [PRODUCT_ONBOARDING_MEMORY.md](./PRODUCT_ONBOARDING_MEMORY.md) for future branch onboarding lessons
 
 ## Best Next Follow-Up
 

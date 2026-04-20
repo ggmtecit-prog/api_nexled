@@ -44,7 +44,13 @@ What already works:
   - base HE
   - HE ECO
   - Talho HE Pink
+- family `01` proven working refs are now:
+  - `01018025111010100`
+  - `01054425121010100`
+  - `01054491111010100`
 - family `01` plain Pink remains blocked honestly until `3014PINK` graph truth is recovered
+- deterministic DAM public URLs are now existence-checked before use
+- public DAM asset delivery now falls back to the verified asset cloud `dofqiejpw` when env still uses legacy placeholder `NexledApi`
 - family `05` now enters real tubular datasheet runtime with strict asset blocking
 - family `05` now checks DAM product assets when local legacy files are missing
 - additional dropdown families that already exist in `Luminos` now enter existing runtimes:
