@@ -520,19 +520,25 @@ function buildProductSlugCandidates(string $productId): array {
 
     $candidates = [];
     $count = count($parts);
+    $joinedWithDashes = implode("-", $parts);
+    $joinedCompact = implode("", $parts);
 
-    $candidates[] = nexledNormalizeAssetStem(implode("-", $parts));
+    $candidates[] = nexledNormalizeAssetStem($joinedWithDashes);
+    $candidates[] = nexledNormalizeAssetStem($joinedCompact);
 
     if ($count >= 3) {
         $candidates[] = nexledNormalizeAssetStem($parts[0] . "-" . $parts[2]);
+        $candidates[] = nexledNormalizeAssetStem($parts[0] . $parts[2]);
     }
 
     if ($count >= 4) {
         $candidates[] = nexledNormalizeAssetStem($parts[0] . "-" . $parts[2] . "-" . $parts[3]);
+        $candidates[] = nexledNormalizeAssetStem($parts[0] . $parts[2] . $parts[3]);
     }
 
     if ($count >= 2) {
         $candidates[] = nexledNormalizeAssetStem($parts[0] . "-" . $parts[1]);
+        $candidates[] = nexledNormalizeAssetStem($parts[0] . $parts[1]);
     }
 
     return array_values(array_filter(array_unique($candidates)));

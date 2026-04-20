@@ -41,6 +41,9 @@ Confirmed `Luminos` identity examples:
 | `0101801011` | `T8LED/23/3s` | `3528WW` | `T8 LED 23 cm` |
 | `0101801211` | `T8LED/23/3s` | `3528WY12` | `T8 LED 23 cm` |
 | `0101802511` | `T8/PC/22/3s` | `CW503` | `LLED T8 26 x 228mm CW503` |
+| `0105442512` | `T8/AL/60/2s` | `CW503` | `LLED T8 26 x 590mm CW503 ECO` |
+| `0105449111` | `T8PINK/AL/60/3s` | `2835PINK` | `LLED T8 26 x 590mm Talho HE` |
+| `0105448111` | `T8PINK/60/3s` | `3014PINK` | `T8 LED 60 cm PINK` |
 
 ## Runtime State
 
@@ -48,7 +51,8 @@ Current live API state:
 
 - family `01` is mapped as `tubular` in the live decoder/runtime
 - datasheet runtime now allows family `01` to enter the PDF pipeline
-- family `01` still fails honestly when required tubular assets are missing
+- family `01` now resolves DAM-first product assets for multiple real branches
+- family `01` still fails honestly when required tubular assets or graphs are missing
 
 So:
 - family `01` exists in DB/catalog
@@ -88,10 +92,10 @@ Current live runtime now uses:
 
 ## Current Gaps
 
-1. only first curated `01` asset set is seeded in `appdatasheets/img/01/...`
-2. family `01` now has DAM path mapping, but no confirmed DAM T8 assets have been loaded yet
+1. classic `3528HS` / `3528WW` / `3528WY12` rows still miss proven color-graph coverage
+2. plain pink `3014PINK` still misses a proven color-graph mapping
 3. official fixed `00` not yet proven as hard runtime rule
-4. broader `01` size/lens/cap coverage still needs import/mapping
+4. broader `01` size/lens/cap coverage still needs DAM import/mapping
 
 ## 2026-04-20 Smoke Verification
 
@@ -115,6 +119,42 @@ What is now confirmed:
 - local datasheet POST for `01018025111010100` now returns a real PDF successfully
 - one PDF-path bug was found and fixed during this test:
   - local SVG assets must be passed to TCPDF as absolute paths, not inline base64 blobs
+
+## 2026-04-20 Branch Verification
+
+Family `01` was then expanded and re-checked for ECO and Pink branches using DAM-first lookups.
+
+What is now confirmed:
+
+- HE ECO rows are real and can be made datasheet-ready:
+  - example `01054425121010100`
+  - product id `T8/AL/60/2s`
+  - graph `CW503`
+- Talho HE Pink rows are real and can be made datasheet-ready:
+  - example `01054491111010100`
+  - product id `T8PINK/AL/60/3s`
+  - graph `2835PINK`
+- both of the above now resolve:
+  - DAM packshot
+  - DAM drawing
+  - DAM finish
+  - DAM color graph
+  - diagram path
+  - with strict validator passing
+- plain Pink rows are real in `Luminos` but still blocked honestly:
+  - example `01054481111010100`
+  - product id `T8PINK/60/3s`
+  - led id `3014PINK`
+  - current blocker: `Missing required data: color graph`
+
+Meaning:
+
+- family `01` support is now broader than base T8 only
+- truthful working branches now include:
+  - base HE T8
+  - HE ECO T8
+  - Talho HE Pink T8
+- plain Pink is **not** fully implemented yet because no proven `3014PINK` graph rule has been recovered
 
 Meaning:
 

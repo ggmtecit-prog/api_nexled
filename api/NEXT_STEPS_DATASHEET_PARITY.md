@@ -40,6 +40,11 @@ What already works:
 - family `49` now checks DAM product assets when local legacy files are missing
 - family `01` now enters real tubular datasheet runtime with strict asset blocking
 - family `01` now checks DAM product assets when local legacy files are missing
+- family `01` now supports these proven T8 branches:
+  - base HE
+  - HE ECO
+  - Talho HE Pink
+- family `01` plain Pink remains blocked honestly until `3014PINK` graph truth is recovered
 - family `05` now enters real tubular datasheet runtime with strict asset blocking
 - family `05` now checks DAM product assets when local legacy files are missing
 - additional dropdown families that already exist in `Luminos` now enter existing runtimes:

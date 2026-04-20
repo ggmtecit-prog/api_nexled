@@ -10,6 +10,11 @@ Scope:
 - family `01` = `T8 AC`
 - family `02` = `T8 VC` legacy
 - family `03` = `T8 CC` legacy
+- inside `01`, treat branches separately:
+  - base T8
+  - HE ECO
+  - Talho HE Pink
+  - plain Pink
 
 ## Assumptions
 
@@ -56,12 +61,11 @@ So:
 - pink variant assets
 - old and 2025 variants
 
-Current repo does **not** have a visible `appdatasheets/img/01` tree.
-
 Meaning:
 
 - T8 runtime support for `01` exists
-- T8 asset wiring still needs to be built
+- asset truth must now come from DAM first
+- branch coverage is not uniform
 
 ## Success Criteria
 
@@ -133,8 +137,8 @@ Tasks:
 - patch tubular lookup logic only where naming mismatch requires it
 
 Preferred order:
-1. local legacy path mapping
-2. DAM fallback mapping
+1. DAM-first mapping
+2. local fallback only when DAM misses
 
 Rule:
 - minimum code only
@@ -142,6 +146,13 @@ Rule:
 
 Verification:
 - one real `01` code resolves all required assets
+
+Current result:
+
+- base HE sample works
+- HE ECO sample works after DAM special-asset import
+- Talho HE Pink sample works after DAM special-asset import
+- plain Pink still blocks on missing proven `3014PINK` graph
 
 ### Phase 4 - Strict Validation
 
@@ -208,6 +219,7 @@ Best next steps:
 2. inventory `new_data_img/T8`
 3. build `T8_ASSET_INVENTORY.md`
 4. patch `01` only
+5. finish remaining branch blockers inside `01`
 
 ## Important Warnings
 
@@ -225,3 +237,10 @@ If family has:
 - `Luminos` identities + options + runtime + assets -> fully supported
 - `Luminos` identities + runtime but missing assets -> supported but blocked honest
 - legacy + no `Luminos` identities -> ignored for current rollout
+
+Current branch state for `01`:
+
+- base HE T8 -> working
+- HE ECO -> working
+- Talho HE Pink -> working
+- plain Pink -> blocked honest on color graph truth
