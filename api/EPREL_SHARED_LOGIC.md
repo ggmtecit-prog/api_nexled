@@ -208,3 +208,39 @@ Those families must not appear as importable ready families just because options
 3. verify filtered counts against real business expectations
 4. add `family-ready-details` only if EPREL hydration needs bulk speed
 5. do not fall back to family-wide synthetic `code-explorer` import
+
+## EPREL Machine Fields Rule
+
+For EPREL XML/compliance fields:
+
+- Central API must expose machine-readable upstream truth
+- EPREL must not scrape:
+  - PDF text
+  - header description HTML
+  - `characteristics[]`
+  - localized labels
+
+Current confirmed upstream machine fields:
+- `energy_class`
+- `luminous_flux`
+- `chrom_x`
+- `chrom_y`
+- `r9`
+- `cri_min`
+- `cri_max`
+
+Current confirmed missing upstream fields:
+- `on_market_date`
+- `survival`
+- `lumen_maint`
+
+Shared rule:
+
+1. expose real upstream fields in Central API
+2. prefer grouped machine object:
+   - `eprel_fields`
+3. keep same object in:
+   - `family-ready-products`
+   - exact `pdf_specs`
+4. do not fake missing upstream fields
+5. `tech_lum_flux` may be derived from `luminous_flux` if EPREL needs an alias later

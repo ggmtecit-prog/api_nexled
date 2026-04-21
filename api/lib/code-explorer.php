@@ -24,7 +24,7 @@ const CODE_EXPLORER_MODE_SEARCH = "search";
 const CODE_EXPLORER_MODE_FILTERS = "filters";
 const CODE_EXPLORER_SEARCH_TYPE_CODE = "code";
 const CODE_EXPLORER_SEARCH_TYPE_DESCRIPTION = "description";
-const FAMILY_READY_PRODUCTS_CACHE_VERSION = 3;
+const FAMILY_READY_PRODUCTS_CACHE_VERSION = 4;
 
 function getCodeExplorerMode(mixed $value): string {
     $normalized = trim(strtolower((string) $value));
@@ -1457,6 +1457,98 @@ function storeFamilyReadyProductsBaseRows(string $familyCode, string $familyName
     @file_put_contents($path, json_encode($payload));
 }
 
+function normalizeCodeExplorerFloatValue(mixed $value): ?float {
+    if ($value === null) {
+        return null;
+    }
+
+    $normalized = trim(str_replace(",", ".", (string) $value));
+
+    if ($normalized === "" || !is_numeric($normalized)) {
+        return null;
+    }
+
+    return (float) $normalized;
+}
+
+function normalizeCodeExplorerIntValue(mixed $value): ?int {
+    $floatValue = normalizeCodeExplorerFloatValue($value);
+
+    if ($floatValue === null) {
+        return null;
+    }
+
+    return (int) round($floatValue);
+}
+
+function getCodeExplorerLedMachineData(string $ledId): ?array {
+    static $cache = [];
+    $cacheKey = trim($ledId);
+
+    if ($cacheKey === "") {
+        return null;
+    }
+
+    if (array_key_exists($cacheKey, $cache)) {
+        return $cache[$cacheKey];
+    }
+
+    $con = connectDBLampadas();
+    $stmt = mysqli_prepare($con, "SELECT CIEx, CIEy, criR9, crimin, crimax FROM Led WHERE ID_led = ? LIMIT 1");
+
+    if ($stmt === false) {
+        closeDB($con);
+        return $cache[$cacheKey] = null;
+    }
+
+    mysqli_stmt_bind_param($stmt, "s", $cacheKey);
+    mysqli_stmt_execute($stmt);
+    $result = mysqli_stmt_get_result($stmt);
+    $row = ($result && mysqli_num_rows($result) > 0) ? mysqli_fetch_assoc($result) : null;
+    mysqli_stmt_close($stmt);
+    closeDB($con);
+
+    if (!is_array($row)) {
+        return $cache[$cacheKey] = null;
+    }
+
+    return $cache[$cacheKey] = [
+        "chrom_x" => normalizeCodeExplorerFloatValue($row["CIEx"] ?? null),
+        "chrom_y" => normalizeCodeExplorerFloatValue($row["CIEy"] ?? null),
+        "r9" => normalizeCodeExplorerIntValue($row["criR9"] ?? null),
+        "cri_min" => normalizeCodeExplorerIntValue($row["crimin"] ?? null),
+        "cri_max" => normalizeCodeExplorerIntValue($row["crimax"] ?? null),
+    ];
+}
+
+function buildCodeExplorerEprelFields(string $productId, string $reference, string $ledId, string $lang = CODE_EXPLORER_DEFAULT_LANG): array {
+    static $cache = [];
+    $cacheKey = implode("|", [$productId, $reference, $ledId, $lang]);
+
+    if (isset($cache[$cacheKey])) {
+        return $cache[$cacheKey];
+    }
+
+    $luminotechnical = null;
+
+    if ($productId !== "" && strlen($reference) === REFERENCE_LENGTH_FULL) {
+        $luminotechnical = getLuminotechnicalData($productId, $reference, $lang);
+    }
+
+    $ledData = getCodeExplorerLedMachineData($ledId) ?? [];
+    $energyClass = trim((string) ($luminotechnical["energy_class"] ?? ""));
+
+    return $cache[$cacheKey] = [
+        "energy_class" => $energyClass !== "" ? $energyClass : null,
+        "luminous_flux" => isset($luminotechnical["flux"]) ? (int) $luminotechnical["flux"] : null,
+        "chrom_x" => $ledData["chrom_x"] ?? null,
+        "chrom_y" => $ledData["chrom_y"] ?? null,
+        "r9" => $ledData["r9"] ?? null,
+        "cri_min" => $ledData["cri_min"] ?? null,
+        "cri_max" => $ledData["cri_max"] ?? null,
+    ];
+}
+
 function collectFamilyReadyProductBaseRows(string $familyCode, array $options, array $identities): array {
     $defaultProductType = getProductType($familyCode . str_repeat("0", REFERENCE_LENGTH_FULL - REFERENCE_LENGTH_FAMILY));
     $defaultOptionCode = $options["option"][0]["code"] ?? str_repeat("0", REFERENCE_LENGTH_OPTION);
@@ -1518,6 +1610,7 @@ function collectFamilyReadyProductBaseRows(string $familyCode, array $options, a
                         "product_type" => $productType,
                         "product_id" => $productId,
                         "led_id" => $ledId,
+                        "eprel_fields" => buildCodeExplorerEprelFields($productId, $validationReference, $ledId),
                         "size" => $identityParts["size"] ?? "",
                         "color" => $identityParts["color"] ?? "",
                         "cri" => $identityParts["cri"] ?? "",
@@ -1597,6 +1690,11 @@ function buildFamilyReadyProductsResponse(
                     "led_id" => $baseRow["led_id"],
                     "configurator_valid" => true,
                     "datasheet_ready" => true,
+                    "eprel_fields" => $baseRow["eprel_fields"] ?? buildCodeExplorerEprelFields(
+                        (string) ($baseRow["product_id"] ?? ""),
+                        $reference,
+                        (string) ($baseRow["led_id"] ?? "")
+                    ),
                     "pdf_file_name" => buildFamilyReadyPdfFileName($reference),
                     "pdf_url" => buildFamilyReadyPdfUrl($reference),
                     "spectral_file_name" => buildFamilyReadySpectralFileName($reference),
@@ -2365,6 +2463,9 @@ function buildCodeExplorerPdfSpecsResponse(string $familyCode, string $familyNam
     }
 
     $headerDescription = trim((string) preg_replace('/\s+/', ' ', strip_tags(str_replace(["<br>", "<br/>", "<br />"], "\n", (string) ($header["description"] ?? "")))));
+    $eprelFields = $isConfiguratorValid
+        ? buildCodeExplorerEprelFields((string) ($productId ?? ""), $reference, $ledId, $lang)
+        : buildCodeExplorerEprelFields("", $reference, $ledId, $lang);
 
     return [
         "family" => [
@@ -2386,6 +2487,7 @@ function buildCodeExplorerPdfSpecsResponse(string $familyCode, string $familyNam
             "ip_rating" => (string) ($ipRating ?? ""),
             "color_graph_label" => (string) ($colorGraph["label"] ?? ""),
         ],
+        "eprel_fields" => $eprelFields,
         "segments" => $row["segments"],
         "segment_labels" => $row["segment_labels"],
         "characteristics" => $characteristicRows,

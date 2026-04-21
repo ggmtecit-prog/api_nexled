@@ -20,8 +20,9 @@ Do not mix them.
 2. [api/EPREL_SHARED_LOGIC.md](api/EPREL_SHARED_LOGIC.md)
 3. [api/EPREL_FAMILY_ASSET_DELIVERY_PLAN.md](api/EPREL_FAMILY_ASSET_DELIVERY_PLAN.md)
 4. [api/EPREL_FAMILY_FILTER_PLAN.md](api/EPREL_FAMILY_FILTER_PLAN.md)
-5. [api/PRODUCT_ONBOARDING_MEMORY.md](api/PRODUCT_ONBOARDING_MEMORY.md)
-6. [api/DAM_API_CONTRACT.md](api/DAM_API_CONTRACT.md)
+5. [api/EPREL_MACHINE_FIELDS_EXPOSURE_PLAN.md](api/EPREL_MACHINE_FIELDS_EXPOSURE_PLAN.md)
+6. [api/PRODUCT_ONBOARDING_MEMORY.md](api/PRODUCT_ONBOARDING_MEMORY.md)
+7. [api/DAM_API_CONTRACT.md](api/DAM_API_CONTRACT.md)
 
 Then inspect Central API files:
 
@@ -86,6 +87,25 @@ Current asset rule:
 - ready rows now carry file refs for EPREL
 - Central API returns Central API URLs
 - EPREL must not know DAM/Cloudinary internals
+
+Current machine-fields direction:
+
+- Central API should expose grouped `eprel_fields`
+- best target endpoints:
+  - `family-ready-products`
+  - exact `pdf_specs`
+- confirmed upstream fields:
+  - `energy_class`
+  - `luminous_flux`
+  - `chrom_x`
+  - `chrom_y`
+  - `r9`
+  - `cri_min`
+  - `cri_max`
+- confirmed missing upstream fields that must stay out:
+  - `on_market_date`
+  - `survival`
+  - `lumen_maint`
 
 This means:
 

@@ -428,6 +428,28 @@ Relevant parity docs:
 - EPREL should import from that endpoint page by page
 - EPREL should request filters from Central API and send selected filter values back unchanged
 - `code-explorer` remains analysis tooling, not the EPREL import source
+
+### 5A. EPREL Machine Fields
+
+- EPREL XML also needs machine-readable compliance fields
+- current confirmed upstream fields:
+  - `energy_class`
+  - `luminous_flux`
+  - `chrom_x`
+  - `chrom_y`
+  - `r9`
+  - `cri_min`
+  - `cri_max`
+- current confirmed missing upstream fields:
+  - `on_market_date`
+  - `survival`
+  - `lumen_maint`
+- best contract direction:
+  - add grouped `eprel_fields` object
+  - expose it in both:
+    - `family-ready-products`
+    - exact `pdf_specs`
+- `tech_lum_flux` does not need its own upstream source if derived from `luminous_flux`
 ### 6. DAM Future Work
 
 - Phase 1 cutover is done locally:
