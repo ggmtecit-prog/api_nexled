@@ -228,66 +228,67 @@
             <section class="grid grid-cols-1 xl:grid-cols-12 gap-24 items-start">
                 <div class="xl:col-span-9 flex flex-col gap-24 min-w-0">
                     <section class="card overflow-hidden">
-                        <div class="card-body p-24 flex flex-col gap-16">
-                            <div class="flex flex-col gap-6">
-                                <span class="text-label-md text-grey-primary" data-i18n="codeRepair.blockTitle">Active blockers</span>
-                                <h2 class="text-title-lg">Repair blockers</h2>
+                        <div class="card-body p-24 flex flex-col gap-24">
+                            <div class="flex flex-col gap-20">
+                                <p id="repair-runtime-message" class="text-body-sm text-grey-primary min-h-16" data-i18n="codeRepair.runtimeAwaitingReference">Enter a full Tecit reference to inspect blockers and sources.</p>
+                                <div class="grid gap-16 sm:grid-cols-2 xl:grid-cols-4" id="repair-summary-grid"></div>
+                                <a id="repair-open-configurator-link" href="#" class="btn btn-secondary btn-sm self-start" aria-disabled="true">
+                                    <i class="ri-external-link-line text-icon-sm" aria-hidden="true"></i>
+                                    <span data-i18n="codeRepair.openConfigurator">Open in Configurator</span>
+                                </a>
                             </div>
-                            <div id="repair-blockers-list" class="flex flex-col gap-16"></div>
+
+                            <div class="border-t border-grey-secondary pt-24 grid gap-24 2xl:grid-cols-2">
+                                <div class="flex flex-col gap-16 min-w-0">
+                                    <div class="flex flex-col gap-6">
+                                        <span class="text-label-md text-grey-primary" data-i18n="codeRepair.contextTitle">Repair Context</span>
+                                        <h2 class="text-title-lg">Reference snapshot</h2>
+                                    </div>
+                                    <dl id="repair-context-list" class="list list-spec list-md panel border-0 bg-transparent"></dl>
+                                </div>
+
+                                <div class="flex flex-col gap-16 min-w-0">
+                                    <div class="flex flex-col gap-6">
+                                        <span class="text-label-md text-grey-primary" data-i18n="codeRepair.segmentsTitle">Decoded Segments</span>
+                                        <h2 class="text-title-lg">Segment breakdown</h2>
+                                    </div>
+                                    <dl id="repair-segments-list" class="list list-spec list-md panel border-0 bg-transparent"></dl>
+                                </div>
+
+                                <div class="flex flex-col gap-16 min-w-0">
+                                    <div class="flex flex-col gap-6">
+                                        <span class="text-label-md text-grey-primary" data-i18n="codeRepair.characteristicsTitle">Technical characteristics</span>
+                                        <h2 class="text-title-lg">Characteristics</h2>
+                                    </div>
+                                    <dl id="repair-characteristics-list" class="list list-spec list-md panel border-0 bg-transparent"></dl>
+                                </div>
+
+                                <div class="flex flex-col gap-16 min-w-0">
+                                    <div class="flex flex-col gap-6">
+                                        <span class="text-label-md text-grey-primary" data-i18n="codeRepair.dimensionsTitle">Dimensions</span>
+                                        <h2 class="text-title-lg">Drawing dimensions</h2>
+                                    </div>
+                                    <dl id="repair-dimensions-list" class="list list-spec list-md panel border-0 bg-transparent"></dl>
+                                </div>
+                            </div>
+
+                            <div class="border-t border-grey-secondary pt-24 flex flex-col gap-16">
+                                <div class="flex flex-col gap-6">
+                                    <span class="text-label-md text-grey-primary" data-i18n="codeRepair.blockTitle">Active blockers</span>
+                                    <h2 class="text-title-lg">Repair blockers</h2>
+                                </div>
+                                <div id="repair-blockers-list" class="flex flex-col gap-16"></div>
+                            </div>
+
+                            <div class="border-t border-grey-secondary pt-24 flex flex-col gap-16">
+                                <div class="flex flex-col gap-6">
+                                    <span class="text-label-md text-grey-primary" data-i18n="codeRepair.sourcesTitle">Source Map</span>
+                                    <h2 class="text-title-lg">Current active sources</h2>
+                                </div>
+                                <div id="repair-source-grid" class="grid gap-20 2xl:grid-cols-2"></div>
+                            </div>
                         </div>
                     </section>
-
-                    <section class="card overflow-hidden">
-                        <div class="card-body p-24 flex flex-col gap-16">
-                            <div class="flex flex-col gap-6">
-                                <span class="text-label-md text-grey-primary" data-i18n="codeRepair.sourcesTitle">Source Map</span>
-                                <h2 class="text-title-lg">Current active sources</h2>
-                            </div>
-                            <div id="repair-source-grid" class="grid gap-20 2xl:grid-cols-2"></div>
-                        </div>
-                    </section>
-
-                    <div class="grid gap-24 2xl:grid-cols-2">
-                        <section class="card overflow-hidden">
-                            <div class="card-body p-24 flex flex-col gap-16">
-                                <div class="flex flex-col gap-6">
-                                    <span class="text-label-md text-grey-primary" data-i18n="codeRepair.contextTitle">Repair Context</span>
-                                    <h2 class="text-title-lg">Reference snapshot</h2>
-                                </div>
-                                <dl id="repair-context-list" class="list list-spec list-md panel border-0 bg-transparent"></dl>
-                            </div>
-                        </section>
-
-                        <section class="card overflow-hidden">
-                            <div class="card-body p-24 flex flex-col gap-16">
-                                <div class="flex flex-col gap-6">
-                                    <span class="text-label-md text-grey-primary" data-i18n="codeRepair.segmentsTitle">Decoded Segments</span>
-                                    <h2 class="text-title-lg">Segment breakdown</h2>
-                                </div>
-                                <dl id="repair-segments-list" class="list list-spec list-md panel border-0 bg-transparent"></dl>
-                            </div>
-                        </section>
-
-                        <section class="card overflow-hidden">
-                            <div class="card-body p-24 flex flex-col gap-16">
-                                <div class="flex flex-col gap-6">
-                                    <span class="text-label-md text-grey-primary" data-i18n="codeRepair.characteristicsTitle">Technical characteristics</span>
-                                    <h2 class="text-title-lg">Characteristics</h2>
-                                </div>
-                                <dl id="repair-characteristics-list" class="list list-spec list-md panel border-0 bg-transparent"></dl>
-                            </div>
-                        </section>
-
-                        <section class="card overflow-hidden">
-                            <div class="card-body p-24 flex flex-col gap-16">
-                                <div class="flex flex-col gap-6">
-                                    <span class="text-label-md text-grey-primary" data-i18n="codeRepair.dimensionsTitle">Dimensions</span>
-                                    <h2 class="text-title-lg">Drawing dimensions</h2>
-                                </div>
-                                <dl id="repair-dimensions-list" class="list list-spec list-md panel border-0 bg-transparent"></dl>
-                            </div>
-                        </section>
-                    </div>
                 </div>
 
                 <aside class="xl:col-span-3 flex flex-col gap-24 xl:sticky xl:top-56 min-w-0">
@@ -307,15 +308,8 @@
                                             <span data-i18n="codeRepair.revalidate">Revalidate</span>
                                         </button>
                                     </div>
-                                    <p id="repair-runtime-message" class="text-body-sm text-grey-primary min-h-16" data-i18n="codeRepair.runtimeAwaitingReference">Enter a full Tecit reference to inspect blockers and sources.</p>
                                 </div>
                             </form>
-
-                            <div class="grid gap-16 sm:grid-cols-2 xl:grid-cols-1" id="repair-summary-grid"></div>
-                            <a id="repair-open-configurator-link" href="#" class="btn btn-secondary btn-sm w-full justify-center" aria-disabled="true">
-                                <i class="ri-external-link-line text-icon-sm" aria-hidden="true"></i>
-                                <span data-i18n="codeRepair.openConfigurator">Open in Configurator</span>
-                            </a>
                         </div>
                     </section>
                 </aside>

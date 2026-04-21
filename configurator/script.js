@@ -76,7 +76,6 @@ let familyCombobox = null;
 let selectDropdowns = new Map();
 let activeSelectDropdown = null;
 let selectDropdownEventsBound = false;
-let syncConfiguredLanguageSelect = null;
 let liveReferenceDraftDirty = false;
 let apiBadgeState = {
     tone: "error",
@@ -129,6 +128,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
 function initializeConfigurator() {
     familyCombobox = setupFamilyCombobox();
+    primeSelectPlaceholders();
     setupSelectDropdowns();
     bindSystemTooltips();
     bindDocumentLanguageControls();
@@ -142,6 +142,39 @@ function initializeConfigurator() {
     bindCopyButtons();
     resetConfiguratorState();
     loadFamilies();
+}
+
+function prependBlankSelectOption(select, shouldSelect = false) {
+    if (!select || select.id === "select-family") {
+        return;
+    }
+
+    const firstOption = select.options[0] || null;
+
+    if (firstOption && firstOption.value === "") {
+        firstOption.textContent = "--";
+        if (shouldSelect) {
+            firstOption.selected = true;
+            select.value = "";
+        }
+        return;
+    }
+
+    const placeholderOption = document.createElement("option");
+    placeholderOption.value = "";
+    placeholderOption.textContent = "--";
+    select.insertBefore(placeholderOption, select.firstChild);
+
+    if (shouldSelect) {
+        placeholderOption.selected = true;
+        select.value = "";
+    }
+}
+
+function primeSelectPlaceholders() {
+    document.querySelectorAll("select[id]").forEach((select) => {
+        prependBlankSelectOption(select, true);
+    });
 }
 
 function bindSystemTooltips(root = document) {
@@ -1189,28 +1222,6 @@ function bindDocumentLanguageControls() {
         return;
     }
 
-    syncConfiguredLanguageSelect = (language, shouldDispatch = false) => {
-        const normalizedLanguage = normalizeAppLanguage(language);
-        const nextOption = Array.from(languageSelect.options).find((option) => {
-            return normalizeAppLanguage(option.value) === normalizedLanguage;
-        });
-
-        if (!nextOption) {
-            return;
-        }
-
-        const previousValue = languageSelect.value;
-
-        languageSelect.value = nextOption.value;
-        selectDropdowns.get("select-language")?.syncFromSelect();
-
-        if (shouldDispatch && previousValue !== nextOption.value) {
-            languageSelect.dispatchEvent(new Event("change", { bubbles: true }));
-        }
-    };
-
-    syncConfiguredLanguageSelect(getCurrentAppLanguage(), false);
-
     languageSelect.addEventListener("change", () => {
         selectDropdowns.get("select-language")?.syncFromSelect();
     });
@@ -1728,13 +1739,20 @@ function fillSelect(id, items, isArray) {
     }
 
     select.innerHTML = "";
+    prependBlankSelectOption(select, true);
 
     if (!Array.isArray(items) || items.length === 0) {
         const emptyOption = document.createElement("option");
-        emptyOption.value = "";
         emptyOption.dataset.i18n = "configurator.runtime.noOptionsAvailable";
         emptyOption.textContent = t("configurator.runtime.noOptionsAvailable", {}, "No options available");
-        select.appendChild(emptyOption);
+        const placeholderOption = select.options[0] || null;
+
+        if (placeholderOption) {
+            placeholderOption.dataset.i18n = emptyOption.dataset.i18n;
+            placeholderOption.textContent = emptyOption.textContent;
+        } else {
+            select.appendChild(emptyOption);
+        }
         selectDropdowns.get(id)?.refreshOptions();
         return;
     }
@@ -2388,7 +2406,6 @@ function resetAllSelections() {
     selectDropdowns.forEach((dropdown) => {
         dropdown.syncFromSelect();
     });
-    syncConfiguredLanguageSelect?.(getCurrentAppLanguage(), false);
 
     resetConfiguratorState();
     focusFamilyField();
