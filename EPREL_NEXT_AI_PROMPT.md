@@ -18,21 +18,30 @@ Do not mix them.
 
 1. [PROJECT_MEMORY.md](PROJECT_MEMORY.md)
 2. [api/EPREL_SHARED_LOGIC.md](api/EPREL_SHARED_LOGIC.md)
-3. [api/PRODUCT_ONBOARDING_MEMORY.md](api/PRODUCT_ONBOARDING_MEMORY.md)
-4. [api/DAM_API_CONTRACT.md](api/DAM_API_CONTRACT.md)
+3. [api/EPREL_FAMILY_ASSET_DELIVERY_PLAN.md](api/EPREL_FAMILY_ASSET_DELIVERY_PLAN.md)
+4. [api/PRODUCT_ONBOARDING_MEMORY.md](api/PRODUCT_ONBOARDING_MEMORY.md)
+5. [api/DAM_API_CONTRACT.md](api/DAM_API_CONTRACT.md)
 
 Then inspect Central API files:
 
 1. [api/index.php](api/index.php)
 2. [api/endpoints/family-ready-products.php](api/endpoints/family-ready-products.php)
 3. [api/lib/code-explorer.php](api/lib/code-explorer.php)
-4. [api/endpoints/families.php](api/endpoints/families.php)
+4. [api/endpoints/file-datasheet.php](api/endpoints/file-datasheet.php)
+5. [api/endpoints/file-spectral.php](api/endpoints/file-spectral.php)
+6. [api/lib/pdf-engine.php](api/lib/pdf-engine.php)
+7. [api/endpoints/families.php](api/endpoints/families.php)
 
 ## What Changed In Central API
 
 Central API now has a live endpoint:
 
 - `GET /api/?endpoint=family-ready-products&family=01&page=1&page_size=100`
+
+And live file endpoints:
+
+- `GET /api/?endpoint=file-datasheet&reference=01018025111010100`
+- `GET /api/?endpoint=file-spectral&reference=01018025111010100`
 
 It returns only rows where:
 
@@ -50,6 +59,12 @@ Current endpoint behavior:
 4. paginate the final ready rows
 5. cache ready base combos per family in:
    - `output/family-ready-products/<family>.json`
+
+Current asset rule:
+
+- ready rows now carry file refs for EPREL
+- Central API returns Central API URLs
+- EPREL must not know DAM/Cloudinary internals
 
 This means:
 
@@ -78,6 +93,10 @@ Example:
 
 - `GET /api/?endpoint=family-ready-products&family=01&page=1&page_size=100`
 
+Auth:
+
+- `X-API-Key: <key>`
+
 ### Central API response
 
 ```json
@@ -104,11 +123,43 @@ Example:
       "product_id": "T8LED/23/3s",
       "led_id": "3528XN",
       "configurator_valid": true,
-      "datasheet_ready": true
+      "datasheet_ready": true,
+      "pdf_file_name": "01018002111010100.pdf",
+      "pdf_url": "https://apinexled-production.up.railway.app/api/?endpoint=file-datasheet&reference=01018002111010100",
+      "spectral_file_name": "01018002111010100.png",
+      "spectral_url": "https://apinexled-production.up.railway.app/api/?endpoint=file-spectral&reference=01018002111010100"
     }
   ]
 }
 ```
+
+### File endpoint contract
+
+PDF:
+
+- `GET /api/?endpoint=file-datasheet&reference=<17-char-ref>`
+- auth: `X-API-Key`
+- success:
+  - `200`
+  - `Content-Type: application/pdf`
+  - `Content-Disposition: attachment; filename="<reference>.pdf"`
+
+Spectral image:
+
+- `GET /api/?endpoint=file-spectral&reference=<17-char-ref>`
+- auth: `X-API-Key`
+- success:
+  - `200`
+  - `Content-Type: image/png`
+  - `Content-Disposition: attachment; filename="<reference>.png"`
+
+Important:
+
+- `file-spectral` always returns PNG bytes
+- EPREL should store exact filenames from:
+  - `pdf_file_name`
+  - `spectral_file_name`
+- EPREL should not invent names
 
 ## What EPREL Must Build
 
@@ -133,7 +184,13 @@ Suggested mapping:
   - return preview rows + summary + pagination
 - `family-models`
   - page through `family-ready-products`
+  - download:
+    - `pdf_url`
+    - `spectral_url`
   - map Central API rows into EPREL `models`
+  - set:
+    - `pdf_name`
+    - `img_name`
   - feed current ZIP generator
 
 ### 2. UI flow
@@ -147,6 +204,10 @@ EPREL frontend should:
    - total ready products
 5. let user import/build ZIP
 6. fetch page by page until done
+7. for each page:
+   - download PDF files
+   - download spectral images
+   - stage files locally
 
 ### 3. Resume / retry
 
@@ -167,6 +228,7 @@ Keep:
 - EPREL field map
 - EPREL ZIP generation
 - EPREL upload flow
+- EPREL local job staging
 
 inside EPREL repo.
 
@@ -178,6 +240,8 @@ inside EPREL repo.
 4. do not import rows that are only `configurator_valid`
 5. do not rebuild NexLed validation logic
 6. do not expose Central API key in browser
+7. do not guess DAM paths or Cloudinary URLs
+8. do not guess `pdf_name` or `img_name`
 
 ## Safe Starting Family
 
@@ -198,6 +262,15 @@ Reason:
 - small families are safer to validate first
 - big families can have expensive first-cache build
 
+Safe file-flow test refs:
+
+- `01018025111010100`
+- `01054425121010100`
+- `01054491111010100`
+- `05025725111010100`
+- `05025727111010100`
+- `05025732111010100`
+
 ## Acceptance Criteria
 
 This feature is done when:
@@ -206,9 +279,13 @@ This feature is done when:
 2. preview uses `family-ready-products`, not `code-explorer`
 3. EPREL imports page by page
 4. imported rows are only ready rows
-5. ZIP/model build uses imported rows only
-6. empty family returns valid empty state
-7. browser never sees Central API secret
+5. EPREL downloads PDF + spectral file for each imported row
+6. staged models contain valid:
+   - `pdf_name`
+   - `img_name`
+7. ZIP/model build uses imported rows only
+8. empty family returns valid empty state
+9. browser never sees Central API secret
 
 ## If Something Fails
 
@@ -218,12 +295,20 @@ Check in this order:
 2. Central API auth/header works
 3. EPREL backend proxy works
 4. pagination loop works
-5. EPREL mapping into `models` works
+5. file downloads work
+6. EPREL mapping into `models` works
 
 If product counts look too high or weird:
 
 - do not "fix" it in EPREL by filtering on guesses
 - inspect Central API family response first
+
+If files are missing:
+
+1. test `pdf_url` directly
+2. test `spectral_url` directly
+3. inspect Central API `failure_reason` truth
+4. do not guess replacement files in EPREL
 
 ## User-Facing Summary Style
 

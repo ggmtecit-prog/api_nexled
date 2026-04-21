@@ -6,7 +6,7 @@ chdir(__DIR__);
 
 $endpoint = $_GET["endpoint"] ?? null;
 
-if ($endpoint !== "datasheet" && $endpoint !== "showcase-pdf") {
+if ($endpoint !== "datasheet" && $endpoint !== "file-datasheet" && $endpoint !== "file-spectral" && $endpoint !== "showcase-pdf") {
     header("Content-Type: application/json");
 }
 
@@ -28,6 +28,8 @@ require_once "./lib/validate.php";
 // Route: /api/?endpoint=reference&ref=...
 // Route: /api/?endpoint=decode-reference&ref=...
 // Route: /api/?endpoint=datasheet (POST)
+// Route: /api/?endpoint=file-datasheet&reference=...
+// Route: /api/?endpoint=file-spectral&reference=...
 // Route: /api/?endpoint=health
 // Route: /api/?endpoint=svg-diagnostics&ref=...
 // Route: /api/?endpoint=dam&action=tree|list|asset|create-folder|sync-folders|upload|product-assets|link|unlink
@@ -58,6 +60,12 @@ switch ($endpoint) {
         break;
     case "datasheet":
         require "./endpoints/datasheet.php";
+        break;
+    case "file-datasheet":
+        require "./endpoints/file-datasheet.php";
+        break;
+    case "file-spectral":
+        require "./endpoints/file-spectral.php";
         break;
     case "health":
         require "./endpoints/health.php";

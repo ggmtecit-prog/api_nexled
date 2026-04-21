@@ -1468,8 +1468,9 @@ function buildFamilyReadyProductsResponse(string $familyCode, string $familyName
 
             while ($optionIndex < $optionCount && count($pageRows) < $pageSize) {
                 $optionCode = $optionCodes[$optionIndex];
+                $reference = $baseRow["identity"] . $baseRow["lens"] . $baseRow["finish"] . $baseRow["cap"] . $optionCode;
                 $pageRows[] = [
-                    "reference" => $baseRow["identity"] . $baseRow["lens"] . $baseRow["finish"] . $baseRow["cap"] . $optionCode,
+                    "reference" => $reference,
                     "identity" => $baseRow["identity"],
                     "description" => $baseRow["description"],
                     "product_type" => $baseRow["product_type"],
@@ -1477,6 +1478,10 @@ function buildFamilyReadyProductsResponse(string $familyCode, string $familyName
                     "led_id" => $baseRow["led_id"],
                     "configurator_valid" => true,
                     "datasheet_ready" => true,
+                    "pdf_file_name" => buildFamilyReadyPdfFileName($reference),
+                    "pdf_url" => buildFamilyReadyPdfUrl($reference),
+                    "spectral_file_name" => buildFamilyReadySpectralFileName($reference),
+                    "spectral_url" => buildFamilyReadySpectralUrl($reference),
                 ];
                 $optionIndex++;
             }
@@ -1501,6 +1506,78 @@ function buildFamilyReadyProductsResponse(string $familyCode, string $familyName
             "total_rows" => $readyTotal,
         ],
         "rows" => $pageRows,
+    ];
+}
+
+function getCodeExplorerApiBaseUrl(): string {
+    static $cache = null;
+
+    if ($cache !== null) {
+        return $cache;
+    }
+
+    $host = trim((string) ($_SERVER["HTTP_X_FORWARDED_HOST"] ?? $_SERVER["HTTP_HOST"] ?? ""));
+    $forwardedProto = trim((string) ($_SERVER["HTTP_X_FORWARDED_PROTO"] ?? ""));
+    $scheme = $forwardedProto !== ""
+        ? trim(explode(",", $forwardedProto)[0])
+        : ((!empty($_SERVER["HTTPS"]) && strtolower((string) $_SERVER["HTTPS"]) !== "off") ? "https" : "http");
+    $scriptName = str_replace("\\", "/", (string) ($_SERVER["SCRIPT_NAME"] ?? "/api/index.php"));
+    $basePath = rtrim(dirname($scriptName), "/");
+
+    if ($basePath === "." || $basePath === DIRECTORY_SEPARATOR) {
+        $basePath = "";
+    }
+
+    if ($host === "") {
+        return $cache = ($basePath !== "" ? $basePath : "/api");
+    }
+
+    return $cache = $scheme . "://" . $host . $basePath;
+}
+
+function buildFamilyReadyPdfFileName(string $reference): string {
+    return $reference . ".pdf";
+}
+
+function buildFamilyReadyPdfUrl(string $reference): string {
+    return rtrim(getCodeExplorerApiBaseUrl(), "/") . "/?endpoint=file-datasheet&reference=" . rawurlencode($reference);
+}
+
+function buildFamilyReadySpectralFileName(string $reference): string {
+    return $reference . ".png";
+}
+
+function buildFamilyReadySpectralUrl(string $reference): string {
+    return rtrim(getCodeExplorerApiBaseUrl(), "/") . "/?endpoint=file-spectral&reference=" . rawurlencode($reference);
+}
+
+function buildCodeExplorerDefaultDatasheetPayload(array $pdfSpecs): array {
+    $description = trim((string) ($pdfSpecs["summary"]["description"] ?? ""));
+
+    if ($description === "") {
+        $description = trim((string) ($pdfSpecs["summary"]["legacy_description"] ?? ""));
+    }
+
+    return [
+        "referencia" => (string) ($pdfSpecs["reference"] ?? ""),
+        "descricao" => $description,
+        "idioma" => CODE_EXPLORER_DEFAULT_LANG,
+        "empresa" => "0",
+        "lente" => (string) ($pdfSpecs["segment_labels"]["lens"] ?? ""),
+        "acabamento" => (string) ($pdfSpecs["segment_labels"]["finish"] ?? ""),
+        "opcao" => (string) ($pdfSpecs["segments"]["option"] ?? "0"),
+        "conectorcabo" => "0",
+        "tipocabo" => "branco",
+        "tampa" => "0",
+        "vedante" => 5,
+        "acrescimo" => 0,
+        "ip" => "0",
+        "fixacao" => "0",
+        "fonte" => "0",
+        "caboligacao" => "0",
+        "conectorligacao" => "0",
+        "tamanhocaboligacao" => 0,
+        "finalidade" => "0",
     ];
 }
 

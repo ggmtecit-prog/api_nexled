@@ -104,6 +104,21 @@ function respondDatasheetJsonError(int $statusCode, array $payload): void {
     echo json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
 }
 
+final class DatasheetRequestException extends RuntimeException {
+    public int $statusCode;
+    public array $payload;
+
+    public function __construct(int $statusCode, array $payload) {
+        parent::__construct((string) ($payload["error"] ?? "Datasheet request failed"));
+        $this->statusCode = $statusCode;
+        $this->payload = $payload;
+    }
+}
+
+function throwDatasheetRequestError(int $statusCode, array $payload): void {
+    throw new DatasheetRequestException($statusCode, $payload);
+}
+
 function validateStrictShelfCompleteness(array $data, array $parts): ?string {
     $headerImage = $data["header"]["image"] ?? null;
     if (!is_string($headerImage) || trim($headerImage) === "") {
@@ -196,20 +211,12 @@ function validateStrictExperimentalBarCompleteness(array $data, array $parts, ?s
 // ---------------------------------------------------------------------------
 
 /**
- * Generates a PDF datasheet from a POST JSON request.
+ * Builds a PDF datasheet binary from a normalized input payload.
  *
- * Outputs the PDF directly (Content-Type: application/pdf).
- * Returns a JSON error (with the appropriate HTTP status) if any
- * required data is missing or the product cannot be found.
+ * Returns the raw PDF bytes.
+ * Throws DatasheetRequestException for validation/runtime errors.
  */
-function generateDatasheet(): void {
-    $input = json_decode(file_get_contents("php://input"), true);
-
-    if (!$input) {
-        respondDatasheetJsonError(400, ["error" => "Invalid or missing JSON body"]);
-        return;
-    }
-
+function buildDatasheetPdfBinary(array $input): string {
     $reference = "";
     $productId = "";
     $stage = "parse_input";
@@ -240,8 +247,7 @@ function generateDatasheet(): void {
     $purpose        = preg_replace("/[^a-zA-Z0-9]/", "", $input["finalidade"]    ?? "0");
 
     if (strlen($reference) < 10) {
-        respondDatasheetJsonError(400, ["error" => "Invalid or missing reference code"]);
-        return;
+        throwDatasheetRequestError(400, ["error" => "Invalid or missing reference code"]);
     }
 
     // --- Decode reference and determine product type ---
@@ -250,8 +256,7 @@ function generateDatasheet(): void {
     $productType = getProductType($reference);
 
     if ($productType === null) {
-        respondDatasheetJsonError(422, ["error" => "Unknown product family in reference: $reference"]);
-        return;
+        throwDatasheetRequestError(422, ["error" => "Unknown product family in reference: $reference"]);
     }
 
     // --- Get product ID from the database ---
@@ -263,16 +268,14 @@ function generateDatasheet(): void {
     }
 
     if ($productId === null) {
-        respondDatasheetJsonError(404, ["error" => "Product not found in database for reference: $reference"]);
-        return;
+        throwDatasheetRequestError(404, ["error" => "Product not found in database for reference: $reference"]);
     }
 
     if (!isDatasheetRuntimeSupported($productType, $parts["family"])) {
-        respondDatasheetJsonError(422, [
+        throwDatasheetRequestError(422, [
             "error" => "Datasheet runtime not mapped yet for product family: " . $parts["family"],
             "error_code" => "unsupported_datasheet_runtime",
         ]);
-        return;
     }
 
     // --- Shared config passed to multiple fetchers ---
@@ -295,8 +298,7 @@ function generateDatasheet(): void {
     $lumino = getLuminotechnicalData($productId, $reference, $lang);
 
     if ($lumino === null) {
-        respondDatasheetJsonError(422, ["error" => "Luminotechnical data not found for product: $productId"]);
-        return;
+        throwDatasheetRequestError(422, ["error" => "Luminotechnical data not found for product: $productId"]);
     }
 
     $stage     = "fetch_sections";
@@ -326,12 +328,10 @@ function generateDatasheet(): void {
     // --- Validate required sections ---
     // color_graph and lens_diagram are optional — not all products have them
     if ($characteristics === null) {
-        respondDatasheetJsonError(422, ["error" => "Missing required data: characteristics"]);
-        return;
+        throwDatasheetRequestError(422, ["error" => "Missing required data: characteristics"]);
     }
     if ($finishData === null) {
-        respondDatasheetJsonError(422, ["error" => "Missing required data: finish image"]);
-        return;
+        throwDatasheetRequestError(422, ["error" => "Missing required data: finish image"]);
     }
 
     // --- Assemble data array for the layout builder ---
@@ -359,8 +359,7 @@ function generateDatasheet(): void {
         $strictShelfError = validateStrictShelfCompleteness($data, $parts);
 
         if ($strictShelfError !== null) {
-            respondDatasheetJsonError(422, ["error" => $strictShelfError]);
-            return;
+            throwDatasheetRequestError(422, ["error" => $strictShelfError]);
         }
     }
 
@@ -368,8 +367,7 @@ function generateDatasheet(): void {
         $strictTubularError = validateStrictTubularCompleteness($data, $parts);
 
         if ($strictTubularError !== null) {
-            respondDatasheetJsonError(422, ["error" => $strictTubularError]);
-            return;
+            throwDatasheetRequestError(422, ["error" => $strictTubularError]);
         }
     }
 
@@ -377,8 +375,7 @@ function generateDatasheet(): void {
         $strictBarError = validateStrictExperimentalBarCompleteness($data, $parts, $sizesFile);
 
         if ($strictBarError !== null) {
-            respondDatasheetJsonError(422, ["error" => $strictBarError]);
-            return;
+            throwDatasheetRequestError(422, ["error" => $strictBarError]);
         }
     }
 
@@ -415,18 +412,51 @@ function generateDatasheet(): void {
 
     ob_end_clean();
 
-    $pdf->Output("", "D");
+    return (string) $pdf->Output("", "S");
+    } catch (DatasheetRequestException $error) {
+        throw $error;
     } catch (\Throwable $error) {
         error_log(
             "NexLed datasheet fatal: stage={$stage}; reference={$reference}; productId={$productId}; " .
             "message=" . $error->getMessage()
         );
 
-        respondDatasheetJsonError(500, [
+        throw new DatasheetRequestException(500, [
             "error" => "Datasheet internal error",
             "stage" => $stage,
             "detail" => $error->getMessage(),
             "reference" => $reference,
         ]);
+    }
+}
+
+function generateDatasheet(): void {
+    $input = json_decode(file_get_contents("php://input"), true);
+
+    if (!$input) {
+        respondDatasheetJsonError(400, ["error" => "Invalid or missing JSON body"]);
+        return;
+    }
+
+    $fileReference = preg_replace("/[^a-zA-Z0-9_-]/", "", (string) ($input["referencia"] ?? ""));
+    if ($fileReference === "") {
+        $fileReference = "datasheet";
+    }
+
+    try {
+        $binary = buildDatasheetPdfBinary($input);
+
+        while (ob_get_level() > 0) {
+            ob_end_clean();
+        }
+
+        if (!headers_sent()) {
+            header("Content-Type: application/pdf");
+            header('Content-Disposition: attachment; filename="' . $fileReference . '.pdf"');
+        }
+
+        echo $binary;
+    } catch (DatasheetRequestException $error) {
+        respondDatasheetJsonError($error->statusCode, $error->payload);
     }
 }
