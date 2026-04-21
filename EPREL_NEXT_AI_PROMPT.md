@@ -5,14 +5,14 @@ You are working across two NexLed systems:
 - Central API repo: `C:\xampp\htdocs\api_nexled`
 - EPREL tool repo: separate system/client
 
-Your mission is to keep both systems aligned for **family import by database truth**.
+Your job is to make EPREL consume the new Central API family-import feature correctly.
 
-This is the hard rule:
+Hard split:
 
-- Central API owns truth
-- EPREL owns import workflow
+- Central API = truth
+- EPREL = workflow
 
-Do not blur them.
+Do not mix them.
 
 ## Read First
 
@@ -21,86 +21,64 @@ Do not blur them.
 3. [api/PRODUCT_ONBOARDING_MEMORY.md](api/PRODUCT_ONBOARDING_MEMORY.md)
 4. [api/DAM_API_CONTRACT.md](api/DAM_API_CONTRACT.md)
 
-Then inspect:
+Then inspect Central API files:
 
 1. [api/index.php](api/index.php)
-2. [api/endpoints/code-explorer.php](api/endpoints/code-explorer.php)
+2. [api/endpoints/family-ready-products.php](api/endpoints/family-ready-products.php)
 3. [api/lib/code-explorer.php](api/lib/code-explorer.php)
 4. [api/endpoints/families.php](api/endpoints/families.php)
 
-If working in EPREL too, keep that repo scoped to:
+## What Changed In Central API
 
-- import UI
-- paging
-- caching
-- retry/resume
-
-Do not rebuild NexLed validation logic there.
-
-## What Already Exists
-
-Central API already has:
-
-- `families`
-- `reference`
-- `decode-reference`
-- `code-explorer`
-- `family-ready-products`
-- datasheet readiness checks
-
-`code-explorer` can already filter:
-
-- `configurator_valid`
-- `datasheet_ready`
-- blocked reasons
-
-Use `family-ready-products` for family import.
-
-Do not use family-wide `code-explorer` as the import source.
-
-## What Needs To Be Built
-
-### EPREL
-
-Use this Central API endpoint:
+Central API now has a live endpoint:
 
 - `GET /api/?endpoint=family-ready-products&family=01&page=1&page_size=100`
 
-Rules:
+It returns only rows where:
 
-- import page by page
-- first request for a large family may build server-side ready-base cache
-- repeated pages should reuse that cache
-- save imported rows
-- allow resume/retry
-- do not generate codes locally
-- do not guess readiness locally
+- `configurator_valid = true`
+- `datasheet_ready = true`
 
-### Central API
+It does not use the old giant synthetic family-wide explorer flow as the final import source.
 
-Current truth endpoint:
+Current endpoint behavior:
+
+1. start from real `Luminos` identities
+2. evaluate ready base combos:
+   - `identity + lens + finish + cap`
+3. expand those ready base combos into full references with unique option codes
+4. paginate the final ready rows
+5. cache ready base combos per family in:
+   - `output/family-ready-products/<family>.json`
+
+This means:
+
+- first request for a big family can be slower
+- repeated page requests should be much faster
+
+## Use This, Not That
+
+Use:
 
 - `family-ready-products`
 
-Optional later:
+Do not use for family import:
 
-- `POST /api/?endpoint=family-ready-details`
-- exact refs in, bulk detail rows out
+- family-wide `code-explorer`
+- local EPREL-side code generation
+- local EPREL-side readiness guessing
 
-## Hard Rules
+`code-explorer` remains analysis tooling only.
 
-1. No fake products.
-2. No synthetic giant family combinations.
-3. No EPREL-side recreation of NexLed code-valid logic.
-4. No using image existence as code-valid proof.
-5. Keep:
-   - `configurator_valid`
-   - `datasheet_ready`
-   clearly separate.
+## Endpoint Contract
 
-## Desired Response Shape
+### Central API request
 
-Use something like:
+Example:
+
+- `GET /api/?endpoint=family-ready-products&family=01&page=1&page_size=100`
+
+### Central API response
 
 ```json
 {
@@ -109,22 +87,22 @@ Use something like:
     "name": "T8 AC"
   },
   "summary": {
-    "total_ready_products": 123
+    "total_ready_products": 32038
   },
   "pagination": {
     "page": 1,
     "page_size": 100,
-    "total_pages": 2,
-    "total_rows": 123
+    "total_pages": 321,
+    "total_rows": 32038
   },
   "rows": [
     {
-      "reference": "01018025111010100",
-      "identity": "0101802511",
-      "description": "LLED T8 26 x 228mm CW503",
+      "reference": "01018002111010100",
+      "identity": "0101800211",
+      "description": "T8 LED 23 cm",
       "product_type": "tubular",
-      "product_id": "T8/PC/22/3s",
-      "led_id": "CW503",
+      "product_id": "T8LED/23/3s",
+      "led_id": "3528XN",
       "configurator_valid": true,
       "datasheet_ready": true
     }
@@ -132,34 +110,129 @@ Use something like:
 }
 ```
 
-## Current Safe Principle
+## What EPREL Must Build
 
-If Central API cannot prove a row is both:
+### 1. Server-side adapter
 
-- real
-- configurator valid
-- datasheet ready
+EPREL backend should call Central API server-side only.
 
-then EPREL must not import it.
+Browser must never receive Central API secret.
 
-## Verification
+Recommended EPREL backend routes:
 
-Success means:
+- `GET /api/database/families`
+- `GET /api/database/family-preview?family=01&page=1&page_size=100`
+- `POST /api/database/family-models`
 
-1. one family request returns only real ready refs
-2. no giant option explosion
-3. pagination works
-4. EPREL can import page by page without guessing
-5. empty families return valid empty response, not errors
+Suggested mapping:
+
+- `families`
+  - proxy Central API `families`
+- `family-preview`
+  - call Central API `family-ready-products`
+  - return preview rows + summary + pagination
+- `family-models`
+  - page through `family-ready-products`
+  - map Central API rows into EPREL `models`
+  - feed current ZIP generator
+
+### 2. UI flow
+
+EPREL frontend should:
+
+1. load family list
+2. let user pick one family
+3. preview ready rows
+4. show count:
+   - total ready products
+5. let user import/build ZIP
+6. fetch page by page until done
+
+### 3. Resume / retry
+
+EPREL should:
+
+- store current page progress
+- allow retry from failed page
+- avoid re-importing already saved rows when resuming
+
+### 4. Mapping layer
+
+EPREL must map Central API product rows into EPREL `models`.
+
+Do not ask Central API to become EPREL-specific.
+
+Keep:
+
+- EPREL field map
+- EPREL ZIP generation
+- EPREL upload flow
+
+inside EPREL repo.
+
+## What EPREL Must Not Do
+
+1. do not brute-force family combinations locally
+2. do not guess missing suffixes
+3. do not treat dropdown options as real products
+4. do not import rows that are only `configurator_valid`
+5. do not rebuild NexLed validation logic
+6. do not expose Central API key in browser
+
+## Safe Starting Family
+
+Start with:
+
+- `01`
+
+Then:
+
+- `05`
+
+Only after that:
+
+- larger families like `11`
+
+Reason:
+
+- small families are safer to validate first
+- big families can have expensive first-cache build
+
+## Acceptance Criteria
+
+This feature is done when:
+
+1. EPREL can preview one family from Central API
+2. preview uses `family-ready-products`, not `code-explorer`
+3. EPREL imports page by page
+4. imported rows are only ready rows
+5. ZIP/model build uses imported rows only
+6. empty family returns valid empty state
+7. browser never sees Central API secret
+
+## If Something Fails
+
+Check in this order:
+
+1. Central API route works
+2. Central API auth/header works
+3. EPREL backend proxy works
+4. pagination loop works
+5. EPREL mapping into `models` works
+
+If product counts look too high or weird:
+
+- do not "fix" it in EPREL by filtering on guesses
+- inspect Central API family response first
 
 ## User-Facing Summary Style
 
-Use short, direct updates.
+Keep updates short.
 
 Say:
 
-- what was changed
+- what changed
 - what was verified
 - what is still blocked
 
-Keep noise low.
+Do not add noise.
