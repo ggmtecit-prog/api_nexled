@@ -645,6 +645,19 @@
                         </div>
 
                         <div class="accordion-item">
+                            <button type="button" id="tecitCodeLogicFamiliesTrigger" class="accordion-trigger" aria-expanded="false" aria-controls="tecitCodeLogicFamiliesPanel">
+                                <span class="accordion-label" data-i18n="configurator.tecitCodeLogicFamiliesTitle">Family Codes</span>
+                                <i class="accordion-icon ri-arrow-down-s-line" aria-hidden="true"></i>
+                            </button>
+                            <div id="tecitCodeLogicFamiliesPanel" class="accordion-content" role="region" aria-labelledby="tecitCodeLogicFamiliesTrigger">
+                                <div class="accordion-body">
+                                    <p class="text-body-sm text-grey-primary max-w-readable mb-12" data-i18n="configurator.tecitCodeLogicFamiliesBody">These are the 2-character family prefixes used at the start of a Tecit code.</p>
+                                    <dl id="tecitCodeLogicFamiliesList" class="list list-spec list-md panel border-0 bg-transparent"></dl>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="accordion-item">
                             <button type="button" id="tecitCodeLogicSourcesTrigger" class="accordion-trigger" aria-expanded="false" aria-controls="tecitCodeLogicSourcesPanel">
                                 <span class="accordion-label" data-i18n="configurator.tecitCodeLogicSourcesTitle">PDF Data Sources</span>
                                 <i class="accordion-icon ri-arrow-down-s-line" aria-hidden="true"></i>

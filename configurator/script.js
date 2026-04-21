@@ -77,6 +77,7 @@ let selectDropdowns = new Map();
 let activeSelectDropdown = null;
 let selectDropdownEventsBound = false;
 let liveReferenceDraftDirty = false;
+let availableConfiguratorFamilies = [];
 let apiBadgeState = {
     tone: "error",
     key: "shared.badge.apiUnavailable",
@@ -141,6 +142,7 @@ function initializeConfigurator() {
     bindReferenceListeners();
     bindCopyButtons();
     resetConfiguratorState();
+    renderTecitCodeLogicFamilies();
     loadFamilies();
 }
 
@@ -1217,6 +1219,7 @@ function refreshLocalizedControls() {
     selectDropdowns.forEach((dropdown) => {
         dropdown.refreshOptions();
     });
+    renderTecitCodeLogicFamilies();
     applyStatusState();
     applySummaryState();
     applyApiBadgeState();
@@ -1322,6 +1325,7 @@ async function loadFamilies() {
         }
 
         const data = familiesResult.value;
+        availableConfiguratorFamilies = Array.isArray(data) ? data : [];
         familyCombobox?.renderOptions(
             data.map((family) => ({
                 value: family.codigo,
@@ -1347,6 +1351,7 @@ async function loadFamilies() {
         setStatusKey("configurator.runtime.chooseFamilyToBegin", "neutral", {}, "Choose a family to begin.");
         void applyConfiguratorDeepLinkIfNeeded();
     } catch (error) {
+        availableConfiguratorFamilies = [];
         familyCombobox?.renderOptions([]);
         familyCombobox?.setDisabled(true);
         setFamilyPlaceholderKey(getFamilyPlaceholderMessageKey(), getFamilyPlaceholderFallback(getFamilyPlaceholderMessageKey()));
@@ -1354,6 +1359,43 @@ async function loadFamilies() {
         setStatusKey(getApiFailureMessageKey(), "error", {}, getApiFailureFallback(getApiFailureMessageKey()));
         console.error(error);
     }
+}
+
+function renderTecitCodeLogicFamilies() {
+    const list = document.getElementById("tecitCodeLogicFamiliesList");
+
+    if (!list) {
+        return;
+    }
+
+    const families = Array.isArray(availableConfiguratorFamilies)
+        ? availableConfiguratorFamilies
+            .map((family) => ({
+                code: String(family?.codigo || "").trim(),
+                name: String(family?.nome || "").trim(),
+            }))
+            .filter((family) => family.code !== "")
+            .sort((left, right) => left.code.localeCompare(right.code, undefined, { numeric: true }))
+        : [];
+
+    if (families.length === 0) {
+        list.innerHTML = `
+            <div class="list-item">
+                <dt class="list-key">${escapeHtml(t("configurator.familyLabel", {}, "Family"))}</dt>
+                <dd class="list-value text-grey-primary">${escapeHtml(t("configurator.tecitCodeLogicFamiliesEmpty", {}, "No families loaded yet."))}</dd>
+            </div>
+        `;
+        return;
+    }
+
+    list.innerHTML = families.map((family) => {
+        return `
+            <div class="list-item">
+                <dt class="list-key"><code class="text-body">${escapeHtml(family.code)}</code></dt>
+                <dd class="list-value">${escapeHtml(family.name || family.code)}</dd>
+            </div>
+        `;
+    }).join("");
 }
 
 async function handleFamilyChange() {

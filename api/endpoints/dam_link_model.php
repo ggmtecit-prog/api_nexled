@@ -287,7 +287,7 @@ function damValidateFolderId($folderId): ?string {
     if (!is_string($folderId)) return null;
     $folderId = trim($folderId);
     if ($folderId === "" || str_contains($folderId, "..") || str_contains($folderId, "//")) return null;
-    return preg_match("/^nexled(?:\/[a-z0-9][a-z0-9_-]*)*$/", $folderId) === 1 ? $folderId : null;
+    return preg_match("/^nexled(?:\/[A-Za-z0-9][A-Za-z0-9_-]*)*$/", $folderId) === 1 ? $folderId : null;
 }
 function damValidateRole(?string $role): ?string { if (!is_string($role) || trim($role) === "") return null; $role = trim($role); return in_array($role, DAM_ALLOWED_ROLES, true) ? $role : null; }
 function damNormalizeName($value): string { $value = strtolower(trim((string) $value)); $value = preg_replace("/[^a-z0-9]+/", "-", $value) ?? ""; $value = trim($value, "-"); return substr($value, 0, 80); }

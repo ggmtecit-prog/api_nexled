@@ -2272,6 +2272,43 @@ function populateFamilies() {
     renderTecitCodeLogicFamilies();
 }
 
+function renderTecitCodeLogicFamilies() {
+    const list = document.getElementById("codeExplorerLogicFamiliesList");
+
+    if (!list) {
+        return;
+    }
+
+    const families = Array.isArray(explorerState.families)
+        ? explorerState.families
+            .map((family) => ({
+                code: String(family?.codigo || "").trim(),
+                name: String(family?.nome || "").trim(),
+            }))
+            .filter((family) => family.code !== "")
+            .sort((left, right) => left.code.localeCompare(right.code, undefined, { numeric: true }))
+        : [];
+
+    if (families.length === 0) {
+        list.innerHTML = `
+            <div class="list-item">
+                <dt class="list-key">${escapeHtml(t("configurator.familyLabel", {}, "Family"))}</dt>
+                <dd class="list-value text-grey-primary">${escapeHtml(t("configurator.tecitCodeLogicFamiliesEmpty", {}, "No families loaded yet."))}</dd>
+            </div>
+        `;
+        return;
+    }
+
+    list.innerHTML = families.map((family) => {
+        return `
+            <div class="list-item">
+                <dt class="list-key"><code class="text-body">${escapeHtml(family.code)}</code></dt>
+                <dd class="list-value">${escapeHtml(family.name || family.code)}</dd>
+            </div>
+        `;
+    }).join("");
+}
+
 async function loadExplorerData() {
     if (isExplorerBatchSearch()) {
         const batchEntries = explorerState.controls.searchEntries;
@@ -3583,43 +3620,6 @@ function renderResultsMeta() {
     if (!meta) {
         return;
     }
-}
-
-function renderTecitCodeLogicFamilies() {
-    const list = document.getElementById("codeExplorerLogicFamiliesList");
-
-    if (!list) {
-        return;
-    }
-
-    const families = Array.isArray(explorerState.families)
-        ? explorerState.families
-            .map((family) => ({
-                code: String(family?.codigo || "").trim(),
-                name: String(family?.nome || "").trim(),
-            }))
-            .filter((family) => family.code !== "")
-            .sort((left, right) => left.code.localeCompare(right.code, undefined, { numeric: true }))
-        : [];
-
-    if (families.length === 0) {
-        list.innerHTML = `
-            <div class="list-item">
-                <dt class="list-key">${escapeHtml(t("configurator.familyLabel", {}, "Family"))}</dt>
-                <dd class="list-value text-grey-primary">${escapeHtml(t("configurator.tecitCodeLogicFamiliesEmpty", {}, "No families loaded yet."))}</dd>
-            </div>
-        `;
-        return;
-    }
-
-    list.innerHTML = families.map((family) => {
-        return `
-            <div class="list-item">
-                <dt class="list-key"><code class="text-body">${escapeHtml(family.code)}</code></dt>
-                <dd class="list-value">${escapeHtml(family.name || family.code)}</dd>
-            </div>
-        `;
-    }).join("");
 }
 
 function renderPagination() {

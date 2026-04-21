@@ -6,7 +6,7 @@ chdir(__DIR__);
 
 $endpoint = $_GET["endpoint"] ?? null;
 
-if ($endpoint !== "datasheet") {
+if ($endpoint !== "datasheet" && $endpoint !== "showcase-pdf") {
     header("Content-Type: application/json");
 }
 
@@ -32,7 +32,10 @@ require_once "./lib/validate.php";
 // Route: /api/?endpoint=svg-diagnostics&ref=...
 // Route: /api/?endpoint=dam&action=tree|list|asset|create-folder|sync-folders|upload|product-assets|link|unlink
 // Route: /api/?endpoint=code-explorer&family=11&page=1&page_size=100&search=&status=all
+// Route: /api/?endpoint=family-ready-products&family=01&page=1&page_size=100
 // Route: /api/?endpoint=code-repair&reference=11007502110010100&lang=pt
+// Route: /api/?endpoint=showcase-preview (POST)
+// Route: /api/?endpoint=showcase-pdf (POST)
 
 if (!$endpoint) {
     http_response_code(400);
@@ -65,11 +68,17 @@ switch ($endpoint) {
     case "code-explorer":
         require "./endpoints/code-explorer.php";
         break;
+    case "family-ready-products":
+        require "./endpoints/family-ready-products.php";
+        break;
     case "code-repair":
         require "./endpoints/code-repair.php";
         break;
-    case "family-ready-products":
-        require "./endpoints/family-ready-products.php";
+    case "showcase-preview":
+        require "./endpoints/showcase-preview.php";
+        break;
+    case "showcase-pdf":
+        require "./endpoints/showcase-pdf.php";
         break;
     case "dam":
         require "./endpoints/dam.php";
