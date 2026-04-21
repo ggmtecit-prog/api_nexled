@@ -95,7 +95,18 @@ function getColorGraphLabel(string $ledId, string $lang, object $json): string {
  * @return array|null  Keys: label (string), image (path) — null if not found
  */
 function getColorGraph(string $ledId, string $lang): ?array {
-    $json  = json_decode(file_get_contents(JSON_PATH . "/descricao/leds.json"));
+    static $json = null;
+    static $cache = [];
+    $cacheKey = $ledId . "|" . $lang;
+
+    if (array_key_exists($cacheKey, $cache)) {
+        return $cache[$cacheKey];
+    }
+
+    if ($json === null) {
+        $json = json_decode(file_get_contents(JSON_PATH . "/descricao/leds.json"));
+    }
+
     $aliasLedId = resolveColorGraphAlias($ledId);
     $label      = getColorGraphLabel($ledId, $lang, $json);
 
@@ -104,7 +115,7 @@ function getColorGraph(string $ledId, string $lang): ?array {
     }
 
     if ($label === "") {
-        return null;
+        return $cache[$cacheKey] = null;
     }
 
     $image = findDamOrLocalSharedAsset(
@@ -124,10 +135,10 @@ function getColorGraph(string $ledId, string $lang): ?array {
     }
 
     if ($image === null) {
-        return null;
+        return $cache[$cacheKey] = null;
     }
 
-    return [
+    return $cache[$cacheKey] = [
         "label" => $ledId . " - " . $label,
         "image" => $image,
     ];
@@ -153,13 +164,20 @@ function getColorGraph(string $ledId, string $lang): ?array {
  * @return array|null  Keys: diagram (path), illuminance (path|null) — null if diagram not found
  */
 function getLensDiagram(string $productId, string $reference): ?array {
+    static $cache = [];
+    $cacheKey = $productId . "|" . $reference;
+
+    if (array_key_exists($cacheKey, $cache)) {
+        return $cache[$cacheKey];
+    }
+
     $parts  = decodeReference($reference);
     $family = $parts["family"];
     $lens   = $parts["lens"];
 
     // Lens code 0 means no dedicated optic/lens. Official behaviour: hide this section.
     if ($lens === "" || $lens === "0") {
-        return null;
+        return $cache[$cacheKey] = null;
     }
 
     if ($family === "48") {
@@ -181,7 +199,7 @@ function getLensDiagram(string $productId, string $reference): ?array {
     }
 
     if ($diagramPath === null) {
-        return null;
+        return $cache[$cacheKey] = null;
     }
 
     $illuminancePath = findDamProductAsset($family, $productId, "diagram-inv", [$lens]);
@@ -190,7 +208,7 @@ function getLensDiagram(string $productId, string $reference): ?array {
         $illuminancePath = findImage($base . "i/$lens");
     }
 
-    return [
+    return $cache[$cacheKey] = [
         "diagram"     => $diagramPath,
         "illuminance" => $illuminancePath,
     ];

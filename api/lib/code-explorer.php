@@ -23,6 +23,7 @@ const CODE_EXPLORER_MODE_SEARCH = "search";
 const CODE_EXPLORER_MODE_FILTERS = "filters";
 const CODE_EXPLORER_SEARCH_TYPE_CODE = "code";
 const CODE_EXPLORER_SEARCH_TYPE_DESCRIPTION = "description";
+const FAMILY_READY_PRODUCTS_CACHE_VERSION = 2;
 
 function getCodeExplorerMode(mixed $value): string {
     $normalized = trim(strtolower((string) $value));
@@ -1315,6 +1316,194 @@ function buildCodeExplorerTargetedSearchResponse(string $familyCode, string $fam
     ];
 }
 
+function getFamilyReadyProductsCachePath(string $familyCode): string {
+    return BASE_PATH . "/output/family-ready-products/" . $familyCode . ".json";
+}
+
+function loadFamilyReadyProductsBaseRows(string $familyCode): ?array {
+    $path = getFamilyReadyProductsCachePath($familyCode);
+
+    if (!is_file($path) || !is_readable($path)) {
+        return null;
+    }
+
+    $payload = json_decode((string) @file_get_contents($path), true);
+
+    if (
+        !is_array($payload) ||
+        intval($payload["version"] ?? 0) !== FAMILY_READY_PRODUCTS_CACHE_VERSION ||
+        !isset($payload["rows"]) ||
+        !is_array($payload["rows"])
+    ) {
+        return null;
+    }
+
+    return $payload["rows"];
+}
+
+function storeFamilyReadyProductsBaseRows(string $familyCode, string $familyName, array $rows): void {
+    $path = getFamilyReadyProductsCachePath($familyCode);
+    $dir = dirname($path);
+
+    if (!is_dir($dir)) {
+        @mkdir($dir, 0777, true);
+    }
+
+    $payload = [
+        "version" => FAMILY_READY_PRODUCTS_CACHE_VERSION,
+        "family" => [
+            "code" => $familyCode,
+            "name" => $familyName,
+        ],
+        "generated_at" => date(DATE_ATOM),
+        "rows" => array_values($rows),
+    ];
+
+    @file_put_contents($path, json_encode($payload));
+}
+
+function collectFamilyReadyProductBaseRows(string $familyCode, array $options, array $identities): array {
+    $defaultProductType = getProductType($familyCode . str_repeat("0", REFERENCE_LENGTH_FULL - REFERENCE_LENGTH_FAMILY));
+    $defaultOptionCode = $options["option"][0]["code"] ?? str_repeat("0", REFERENCE_LENGTH_OPTION);
+    $baseRows = [];
+    $seenBases = [];
+
+    foreach ($identities as $identityData) {
+        $identity = (string) ($identityData["identity"] ?? "");
+
+        if (strlen($identity) !== REFERENCE_LENGTH_IDENTITY) {
+            continue;
+        }
+
+        $description = (string) ($identityData["description"] ?? "");
+        $productType = $identityData["product_type"] ?? $defaultProductType;
+        $ledId = (string) ($identityData["led_id"] ?? "");
+        $validatorCache = [];
+
+        foreach ($options["lens"] as $lens) {
+            foreach ($options["finish"] as $finish) {
+                foreach ($options["cap"] as $cap) {
+                    $productId = resolveCodeExplorerProductId($familyCode, $identityData, $cap["code"]);
+
+                    if ($productId === null || $productId === "") {
+                        continue;
+                    }
+
+                    $validationReference = $identity . $lens["code"] . $finish["code"] . $cap["code"] . $defaultOptionCode;
+                    $readiness = getCodeExplorerDatasheetReadiness(
+                        $validationReference,
+                        $productId,
+                        $productType,
+                        $ledId,
+                        $options,
+                        $validatorCache
+                    );
+
+                    if (($readiness["datasheet_ready"] ?? false) !== true) {
+                        continue;
+                    }
+
+                    $baseKey = implode("|", [
+                        $identity,
+                        $lens["code"],
+                        $finish["code"],
+                        $cap["code"],
+                    ]);
+
+                    if (isset($seenBases[$baseKey])) {
+                        continue;
+                    }
+
+                    $seenBases[$baseKey] = true;
+
+                    $baseRows[] = [
+                        "identity" => $identity,
+                        "description" => $description,
+                        "product_type" => $productType,
+                        "product_id" => $productId,
+                        "led_id" => $ledId,
+                        "lens" => $lens["code"],
+                        "finish" => $finish["code"],
+                        "cap" => $cap["code"],
+                    ];
+                }
+            }
+        }
+    }
+
+    return $baseRows;
+}
+
+function buildFamilyReadyProductsResponse(string $familyCode, string $familyName, array $options, array $identities, int $page, int $pageSize): array {
+    $requestedPage = max($page, 1);
+    $baseRows = loadFamilyReadyProductsBaseRows($familyCode);
+
+    if ($baseRows === null) {
+        $baseRows = collectFamilyReadyProductBaseRows($familyCode, $options, $identities);
+        storeFamilyReadyProductsBaseRows($familyCode, $familyName, $baseRows);
+    }
+
+    $optionCodes = array_values(array_filter(array_unique(array_map(
+        static fn($option) => (string) ($option["code"] ?? ""),
+        $options["option"] ?? []
+    ))));
+
+    if (count($optionCodes) === 0) {
+        $optionCodes = [str_repeat("0", REFERENCE_LENGTH_OPTION)];
+    }
+
+    $optionCount = count($optionCodes);
+    $readyTotal = count($baseRows) * $optionCount;
+    $totalPages = max(1, (int) ceil($readyTotal / $pageSize));
+    $safePage = min($requestedPage, $totalPages);
+    $offset = ($safePage - 1) * $pageSize;
+    $pageRows = [];
+
+    if ($readyTotal > 0) {
+        $baseIndex = intdiv($offset, $optionCount);
+        $optionIndex = $offset % $optionCount;
+
+        while ($baseIndex < count($baseRows) && count($pageRows) < $pageSize) {
+            $baseRow = $baseRows[$baseIndex];
+
+            while ($optionIndex < $optionCount && count($pageRows) < $pageSize) {
+                $optionCode = $optionCodes[$optionIndex];
+                $pageRows[] = [
+                    "reference" => $baseRow["identity"] . $baseRow["lens"] . $baseRow["finish"] . $baseRow["cap"] . $optionCode,
+                    "identity" => $baseRow["identity"],
+                    "description" => $baseRow["description"],
+                    "product_type" => $baseRow["product_type"],
+                    "product_id" => $baseRow["product_id"],
+                    "led_id" => $baseRow["led_id"],
+                    "configurator_valid" => true,
+                    "datasheet_ready" => true,
+                ];
+                $optionIndex++;
+            }
+
+            $baseIndex++;
+            $optionIndex = 0;
+        }
+    }
+
+    return [
+        "family" => [
+            "code" => $familyCode,
+            "name" => $familyName,
+        ],
+        "summary" => [
+            "total_ready_products" => $readyTotal,
+        ],
+        "pagination" => [
+            "page" => $safePage,
+            "page_size" => $pageSize,
+            "total_pages" => $totalPages,
+            "total_rows" => $readyTotal,
+        ],
+        "rows" => $pageRows,
+    ];
+}
+
 function buildCodeExplorerTargetedPreviewResponse(string $familyCode, string $familyName, array $options, array $identities, string $search, string $statusFilter, int $pageSize, bool $includeInvalid, array $segmentFilters): array {
     $normalizedSearch = normalizeCodeExplorerReferenceSearch($search);
     $identity = substr($normalizedSearch, 0, REFERENCE_LENGTH_IDENTITY);
@@ -1936,6 +2125,23 @@ function resolveCodeExplorerOptionLabel(array $options, string $code): string {
 }
 
 function getCodeExplorerTechnicalDrawingPath(string $productType, string $reference, string $productId, array $config): ?string {
+    static $cache = [];
+    $cacheKey = implode("|", [
+        $productType,
+        $productId,
+        $reference,
+        (string) ($config["lens"] ?? ""),
+        (string) ($config["finish"] ?? ""),
+        (string) ($config["connector_cable"] ?? ""),
+        (string) ($config["cable_type"] ?? ""),
+        (string) ($config["end_cap"] ?? ""),
+        (string) ($config["option"] ?? ""),
+    ]);
+
+    if (array_key_exists($cacheKey, $cache)) {
+        return $cache[$cacheKey];
+    }
+
     $parts = decodeReference($reference);
     $family = $parts["family"];
     $size = $parts["size"];
@@ -1956,27 +2162,63 @@ function getCodeExplorerTechnicalDrawingPath(string $productType, string $refere
             $drawing = findImage($folder . $name);
 
             if ($drawing !== null) {
-                return $drawing;
+                return $cache[$cacheKey] = $drawing;
             }
         }
 
-        return null;
+        return $cache[$cacheKey] = null;
     }
 
     if ($productType === "dynamic") {
         $subtype = explode("/", $productId)[1] ?? "";
-        return findImage(IMAGES_BASE_PATH . "/img/$family/$subtype/desenhos/$size");
+        $drawing = findDamProductAsset($family, $productId, "drawing", [$size]);
+
+        if ($drawing !== null) {
+            return $cache[$cacheKey] = $drawing;
+        }
+
+        return $cache[$cacheKey] = findImage(IMAGES_BASE_PATH . "/img/$family/$subtype/desenhos/$size");
     }
 
-    return findImage(IMAGES_BASE_PATH . "/img/$family/desenhos/$size");
+    $drawing = findDamProductAsset($family, $productId, "drawing", [$size]);
+
+    if ($drawing === null && $family === "01") {
+        $drawing = cloudinaryDamExactAssetUrl("nexled/datasheet/drawings", "t8-fixo.svg");
+    } elseif ($drawing === null && $family === "05") {
+        $drawingAsset = $parts["cap"] === "02" ? "t5_sfio.svg" : "t5.svg";
+        $drawing = cloudinaryDamExactAssetUrl("nexled/datasheet/drawings", $drawingAsset);
+    }
+
+    if ($drawing !== null) {
+        return $cache[$cacheKey] = $drawing;
+    }
+
+    return $cache[$cacheKey] = findImage(IMAGES_BASE_PATH . "/img/$family/desenhos/$size");
 }
 
 function getCodeExplorerFinishImagePath(string $productType, string $productId, string $reference, array $config): ?string {
+    static $cache = [];
+    $cacheKey = implode("|", [
+        $productType,
+        $productId,
+        $reference,
+        (string) ($config["lens"] ?? ""),
+        (string) ($config["finish"] ?? ""),
+        (string) ($config["end_cap"] ?? ""),
+        (string) ($config["lang"] ?? ""),
+    ]);
+
+    if (array_key_exists($cacheKey, $cache)) {
+        return $cache[$cacheKey];
+    }
+
     $parts = decodeReference($reference);
     $family = $parts["family"];
     $size = $parts["size"];
     $series = $parts["series"];
     $cap = $parts["cap"];
+    $finishCode = $parts["finish"];
+    $lang = (string) ($config["lang"] ?? CODE_EXPLORER_DEFAULT_LANG);
     $lens = strtolower((string) ($config["lens"] ?? ""));
     $finish = strtolower((string) ($config["finish"] ?? ""));
     $endCap = (string) ($config["end_cap"] ?? "0");
@@ -1986,10 +2228,25 @@ function getCodeExplorerFinishImagePath(string $productType, string $productId, 
             $folder = ($lens === "clear")
                 ? "/img/$family/acabamentos/$lens/$series/"
                 : "/img/$family/acabamentos/$lens/";
-            $candidates = [
-                str_replace("+", "_", "{$finish}_{$cap}"),
-                str_replace("+", "_", "{$finish}_{$endCap}"),
-            ];
+
+            if ($family === "32") {
+                $finishToken = ltrim($finishCode, "0");
+                if ($finishToken === "") {
+                    $finishToken = "0";
+                }
+
+                $candidates = [
+                    "{$finishToken}_{$endCap}",
+                    "{$finishToken}_{$cap}",
+                    str_replace("+", "_", "{$finish}_{$endCap}"),
+                    str_replace("+", "_", "{$finish}_{$cap}"),
+                ];
+            } else {
+                $candidates = [
+                    str_replace("+", "_", "{$finish}_{$cap}"),
+                    str_replace("+", "_", "{$finish}_{$endCap}"),
+                ];
+            }
             break;
         case "dynamic":
             $subtype = explode("/", $productId)[1] ?? "";
@@ -1997,19 +2254,58 @@ function getCodeExplorerFinishImagePath(string $productType, string $productId, 
             $cleanFinish = str_replace("+", "", $finish);
             $candidates = ["{$size}_{$cleanFinish}"];
             break;
+        case "shelf":
+            $folder = "/img/$family/acabamentos/";
+            $cleanFinish = str_replace("+", "_", $finish);
+            $candidates = [
+                "{$size}_{$lens}_{$cleanFinish}_{$cap}",
+                "{$size}_{$lens}_{$cleanFinish}_{$endCap}",
+                "{$size}_{$lens}_{$cleanFinish}",
+                "{$cleanFinish}_{$cap}",
+                "{$cleanFinish}_{$endCap}",
+                "{$size}_{$lens}",
+                "{$size}",
+            ];
+            break;
+        case "tubular":
+            $folder = "/img/$family/acabamentos/";
+            $cleanFinish = str_replace("+", "_", $finish);
+            $candidates = [
+                "{$size}_{$lens}_{$cleanFinish}_{$cap}",
+                "{$size}_{$lens}_{$cleanFinish}",
+                "{$size}_{$lens}",
+                "{$size}",
+            ];
+            break;
         default:
             $folder = "/img/$family/acabamentos/";
             $candidates = ["{$size}_{$lens}_{$finish}"];
             break;
     }
 
-    foreach ($candidates as $name) {
-        $image = findImage(IMAGES_BASE_PATH . $folder . $name);
+    $image = findDamProductAsset($family, $productId, "finish", $candidates);
 
-        if ($image !== null) {
-            return $image;
+    if ($image === null && $family === "01") {
+        $finishFolder = strtolower(trim((string) $lens)) === "frost"
+            ? "nexled/datasheet/finishes/frost"
+            : "nexled/datasheet/finishes/clear";
+        $image = cloudinaryDamExactAssetUrl($finishFolder, "acabamento-t8-alu.png");
+    } elseif ($image === null && $family === "05") {
+        $finishFolder = strtolower(trim((string) $lens)) === "frost"
+            ? "nexled/datasheet/finishes/frost"
+            : "nexled/datasheet/finishes/clear";
+        $image = cloudinaryDamExactAssetUrl($finishFolder, "acabamento-t5-alu.png");
+    }
+
+    if ($image === null) {
+        foreach ($candidates as $name) {
+            $image = findImage(IMAGES_BASE_PATH . $folder . $name);
+
+            if ($image !== null) {
+                break;
+            }
         }
     }
 
-    return getFinishPlaceholderImage();
+    return $cache[$cacheKey] = ($image !== null ? $image : getFinishPlaceholderImage());
 }

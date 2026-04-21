@@ -45,6 +45,7 @@ Central API already has:
 - `reference`
 - `decode-reference`
 - `code-explorer`
+- `family-ready-products`
 - datasheet readiness checks
 
 `code-explorer` can already filter:
@@ -53,42 +54,38 @@ Central API already has:
 - `datasheet_ready`
 - blocked reasons
 
-But current family-wide explorer flow is not the final EPREL import contract because it still expands suffix combinations in ways that are not safe enough for whole-family import.
+Use `family-ready-products` for family import.
+
+Do not use family-wide `code-explorer` as the import source.
 
 ## What Needs To Be Built
 
-### Central API
+### EPREL
 
-Build a clean endpoint such as:
+Use this Central API endpoint:
 
 - `GET /api/?endpoint=family-ready-products&family=01&page=1&page_size=100`
 
 Rules:
 
-- start from real `Luminos` identities
-- do not brute-force giant synthetic family matrices
-- return only rows where:
-  - `configurator_valid = true`
-  - `datasheet_ready = true`
-- paginate
-- return empty rows safely when family has zero ready products
+- import page by page
+- first request for a large family may build server-side ready-base cache
+- repeated pages should reuse that cache
+- save imported rows
+- allow resume/retry
+- do not generate codes locally
+- do not guess readiness locally
+
+### Central API
+
+Current truth endpoint:
+
+- `family-ready-products`
 
 Optional later:
 
 - `POST /api/?endpoint=family-ready-details`
 - exact refs in, bulk detail rows out
-
-### EPREL
-
-Use the Central API endpoint above.
-
-Rules:
-
-- import page by page
-- save imported rows
-- allow resume/retry
-- do not generate codes locally
-- do not guess readiness locally
 
 ## Hard Rules
 

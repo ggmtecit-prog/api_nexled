@@ -128,6 +128,7 @@ This means:
 | `health` | Service/database status | Live, used by frontend badges and checks |
 | `svg-diagnostics` | Debug resolved SVG/PNG asset readiness | Debug/support endpoint |
 | `code-explorer` | Explore generated code space by family | Live, valid-only mode useful; unsupported runtimes surfaced honestly |
+| `family-ready-products` | Ready-only family import rows for EPREL/client import flows | Live, paginated, based on real identities + exact readiness checks; caches ready base combos per family |
 | `assets` | Older coarse asset endpoint | Exists, transitional |
 | `dam` | Newer DAM tree/list/upload-style endpoint | Exists, active design/workstream |
 
@@ -420,10 +421,9 @@ Relevant parity docs:
 ### 5. EPREL Family Import
 
 - EPREL needs real family import, not synthetic family search
-- Central API already has reusable readiness logic, but not yet a clean ready-only family import contract
-- next shared-logic goal is:
-  - Central API exposes ready-only family rows
-  - EPREL imports those rows page by page
+- Central API now exposes `family-ready-products` for ready-only family import rows
+- EPREL should import from that endpoint page by page
+- `code-explorer` remains analysis tooling, not the EPREL import source
 ### 6. DAM Future Work
 
 - Phase 1 cutover is done locally:
@@ -581,10 +581,9 @@ Ordered recommendation:
 4. build page-template parity starting from priority families
 5. keep documenting only the families being actively patched
 6. build a clean Central API truth endpoint for EPREL family import:
-   - real rows only
-   - ready rows only
-   - paginated
-   - no synthetic family matrix
+   - keep `family-ready-products` as the canonical import source
+   - verify counts/coverage per family
+   - add bulk details only if EPREL needs it
 6. redesign code explorer invalid mode around narrower slices/drill-down
 7. continue DAM only after PDF/API parity priorities are stable
 

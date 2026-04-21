@@ -77,12 +77,15 @@ Minimum contract direction:
    - real family list
    - family metadata
 2. `family-ready-products`
+   - live
    - only real full references
    - only `configurator_valid = true`
    - only `datasheet_ready = true`
    - paginated
+   - built from ready base combos, then expanded into full refs page by page
+   - stores per-family ready-base cache under `output/family-ready-products/`
 3. `family-ready-details`
-   - optional bulk hydrate endpoint
+   - optional later bulk hydrate endpoint
    - returns details for exact refs only
 
 Important:
@@ -118,6 +121,7 @@ What already exists:
 - `decode-reference`
 - `datasheet`
 - `code-explorer`
+- `family-ready-products`
 
 What `code-explorer` already gives:
 
@@ -134,19 +138,24 @@ So:
 
 - current readiness logic is reusable
 - current family-wide explorer output is not the final EPREL import contract
+- EPREL should prefer `family-ready-products`, not raw family-wide `code-explorer`
 
 ## Implementation Rule For New Central API Family Import
 
-If `family-ready-products` is built, it must:
+Current `family-ready-products` rule:
 
 1. start from real identities
-2. derive only real supported full references
-3. reuse existing readiness checks
-4. return only rows where:
+2. evaluate readiness at base-combo level:
+   - `identity + lens + finish + cap`
+   - current readiness logic uses one default option code for that check
+3. expand only ready base combos into full refs with unique option codes
+4. reuse existing readiness checks
+5. return only rows where:
    - `configurator_valid = true`
    - `datasheet_ready = true`
-5. paginate
-6. return empty rows safely when a family has no ready products
+6. paginate
+7. cache ready base combos so repeated page requests stay fast
+8. return empty rows safely when a family has no ready products
 
 ## Known Risk
 
@@ -168,7 +177,7 @@ Those families must not appear as importable ready families just because options
 
 ## Best Next Work
 
-1. build a clean `family-ready-products` endpoint in Central API
-2. keep it based on real identities + real readiness only
-3. let EPREL consume that endpoint page by page
-4. only add bulk details after the base list endpoint is stable
+1. let EPREL consume `family-ready-products` page by page
+2. verify families/import counts against real business expectations
+3. add `family-ready-details` only if EPREL hydration needs bulk speed
+4. do not fall back to family-wide synthetic `code-explorer` import

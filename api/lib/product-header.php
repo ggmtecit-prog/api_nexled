@@ -213,7 +213,17 @@ function getTubularFamily05DamPackshot(array $parts, array $config): ?string {
  * @return string  HTML paragraphs joined with <br><br>, or empty string if not found
  */
 function getProductDescriptionText(string $productId, string $family, string $lang): string {
-    $json = json_decode(file_get_contents(JSON_DESC_PATH . "/produtos.json"));
+    static $json = null;
+    static $cache = [];
+    $cacheKey = $productId . "|" . $family . "|" . $lang;
+
+    if (array_key_exists($cacheKey, $cache)) {
+        return $cache[$cacheKey];
+    }
+
+    if ($json === null) {
+        $json = json_decode(file_get_contents(JSON_DESC_PATH . "/produtos.json"));
+    }
 
     $id = explode("/", $productId);
     $candidateKeys = [];
@@ -243,7 +253,7 @@ function getProductDescriptionText(string $productId, string $family, string $la
     }
 
     if ($key === null) {
-        return "";
+        return $cache[$cacheKey] = "";
     }
 
     $lines = [];
@@ -251,7 +261,7 @@ function getProductDescriptionText(string $productId, string $family, string $la
         $lines[] = $line;
     }
 
-    return implode("<br><br>", $lines) . "<br><br>";
+    return $cache[$cacheKey] = (implode("<br><br>", $lines) . "<br><br>");
 }
 
 
@@ -269,7 +279,17 @@ function getProductDescriptionText(string $productId, string $family, string $la
  * @return string  Description text with <br><br> spacing, or empty string if not found
  */
 function getLedDescriptionText(string $ledId, string $family, string $lang): string {
-    $json = json_decode(file_get_contents(JSON_DESC_PATH . "/leds.json"));
+    static $json = null;
+    static $cache = [];
+    $cacheKey = $ledId . "|" . $family . "|" . $lang;
+
+    if (array_key_exists($cacheKey, $cache)) {
+        return $cache[$cacheKey];
+    }
+
+    if ($json === null) {
+        $json = json_decode(file_get_contents(JSON_DESC_PATH . "/leds.json"));
+    }
 
     $prefix = $json->descricao->$lang ?? "";
     $text   = "";
@@ -302,7 +322,7 @@ function getLedDescriptionText(string $ledId, string $family, string $lang): str
         break;
     }
 
-    return $text;
+    return $cache[$cacheKey] = $text;
 }
 
 
@@ -316,14 +336,24 @@ function getLedDescriptionText(string $ledId, string $family, string $lang): str
  * @return string  Description text, or empty string if not found or not applicable
  */
 function getPurposeText(string $purposeId, string $lang): string {
-    if ($purposeId === "0") {
-        return "";
+    static $json = null;
+    static $cache = [];
+    $cacheKey = $purposeId . "|" . $lang;
+
+    if (array_key_exists($cacheKey, $cache)) {
+        return $cache[$cacheKey];
     }
 
-    $json = json_decode(file_get_contents(JSON_DESC_PATH . "/finalidades.json"));
+    if ($purposeId === "0") {
+        return $cache[$cacheKey] = "";
+    }
+
+    if ($json === null) {
+        $json = json_decode(file_get_contents(JSON_DESC_PATH . "/finalidades.json"));
+    }
 
     if (!isset($json->descricao->$purposeId)) {
-        return "";
+        return $cache[$cacheKey] = "";
     }
 
     $entry = $json->descricao->$purposeId;
@@ -338,7 +368,7 @@ function getPurposeText(string $purposeId, string $lang): string {
         $text .= ($json->descricao->safetyfood->$lang ?? "") . "<br><br>";
     }
 
-    return $text;
+    return $cache[$cacheKey] = $text;
 }
 
 
@@ -351,8 +381,18 @@ function getPurposeText(string $purposeId, string $lang): string {
  * @return string  Description text, or empty string if not found
  */
 function getEnergyClassText(string $lang): string {
-    $json = json_decode(file_get_contents(JSON_DESC_PATH . "/classe.json"));
-    return isset($json->classe->$lang) ? $json->classe->$lang . "<br><br>" : "";
+    static $json = null;
+    static $cache = [];
+
+    if (array_key_exists($lang, $cache)) {
+        return $cache[$lang];
+    }
+
+    if ($json === null) {
+        $json = json_decode(file_get_contents(JSON_DESC_PATH . "/classe.json"));
+    }
+
+    return $cache[$lang] = (isset($json->classe->$lang) ? $json->classe->$lang . "<br><br>" : "");
 }
 
 

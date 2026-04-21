@@ -302,6 +302,12 @@ function findSystemCommand(string $command): ?string {
  * @return string|null   Full path with extension if found, null otherwise
  */
 function findImage(string $path): ?string {
+    static $cache = [];
+
+    if (array_key_exists($path, $cache)) {
+        return $cache[$path];
+    }
+
     foreach ([".png", ".jpg", ".jpeg", ".svg"] as $ext) {
         if (!file_exists($path . $ext)) {
             continue;
@@ -320,10 +326,10 @@ function findImage(string $path): ?string {
             imagedestroy($flat);
         }
 
-        return $path . $ext;
+        return $cache[$path] = ($path . $ext);
     }
 
-    return null;
+    return $cache[$path] = null;
 }
 
 /**
@@ -559,22 +565,40 @@ function buildProductSlugCandidates(string $productId): array {
  * @return string|null
  */
 function findDamProductAsset(string $familyCode, string $productId, string $kind, array $filenameCandidates = []): ?string {
-    if (!function_exists("tryConnectDBDam")) {
-        return null;
+    static $cache = [];
+    static $linkRowsCache = [];
+    static $sharedConnection = null;
+
+    $cacheKey = implode("|", [
+        trim($familyCode),
+        trim($productId),
+        trim($kind),
+        implode(",", $filenameCandidates),
+    ]);
+
+    if (array_key_exists($cacheKey, $cache)) {
+        return $cache[$cacheKey];
     }
 
-    $con = tryConnectDBDam();
+    if (!function_exists("tryConnectDBDam")) {
+        return $cache[$cacheKey] = null;
+    }
+
+    if (!$sharedConnection instanceof mysqli) {
+        $sharedConnection = tryConnectDBDam();
+    }
+
+    $con = $sharedConnection;
 
     if (!$con instanceof mysqli) {
-        return null;
+        return $cache[$cacheKey] = null;
     }
 
     $familyCode = trim($familyCode);
     $kind = trim($kind);
 
     if ($familyCode === "" || $kind === "") {
-        closeDB($con);
-        return null;
+        return $cache[$cacheKey] = null;
     }
 
     $roleMap = [
@@ -584,27 +608,38 @@ function findDamProductAsset(string $familyCode, string $productId, string $kind
         "technical_drawing" => "drawing",
     ];
     $role = $roleMap[$kind] ?? $kind;
+    $rowsCacheKey = $familyCode . "|" . $role;
 
-    $stmt = mysqli_prepare(
-        $con,
-        "SELECT a.`filename`, a.`display_name`, a.`public_id`, a.`secure_url`, l.`product_code`
-         FROM `dam_asset_links` l
-         JOIN `dam_assets` a ON a.`id` = l.`asset_id`
-         WHERE a.`resource_type` = 'image'
-           AND l.`family_code` = ?
-           AND l.`role` = ?
-         ORDER BY l.`sort_order` ASC, a.`id` DESC
-         LIMIT 200"
-    );
+    if (!array_key_exists($rowsCacheKey, $linkRowsCache)) {
+        $stmt = mysqli_prepare(
+            $con,
+            "SELECT a.`filename`, a.`display_name`, a.`public_id`, a.`secure_url`, l.`product_code`
+             FROM `dam_asset_links` l
+             JOIN `dam_assets` a ON a.`id` = l.`asset_id`
+             WHERE a.`resource_type` = 'image'
+               AND l.`family_code` = ?
+               AND l.`role` = ?
+             ORDER BY l.`sort_order` ASC, a.`id` DESC
+             LIMIT 200"
+        );
 
-    if (!$stmt) {
-        closeDB($con);
-        return null;
+        if (!$stmt) {
+            return $cache[$cacheKey] = null;
+        }
+
+        mysqli_stmt_bind_param($stmt, "ss", $familyCode, $role);
+        mysqli_stmt_execute($stmt);
+        $result = mysqli_stmt_get_result($stmt);
+        $linkRowsCache[$rowsCacheKey] = [];
+
+        if ($result) {
+            while ($row = mysqli_fetch_assoc($result)) {
+                $linkRowsCache[$rowsCacheKey][] = $row;
+            }
+        }
+
+        mysqli_stmt_close($stmt);
     }
-
-    mysqli_stmt_bind_param($stmt, "ss", $familyCode, $role);
-    mysqli_stmt_execute($stmt);
-    $result = mysqli_stmt_get_result($stmt);
 
     $slugCandidates = buildProductSlugCandidates($productId);
     $stemCandidates = array_values(array_filter(array_unique(array_map(
@@ -615,72 +650,67 @@ function findDamProductAsset(string $familyCode, string $productId, string $kind
     $bestUrl = null;
     $bestScore = 0;
 
-    if ($result) {
-        while ($row = mysqli_fetch_assoc($result)) {
-            $secureUrl = trim((string) ($row["secure_url"] ?? ""));
+    foreach ($linkRowsCache[$rowsCacheKey] as $row) {
+        $secureUrl = trim((string) ($row["secure_url"] ?? ""));
 
-            if ($secureUrl === "") {
+        if ($secureUrl === "") {
+            continue;
+        }
+
+        $score = 0;
+        $rowFilename = nexledNormalizeAssetStem((string) ($row["filename"] ?? ""));
+        $rowDisplayName = nexledNormalizeAssetStem((string) ($row["display_name"] ?? ""));
+        $rowPublicId = nexledNormalizeAssetStem((string) ($row["public_id"] ?? ""));
+        $rowProductCode = nexledNormalizeAssetStem((string) ($row["product_code"] ?? ""));
+
+        if ($rowProductCode !== "" && in_array($rowProductCode, $slugCandidates, true)) {
+            $score += 40;
+        }
+
+        foreach ($stemCandidates as $stemCandidate) {
+            if ($stemCandidate === "") {
                 continue;
             }
 
-            $score = 0;
-            $rowFilename = nexledNormalizeAssetStem((string) ($row["filename"] ?? ""));
-            $rowDisplayName = nexledNormalizeAssetStem((string) ($row["display_name"] ?? ""));
-            $rowPublicId = nexledNormalizeAssetStem((string) ($row["public_id"] ?? ""));
-            $rowProductCode = nexledNormalizeAssetStem((string) ($row["product_code"] ?? ""));
-
-            if ($rowProductCode !== "" && in_array($rowProductCode, $slugCandidates, true)) {
-                $score += 40;
+            if ($rowFilename === $stemCandidate) {
+                $score += 60;
+                break;
             }
 
-            foreach ($stemCandidates as $stemCandidate) {
-                if ($stemCandidate === "") {
-                    continue;
-                }
-
-                if ($rowFilename === $stemCandidate) {
-                    $score += 60;
-                    break;
-                }
-
-                if (
-                    str_ends_with($rowFilename, "-" . $stemCandidate) ||
-                    str_ends_with($rowFilename, $stemCandidate)
-                ) {
-                    $score += 55;
-                    break;
-                }
-
-                if ($rowDisplayName === $stemCandidate) {
-                    $score += 50;
-                    break;
-                }
-
-                if (
-                    str_ends_with($rowDisplayName, "-" . $stemCandidate) ||
-                    str_ends_with($rowDisplayName, $stemCandidate)
-                ) {
-                    $score += 45;
-                    break;
-                }
-
-                if (str_contains($rowPublicId, strtolower($stemCandidate))) {
-                    $score += 20;
-                    break;
-                }
+            if (
+                str_ends_with($rowFilename, "-" . $stemCandidate) ||
+                str_ends_with($rowFilename, $stemCandidate)
+            ) {
+                $score += 55;
+                break;
             }
 
-            if ($score > $bestScore) {
-                $bestScore = $score;
-                $bestUrl = $secureUrl;
+            if ($rowDisplayName === $stemCandidate) {
+                $score += 50;
+                break;
             }
+
+            if (
+                str_ends_with($rowDisplayName, "-" . $stemCandidate) ||
+                str_ends_with($rowDisplayName, $stemCandidate)
+            ) {
+                $score += 45;
+                break;
+            }
+
+            if (str_contains($rowPublicId, strtolower($stemCandidate))) {
+                $score += 20;
+                break;
+            }
+        }
+
+        if ($score > $bestScore) {
+            $bestScore = $score;
+            $bestUrl = $secureUrl;
         }
     }
 
-    mysqli_stmt_close($stmt);
-    closeDB($con);
-
-    return $bestScore > 0 ? $bestUrl : null;
+    return $cache[$cacheKey] = ($bestScore > 0 ? $bestUrl : null);
 }
 
 /**
@@ -695,41 +725,68 @@ function findDamProductAsset(string $familyCode, string $productId, string $kind
  * @return string|null
  */
 function findDamSharedAsset(string $role, array $filenameCandidates = [], array $preferredFormats = []): ?string {
-    if (!function_exists("tryConnectDBDam")) {
-        return null;
+    static $cache = [];
+    static $sharedRowsCache = [];
+    static $sharedConnection = null;
+
+    $cacheKey = implode("|", [
+        trim($role),
+        implode(",", $filenameCandidates),
+        implode(",", $preferredFormats),
+    ]);
+
+    if (array_key_exists($cacheKey, $cache)) {
+        return $cache[$cacheKey];
     }
 
-    $con = tryConnectDBDam();
+    if (!function_exists("tryConnectDBDam")) {
+        return $cache[$cacheKey] = null;
+    }
+
+    if (!$sharedConnection instanceof mysqli) {
+        $sharedConnection = tryConnectDBDam();
+    }
+
+    $con = $sharedConnection;
 
     if (!$con instanceof mysqli) {
-        return null;
+        return $cache[$cacheKey] = null;
     }
 
     $role = trim($role);
 
     if ($role === "") {
-        closeDB($con);
-        return null;
+        return $cache[$cacheKey] = null;
     }
 
-    $stmt = mysqli_prepare(
-        $con,
-        "SELECT `filename`, `display_name`, `public_id`, `secure_url`, `format`
-         FROM `dam_assets`
-         WHERE `resource_type` = 'image'
-           AND `kind` = ?
-         ORDER BY `id` DESC
-         LIMIT 300"
-    );
+    if (!array_key_exists($role, $sharedRowsCache)) {
+        $stmt = mysqli_prepare(
+            $con,
+            "SELECT `filename`, `display_name`, `public_id`, `secure_url`, `format`
+             FROM `dam_assets`
+             WHERE `resource_type` = 'image'
+               AND `kind` = ?
+             ORDER BY `id` DESC
+             LIMIT 300"
+        );
 
-    if (!$stmt) {
-        closeDB($con);
-        return null;
+        if (!$stmt) {
+            return $cache[$cacheKey] = null;
+        }
+
+        mysqli_stmt_bind_param($stmt, "s", $role);
+        mysqli_stmt_execute($stmt);
+        $result = mysqli_stmt_get_result($stmt);
+        $sharedRowsCache[$role] = [];
+
+        if ($result) {
+            while ($row = mysqli_fetch_assoc($result)) {
+                $sharedRowsCache[$role][] = $row;
+            }
+        }
+
+        mysqli_stmt_close($stmt);
     }
-
-    mysqli_stmt_bind_param($stmt, "s", $role);
-    mysqli_stmt_execute($stmt);
-    $result = mysqli_stmt_get_result($stmt);
 
     $stemCandidates = array_values(array_filter(array_unique(array_map(
         "nexledNormalizeAssetStem",
@@ -744,59 +801,54 @@ function findDamSharedAsset(string $role, array $filenameCandidates = [], array 
     $bestUrl = null;
     $bestScore = 0;
 
-    if ($result) {
-        while ($row = mysqli_fetch_assoc($result)) {
-            $secureUrl = trim((string) ($row["secure_url"] ?? ""));
+    foreach ($sharedRowsCache[$role] as $row) {
+        $secureUrl = trim((string) ($row["secure_url"] ?? ""));
 
-            if ($secureUrl === "") {
+        if ($secureUrl === "") {
+            continue;
+        }
+
+        $score = 0;
+        $rowFilename = nexledNormalizeAssetStem((string) ($row["filename"] ?? ""));
+        $rowDisplayName = nexledNormalizeAssetStem((string) ($row["display_name"] ?? ""));
+        $rowPublicId = strtolower((string) ($row["public_id"] ?? ""));
+        $rowFormat = strtolower(trim((string) ($row["format"] ?? "")));
+
+        foreach ($stemCandidates as $stemCandidate) {
+            if ($stemCandidate === "") {
                 continue;
             }
 
-            $score = 0;
-            $rowFilename = nexledNormalizeAssetStem((string) ($row["filename"] ?? ""));
-            $rowDisplayName = nexledNormalizeAssetStem((string) ($row["display_name"] ?? ""));
-            $rowPublicId = strtolower((string) ($row["public_id"] ?? ""));
-            $rowFormat = strtolower(trim((string) ($row["format"] ?? "")));
-
-            foreach ($stemCandidates as $stemCandidate) {
-                if ($stemCandidate === "") {
-                    continue;
-                }
-
-                if ($rowFilename === $stemCandidate) {
-                    $score += 80;
-                    break;
-                }
-
-                if ($rowDisplayName === $stemCandidate) {
-                    $score += 70;
-                    break;
-                }
-
-                if (str_contains($rowPublicId, strtolower($stemCandidate))) {
-                    $score += 30;
-                    break;
-                }
+            if ($rowFilename === $stemCandidate) {
+                $score += 80;
+                break;
             }
 
-            foreach ($formatPriority as $index => $preferredFormat) {
-                if ($rowFormat === $preferredFormat) {
-                    $score += max(1, 12 - $index);
-                    break;
-                }
+            if ($rowDisplayName === $stemCandidate) {
+                $score += 70;
+                break;
             }
 
-            if ($score > $bestScore) {
-                $bestScore = $score;
-                $bestUrl = $secureUrl;
+            if (str_contains($rowPublicId, strtolower($stemCandidate))) {
+                $score += 30;
+                break;
             }
+        }
+
+        foreach ($formatPriority as $index => $preferredFormat) {
+            if ($rowFormat === $preferredFormat) {
+                $score += max(1, 12 - $index);
+                break;
+            }
+        }
+
+        if ($score > $bestScore) {
+            $bestScore = $score;
+            $bestUrl = $secureUrl;
         }
     }
 
-    mysqli_stmt_close($stmt);
-    closeDB($con);
-
-    return $bestScore > 0 ? $bestUrl : null;
+    return $cache[$cacheKey] = ($bestScore > 0 ? $bestUrl : null);
 }
 
 /**

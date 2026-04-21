@@ -179,15 +179,23 @@ function cloudinaryDelete(string $publicId, string $resourceType): bool {
  * @return string|null
  */
 function cloudinaryFindResourceSecureUrl(string $publicId, string $resourceType = "image"): ?string {
+    static $cache = [];
+
+    $cacheKey = trim($resourceType) . "|" . trim($publicId);
+
+    if (array_key_exists($cacheKey, $cache)) {
+        return $cache[$cacheKey];
+    }
+
     if (cloudinaryMissingAdminConfig() !== []) {
-        return null;
+        return $cache[$cacheKey] = null;
     }
 
     $publicId = trim($publicId);
     $resourceType = trim($resourceType);
 
     if ($publicId === "" || $resourceType === "") {
-        return null;
+        return $cache[$cacheKey] = null;
     }
 
     $credentials = cloudinaryAdminCredentials();
@@ -203,7 +211,7 @@ function cloudinaryFindResourceSecureUrl(string $publicId, string $resourceType 
     curl_close($ch);
 
     if ($httpCode !== 200 || !is_string($response)) {
-        return null;
+        return $cache[$cacheKey] = null;
     }
 
     $data = json_decode($response, true);
@@ -217,11 +225,11 @@ function cloudinaryFindResourceSecureUrl(string $publicId, string $resourceType 
         $secureUrl = trim((string) ($resource["secure_url"] ?? ""));
 
         if ($secureUrl !== "") {
-            return $secureUrl;
+            return $cache[$cacheKey] = $secureUrl;
         }
     }
 
-    return null;
+    return $cache[$cacheKey] = null;
 }
 
 /**
@@ -249,31 +257,39 @@ function cloudinaryDamBuildPublicId(string $folderPath, string $assetName): stri
  * @return string|null
  */
 function cloudinaryDamExactAssetUrl(string $folderPath, string $assetName, string $resourceType = "image"): ?string {
+    static $cache = [];
+
+    $cacheKey = trim($resourceType) . "|" . trim($folderPath, "/") . "|" . trim($assetName);
+
+    if (array_key_exists($cacheKey, $cache)) {
+        return $cache[$cacheKey];
+    }
+
     $folderPath = trim($folderPath, "/");
     $assetName = trim($assetName);
 
     if ($folderPath === "" || $assetName === "") {
-        return null;
+        return $cache[$cacheKey] = null;
     }
 
     $publicId = cloudinaryDamBuildPublicId($folderPath, $assetName);
     $resolvedUrl = cloudinaryFindResourceSecureUrl($publicId, $resourceType);
 
     if ($resolvedUrl !== null) {
-        return $resolvedUrl;
+        return $cache[$cacheKey] = $resolvedUrl;
     }
 
     $publicUrl = cloudinaryBuildPublicAssetUrl($publicId, $assetName, $resourceType);
 
     if ($publicUrl === null) {
-        return null;
+        return $cache[$cacheKey] = null;
     }
 
     if (!cloudinaryRemoteAssetExists($publicUrl)) {
-        return null;
+        return $cache[$cacheKey] = null;
     }
 
-    return $publicUrl;
+    return $cache[$cacheKey] = $publicUrl;
 }
 
 /**

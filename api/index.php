@@ -68,6 +68,9 @@ switch ($endpoint) {
     case "code-repair":
         require "./endpoints/code-repair.php";
         break;
+    case "family-ready-products":
+        require "./endpoints/family-ready-products.php";
+        break;
     case "dam":
         require "./endpoints/dam.php";
         break;
