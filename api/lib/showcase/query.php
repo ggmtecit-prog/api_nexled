@@ -195,10 +195,19 @@ function getShowcaseSelectedSegmentOptions(array $segmentOptions, mixed $lockedV
         return array_values($normalizedOptions);
     }
 
-    return array_values(array_filter(
+    $matchedOptions = array_values(array_filter(
         $normalizedOptions,
         static fn(array $option): bool => (string) ($option["code"] ?? "") === $lockedCode
     ));
+
+    if ($matchedOptions !== []) {
+        return $matchedOptions;
+    }
+
+    return [[
+        "code" => $lockedCode,
+        "label" => $lockedCode,
+    ]];
 }
 
 function getShowcaseReadyBaseRows(string $familyCode, array $options, array $labelLookups): array {

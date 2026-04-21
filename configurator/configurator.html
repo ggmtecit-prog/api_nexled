@@ -260,77 +260,96 @@
                             </div>
 
                             <div id="options-group" class="hidden flex flex-col gap-40 pt-40">
-                                <div class="divider"></div>
+                                <div id="showcase-scope" class="hidden flex flex-col gap-16">
+                                    <div class="divider"></div>
 
-                                <div class="flex flex-col gap-4 pt-16">
-                                    <h3 class="card-title" data-i18n="configurator.sections.dimensionsTitle">Dimensions</h3>
-                                    <p class="text-body-sm text-grey-primary max-w-readable" data-i18n="configurator.sections.dimensionsText">Set the size and any extra length required for the product build.</p>
+                                    <div class="panel panel-sm">
+                                        <div class="flex flex-col gap-6">
+                                            <span class="text-label text-grey-primary" data-i18n="configurator.showcase.scopeTitle">Showcase Scope</span>
+                                            <p class="text-body-sm text-grey-primary max-w-readable" data-i18n="configurator.showcase.scopeHint">Use baseline filters to narrow the family. Expand checkboxes decide which code segments should open into grouped showcase content.</p>
+                                        </div>
+                                        <div id="showcase-scope-grid" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-16 pt-12"></div>
+                                    </div>
                                 </div>
-                                <div class="grid grid-cols-1 md:grid-cols-2 gap-24 items-start">
-                                    <div>
+
+                                <section id="datasheet-section-dimensions" class="flex flex-col gap-0">
+                                    <div class="divider"></div>
+
+                                    <div class="flex flex-col gap-4 pt-16">
+                                        <h3 class="card-title" data-i18n="configurator.sections.dimensionsTitle">Dimensions</h3>
+                                        <p class="text-body-sm text-grey-primary max-w-readable" data-i18n="configurator.sections.dimensionsText">Set the size and any extra length required for the product build.</p>
+                                    </div>
+                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-24 items-start">
+                                        <div id="field-size">
                                         <label class="input-label ml-12" for="select-size" data-i18n="configurator.fields.size">Size</label>
                                         <select id="select-size" class="input input-sm"></select>
                                     </div>
-                                    <div>
+                                    <div id="field-extra-length">
                                         <label class="input-label ml-12" for="input-extra-length" data-i18n="configurator.fields.extraLength">Extra Length (mm)</label>
                                         <input type="number" id="input-extra-length" class="input input-sm" value="0" min="0" step="1">
                                     </div>
-                                </div>
+                                    </div>
+                                </section>
 
-                                <div class="divider"></div>
+                                <section id="datasheet-section-light" class="flex flex-col gap-0">
+                                    <div class="divider"></div>
 
-                                <div class="flex flex-col gap-4 pt-16">
-                                    <h3 class="card-title" data-i18n="configurator.sections.lightTitle">Light Source Configuration</h3>
-                                    <p class="text-body-sm text-grey-primary max-w-readable" data-i18n="configurator.sections.lightText">Choose the light output, rendering profile, and compatible series code.</p>
-                                </div>
-                                <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-24 items-start">
-                                    <div>
+                                    <div class="flex flex-col gap-4 pt-16">
+                                        <h3 class="card-title" data-i18n="configurator.sections.lightTitle">Light Source Configuration</h3>
+                                        <p class="text-body-sm text-grey-primary max-w-readable" data-i18n="configurator.sections.lightText">Choose the light output, rendering profile, and compatible series code.</p>
+                                    </div>
+                                    <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-24 items-start">
+                                        <div id="field-color">
                                         <label class="input-label ml-12" for="select-color" data-i18n="configurator.fields.color">Color</label>
                                         <select id="select-color" class="input input-sm"></select>
                                     </div>
-                                    <div>
+                                    <div id="field-cri">
                                         <label class="input-label ml-12" for="select-cri" data-i18n="configurator.fields.cri">CRI</label>
                                         <select id="select-cri" class="input input-sm"></select>
                                     </div>
-                                    <div>
+                                    <div id="field-series">
                                         <label class="input-label ml-12" for="select-series" data-i18n="configurator.fields.series">Series</label>
                                         <select id="select-series" class="input input-sm"></select>
                                     </div>
-                                </div>
+                                    </div>
+                                </section>
 
-                                <div class="divider"></div>
+                                <section id="datasheet-section-optics" class="flex flex-col gap-0">
+                                    <div class="divider"></div>
 
-                                <div class="flex flex-col gap-4 pt-16">
-                                    <h3 class="card-title" data-i18n="configurator.sections.opticsTitle">Optics and Finish</h3>
-                                    <p class="text-body-sm text-grey-primary max-w-readable" data-i18n="configurator.sections.opticsText">Define the lens behavior, finishing code, end cap, and option bundle.</p>
-                                </div>
-                                <div class="grid grid-cols-1 md:grid-cols-2 gap-24 items-start">
-                                    <div>
+                                    <div class="flex flex-col gap-4 pt-16">
+                                        <h3 class="card-title" data-i18n="configurator.sections.opticsTitle">Optics and Finish</h3>
+                                        <p class="text-body-sm text-grey-primary max-w-readable" data-i18n="configurator.sections.opticsText">Define the lens behavior, finishing code, end cap, and option bundle.</p>
+                                    </div>
+                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-24 items-start">
+                                        <div id="field-lens">
                                         <label class="input-label ml-12" for="select-lens" data-i18n="configurator.fields.lens">Lens</label>
                                         <select id="select-lens" class="input input-sm"></select>
                                     </div>
-                                    <div>
+                                    <div id="field-finish">
                                         <label class="input-label ml-12" for="select-finish" data-i18n="configurator.fields.finish">Finish</label>
                                         <select id="select-finish" class="input input-sm"></select>
                                     </div>
-                                    <div>
+                                    <div id="field-cap">
                                         <label class="input-label ml-12" for="select-cap" data-i18n="configurator.fields.cap">Cap</label>
                                         <select id="select-cap" class="input input-sm"></select>
                                     </div>
-                                    <div>
+                                    <div id="field-option">
                                         <label class="input-label ml-12" for="select-option" data-i18n="configurator.fields.option">Option</label>
                                         <select id="select-option" class="input input-sm"></select>
                                     </div>
-                                </div>
+                                    </div>
+                                </section>
 
-                                <div class="divider"></div>
+                                <section id="datasheet-section-cable" class="flex flex-col gap-0">
+                                    <div class="divider"></div>
 
-                                <div class="flex flex-col gap-4 pt-16">
-                                    <h3 class="card-title" data-i18n="configurator.sections.cableTitle">Cable and Connectors</h3>
-                                    <p class="text-body-sm text-grey-primary max-w-readable" data-i18n="configurator.sections.cableText">Configure the outgoing cable, connector family, and cable length used in the build.</p>
-                                </div>
-                                <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-24 items-start">
-                                    <div>
+                                    <div class="flex flex-col gap-4 pt-16">
+                                        <h3 class="card-title" data-i18n="configurator.sections.cableTitle">Cable and Connectors</h3>
+                                        <p class="text-body-sm text-grey-primary max-w-readable" data-i18n="configurator.sections.cableText">Configure the outgoing cable, connector family, and cable length used in the build.</p>
+                                    </div>
+                                    <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-24 items-start">
+                                        <div>
                                         <label class="input-label ml-12" for="select-connector-cable" data-i18n="configurator.fields.cableConnector">Cable Connector</label>
                                         <select id="select-connector-cable" class="input input-sm">
                                             <option value="0" data-i18n="configurator.staticOptions.none">None</option>
@@ -355,16 +374,18 @@
                                         <label class="input-label ml-12" for="input-cable-length" data-i18n="configurator.fields.cableLength">Cable Length (m)</label>
                                         <input type="number" id="input-cable-length" class="input input-sm" value="0" min="0" step="0.01">
                                     </div>
-                                </div>
+                                    </div>
+                                </section>
 
-                                <div class="divider"></div>
+                                <section id="datasheet-section-mounting" class="flex flex-col gap-0">
+                                    <div class="divider"></div>
 
-                                <div class="flex flex-col gap-4 pt-16">
-                                    <h3 class="card-title" data-i18n="configurator.sections.mountingTitle">Mounting and Protection</h3>
-                                    <p class="text-body-sm text-grey-primary max-w-readable" data-i18n="configurator.sections.mountingText">Control the end cap, gasket, IP rating, and mechanical fixing profile.</p>
-                                </div>
-                                <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-24 items-start">
-                                    <div>
+                                    <div class="flex flex-col gap-4 pt-16">
+                                        <h3 class="card-title" data-i18n="configurator.sections.mountingTitle">Mounting and Protection</h3>
+                                        <p class="text-body-sm text-grey-primary max-w-readable" data-i18n="configurator.sections.mountingText">Control the end cap, gasket, IP rating, and mechanical fixing profile.</p>
+                                    </div>
+                                    <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-24 items-start">
+                                        <div>
                                         <label class="input-label ml-12" for="select-end-cap" data-i18n="configurator.fields.endCap">End Cap</label>
                                         <select id="select-end-cap" class="input input-sm">
                                             <option value="0" data-i18n="configurator.staticOptions.standard">Standard</option>
@@ -405,16 +426,18 @@
                                             <option value="suporte45" data-i18n="configurator.staticOptions.pvcSupport45">PVC Support 45&deg;</option>
                                         </select>
                                     </div>
-                                </div>
+                                    </div>
+                                </section>
 
-                                <div class="divider"></div>
+                                <section id="datasheet-section-power" class="flex flex-col gap-0">
+                                    <div class="divider"></div>
 
-                                <div class="flex flex-col gap-4 pt-16">
-                                    <h3 class="card-title" data-i18n="configurator.sections.powerTitle">Power and Wiring</h3>
-                                    <p class="text-body-sm text-grey-primary max-w-readable" data-i18n="configurator.sections.powerText">Set the power supply and the connection cable details used in the datasheet export.</p>
-                                </div>
-                                <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-24 items-start">
-                                    <div>
+                                    <div class="flex flex-col gap-4 pt-16">
+                                        <h3 class="card-title" data-i18n="configurator.sections.powerTitle">Power and Wiring</h3>
+                                        <p class="text-body-sm text-grey-primary max-w-readable" data-i18n="configurator.sections.powerText">Set the power supply and the connection cable details used in the datasheet export.</p>
+                                    </div>
+                                    <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-24 items-start">
+                                        <div>
                                         <label class="input-label ml-12" for="select-power-supply" data-i18n="configurator.fields.powerSupply">Power Supply</label>
                                         <select id="select-power-supply" class="input input-sm">
                                             <option value="0" data-i18n="configurator.staticOptions.none">None</option>
@@ -446,16 +469,18 @@
                                         <label class="input-label ml-12" for="input-connection-cable-length" data-i18n="configurator.fields.connectionCableLength">Connection Cable Length (m)</label>
                                         <input type="number" id="input-connection-cable-length" class="input input-sm" value="0" min="0" step="0.01">
                                     </div>
-                                </div>
+                                    </div>
+                                </section>
 
-                                <div class="divider"></div>
+                                <section id="shared-section-metadata" class="flex flex-col gap-0">
+                                    <div class="divider"></div>
 
-                                <div class="flex flex-col gap-4 pt-16">
-                                    <h3 class="card-title" data-i18n="configurator.sections.metadataTitle">Datasheet Metadata</h3>
-                                    <p class="text-body-sm text-grey-primary max-w-readable" data-i18n="configurator.sections.metadataText">Choose the application context, branded export, and output language used in the PDF.</p>
-                                </div>
-                                <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-24 items-start">
-                                    <div>
+                                    <div class="flex flex-col gap-4 pt-16">
+                                        <h3 id="metadata-section-title" class="card-title" data-i18n="configurator.sections.metadataTitle">Datasheet Metadata</h3>
+                                        <p id="metadata-section-text" class="text-body-sm text-grey-primary max-w-readable" data-i18n="configurator.sections.metadataText">Choose the application context, branded export, and output language used in the PDF.</p>
+                                    </div>
+                                    <div id="metadata-fields-grid" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-24 items-start">
+                                        <div id="field-purpose">
                                         <label class="input-label ml-12" for="select-purpose" data-i18n="configurator.fields.purpose">Purpose</label>
                                         <select id="select-purpose" class="input input-sm">
                                             <option value="0" data-i18n="configurator.staticOptions.general">General</option>
@@ -472,7 +497,7 @@
                                             <option value="vinho" data-i18n="configurator.staticOptions.wine">Wine</option>
                                         </select>
                                     </div>
-                                    <div>
+                                    <div id="field-company">
                                         <label class="input-label ml-12" for="select-company" data-i18n="configurator.fields.company">Company Logo</label>
                                         <select id="select-company" class="input input-sm">
                                             <option value="0" data-i18n="configurator.staticOptions.none">None</option>
@@ -481,7 +506,7 @@
                                             <option value="tensai">Tensai</option>
                                         </select>
                                     </div>
-                                    <div>
+                                    <div id="field-language">
                                         <label class="input-label ml-12" for="select-language" data-i18n="configurator.fields.language">Language</label>
                                         <select id="select-language" class="input input-sm">
                                             <option value="pt">PT</option>
@@ -489,16 +514,162 @@
                                             <option value="es">ES</option>
                                         </select>
                                     </div>
+                                    </div>
+                                </section>
+
+                                <div id="showcase-controls" class="hidden flex flex-col gap-16 pt-16">
+                                    <div class="divider"></div>
+
+                                    <div class="grid grid-cols-1 xl:grid-cols-2 gap-16 items-start">
+                                        <div class="panel panel-sm flex flex-col gap-12">
+                                            <div class="flex flex-col gap-6">
+                                                <span class="text-label text-grey-primary" data-i18n="configurator.showcase.expandTitle">Expand Valid Options</span>
+                                                <p id="showcase-family-note" class="text-body-sm text-grey-primary max-w-readable" data-i18n="configurator.runtime.showcaseFamilyHint">Current selections stay locked unless you expand them. Showcase mode is live for families 29 and 30.</p>
+                                            </div>
+                                            <div id="showcase-expand-grid"></div>
+                                        </div>
+
+                                        <div class="panel panel-sm flex flex-col gap-12">
+                                            <div class="flex flex-col gap-6">
+                                                <span class="text-label text-grey-primary" data-i18n="configurator.showcase.sectionsTitle">Showcase Sections</span>
+                                                <p class="text-body-sm text-grey-primary max-w-readable" data-i18n="configurator.showcase.sectionsHint">Choose which grouped sections should appear in the showcase PDF.</p>
+                                            </div>
+                                            <div id="showcase-sections-grid"></div>
+                                        </div>
+                                    </div>
+
+                                    <div class="hidden" aria-hidden="true">
+                                        <p id="showcase-preview-message" data-i18n="configurator.runtime.showcasePreviewWaiting">Choose scope filters and showcase sections to preview variant count and estimated pages.</p>
+                                        <span id="showcase-preview-variants">--</span>
+                                        <span id="showcase-preview-pages">--</span>
+                                    </div>
+                                </div>
+
+                                <div id="custom-controls" class="hidden flex flex-col gap-16 pt-16">
+                                    <div class="divider"></div>
+
+                                    <div class="panel panel-sm">
+                                        <div class="flex flex-col gap-6">
+                                            <span class="text-label text-grey-primary" data-i18n="configurator.custom.title">Custom Datasheet</span>
+                                            <p id="custom-family-note" class="text-body-sm text-grey-primary max-w-readable" data-i18n="configurator.runtime.customFamilyHint">Custom mode uses the exact product datasheet and applies approved text and image overrides.</p>
+                                        </div>
+                                    </div>
+
+                                    <div class="grid grid-cols-1 xl:grid-cols-2 gap-16 items-start">
+                                        <div class="panel panel-sm flex flex-col gap-12">
+                                            <div class="flex flex-col gap-6">
+                                                <span class="text-label text-grey-primary" data-i18n="configurator.custom.textTitle">Custom Text</span>
+                                                <p class="text-body-sm text-grey-primary max-w-readable" data-i18n="configurator.custom.textHint">Override approved copy blocks without changing technical values.</p>
+                                            </div>
+                                            <div class="grid grid-cols-1 gap-16 pt-4">
+                                                <div>
+                                                    <label class="input-label ml-12" for="custom-document-title" data-i18n="configurator.custom.documentTitle">Document Title</label>
+                                                    <input type="text" id="custom-document-title" class="input input-sm" maxlength="120">
+                                                </div>
+                                                <div>
+                                                    <label class="input-label ml-12" for="custom-header-copy" data-i18n="configurator.custom.headerCopy">Header Copy</label>
+                                                    <textarea id="custom-header-copy" class="input input-sm min-h-[132px] resize-y" maxlength="1200"></textarea>
+                                                </div>
+                                                <div>
+                                                    <label class="input-label ml-12" for="custom-footer-note" data-i18n="configurator.custom.footerNote">Footer Note</label>
+                                                    <input type="text" id="custom-footer-note" class="input input-sm" maxlength="160">
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div class="panel panel-sm flex flex-col gap-12">
+                                            <div class="flex flex-col gap-6">
+                                                <span class="text-label text-grey-primary" data-i18n="configurator.custom.assetsTitle">Custom Images</span>
+                                                <p class="text-body-sm text-grey-primary max-w-readable" data-i18n="configurator.custom.assetsHint">Use DAM asset IDs for the first version of custom image replacement.</p>
+                                            </div>
+                                            <div class="grid grid-cols-1 gap-16 pt-4">
+                                                <div>
+                                                    <label class="input-label ml-12" for="custom-header-image-asset" data-i18n="configurator.custom.headerImageAsset">Header Image Asset ID</label>
+                                                    <input type="text" id="custom-header-image-asset" class="input input-sm" placeholder="asset_123">
+                                                </div>
+                                                <div>
+                                                    <label class="input-label ml-12" for="custom-drawing-image-asset" data-i18n="configurator.custom.drawingImageAsset">Drawing Image Asset ID</label>
+                                                    <input type="text" id="custom-drawing-image-asset" class="input input-sm" placeholder="asset_456">
+                                                </div>
+                                                <div>
+                                                    <label class="input-label ml-12" for="custom-finish-image-asset" data-i18n="configurator.custom.finishImageAsset">Finish Image Asset ID</label>
+                                                    <input type="text" id="custom-finish-image-asset" class="input input-sm" placeholder="asset_789">
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_320px] gap-16 items-start">
+                                        <div class="panel panel-sm flex flex-col gap-12">
+                                            <div class="flex flex-col gap-6">
+                                                <span class="text-label text-grey-primary" data-i18n="configurator.custom.sectionsTitle">Optional Sections</span>
+                                                <p class="text-body-sm text-grey-primary max-w-readable" data-i18n="configurator.custom.sectionsHint">Hide only optional blocks. Core technical sections stay locked.</p>
+                                            </div>
+                                            <div class="grid grid-cols-1 md:grid-cols-3 gap-12 pt-4">
+                                                <label class="flex items-center gap-10 rounded-16 border border-grey-secondary bg-white px-12 py-10 text-body-sm text-black">
+                                                    <input type="checkbox" id="custom-section-fixing" class="h-16 w-16 shrink-0" checked>
+                                                    <span data-i18n="configurator.fields.fixing">Fixing</span>
+                                                </label>
+                                                <label class="flex items-center gap-10 rounded-16 border border-grey-secondary bg-white px-12 py-10 text-body-sm text-black">
+                                                    <input type="checkbox" id="custom-section-power-supply" class="h-16 w-16 shrink-0" checked>
+                                                    <span data-i18n="configurator.fields.powerSupply">Power Supply</span>
+                                                </label>
+                                                <label class="flex items-center gap-10 rounded-16 border border-grey-secondary bg-white px-12 py-10 text-body-sm text-black">
+                                                    <input type="checkbox" id="custom-section-connection-cable" class="h-16 w-16 shrink-0" checked>
+                                                    <span data-i18n="configurator.fields.connectionCable">Connection Cable</span>
+                                                </label>
+                                            </div>
+                                        </div>
+
+                                        <div class="panel panel-sm flex flex-col gap-12">
+                                            <div class="flex flex-col gap-6">
+                                                <span class="text-label text-grey-primary" data-i18n="configurator.custom.previewTitle">Custom Preview</span>
+                                                <p id="custom-preview-message" class="text-body-sm text-grey-primary max-w-readable" data-i18n="configurator.runtime.customPreviewWaiting">Add approved overrides to validate the custom datasheet payload.</p>
+                                            </div>
+                                            <div class="grid grid-cols-1 gap-10 pt-4">
+                                                <div class="flex items-center justify-between gap-12">
+                                                    <span class="text-body-sm text-grey-primary" data-i18n="configurator.custom.previewTextCount">Text overrides</span>
+                                                    <span id="custom-preview-text-count" class="text-label text-black">0</span>
+                                                </div>
+                                                <div class="flex items-center justify-between gap-12">
+                                                    <span class="text-body-sm text-grey-primary" data-i18n="configurator.custom.previewAssetCount">Image overrides</span>
+                                                    <span id="custom-preview-asset-count" class="text-label text-black">0</span>
+                                                </div>
+                                                <div class="flex items-center justify-between gap-12">
+                                                    <span class="text-body-sm text-grey-primary" data-i18n="configurator.custom.previewHiddenCount">Hidden sections</span>
+                                                    <span id="custom-preview-hidden-count" class="text-label text-black">0</span>
+                                                </div>
+                                            </div>
+                                            <button type="button" id="custom-reset-button" class="btn btn-secondary btn-sm mt-4">
+                                                <i class="ri-refresh-line text-icon-sm" aria-hidden="true"></i>
+                                                <span data-i18n="configurator.custom.resetButton">Reset Customizations</span>
+                                            </button>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <div id="output-panel" class="card overflow-visible w-full lg:col-span-3 lg:sticky lg:top-56" data-reveal="section">
-                    <div class="card-body p-24">
-                        <h3 class="card-title" data-i18n="configurator.quickActions.title">Output and Actions</h3>
-
+                <div id="output-panel" class="card overflow-hidden relative w-full lg:col-span-3 lg:sticky lg:top-56" data-reveal="section">
+                    <div class="absolute inset-x-0 top-0 z-sticky">
+                        <div class="segmented-control segmented-control-lg w-full" role="radiogroup" aria-label="Configurator PDF mode" data-i18n-aria-label="configurator.quickActions.outputModeAria">
+                            <label class="segmented-control-option flex-1">
+                                <input id="output-mode-datasheet" class="segmented-control-input" type="radio" name="output-mode" value="datasheet" checked>
+                                <span class="segmented-control-label" data-i18n="configurator.quickActions.modeDatasheet">Datasheet</span>
+                            </label>
+                            <label class="segmented-control-option flex-1">
+                                <input id="output-mode-showcase" class="segmented-control-input" type="radio" name="output-mode" value="showcase">
+                                <span class="segmented-control-label" data-i18n="configurator.quickActions.modeShowcase">Showcase</span>
+                            </label>
+                            <label class="segmented-control-option flex-1">
+                                <input id="output-mode-custom" class="segmented-control-input" type="radio" name="output-mode" value="custom">
+                                <span class="segmented-control-label" data-i18n="configurator.quickActions.modeCustom">Custom</span>
+                            </label>
+                        </div>
+                    </div>
+                    <div class="card-body p-24 pt-64">
                         <div class="flex flex-col gap-12 pt-16">
                             <span class="input-label" data-i18n="configurator.quickActions.liveReference">Live Reference</span>
                             <div class="flex flex-col gap-8 w-full">
@@ -548,7 +719,7 @@
                             <div class="flex flex-wrap items-center justify-center gap-12">
                                 <button id="btn-generate" type="button" class="btn btn-primary btn-sm" disabled>
                                     <i class="ri-file-pdf-line text-icon-sm" aria-hidden="true"></i>
-                                    <span data-i18n="configurator.quickActions.generatePdf">Generate PDF</span>
+                                    <span id="btn-generate-label" data-i18n="configurator.quickActions.generatePdf">Generate PDF</span>
                                 </button>
                                 <span class="tooltip-wrapper shrink-0">
                                     <button type="button" class="btn btn-secondary btn-icon btn-sm" id="reset-configurator-panel" aria-label="Reset configurator" data-i18n-aria-label="shared.actions.resetConfigurator">

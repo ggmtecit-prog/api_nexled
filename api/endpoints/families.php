@@ -49,6 +49,9 @@ while ($row = mysqli_fetch_assoc($result)) {
         "showcase_runtime_implemented" => (bool) ($runtime["showcase_runtime_implemented"] ?? false),
         "showcase_renderer" => $runtime["showcase_renderer"] ?? null,
         "showcase_status" => $runtime["showcase_status"] ?? "blocked_until_mapped",
+        "custom_datasheet_supported" => (bool) ($runtime["custom_datasheet_supported"] ?? false),
+        "custom_datasheet_runtime_implemented" => (bool) ($runtime["custom_datasheet_runtime_implemented"] ?? false),
+        "custom_datasheet_status" => $runtime["custom_datasheet_status"] ?? "blocked_until_datasheet_runtime",
         "luminos_identity_count" => $luminosIdentityCount,
         "has_luminos_identities" => $luminosIdentityCount > 0,
     ];

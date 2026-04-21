@@ -8,6 +8,73 @@
 const API_KEY = "7b8edd27a16f60bf7a1c92b8ceb40cda474588d24491140c130418153053063b";
 const DEFAULT_API_BASE = "https://apinexled-production.up.railway.app/api";
 const PDF_LOADING_SUCCESS_HOLD_MS = 2800;
+const SHOWCASE_PREVIEW_DEBOUNCE_MS = 260;
+const CUSTOM_PREVIEW_DEBOUNCE_MS = 260;
+const LOCAL_API_HOSTNAMES = new Set(["localhost", "127.0.0.1", "[::1]"]);
+const SHOWCASE_IMPLEMENTED_FAMILY_CODES = new Set(["29", "30"]);
+const SHOWCASE_DEFAULT_FILTERS = {
+    datasheet_ready_only: true,
+    max_variants: 80,
+    max_pages: 30,
+};
+const SHOWCASE_EXPANDABLE_SEGMENTS = [
+    "size",
+    "color",
+    "cri",
+    "series",
+    "lens",
+    "finish",
+    "cap",
+    "option",
+];
+const SHOWCASE_SCOPE_FIELD_IDS = ["field-size", "field-color", "field-cri", "field-series", "field-lens"];
+const SHOWCASE_DATASHEET_SECTION_IDS = [
+    "datasheet-section-dimensions",
+    "datasheet-section-light",
+    "datasheet-section-optics",
+    "datasheet-section-cable",
+    "datasheet-section-mounting",
+    "datasheet-section-power",
+];
+const SHOWCASE_SECTION_DEFINITIONS = [
+    { id: "overview", labelKey: "configurator.showcase.sectionOverview", fallback: "Overview", defaultChecked: true },
+    { id: "luminotechnical", labelKey: "configurator.showcase.sectionLuminotechnical", fallback: "Luminotechnical", defaultChecked: true },
+    { id: "spectra", labelKey: "configurator.showcase.sectionSpectra", fallback: "Color spectra", defaultChecked: true },
+    { id: "technical_drawings", labelKey: "configurator.showcase.sectionTechnicalDrawings", fallback: "Technical drawings", defaultChecked: true },
+    { id: "lens_diagrams", labelKey: "configurator.showcase.sectionLensDiagrams", fallback: "Lens diagrams", defaultChecked: true },
+    { id: "finish_gallery", labelKey: "configurator.showcase.sectionFinishGallery", fallback: "Finish gallery", defaultChecked: true },
+    { id: "option_codes", labelKey: "configurator.showcase.sectionOptionCodes", fallback: "Option codes", defaultChecked: true },
+];
+const REFERENCE_PLACEHOLDER_SELECT_IDS = new Set([
+    "select-size",
+    "select-color",
+    "select-cri",
+    "select-series",
+    "select-lens",
+    "select-finish",
+    "select-cap",
+    "select-option",
+]);
+const CUSTOM_TEXT_OVERRIDE_FIELDS = [
+    { id: "custom-document-title", key: "document_title" },
+    { id: "custom-header-copy", key: "header_copy" },
+    { id: "custom-footer-note", key: "footer_note" },
+];
+const CUSTOM_ASSET_OVERRIDE_FIELDS = [
+    { id: "custom-header-image-asset", key: "header_image" },
+    { id: "custom-drawing-image-asset", key: "drawing_image" },
+    { id: "custom-finish-image-asset", key: "finish_image" },
+];
+const CUSTOM_SECTION_VISIBILITY_FIELDS = [
+    { id: "custom-section-fixing", key: "fixing" },
+    { id: "custom-section-power-supply", key: "power_supply" },
+    { id: "custom-section-connection-cable", key: "connection_cable" },
+];
+const CUSTOM_CONTROL_IDS = [
+    ...CUSTOM_TEXT_OVERRIDE_FIELDS.map((field) => field.id),
+    ...CUSTOM_ASSET_OVERRIDE_FIELDS.map((field) => field.id),
+    ...CUSTOM_SECTION_VISIBILITY_FIELDS.map((field) => field.id),
+];
 
 const REF_LENGTHS = {
     size: 4,
@@ -82,6 +149,7 @@ const TECIT_LOGIC_FAMILIES = [
     { code: "59", name: "NEON 24V" },
     { code: "60", name: "B 24V I45" },
 ];
+
 const DECODED_SEGMENT_FIELDS = {
     size: { id: "select-size", length: REF_LENGTHS.size, labelKey: "configurator.fields.size", fallback: "Size" },
     color: { id: "select-color", length: REF_LENGTHS.color, labelKey: "configurator.fields.color", fallback: "Color" },
@@ -179,6 +247,15 @@ let configuratorDeepLinkState = {
     applied: false,
     loading: false,
 };
+let outputModeState = "datasheet";
+let showcasePreviewState = createEmptyShowcasePreviewState();
+let showcasePreviewTimer = null;
+let showcasePreviewRequestToken = 0;
+let customPreviewState = createEmptyCustomPreviewState();
+let customPreviewTimer = null;
+let customPreviewRequestToken = 0;
+const showcaseScopeFieldHomes = new Map();
+let showcaseDropdownDocumentBound = false;
 
 document.addEventListener("DOMContentLoaded", () => {
     try {
@@ -196,15 +273,1584 @@ function initializeConfigurator() {
     bindDocumentLanguageControls();
     bindLiveReferenceLoader();
     bindStatusToast();
+    renderShowcaseControls();
+    bindShowcaseControls();
+    bindCustomControls();
     document.getElementById("select-family").addEventListener("change", handleFamilyChange);
-    document.getElementById("btn-generate").addEventListener("click", generateDatasheet);
+    document.getElementById("btn-generate").addEventListener("click", handleGenerateAction);
 
     bindShellActions();
     bindReferenceListeners();
     bindCopyButtons();
     resetConfiguratorState();
+    applyOutputModeState();
     renderTecitCodeLogicFamilies();
     loadFamilies();
+}
+
+function createEmptyShowcasePreviewState() {
+    return {
+        pending: false,
+        ok: false,
+        family: "",
+        reference: "",
+        signature: "",
+        variantCount: 0,
+        estimatedPages: 0,
+        messageVariables: {},
+        messageKey: "configurator.runtime.showcasePreviewWaiting",
+        messageFallback: "Choose scope filters and showcase sections to preview variant count and estimated pages.",
+    };
+}
+
+function createEmptyCustomPreviewState() {
+    return {
+        pending: false,
+        ok: false,
+        runtimeImplemented: false,
+        family: "",
+        reference: "",
+        signature: "",
+        textOverrideCount: 0,
+        assetOverrideCount: 0,
+        hiddenSectionCount: 0,
+        messageVariables: {},
+        messageKey: "configurator.runtime.customPreviewWaiting",
+        messageFallback: "Add approved overrides to validate the custom datasheet payload.",
+    };
+}
+
+function renderShowcaseControls() {
+    renderShowcaseMultiDropdown(
+        document.getElementById("showcase-expand-grid"),
+        {
+            group: "expand",
+            labelKey: "configurator.showcase.expandTitle",
+            labelFallback: "Expand Valid Options",
+            emptyLabelKey: "configurator.showcase.dropdownExpandEmpty",
+            emptyLabelFallback: "Select options",
+        },
+        SHOWCASE_EXPANDABLE_SEGMENTS.map((segment) => ({
+            type: "expand",
+            id: segment,
+            labelKey: DECODED_SEGMENT_FIELDS[segment]?.labelKey || "shared.actions.value",
+            fallback: DECODED_SEGMENT_FIELDS[segment]?.fallback || segment,
+            defaultChecked: false,
+        }))
+    );
+
+    renderShowcaseMultiDropdown(
+        document.getElementById("showcase-sections-grid"),
+        {
+            group: "section",
+            labelKey: "configurator.showcase.sectionsTitle",
+            labelFallback: "Showcase Sections",
+            emptyLabelKey: "configurator.showcase.dropdownSectionsEmpty",
+            emptyLabelFallback: "Select sections",
+        },
+        SHOWCASE_SECTION_DEFINITIONS.map((section) => ({
+            type: "section",
+            id: section.id,
+            labelKey: section.labelKey,
+            fallback: section.fallback,
+            defaultChecked: section.defaultChecked,
+        }))
+    );
+}
+
+function renderShowcaseMultiDropdown(container, config, items) {
+    if (!container) {
+        return;
+    }
+
+    const previousSelections = new Set(
+        Array.from(container.querySelectorAll('input[type="checkbox"]:checked'))
+            .map((input) => input.value)
+    );
+
+    const label = t(config.labelKey, {}, config.labelFallback);
+    const emptyLabel = t(config.emptyLabelKey, {}, config.emptyLabelFallback);
+    const itemsMarkup = items.map((item) => {
+        const checked = previousSelections.has(item.id) || (!previousSelections.size && item.defaultChecked);
+        const inputId = "showcase-" + item.type + "-" + item.id;
+        const inputDataAttribute = item.type === "expand"
+            ? 'data-showcase-expand="true"'
+            : 'data-showcase-section="true"';
+
+        return `
+            <li class="dropdown-item" role="option" aria-selected="${checked ? "true" : "false"}" data-value="${escapeHtml(item.id)}">
+                <label class="checkbox-wrapper checkbox-md">
+                    <span class="relative inline-flex items-center justify-center">
+                        <input
+                            type="checkbox"
+                            id="${escapeHtml(inputId)}"
+                            value="${escapeHtml(item.id)}"
+                            ${inputDataAttribute}
+                            ${checked ? "checked" : ""}
+                            class="peer"
+                        >
+                        <i class="ri-check-line absolute inset-0 flex items-center justify-center leading-none text-white text-icon-md opacity-0 peer-checked:opacity-100 pointer-events-none" aria-hidden="true"></i>
+                    </span>
+                    <span class="text-body-sm">${escapeHtml(t(item.labelKey, {}, item.fallback))}</span>
+                </label>
+            </li>
+        `;
+    }).join("");
+
+    container.innerHTML = `
+        <div
+            class="dropdown dropdown-multi dropdown-md w-full"
+            data-showcase-multi-dropdown="true"
+            data-showcase-multi-group="${escapeHtml(config.group)}"
+            data-empty-label="${escapeHtml(emptyLabel)}"
+            data-selected-suffix="${escapeHtml(t("configurator.showcase.dropdownSelectedSuffix", {}, "selected"))}"
+        >
+            <button type="button" class="dropdown-trigger" aria-haspopup="listbox" aria-expanded="false">
+                <span class="dropdown-value">${escapeHtml(emptyLabel)}</span>
+                <i class="ri-arrow-down-s-line dropdown-arrow" aria-hidden="true"></i>
+            </button>
+            <ul class="dropdown-menu custom-scrollbar" role="listbox" aria-multiselectable="true" aria-label="${escapeHtml(label)}">
+                ${itemsMarkup}
+            </ul>
+        </div>
+    `;
+
+    initShowcaseMultiDropdown(container.querySelector('[data-showcase-multi-dropdown="true"]'));
+}
+
+function initShowcaseMultiDropdown(dropdown) {
+    if (!dropdown || dropdown.dataset.bound === "true") {
+        return;
+    }
+
+    bindShowcaseDropdownDocumentEvents();
+
+    const trigger = dropdown.querySelector(".dropdown-trigger");
+    const items = Array.from(dropdown.querySelectorAll(".dropdown-item"));
+    const valueDisplay = dropdown.querySelector(".dropdown-value");
+
+    if (!(trigger instanceof HTMLButtonElement) || !valueDisplay) {
+        return;
+    }
+
+    items.forEach((item, index) => {
+        item.setAttribute("tabindex", "-1");
+        item.dataset.index = String(index);
+
+        item.addEventListener("focus", () => {
+            item.scrollIntoView({ block: "nearest" });
+        });
+
+        item.addEventListener("keydown", (event) => {
+            if (event.key === "ArrowDown") {
+                event.preventDefault();
+                items[(index + 1) % items.length]?.focus();
+            }
+
+            if (event.key === "ArrowUp") {
+                event.preventDefault();
+                items[(index - 1 + items.length) % items.length]?.focus();
+            }
+
+            if (event.key === "Home") {
+                event.preventDefault();
+                items[0]?.focus();
+            }
+
+            if (event.key === "End") {
+                event.preventDefault();
+                items[items.length - 1]?.focus();
+            }
+
+            if (event.key === "Enter" || event.key === " ") {
+                event.preventDefault();
+                toggleShowcaseDropdownItem(item);
+            }
+
+            if (event.key === "Escape") {
+                closeShowcaseMultiDropdown(dropdown);
+                trigger.focus();
+            }
+        });
+
+        const checkbox = item.querySelector('input[type="checkbox"]');
+        if (!(checkbox instanceof HTMLInputElement)) {
+            return;
+        }
+
+        checkbox.tabIndex = -1;
+        item.setAttribute("aria-selected", String(checkbox.checked));
+
+        checkbox.addEventListener("click", (event) => {
+            event.stopPropagation();
+        });
+
+        checkbox.addEventListener("change", () => {
+            syncShowcaseDropdownItem(item, checkbox.checked);
+            updateShowcaseMultiDropdownValue(dropdown);
+        });
+
+        item.addEventListener("click", (event) => {
+            if (event.target instanceof Element && event.target.closest(".checkbox-wrapper")) {
+                return;
+            }
+
+            event.preventDefault();
+            toggleShowcaseDropdownItem(item);
+        });
+    });
+
+    trigger.addEventListener("click", (event) => {
+        event.preventDefault();
+
+        if (dropdown.classList.contains("is-open")) {
+            closeShowcaseMultiDropdown(dropdown);
+            return;
+        }
+
+        openShowcaseMultiDropdown(dropdown);
+    });
+
+    trigger.addEventListener("keydown", (event) => {
+        if (event.key === "ArrowDown" || event.key === "Enter" || event.key === " ") {
+            event.preventDefault();
+
+            if (!dropdown.classList.contains("is-open")) {
+                openShowcaseMultiDropdown(dropdown);
+            }
+
+            items[0]?.focus();
+        }
+
+        if (event.key === "ArrowUp") {
+            event.preventDefault();
+
+            if (!dropdown.classList.contains("is-open")) {
+                openShowcaseMultiDropdown(dropdown);
+            }
+
+            items[items.length - 1]?.focus();
+        }
+
+        if (event.key === "Escape") {
+            closeShowcaseMultiDropdown(dropdown);
+        }
+    });
+
+    dropdown.dataset.bound = "true";
+    updateShowcaseMultiDropdownValue(dropdown);
+}
+
+function bindShowcaseDropdownDocumentEvents() {
+    if (showcaseDropdownDocumentBound) {
+        return;
+    }
+
+    document.addEventListener("click", (event) => {
+        if (event.target instanceof Element && event.target.closest('[data-showcase-multi-dropdown="true"]')) {
+            return;
+        }
+
+        closeAllShowcaseMultiDropdowns();
+    });
+
+    showcaseDropdownDocumentBound = true;
+}
+
+function toggleShowcaseDropdownItem(item) {
+    const checkbox = item?.querySelector('input[type="checkbox"]');
+
+    if (!(checkbox instanceof HTMLInputElement)) {
+        return;
+    }
+
+    checkbox.checked = !checkbox.checked;
+    checkbox.dispatchEvent(new Event("change", { bubbles: true }));
+}
+
+function syncShowcaseDropdownItem(item, checked) {
+    if (!item) {
+        return;
+    }
+
+    item.setAttribute("aria-selected", String(checked));
+}
+
+function updateShowcaseMultiDropdownValue(dropdown) {
+    if (!dropdown) {
+        return;
+    }
+
+    const valueDisplay = dropdown.querySelector(".dropdown-value");
+    if (!valueDisplay) {
+        return;
+    }
+
+    const selectedItems = Array.from(dropdown.querySelectorAll('.dropdown-item[aria-selected="true"]'));
+    const emptyLabel = dropdown.dataset.emptyLabel || t("configurator.showcase.dropdownExpandEmpty", {}, "Select options");
+    const selectedSuffix = dropdown.dataset.selectedSuffix || t("configurator.showcase.dropdownSelectedSuffix", {}, "selected");
+
+    if (selectedItems.length === 0) {
+        valueDisplay.textContent = emptyLabel;
+        dropdown.classList.remove("has-value");
+        return;
+    }
+
+    if (selectedItems.length === 1) {
+        const label = selectedItems[0]?.querySelector(".text-body-sm")?.textContent?.trim()
+            || selectedItems[0]?.textContent?.replace(/\s+/g, " ").trim()
+            || emptyLabel;
+        valueDisplay.textContent = label;
+        dropdown.classList.add("has-value");
+        return;
+    }
+
+    valueDisplay.textContent = `${selectedItems.length} ${selectedSuffix}`;
+    dropdown.classList.add("has-value");
+}
+
+function openShowcaseMultiDropdown(dropdown) {
+    closeAllShowcaseMultiDropdowns(dropdown);
+    dropdown.classList.add("is-open");
+    dropdown.querySelector(".dropdown-trigger")?.setAttribute("aria-expanded", "true");
+}
+
+function closeShowcaseMultiDropdown(dropdown) {
+    if (!dropdown) {
+        return;
+    }
+
+    dropdown.classList.remove("is-open");
+    dropdown.querySelector(".dropdown-trigger")?.setAttribute("aria-expanded", "false");
+}
+
+function closeAllShowcaseMultiDropdowns(exceptDropdown = null) {
+    document.querySelectorAll('[data-showcase-multi-dropdown="true"]').forEach((dropdown) => {
+        if (dropdown !== exceptDropdown) {
+            closeShowcaseMultiDropdown(dropdown);
+        }
+    });
+}
+
+function bindShowcaseControls() {
+    const modeInputs = document.querySelectorAll('input[name="output-mode"]');
+    const expandGrid = document.getElementById("showcase-expand-grid");
+    const sectionsGrid = document.getElementById("showcase-sections-grid");
+
+    modeInputs.forEach((input) => {
+        input.addEventListener("change", (event) => {
+            if (!(event.target instanceof HTMLInputElement) || !event.target.checked) {
+                return;
+            }
+
+            setOutputMode(event.target.value);
+        });
+    });
+
+    expandGrid?.addEventListener("change", (event) => {
+        if (!(event.target instanceof HTMLInputElement) || event.target.type !== "checkbox") {
+            return;
+        }
+
+        syncShowcaseScopeFieldStates();
+        scheduleShowcasePreview();
+    });
+
+    sectionsGrid?.addEventListener("change", (event) => {
+        if (!(event.target instanceof HTMLInputElement) || event.target.type !== "checkbox") {
+            return;
+        }
+
+        scheduleShowcasePreview();
+    });
+}
+
+function bindCustomControls() {
+    CUSTOM_CONTROL_IDS.forEach((id) => {
+        const element = document.getElementById(id);
+
+        if (!element || element.dataset.customBound === "true") {
+            return;
+        }
+
+        const eventName = element instanceof HTMLInputElement && element.type === "checkbox"
+            ? "change"
+            : "input";
+
+        element.addEventListener(eventName, () => {
+            scheduleCustomPreview();
+        });
+        element.dataset.customBound = "true";
+    });
+
+    const resetButton = document.getElementById("custom-reset-button");
+
+    if (resetButton && resetButton.dataset.customBound !== "true") {
+        resetButton.addEventListener("click", resetCustomOverrides);
+        resetButton.dataset.customBound = "true";
+    }
+}
+
+function setOutputMode(mode) {
+    const normalizedMode = mode === "showcase" || mode === "custom" ? mode : "datasheet";
+
+    if (outputModeState === normalizedMode) {
+        return;
+    }
+
+    outputModeState = normalizedMode;
+    applyOutputModeState();
+
+    if (outputModeState === "showcase") {
+        scheduleShowcasePreview();
+        return;
+    }
+
+    if (outputModeState === "custom") {
+        scheduleCustomPreview();
+        return;
+    }
+
+    resetShowcasePreviewState();
+    resetCustomPreviewState();
+    syncGenerateButton();
+}
+
+function applyOutputModeState() {
+    const isShowcase = outputModeState === "showcase";
+    const isCustom = outputModeState === "custom";
+    const datasheetInput = document.getElementById("output-mode-datasheet");
+    const showcaseInput = document.getElementById("output-mode-showcase");
+    const customInput = document.getElementById("output-mode-custom");
+    const hint = document.getElementById("output-mode-hint");
+    const generateLabel = document.getElementById("btn-generate-label");
+
+    if (datasheetInput instanceof HTMLInputElement) {
+        datasheetInput.checked = !isShowcase;
+    }
+
+    if (showcaseInput instanceof HTMLInputElement) {
+        showcaseInput.checked = isShowcase;
+    }
+
+    if (customInput instanceof HTMLInputElement) {
+        customInput.checked = isCustom;
+    }
+
+    if (hint) {
+        hint.textContent = isShowcase
+            ? t("configurator.quickActions.modeShowcaseHint", {}, "Generate a grouped showcase PDF from baseline filters and expanded valid options.")
+            : isCustom
+                ? t("configurator.quickActions.modeCustomHint", {}, "Generate a custom datasheet from one exact product plus approved overrides.")
+                : t("configurator.quickActions.modeDatasheetHint", {}, "Generate one technical datasheet from the current live reference.");
+    }
+
+    if (generateLabel) {
+        generateLabel.textContent = isShowcase
+            ? t("configurator.quickActions.generateShowcasePdf", {}, "Generate Showcase PDF")
+            : isCustom
+                ? t("configurator.quickActions.generateCustomPdf", {}, "Generate Custom PDF")
+                : t("configurator.quickActions.generatePdf", {}, "Generate PDF");
+    }
+
+    applyBuilderModeState();
+    updateShowcaseFamilyHint();
+    updateCustomFamilyHint();
+    syncShowcaseScopeFieldStates();
+    renderShowcasePreviewState();
+    renderCustomPreviewState();
+    syncGenerateButton();
+}
+
+function isShowcaseMode() {
+    return outputModeState === "showcase";
+}
+
+function isCustomMode() {
+    return outputModeState === "custom";
+}
+
+function applyBuilderModeState() {
+    const isShowcase = isShowcaseMode();
+    const isCustom = isCustomMode();
+    const metadataGrid = document.getElementById("metadata-fields-grid");
+    const metadataTitle = document.getElementById("metadata-section-title");
+    const metadataText = document.getElementById("metadata-section-text");
+
+    setHidden("showcase-scope", !isShowcase);
+    setHidden("showcase-controls", !isShowcase);
+    setHidden("custom-controls", !isCustom);
+    setHidden("field-purpose", isShowcase);
+
+    SHOWCASE_DATASHEET_SECTION_IDS.forEach((id) => {
+        setHidden(id, isShowcase);
+    });
+
+    if (metadataGrid) {
+        metadataGrid.classList.toggle("xl:grid-cols-3", !isShowcase);
+        metadataGrid.classList.toggle("xl:grid-cols-2", isShowcase);
+    }
+
+    if (metadataTitle) {
+        metadataTitle.textContent = isShowcase
+            ? t("configurator.sections.exportTitle", {}, "Export Settings")
+            : isCustom
+                ? t("configurator.sections.customMetadataTitle", {}, "Custom Datasheet Settings")
+                : t("configurator.sections.metadataTitle", {}, "Datasheet Metadata");
+    }
+
+    if (metadataText) {
+        metadataText.textContent = isShowcase
+            ? t("configurator.sections.exportText", {}, "Choose the branded export and output language used in the showcase PDF.")
+            : isCustom
+                ? t("configurator.sections.customMetadataText", {}, "Choose the base export settings used in the custom datasheet.")
+                : t("configurator.sections.metadataText", {}, "Choose the application context, branded export, and output language used in the PDF.");
+    }
+
+    moveShowcaseScopeFields(isShowcase);
+}
+
+function moveShowcaseScopeFields(shouldUseShowcaseScope) {
+    const scopeGrid = document.getElementById("showcase-scope-grid");
+
+    cacheShowcaseScopeFieldHomes();
+
+    if (!scopeGrid) {
+        return;
+    }
+
+    SHOWCASE_SCOPE_FIELD_IDS.forEach((fieldId) => {
+        const field = document.getElementById(fieldId);
+        const home = showcaseScopeFieldHomes.get(fieldId);
+
+        if (!field || !home?.parent) {
+            return;
+        }
+
+        if (shouldUseShowcaseScope) {
+            if (field.parentElement !== scopeGrid) {
+                scopeGrid.appendChild(field);
+            }
+
+            return;
+        }
+
+        if (field.parentElement === home.parent) {
+            return;
+        }
+
+        const referenceChild = home.parent.children[home.index] || null;
+        home.parent.insertBefore(field, referenceChild);
+    });
+}
+
+function cacheShowcaseScopeFieldHomes() {
+    SHOWCASE_SCOPE_FIELD_IDS.forEach((fieldId) => {
+        const field = document.getElementById(fieldId);
+
+        if (!field || showcaseScopeFieldHomes.has(fieldId) || !field.parentElement) {
+            return;
+        }
+
+        showcaseScopeFieldHomes.set(fieldId, {
+            parent: field.parentElement,
+            index: Array.from(field.parentElement.children).indexOf(field),
+        });
+    });
+}
+
+function syncShowcaseScopeFieldStates() {
+    const expandedSegments = new Set(getSelectedShowcaseExpandedSegments());
+    const showcaseActive = isShowcaseMode();
+
+    SHOWCASE_SCOPE_FIELD_IDS.forEach((fieldId) => {
+        const field = document.getElementById(fieldId);
+        const segment = fieldId.replace("field-", "");
+        const inputId = DECODED_SEGMENT_FIELDS[segment]?.id;
+        const input = inputId ? document.getElementById(inputId) : null;
+        const isDisabled = showcaseActive && expandedSegments.has(segment);
+
+        if (field) {
+            field.classList.toggle("opacity-60", isDisabled);
+        }
+
+        if (!(input instanceof HTMLInputElement || input instanceof HTMLSelectElement || input instanceof HTMLTextAreaElement)) {
+            return;
+        }
+
+        input.disabled = isDisabled;
+        input.setAttribute("aria-disabled", String(isDisabled));
+    });
+}
+
+function getCurrentFamilyMetadata() {
+    const familyCode = get("select-family");
+    return availableConfiguratorFamilies.find((family) => String(family?.codigo || "") === familyCode) || null;
+}
+
+function isCurrentFamilyShowcaseAvailable() {
+    const family = getCurrentFamilyMetadata();
+    const familyCode = String(family?.codigo || get("select-family") || "").trim();
+
+    if (typeof family?.showcase_runtime_implemented === "boolean") {
+        return family.showcase_runtime_implemented;
+    }
+
+    return SHOWCASE_IMPLEMENTED_FAMILY_CODES.has(familyCode);
+}
+
+function updateShowcaseFamilyHint() {
+    const hint = document.getElementById("showcase-family-note");
+
+    if (!hint) {
+        return;
+    }
+
+    if (!get("select-family")) {
+        hint.textContent = t(
+            "configurator.runtime.showcaseSelectFamilyFirst",
+            {},
+            "Select a family first. Showcase mode is currently mapped for families 29 and 30."
+        );
+        return;
+    }
+
+    if (!isCurrentFamilyShowcaseAvailable()) {
+        hint.textContent = t(
+            "configurator.runtime.showcaseUnsupportedFamily",
+            {},
+            "Showcase mode is currently available only for mapped families. Use 29 or 30 for this first renderer."
+        );
+        return;
+    }
+
+    hint.textContent = t(
+        "configurator.runtime.showcaseFamilyHint",
+        {},
+        "Current selections stay locked unless you expand them. Showcase mode is live for families 29 and 30."
+    );
+}
+
+function isCurrentFamilyCustomDatasheetAvailable() {
+    const family = getCurrentFamilyMetadata();
+    return Boolean(family?.custom_datasheet_supported);
+}
+
+function isCurrentFamilyCustomDatasheetRuntimeImplemented() {
+    const family = getCurrentFamilyMetadata();
+    return Boolean(family?.custom_datasheet_runtime_implemented);
+}
+
+function updateCustomFamilyHint() {
+    const hint = document.getElementById("custom-family-note");
+
+    if (!hint) {
+        return;
+    }
+
+    if (!get("select-family")) {
+        hint.textContent = t(
+            "configurator.runtime.customSelectFamilyFirst",
+            {},
+            "Select a family first. Custom datasheet works only on families that already support the official datasheet runtime."
+        );
+        return;
+    }
+
+    if (!isCurrentFamilyCustomDatasheetAvailable()) {
+        hint.textContent = t(
+            "configurator.runtime.customUnsupportedFamily",
+            {},
+            "Custom datasheet is currently blocked for families without official datasheet runtime support."
+        );
+        return;
+    }
+
+    if (!isCurrentFamilyCustomDatasheetRuntimeImplemented()) {
+        hint.textContent = t(
+            "configurator.runtime.customRuntimePending",
+            {},
+            "Custom datasheet preview is scaffolded. PDF render is still pending implementation."
+        );
+        return;
+    }
+
+    hint.textContent = t(
+        "configurator.runtime.customFamilyHint",
+        {},
+        "Custom mode uses the exact product datasheet and applies approved text and image overrides."
+    );
+}
+
+function resetShowcasePreviewState() {
+    if (showcasePreviewTimer) {
+        clearTimeout(showcasePreviewTimer);
+        showcasePreviewTimer = null;
+    }
+
+    showcasePreviewRequestToken += 1;
+    showcasePreviewState = createEmptyShowcasePreviewState();
+    renderShowcasePreviewState();
+}
+
+function resetCustomPreviewState() {
+    if (customPreviewTimer) {
+        clearTimeout(customPreviewTimer);
+        customPreviewTimer = null;
+    }
+
+    customPreviewRequestToken += 1;
+    customPreviewState = createEmptyCustomPreviewState();
+    renderCustomPreviewState();
+}
+
+function resetCustomOverrides(shouldPreview = true) {
+    CUSTOM_TEXT_OVERRIDE_FIELDS.forEach((field) => {
+        const element = document.getElementById(field.id);
+
+        if (element) {
+            element.value = "";
+        }
+    });
+
+    CUSTOM_ASSET_OVERRIDE_FIELDS.forEach((field) => {
+        const element = document.getElementById(field.id);
+
+        if (element) {
+            element.value = "";
+        }
+    });
+
+    CUSTOM_SECTION_VISIBILITY_FIELDS.forEach((field) => {
+        const element = document.getElementById(field.id);
+
+        if (element instanceof HTMLInputElement) {
+            element.checked = true;
+        }
+    });
+
+    resetCustomPreviewState();
+
+    if (shouldPreview) {
+        scheduleCustomPreview();
+    }
+}
+
+function renderShowcasePreviewState() {
+    const variants = document.getElementById("showcase-preview-variants");
+    const pages = document.getElementById("showcase-preview-pages");
+    const message = document.getElementById("showcase-preview-message");
+
+    if (!variants || !pages || !message) {
+        return;
+    }
+
+    variants.textContent = showcasePreviewState.ok ? String(showcasePreviewState.variantCount) : "--";
+    pages.textContent = showcasePreviewState.ok ? String(showcasePreviewState.estimatedPages) : "--";
+    message.textContent = showcasePreviewState.pending
+        ? t("configurator.runtime.showcasePreviewLoading", {}, "Previewing showcase...")
+        : t(
+            showcasePreviewState.messageKey,
+            showcasePreviewState.messageVariables || {},
+            showcasePreviewState.messageFallback
+        );
+    message.classList.toggle("text-red-600", !showcasePreviewState.pending && !showcasePreviewState.ok && showcasePreviewState.family !== "");
+    message.classList.toggle("text-grey-primary", showcasePreviewState.pending || showcasePreviewState.ok || showcasePreviewState.family === "");
+}
+
+function renderCustomPreviewState() {
+    const textCount = document.getElementById("custom-preview-text-count");
+    const assetCount = document.getElementById("custom-preview-asset-count");
+    const hiddenCount = document.getElementById("custom-preview-hidden-count");
+    const message = document.getElementById("custom-preview-message");
+
+    if (!textCount || !assetCount || !hiddenCount || !message) {
+        return;
+    }
+
+    textCount.textContent = String(customPreviewState.textOverrideCount || 0);
+    assetCount.textContent = String(customPreviewState.assetOverrideCount || 0);
+    hiddenCount.textContent = String(customPreviewState.hiddenSectionCount || 0);
+    message.textContent = customPreviewState.pending
+        ? t("configurator.runtime.customPreviewLoading", {}, "Validating custom datasheet...")
+        : t(
+            customPreviewState.messageKey,
+            customPreviewState.messageVariables || {},
+            customPreviewState.messageFallback
+        );
+    message.classList.toggle("text-red-600", !customPreviewState.pending && !customPreviewState.ok && customPreviewState.family !== "");
+    message.classList.toggle("text-grey-primary", customPreviewState.pending || customPreviewState.ok || customPreviewState.family === "");
+}
+
+function getSelectedShowcaseExpandedSegments() {
+    return Array.from(document.querySelectorAll("[data-showcase-expand]:checked"))
+        .map((input) => String(input.value || "").trim())
+        .filter(Boolean);
+}
+
+function getSelectedShowcaseSections() {
+    return Array.from(document.querySelectorAll("[data-showcase-section]:checked"))
+        .map((input) => String(input.value || "").trim())
+        .filter(Boolean);
+}
+
+function canRequestShowcasePreview() {
+    if (!isShowcaseMode()) {
+        return false;
+    }
+
+    if (!get("select-family")) {
+        return false;
+    }
+
+    if (!isCurrentFamilyShowcaseAvailable()) {
+        return false;
+    }
+
+    return getSelectedShowcaseSections().length > 0;
+}
+
+function buildShowcaseRequestBody() {
+    const baseReference = sanitizeTecitCode(document.getElementById("output-reference")?.value || "");
+    const expanded = getSelectedShowcaseExpandedSegments();
+    const expandedSet = new Set(expanded);
+    const locked = {};
+
+    Object.entries(DECODED_SEGMENT_FIELDS).forEach(([segment, meta]) => {
+        if (expandedSet.has(segment)) {
+            return;
+        }
+
+        const value = String(get(meta.id) || "").trim();
+
+        if (value === "") {
+            return;
+        }
+
+        locked[segment] = pad(value, meta.length);
+    });
+
+    const sections = getSelectedShowcaseSections();
+    enforceDownlightShowcaseFinishSection(sections);
+
+    const body = {
+        family: get("select-family"),
+        lang: get("select-language"),
+        company: get("select-company"),
+        locked,
+        expanded,
+        sections,
+        filters: { ...SHOWCASE_DEFAULT_FILTERS },
+    };
+
+    if (baseReference.length === 17 && !liveReferenceDraftDirty) {
+        body.base_reference = baseReference;
+    }
+
+    return body;
+}
+
+function enforceDownlightShowcaseFinishSection(sections) {
+    if (!Array.isArray(sections)) {
+        return;
+    }
+
+    if (!SHOWCASE_IMPLEMENTED_FAMILY_CODES.has(String(get("select-family") || ""))) {
+        return;
+    }
+
+    if (!sections.includes("option_codes")) {
+        return;
+    }
+
+    if (!sections.includes("finish_gallery")) {
+        sections.push("finish_gallery");
+    }
+}
+
+function buildShowcaseRequestSignature(body = buildShowcaseRequestBody()) {
+    return JSON.stringify({
+        family: String(body.family || ""),
+        base_reference: String(body.base_reference || ""),
+        locked: body.locked || {},
+        expanded: body.expanded || [],
+        sections: body.sections || [],
+        lang: String(body.lang || ""),
+        company: String(body.company || ""),
+        filters: body.filters || {},
+    });
+}
+
+function buildDatasheetRequestBody() {
+    return {
+        referencia: document.getElementById("output-reference").value,
+        descricao: document.getElementById("output-description").value,
+        idioma: get("select-language"),
+        empresa: get("select-company"),
+        lente: getSelectedOptionHint("select-lens"),
+        acabamento: getSelectedOptionHint("select-finish"),
+        opcao: get("select-option"),
+        conectorcabo: get("select-connector-cable"),
+        tipocabo: get("select-cable-type"),
+        tampa: get("select-end-cap"),
+        vedante: get("select-gasket"),
+        acrescimo: get("input-extra-length") || "0",
+        ip: get("select-ip"),
+        fixacao: get("select-fixing"),
+        fonte: get("select-power-supply"),
+        caboligacao: get("select-connection-cable"),
+        conectorligacao: get("select-connection-connector"),
+        tamanhocaboligacao: get("input-connection-cable-length") || "0",
+        finalidade: get("select-purpose"),
+    };
+}
+
+function buildCustomRequestBody() {
+    const textOverrides = {};
+    const assetOverrides = {};
+    const sectionVisibility = {};
+
+    CUSTOM_TEXT_OVERRIDE_FIELDS.forEach((field) => {
+        const element = document.getElementById(field.id);
+        const value = String(element?.value || "").trim();
+
+        if (value !== "") {
+            textOverrides[field.key] = value;
+        }
+    });
+
+    CUSTOM_ASSET_OVERRIDE_FIELDS.forEach((field) => {
+        const element = document.getElementById(field.id);
+        const value = String(element?.value || "").trim();
+
+        if (value !== "") {
+            assetOverrides[field.key] = {
+                source: "dam",
+                asset_id: value,
+            };
+        }
+    });
+
+    CUSTOM_SECTION_VISIBILITY_FIELDS.forEach((field) => {
+        const element = document.getElementById(field.id);
+
+        if (!(element instanceof HTMLInputElement)) {
+            return;
+        }
+
+        sectionVisibility[field.key] = element.checked;
+    });
+
+    return {
+        base_request: buildDatasheetRequestBody(),
+        custom: {
+            mode: "custom",
+            text_overrides: textOverrides,
+            asset_overrides: assetOverrides,
+            section_visibility: sectionVisibility,
+            footer: {
+                marker: "CustPDF",
+            },
+        },
+    };
+}
+
+function buildCustomRequestSignature(body = buildCustomRequestBody()) {
+    return JSON.stringify(body);
+}
+
+function canRequestCustomPreview() {
+    if (!isCustomMode()) {
+        return false;
+    }
+
+    if (!get("select-family")) {
+        return false;
+    }
+
+    if (!isCurrentFamilyCustomDatasheetAvailable()) {
+        return false;
+    }
+
+    const reference = sanitizeTecitCode(document.getElementById("output-reference")?.value || "");
+    return reference.length === 17 && hasResolvedReferenceSegments() && !liveReferenceDraftDirty;
+}
+
+function scheduleShowcasePreview() {
+    if (!isShowcaseMode()) {
+        return;
+    }
+
+    if (showcasePreviewTimer) {
+        clearTimeout(showcasePreviewTimer);
+        showcasePreviewTimer = null;
+    }
+
+    if (!get("select-family")) {
+        resetShowcasePreviewState();
+        syncGenerateButton();
+        return;
+    }
+
+    if (!isCurrentFamilyShowcaseAvailable()) {
+        showcasePreviewState = {
+            ...createEmptyShowcasePreviewState(),
+            family: get("select-family"),
+            messageKey: "configurator.runtime.showcaseUnsupportedFamily",
+            messageFallback: "Showcase mode is currently available only for mapped families. Use 29 or 30 for this first renderer.",
+        };
+        renderShowcasePreviewState();
+        syncGenerateButton();
+        return;
+    }
+
+    if (getSelectedShowcaseSections().length === 0) {
+        showcasePreviewState = {
+            ...createEmptyShowcasePreviewState(),
+            family: get("select-family"),
+            messageKey: "configurator.runtime.showcaseSectionRequired",
+            messageFallback: "Select at least one showcase section.",
+        };
+        renderShowcasePreviewState();
+        syncGenerateButton();
+        return;
+    }
+
+    if (!canRequestShowcasePreview()) {
+        showcasePreviewState = {
+            ...createEmptyShowcasePreviewState(),
+            family: get("select-family"),
+            messageKey: "configurator.runtime.showcasePreviewNeedsScope",
+            messageFallback: "Choose a family and keep the scope filters you want before previewing showcase PDF.",
+        };
+        renderShowcasePreviewState();
+        syncGenerateButton();
+        return;
+    }
+
+    showcasePreviewState = {
+        ...showcasePreviewState,
+        pending: true,
+        ok: false,
+        family: get("select-family"),
+        reference: sanitizeTecitCode(document.getElementById("output-reference")?.value || ""),
+        signature: buildShowcaseRequestSignature(),
+    };
+    renderShowcasePreviewState();
+    syncGenerateButton();
+
+    showcasePreviewTimer = setTimeout(() => {
+        showcasePreviewTimer = null;
+        void runShowcasePreview();
+    }, SHOWCASE_PREVIEW_DEBOUNCE_MS);
+}
+
+async function runShowcasePreview() {
+    const requestBody = buildShowcaseRequestBody();
+    const requestReference = requestBody.base_reference || "";
+    const requestSignature = buildShowcaseRequestSignature(requestBody);
+    const requestToken = ++showcasePreviewRequestToken;
+
+    showcasePreviewState = {
+        ...showcasePreviewState,
+        pending: true,
+        ok: false,
+        family: requestBody.family,
+        reference: requestReference,
+        signature: requestSignature,
+    };
+    renderShowcasePreviewState();
+    syncGenerateButton();
+
+    try {
+        const response = await apiPost("/?endpoint=showcase-preview", requestBody);
+
+        if (!response.ok) {
+            if (requestToken !== showcasePreviewRequestToken) {
+                return;
+            }
+
+            if (isApiServiceFailureStatus(response.status)) {
+                markApiDegraded();
+            }
+
+            const errorData = await readApiJsonError(response, "Showcase preview failed.");
+
+            showcasePreviewState = {
+                ...createEmptyShowcasePreviewState(),
+                family: requestBody.family,
+                reference: requestReference,
+                messageVariables: { message: errorData.message },
+                messageKey: "configurator.runtime.showcasePreviewFailedWithMessage",
+                messageFallback: "Showcase preview failed: " + errorData.message,
+            };
+            renderShowcasePreviewState();
+            syncGenerateButton();
+            return;
+        }
+
+        const payload = await response.json();
+        const previewData = payload?.data || {};
+
+        if (
+            requestToken !== showcasePreviewRequestToken
+            || !isShowcaseMode()
+            || requestSignature !== buildShowcaseRequestSignature()
+        ) {
+            return;
+        }
+
+        showcasePreviewState = {
+            pending: false,
+            ok: true,
+            family: requestBody.family,
+            reference: requestReference,
+            signature: requestSignature,
+            variantCount: Number(previewData.variant_count || 0),
+            estimatedPages: Number(previewData.estimated_pages || 0),
+            messageKey: "configurator.runtime.showcasePreviewReady",
+            messageFallback: "Showcase preview ready. Review counts, then generate PDF.",
+        };
+        renderShowcasePreviewState();
+        syncGenerateButton();
+    } catch (error) {
+        if (requestToken !== showcasePreviewRequestToken) {
+            return;
+        }
+
+        const message = error && error.message ? error.message : "Showcase preview failed.";
+
+        showcasePreviewState = {
+            ...createEmptyShowcasePreviewState(),
+            family: requestBody.family,
+            reference: requestReference,
+            messageVariables: { message },
+            messageKey: "configurator.runtime.showcasePreviewFailedWithMessage",
+            messageFallback: "Showcase preview failed: " + message,
+        };
+        renderShowcasePreviewState();
+        syncGenerateButton();
+        console.error(error);
+    }
+}
+
+function scheduleCustomPreview() {
+    if (!isCustomMode()) {
+        return;
+    }
+
+    if (customPreviewTimer) {
+        clearTimeout(customPreviewTimer);
+        customPreviewTimer = null;
+    }
+
+    if (!get("select-family")) {
+        resetCustomPreviewState();
+        syncGenerateButton();
+        return;
+    }
+
+    if (!isCurrentFamilyCustomDatasheetAvailable()) {
+        customPreviewState = {
+            ...createEmptyCustomPreviewState(),
+            family: get("select-family"),
+            messageKey: "configurator.runtime.customUnsupportedFamily",
+            messageFallback: "Custom datasheet is currently blocked for families without official datasheet runtime support.",
+        };
+        renderCustomPreviewState();
+        syncGenerateButton();
+        return;
+    }
+
+    if (!canRequestCustomPreview()) {
+        customPreviewState = {
+            ...createEmptyCustomPreviewState(),
+            family: get("select-family"),
+            messageKey: "configurator.runtime.customPreviewNeedsBase",
+            messageFallback: "Build one exact datasheet configuration first, then add custom overrides.",
+        };
+        renderCustomPreviewState();
+        syncGenerateButton();
+        return;
+    }
+
+    customPreviewState = {
+        ...customPreviewState,
+        pending: true,
+        ok: false,
+        family: get("select-family"),
+        reference: sanitizeTecitCode(document.getElementById("output-reference")?.value || ""),
+        signature: buildCustomRequestSignature(),
+    };
+    renderCustomPreviewState();
+    syncGenerateButton();
+
+    customPreviewTimer = setTimeout(() => {
+        customPreviewTimer = null;
+        void runCustomPreview();
+    }, CUSTOM_PREVIEW_DEBOUNCE_MS);
+}
+
+async function runCustomPreview() {
+    const requestBody = buildCustomRequestBody();
+    const requestReference = requestBody.base_request?.referencia || "";
+    const requestSignature = buildCustomRequestSignature(requestBody);
+    const requestToken = ++customPreviewRequestToken;
+
+    customPreviewState = {
+        ...customPreviewState,
+        pending: true,
+        ok: false,
+        family: get("select-family"),
+        reference: requestReference,
+        signature: requestSignature,
+    };
+    renderCustomPreviewState();
+    syncGenerateButton();
+
+    try {
+        const response = await apiPost("/?endpoint=custom-datasheet-preview", requestBody);
+
+        if (!response.ok) {
+            if (requestToken !== customPreviewRequestToken) {
+                return;
+            }
+
+            if (isApiServiceFailureStatus(response.status)) {
+                markApiDegraded();
+            }
+
+            const errorData = await readApiJsonError(response, "Custom datasheet preview failed.");
+            customPreviewState = {
+                ...createEmptyCustomPreviewState(),
+                family: get("select-family"),
+                reference: requestReference,
+                messageVariables: { message: errorData.message },
+                messageKey: "configurator.runtime.customPreviewFailedWithMessage",
+                messageFallback: "Custom datasheet preview failed: " + errorData.message,
+            };
+            renderCustomPreviewState();
+            syncGenerateButton();
+            return;
+        }
+
+        const payload = await response.json();
+        const previewData = payload?.data || {};
+
+        if (
+            requestToken !== customPreviewRequestToken
+            || !isCustomMode()
+            || requestSignature !== buildCustomRequestSignature()
+        ) {
+            return;
+        }
+
+        const appliedFields = previewData.applied_fields || {};
+        const runtimeImplemented = Boolean(previewData.custom_datasheet?.runtime_implemented);
+
+        customPreviewState = {
+            pending: false,
+            ok: true,
+            runtimeImplemented,
+            family: get("select-family"),
+            reference: requestReference,
+            signature: requestSignature,
+            textOverrideCount: Number((appliedFields.text || []).length || 0),
+            assetOverrideCount: Number((appliedFields.assets || []).length || 0),
+            hiddenSectionCount: Number((appliedFields.hidden_sections || []).length || 0),
+            messageKey: runtimeImplemented
+                ? "configurator.runtime.customPreviewReady"
+                : "configurator.runtime.customRuntimePending",
+            messageFallback: runtimeImplemented
+                ? "Custom datasheet preview ready. Generate the PDF when needed."
+                : "Custom datasheet preview is scaffolded. PDF render is still pending implementation.",
+        };
+        renderCustomPreviewState();
+        syncGenerateButton();
+    } catch (error) {
+        if (requestToken !== customPreviewRequestToken) {
+            return;
+        }
+
+        const message = error && error.message ? error.message : "Custom datasheet preview failed.";
+
+        customPreviewState = {
+            ...createEmptyCustomPreviewState(),
+            family: get("select-family"),
+            reference: requestReference,
+            messageVariables: { message },
+            messageKey: "configurator.runtime.customPreviewFailedWithMessage",
+            messageFallback: "Custom datasheet preview failed: " + message,
+        };
+        renderCustomPreviewState();
+        syncGenerateButton();
+        console.error(error);
+    }
+}
+
+async function readApiJsonError(response, fallbackMessage) {
+    const raw = await response.text();
+    const contentType = response.headers.get("content-type") || "";
+    let message = extractResponseMessage(raw) || fallbackMessage || ("Request failed with status " + response.status);
+
+    if (contentType.includes("application/json") && raw.trim() !== "") {
+        try {
+            const payload = JSON.parse(raw);
+            const detail = typeof payload?.detail === "string" && payload.detail.trim() !== "" ? payload.detail.trim() : "";
+            message = typeof payload?.error === "string" && payload.error.trim() !== ""
+                ? payload.error.trim()
+                : message;
+
+            if (detail !== "") {
+                message += " - " + detail;
+            }
+        } catch (_parseError) {
+            // Keep cleaned text fallback.
+        }
+    }
+
+    return { message };
+}
+
+function getDownloadFilename(response, fallbackFilename) {
+    const disposition = response.headers.get("content-disposition") || "";
+    const match = disposition.match(/filename="?([^"]+)"?/i);
+    return match?.[1] || fallbackFilename;
+}
+
+async function handleGenerateAction() {
+    if (isShowcaseMode()) {
+        await generateShowcasePdf();
+        return;
+    }
+
+    if (isCustomMode()) {
+        await generateCustomDatasheetPdf();
+        return;
+    }
+
+    await generateDatasheet();
+}
+
+async function generateShowcasePdf() {
+    if (!canRequestShowcasePreview()) {
+        setStatusKey(
+            "configurator.runtime.showcasePreviewNeedsScope",
+            "error",
+            {},
+            "Choose a family and keep the scope filters you want before previewing showcase PDF."
+        );
+        return;
+    }
+
+    if (!showcasePreviewState.ok || showcasePreviewState.signature !== buildShowcaseRequestSignature()) {
+        scheduleShowcasePreview();
+        setStatusKey(
+            "configurator.runtime.showcasePreviewRequired",
+            "error",
+            {},
+            "Wait for showcase preview before generating PDF."
+        );
+        return;
+    }
+
+    const body = buildShowcaseRequestBody();
+    const fallbackFilename = sanitizeTecitCode(body.base_reference || body.family || "showcase") + "-showcase.pdf";
+    let holdSuccessState = false;
+
+    setGenerateControlsDisabled(true);
+    setPdfLoadingOverlayState("loading");
+    setPdfLoadingOverlayOpen(true);
+    setStatusKey("configurator.runtime.generatingShowcase", "loading", {}, "Generating showcase PDF...");
+
+    try {
+        const response = await apiPost("/?endpoint=showcase-pdf", body);
+
+        setGenerateControlsDisabled(false);
+        syncGenerateButton();
+
+        if (!response.ok) {
+            if (isApiServiceFailureStatus(response.status)) {
+                markApiDegraded();
+            }
+
+            const errorData = await readApiJsonError(response, "Showcase PDF generation failed.");
+            setStatusKey(
+                "configurator.runtime.showcaseFailedWithMessage",
+                "error",
+                { message: errorData.message },
+                "Showcase PDF generation failed: " + errorData.message
+            );
+            return;
+        }
+
+        const successContentType = response.headers.get("content-type") || "";
+
+        if (successContentType.includes("application/json") || successContentType.includes("text/html")) {
+            const rawMessage = await response.text();
+            throw new Error(extractResponseMessage(rawMessage) || "Showcase endpoint returned a non-PDF response.");
+        }
+
+        const blob = await response.blob();
+
+        if (blob.size === 0) {
+            throw new Error("Showcase endpoint returned an empty PDF response.");
+        }
+
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+
+        link.href = url;
+        link.download = getDownloadFilename(response, fallbackFilename);
+        link.click();
+
+        URL.revokeObjectURL(url);
+        holdSuccessState = true;
+        setPdfLoadingOverlayState("success");
+        setStatusKey("configurator.runtime.showcaseReady", "success", {}, "Showcase PDF ready. The download has started.");
+    } catch (error) {
+        setGenerateControlsDisabled(false);
+        syncGenerateButton();
+        const message = error && error.message ? error.message : "";
+
+        if (message !== "") {
+            setStatusKey(
+                "configurator.runtime.showcaseFailedWithMessage",
+                "error",
+                { message },
+                "Showcase PDF generation failed: " + message
+            );
+            console.error(error);
+            return;
+        }
+
+        setStatusKey("configurator.runtime.showcaseFailed", "error", {}, "Showcase PDF generation failed.");
+        console.error(error);
+    } finally {
+        if (holdSuccessState) {
+            await waitForNextPaint();
+            await new Promise((resolve) => window.setTimeout(resolve, PDF_LOADING_SUCCESS_HOLD_MS));
+        }
+
+        setPdfLoadingOverlayOpen(false);
+        setPdfLoadingOverlayState("loading");
+    }
+}
+
+async function generateCustomDatasheetPdf() {
+    if (!canRequestCustomPreview()) {
+        setStatusKey(
+            "configurator.runtime.customPreviewNeedsBase",
+            "error",
+            {},
+            "Build one exact datasheet configuration first, then add custom overrides."
+        );
+        return;
+    }
+
+    if (!customPreviewState.ok || customPreviewState.signature !== buildCustomRequestSignature()) {
+        scheduleCustomPreview();
+        setStatusKey(
+            "configurator.runtime.customPreviewRequired",
+            "error",
+            {},
+            "Wait for the custom datasheet preview before generating the PDF."
+        );
+        return;
+    }
+
+    if (!customPreviewState.runtimeImplemented) {
+        setStatusKey(
+            "configurator.runtime.customRuntimePending",
+            "warning",
+            {},
+            "Custom datasheet preview is scaffolded. PDF render is still pending implementation."
+        );
+        return;
+    }
+
+    const body = buildCustomRequestBody();
+    const reference = sanitizeTecitCode(body.base_request?.referencia || "");
+    const fallbackFilename = (reference || "custom-datasheet") + ".pdf";
+    let holdSuccessState = false;
+
+    setGenerateControlsDisabled(true);
+    setPdfLoadingOverlayState("loading");
+    setPdfLoadingOverlayOpen(true);
+    setStatusKey("configurator.runtime.generatingCustom", "loading", {}, "Generating custom datasheet...");
+
+    try {
+        const response = await apiPost("/?endpoint=custom-datasheet-pdf", body);
+
+        setGenerateControlsDisabled(false);
+        syncGenerateButton();
+
+        if (!response.ok) {
+            if (isApiServiceFailureStatus(response.status)) {
+                markApiDegraded();
+            }
+
+            const errorData = await readApiJsonError(response, "Custom datasheet generation failed.");
+            setStatusKey(
+                "configurator.runtime.customFailedWithMessage",
+                "error",
+                { message: errorData.message },
+                "Custom datasheet generation failed: " + errorData.message
+            );
+            return;
+        }
+
+        const successContentType = response.headers.get("content-type") || "";
+
+        if (successContentType.includes("application/json") || successContentType.includes("text/html")) {
+            const rawMessage = await response.text();
+            throw new Error(extractResponseMessage(rawMessage) || "Custom datasheet endpoint returned a non-PDF response.");
+        }
+
+        const blob = await response.blob();
+
+        if (blob.size === 0) {
+            throw new Error("Custom datasheet endpoint returned an empty PDF response.");
+        }
+
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+
+        link.href = url;
+        link.download = getDownloadFilename(response, fallbackFilename);
+        link.click();
+
+        URL.revokeObjectURL(url);
+        holdSuccessState = true;
+        setPdfLoadingOverlayState("success");
+        setStatusKey("configurator.runtime.customReady", "success", {}, "Custom datasheet ready. The download has started.");
+    } catch (error) {
+        setGenerateControlsDisabled(false);
+        syncGenerateButton();
+        const message = error && error.message ? error.message : "";
+
+        if (message !== "") {
+            setStatusKey(
+                "configurator.runtime.customFailedWithMessage",
+                "error",
+                { message },
+                "Custom datasheet generation failed: " + message
+            );
+            console.error(error);
+            return;
+        }
+
+        setStatusKey("configurator.runtime.customFailed", "error", {}, "Custom datasheet generation failed.");
+        console.error(error);
+    } finally {
+        if (holdSuccessState) {
+            await waitForNextPaint();
+            await new Promise((resolve) => window.setTimeout(resolve, PDF_LOADING_SUCCESS_HOLD_MS));
+        }
+
+        setPdfLoadingOverlayOpen(false);
+        setPdfLoadingOverlayState("loading");
+    }
 }
 
 function prependBlankSelectOption(select, shouldSelect = false) {
@@ -215,6 +1861,8 @@ function prependBlankSelectOption(select, shouldSelect = false) {
     const firstOption = select.options[0] || null;
 
     if (firstOption && firstOption.value === "") {
+        firstOption.dataset.placeholder = "true";
+        delete firstOption.dataset.emptyState;
         firstOption.textContent = "--";
         if (shouldSelect) {
             firstOption.selected = true;
@@ -225,6 +1873,7 @@ function prependBlankSelectOption(select, shouldSelect = false) {
 
     const placeholderOption = document.createElement("option");
     placeholderOption.value = "";
+    placeholderOption.dataset.placeholder = "true";
     placeholderOption.textContent = "--";
     select.insertBefore(placeholderOption, select.firstChild);
 
@@ -236,6 +1885,10 @@ function prependBlankSelectOption(select, shouldSelect = false) {
 
 function primeSelectPlaceholders() {
     document.querySelectorAll("select[id]").forEach((select) => {
+        if (!REFERENCE_PLACEHOLDER_SELECT_IDS.has(select.id)) {
+            return;
+        }
+
         prependBlankSelectOption(select, true);
     });
 }
@@ -311,7 +1964,36 @@ async function getApiBase() {
 }
 
 function resolveApiBase() {
+    if (typeof window !== "undefined" && window.location) {
+        const hostname = String(window.location.hostname || "").toLowerCase();
+
+        if (LOCAL_API_HOSTNAMES.has(hostname)) {
+            const localApiBase = buildLocalApiBase(window.location.origin, window.location.pathname);
+
+            if (localApiBase) {
+                return localApiBase;
+            }
+        }
+    }
+
     return DEFAULT_API_BASE.replace(/\/+$/, "");
+}
+
+function buildLocalApiBase(origin, pathname) {
+    const cleanOrigin = String(origin || "").replace(/\/+$/, "");
+    const cleanPathname = String(pathname || "");
+
+    if (!cleanOrigin) {
+        return "";
+    }
+
+    if (cleanPathname.includes("/configurator/")) {
+        return (cleanOrigin + cleanPathname.split("/configurator/")[0] + "/api").replace(/\/+$/, "");
+    }
+
+    const withoutFile = cleanPathname.replace(/\/[^/]*$/, "");
+    const withoutConfiguratorRoot = withoutFile.replace(/\/configurator$/, "");
+    return (cleanOrigin + withoutConfiguratorRoot + "/api").replace(/\/+$/, "");
 }
 
 function setApiHealthState(nextState = {}) {
@@ -1280,10 +2962,12 @@ function refreshLocalizedControls() {
     selectDropdowns.forEach((dropdown) => {
         dropdown.refreshOptions();
     });
+    renderShowcaseControls();
     renderTecitCodeLogicFamilies();
     applyStatusState();
     applySummaryState();
     applyApiBadgeState();
+    applyOutputModeState();
 }
 
 window.addEventListener(CONFIGURATOR_I18N_EVENT, refreshLocalizedControls);
@@ -1429,15 +3113,7 @@ function renderTecitCodeLogicFamilies() {
         return;
     }
 
-    const families = Array.isArray(availableConfiguratorFamilies)
-        ? availableConfiguratorFamilies
-            .map((family) => ({
-                code: String(family?.codigo || "").trim(),
-                name: String(family?.nome || "").trim(),
-            }))
-            .filter((family) => family.code !== "")
-            .sort((left, right) => left.code.localeCompare(right.code, undefined, { numeric: true }))
-        : [];
+    const families = TECIT_LOGIC_FAMILIES;
 
     if (families.length === 0) {
         list.innerHTML = `
@@ -1505,6 +3181,11 @@ async function loadOptions(familyCode) {
     setHidden("output-fields", false);
 
     buildReference();
+    updateShowcaseFamilyHint();
+    updateCustomFamilyHint();
+    syncShowcaseScopeFieldStates();
+    scheduleShowcasePreview();
+    scheduleCustomPreview();
 
     setSummaryStateKeys(
         "configurator.runtime.step2",
@@ -1533,6 +3214,8 @@ function bindLiveReferenceLoader() {
         liveReferenceDraftDirty = true;
         descriptionRequestToken += 1;
         document.getElementById("output-description").value = "";
+        resetShowcasePreviewState();
+        resetCustomPreviewState();
         syncGenerateButton();
         syncCopyButtons();
     });
@@ -1639,6 +3322,36 @@ function hasLoadedFamilyOptions() {
     return document.querySelectorAll("#family-combobox-list [data-family-option]").length > 0;
 }
 
+function getSelectedOptionElement(id) {
+    const element = document.getElementById(id);
+
+    if (!element || element.tagName !== "SELECT") {
+        return null;
+    }
+
+    return element.options[element.selectedIndex] || null;
+}
+
+function isBlankSelectOption(option) {
+    if (!option) {
+        return true;
+    }
+
+    return String(option.value || "") === "" || option.dataset.placeholder === "true";
+}
+
+function hasResolvedSelectValue(id) {
+    return !isBlankSelectOption(getSelectedOptionElement(id));
+}
+
+function hasResolvedReferenceSegments() {
+    if (!get("select-family")) {
+        return false;
+    }
+
+    return Object.values(DECODED_SEGMENT_FIELDS).every((meta) => hasResolvedSelectValue(meta.id));
+}
+
 function normalizeCodeValue(value) {
     const text = String(value ?? "").trim();
 
@@ -1652,7 +3365,7 @@ function normalizeCodeValue(value) {
 
 function resolveSelectValueFromSegment(select, segment, length) {
     const target = String(segment ?? "").trim();
-    const options = Array.from(select?.options || []);
+    const options = Array.from(select?.options || []).filter((option) => !isBlankSelectOption(option));
 
     if (!target || options.length === 0) {
         return null;
@@ -1734,6 +3447,7 @@ async function applyDecodedReferenceToForm(data) {
 async function loadTecitCodeIntoForm(sourceInputId = "output-reference") {
     const input = document.getElementById(sourceInputId);
     const reference = sanitizeTecitCode(input?.value || "");
+    const shouldValidateCurrentBuilderState = sourceInputId === "output-reference" && !liveReferenceDraftDirty;
 
     if (!input) {
         return false;
@@ -1743,6 +3457,12 @@ async function loadTecitCodeIntoForm(sourceInputId = "output-reference") {
 
     liveReferenceDraftDirty = true;
     syncCopyButtons();
+
+    if (shouldValidateCurrentBuilderState && !hasResolvedReferenceSegments()) {
+        setStatusKey("configurator.runtime.completeConfiguration", "error", {}, "Complete the configuration before generating the datasheet.");
+        input.focus();
+        return false;
+    }
 
     if (!reference) {
         setStatusKey("configurator.runtime.tecitCodeMissing", "error", {}, "Enter a Tecit code first.");
@@ -1855,11 +3575,17 @@ function fillSelect(id, items, isArray) {
 
     if (!Array.isArray(items) || items.length === 0) {
         const emptyOption = document.createElement("option");
+        emptyOption.value = "";
+        emptyOption.dataset.placeholder = "true";
+        emptyOption.dataset.emptyState = "true";
         emptyOption.dataset.i18n = "configurator.runtime.noOptionsAvailable";
         emptyOption.textContent = t("configurator.runtime.noOptionsAvailable", {}, "No options available");
         const placeholderOption = select.options[0] || null;
 
         if (placeholderOption) {
+            placeholderOption.value = "";
+            placeholderOption.dataset.placeholder = "true";
+            placeholderOption.dataset.emptyState = "true";
             placeholderOption.dataset.i18n = emptyOption.dataset.i18n;
             placeholderOption.textContent = emptyOption.textContent;
         } else {
@@ -1935,6 +3661,8 @@ function buildReference() {
 
     syncGenerateButton();
     syncCopyButtons();
+    scheduleShowcasePreview();
+    scheduleCustomPreview();
 
     updateDescription(reference);
 }
@@ -2000,7 +3728,6 @@ async function updateDescription(reference) {
 
 async function generateDatasheet() {
     const reference = document.getElementById("output-reference").value;
-    const description = document.getElementById("output-description").value;
 
     if (!isDatasheetServiceAvailable()) {
         setStatusKey(
@@ -2017,27 +3744,12 @@ async function generateDatasheet() {
         return;
     }
 
-    const body = {
-        referencia: reference,
-        descricao: description,
-        idioma: get("select-language"),
-        empresa: get("select-company"),
-        lente: getSelectedOptionHint("select-lens"),
-        acabamento: getSelectedOptionHint("select-finish"),
-        opcao: get("select-option"),
-        conectorcabo: get("select-connector-cable"),
-        tipocabo: get("select-cable-type"),
-        tampa: get("select-end-cap"),
-        vedante: get("select-gasket"),
-        acrescimo: get("input-extra-length") || "0",
-        ip: get("select-ip"),
-        fixacao: get("select-fixing"),
-        fonte: get("select-power-supply"),
-        caboligacao: get("select-connection-cable"),
-        conectorligacao: get("select-connection-connector"),
-        tamanhocaboligacao: get("input-connection-cable-length") || "0",
-        finalidade: get("select-purpose"),
-    };
+    if (!hasResolvedReferenceSegments()) {
+        setStatusKey("configurator.runtime.completeConfiguration", "error", {}, "Complete the configuration before generating the datasheet.");
+        return;
+    }
+
+    const body = buildDatasheetRequestBody();
 
     let holdSuccessState = false;
 
@@ -2164,7 +3876,7 @@ function bindShellActions() {
 
         button?.addEventListener("click", () => {
             if (!button.disabled) {
-                generateDatasheet();
+                handleGenerateAction();
             }
         });
     });
@@ -2213,6 +3925,11 @@ function resetConfiguratorState() {
     setHidden("options-group", true);
     setHidden("output-fields", true);
     clearOutputValues();
+    resetShowcasePreviewState();
+    resetCustomPreviewState();
+    resetCustomOverrides(false);
+    updateShowcaseFamilyHint();
+    updateCustomFamilyHint();
     syncGenerateButton();
     syncCopyButtons();
     setSummaryStateKeys(
@@ -2238,7 +3955,25 @@ function clearOutputValues() {
 function syncGenerateButton() {
     const button = document.getElementById("btn-generate");
     const hasReference = document.getElementById("output-reference").value.length > 0;
-    const isDisabled = !hasReference || liveReferenceDraftDirty || !isDatasheetServiceAvailable();
+    const hasResolvedDatasheetConfig = hasResolvedReferenceSegments();
+    const showcaseDisabled = !get("select-family")
+        || !isCurrentFamilyShowcaseAvailable()
+        || showcasePreviewState.pending
+        || !showcasePreviewState.ok
+        || getSelectedShowcaseSections().length === 0
+        || showcasePreviewState.signature !== buildShowcaseRequestSignature();
+    const customDisabled = !get("select-family")
+        || !isCurrentFamilyCustomDatasheetAvailable()
+        || customPreviewState.pending
+        || !customPreviewState.ok
+        || !customPreviewState.runtimeImplemented
+        || customPreviewState.signature !== buildCustomRequestSignature();
+    const datasheetDisabled = !hasReference || !hasResolvedDatasheetConfig || liveReferenceDraftDirty || !isDatasheetServiceAvailable();
+    const isDisabled = isShowcaseMode()
+        ? showcaseDisabled
+        : isCustomMode()
+            ? customDisabled
+            : datasheetDisabled;
 
     button.disabled = isDisabled;
 
@@ -2431,7 +4166,17 @@ function clearStatusToastTimers() {
 
 function get(id) {
     const element = document.getElementById(id);
-    return element ? element.value : "";
+
+    if (!element) {
+        return "";
+    }
+
+    if (element.tagName === "SELECT") {
+        const option = element.options[element.selectedIndex] || null;
+        return isBlankSelectOption(option) ? "" : element.value;
+    }
+
+    return element.value;
 }
 
 function getDisplayText(id) {
@@ -2449,7 +4194,8 @@ function getDisplayText(id) {
         return element.value || "";
     }
 
-    return element.options[element.selectedIndex]?.text || "";
+    const option = element.options[element.selectedIndex] || null;
+    return isBlankSelectOption(option) ? "" : option.text || "";
 }
 
 function getSelectedOptionHint(id) {
@@ -2459,9 +4205,9 @@ function getSelectedOptionHint(id) {
         return "";
     }
 
-    const option = element.options[element.selectedIndex] || null;
+    const option = getSelectedOptionElement(id);
 
-    if (!option) {
+    if (isBlankSelectOption(option)) {
         return "";
     }
 
@@ -2530,4 +4276,3 @@ function setApiBadge(tone, text) {
     };
     applyApiBadgeState();
 }
-

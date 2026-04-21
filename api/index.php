@@ -6,7 +6,13 @@ chdir(__DIR__);
 
 $endpoint = $_GET["endpoint"] ?? null;
 
-if ($endpoint !== "datasheet" && $endpoint !== "file-datasheet" && $endpoint !== "file-spectral" && $endpoint !== "showcase-pdf") {
+if (
+    $endpoint !== "datasheet"
+    && $endpoint !== "file-datasheet"
+    && $endpoint !== "file-spectral"
+    && $endpoint !== "showcase-pdf"
+    && $endpoint !== "custom-datasheet-pdf"
+) {
     header("Content-Type: application/json");
 }
 
@@ -39,6 +45,8 @@ require_once "./lib/validate.php";
 // Route: /api/?endpoint=code-repair&reference=11007502110010100&lang=pt
 // Route: /api/?endpoint=showcase-preview (POST)
 // Route: /api/?endpoint=showcase-pdf (POST)
+// Route: /api/?endpoint=custom-datasheet-preview (POST)
+// Route: /api/?endpoint=custom-datasheet-pdf (POST)
 
 if (!$endpoint) {
     http_response_code(400);
@@ -91,6 +99,12 @@ switch ($endpoint) {
         break;
     case "showcase-pdf":
         require "./endpoints/showcase-pdf.php";
+        break;
+    case "custom-datasheet-preview":
+        require "./endpoints/custom-datasheet-preview.php";
+        break;
+    case "custom-datasheet-pdf":
+        require "./endpoints/custom-datasheet-pdf.php";
         break;
     case "dam":
         require "./endpoints/dam.php";

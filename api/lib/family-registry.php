@@ -98,10 +98,12 @@ function getFamilyRegistry(): array {
 }
 
 function buildFamilyRegistryEntry(string $familyCode, array $entry): array {
+    $entry["datasheet_runtime_implemented"] = (bool) ($entry["datasheet_runtime_supported"] ?? false);
     $productType = (string) ($entry["product_type"] ?? "");
     $showcaseMetadata = getFamilyShowcaseMetadata($familyCode, $productType);
+    $customMetadata = getFamilyCustomDatasheetMetadata($familyCode, $entry);
 
-    return array_merge($entry, $showcaseMetadata);
+    return array_merge($entry, $showcaseMetadata, $customMetadata);
 }
 
 function getFamilyShowcaseMetadata(string $familyCode, string $productType): array {
@@ -109,6 +111,7 @@ function getFamilyShowcaseMetadata(string $familyCode, string $productType): arr
     $rendererConfig = $rendererConfigs[$productType] ?? null;
     $status = getFamilyShowcaseStatus($familyCode);
     $supported = $rendererConfig !== null && $status !== "blocked_until_mapped";
+    $runtimeImplemented = in_array($familyCode, ["29", "30"], true) && ($rendererConfig["renderer"] ?? null) === "downlight";
 
     if ($rendererConfig === null) {
         return [
@@ -127,7 +130,7 @@ function getFamilyShowcaseMetadata(string $familyCode, string $productType): arr
 
     return [
         "showcase_supported" => $supported,
-        "showcase_runtime_implemented" => false,
+        "showcase_runtime_implemented" => $supported && $runtimeImplemented,
         "showcase_renderer" => $rendererConfig["renderer"],
         "showcase_status" => $status,
         "showcase_sections" => $rendererConfig["sections"],
@@ -150,7 +153,7 @@ function getShowcaseRendererConfigs(): array {
         "downlight" => [
             "renderer" => "downlight",
             "sections" => ["overview", "luminotechnical", "spectra", "technical_drawings", "lens_diagrams", "finish_gallery", "option_codes"],
-            "default_sections" => ["overview", "luminotechnical", "spectra", "technical_drawings", "lens_diagrams", "option_codes"],
+            "default_sections" => ["overview", "luminotechnical", "spectra", "technical_drawings", "lens_diagrams", "finish_gallery", "option_codes"],
             "expandable_segments" => ["size", "color", "cri", "series", "lens", "finish", "cap", "option"],
         ],
         "tubular" => [
@@ -218,6 +221,53 @@ function getDefaultShowcaseFilters(): array {
         "max_variants" => 80,
         "max_pages" => 30,
         "sort_by" => "reference",
+    ];
+}
+
+function getFamilyCustomDatasheetMetadata(string $familyCode, array $entry): array {
+    $datasheetSupported = (bool) ($entry["datasheet_runtime_supported"] ?? false);
+    $runtimeImplemented = (bool) ($entry["datasheet_runtime_implemented"] ?? false);
+
+    return [
+        "custom_datasheet_supported" => $datasheetSupported,
+        "custom_datasheet_runtime_implemented" => $datasheetSupported && $runtimeImplemented,
+        "custom_datasheet_status" => $datasheetSupported
+            ? ($runtimeImplemented ? "implemented" : "planned_v1")
+            : "blocked_until_datasheet_runtime",
+        "custom_datasheet_allowed_fields" => getDefaultCustomDatasheetAllowedFields(),
+        "custom_datasheet_defaults" => getDefaultCustomDatasheetDefaults(),
+    ];
+}
+
+function getDefaultCustomDatasheetAllowedFields(): array {
+    return [
+        "text_overrides" => ["document_title", "header_copy", "footer_note"],
+        "asset_overrides" => ["header_image", "drawing_image", "finish_image"],
+        "section_visibility" => ["fixing", "power_supply", "connection_cable"],
+        "footer" => ["marker"],
+    ];
+}
+
+function getDefaultCustomDatasheetDefaults(): array {
+    return [
+        "text_overrides" => [
+            "document_title" => "",
+            "header_copy" => "",
+            "footer_note" => "",
+        ],
+        "asset_overrides" => [
+            "header_image" => null,
+            "drawing_image" => null,
+            "finish_image" => null,
+        ],
+        "section_visibility" => [
+            "fixing" => true,
+            "power_supply" => true,
+            "connection_cable" => true,
+        ],
+        "footer" => [
+            "marker" => "CustPDF",
+        ],
     ];
 }
 
@@ -304,4 +354,29 @@ function getFamilyShowcaseDefaults(string $familyCode): array {
         "sections" => [],
         "filters" => getDefaultShowcaseFilters(),
     ];
+}
+
+function isFamilyCustomDatasheetSupported(string $familyCode): bool {
+    $entry = getFamilyRegistryEntry($familyCode);
+    return (bool) ($entry["custom_datasheet_supported"] ?? false);
+}
+
+function isFamilyCustomDatasheetRuntimeImplemented(string $familyCode): bool {
+    $entry = getFamilyRegistryEntry($familyCode);
+    return (bool) ($entry["custom_datasheet_runtime_implemented"] ?? false);
+}
+
+function getFamilyCustomDatasheetStatus(string $familyCode): string {
+    $entry = getFamilyRegistryEntry($familyCode);
+    return (string) ($entry["custom_datasheet_status"] ?? "blocked_until_datasheet_runtime");
+}
+
+function getFamilyCustomDatasheetAllowedFields(string $familyCode): array {
+    $entry = getFamilyRegistryEntry($familyCode);
+    return $entry["custom_datasheet_allowed_fields"] ?? getDefaultCustomDatasheetAllowedFields();
+}
+
+function getFamilyCustomDatasheetDefaults(string $familyCode): array {
+    $entry = getFamilyRegistryEntry($familyCode);
+    return $entry["custom_datasheet_defaults"] ?? getDefaultCustomDatasheetDefaults();
 }

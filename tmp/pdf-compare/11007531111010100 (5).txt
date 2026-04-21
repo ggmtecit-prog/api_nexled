@@ -1,0 +1,87 @@
+LLED Barra 24V 10 WW273 HE
+The 24V linear bars Nexled are a versatile lighting solution that can be applied in
+showcases, furniture, general or decorative lighting equipment.
+Great flexibility of sizes, (10cm to 225cm) with 13W/m, various colour
+temperatures and light output angles.
+Easy to install, it allows the use of individual bars and/or joining several bars in a
+continuous line up to 6 meters.
+Colour temperature Warm White 2700K CRI >80
+Colour temperature margin of 3 SDCM with reference to the centre of the
+MacAdam ellipse according to ANSI C78.377:2011.
+Energy class according to EU regulation 2019/2015.
+Characteristics
+Power source Class II constant voltage external LED drive power supply
+Voltage 24 ± 3 V DC
+Useful Lifetime 60.000 hours (L70 - 55ºC @ 65%H) *
+Beam angle 120 ± 5º **
+Working Temp. -20 to 40 ºC
+Isolation Class III
+Protection degree IP64
+Lumen maintenance LM80 (Report available: LM-80 9000hrs)
+Certificate CE / RoHs
+Field angle Clear: 135 ± 5º Frost: 195 ± 5º ***
+Current 42 mA
+Power 1 ± 0.5 W
+Nr of LEDs 12 - SMD
+Lighting characteristics
+Reference Description Flux (Lm)1 Effi. (Lm/W) Temp. (K)2 Colour CRI Cover
+11007531111010100 LLED Barra 24V 10 WW273 HE 139 139 2725 ± 71 Warm 80 Clear
+* Luminosity depreciation based on L70.
+** Beam angle: 50% of maximum luminosity.
+*** Field angle: 10% of maximum luminosity.
+4 Fluxo Luminoso ± 7.5%.
+5 Other color temperatures available uppon request.
+TEC IT, Tecnologia, Inteligência e Domótica, S.A.
+Travessa Cabo do Mundo, 681 | 4455-427 Perafita Matosinhos | tel: +351 229 999 230 | e-mail: comercial@tecit.pt | www.tecit.pt
+Last update: 2025-05-23. Datasheet v.: 1.69 | Specifications and design subject to change without notice. Pag. 1/3
+
+LLED Barra 24V 10 WW273 HE
+Technical Drawing
+B D
+F A
+C E
+A B C D E
+88 11.4 17 13 19
+Measurements in millimetres (mm)
+Color Temperature - Color Spectrum
+WW273HE - Warm White 2700K CRI >80
+CIE Colorimetric Parameters
+Chromaticity coordinates: x=0.4578 y=0.4101 u'=0.2614 v'=0.5268
+CCT: Tc=2725K Color Ratio: R=0.257 G=0.713 B=0.030 CRI: Ra=82
+0.450.4520.4540.4560.4580.460.4620.464CIE-X
+CIE-Y
+0.4
+0.405
+0.41
+0.415
+0.42
+WaveLength (nm)
+1
+0.8
+0.6
+0.4
+0.2
+0 400 500 600 700 800
+Relative Spectrum
+CCT=2725 K
+Colour temperature margin of 3 SDCM with reference to the centre of the MacAdam ellipse according to ANSI C78.377:2011.
+Lens - Radiation Diagram
+Clear
+90°90°
+ 30°
+ 60°
+30° 
+60° 
+0ºcd.klmC0-C180
+TEC IT, Tecnologia, Inteligência e Domótica, S.A.
+Travessa Cabo do Mundo, 681 | 4455-427 Perafita Matosinhos | tel: +351 229 999 230 | e-mail: comercial@tecit.pt | www.tecit.pt
+Last update: 2025-05-23. Datasheet v.: 1.69 | Specifications and design subject to change without notice. Pag. 2/3
+
+LLED Barra 24V 10 WW273 HE
+Cover and body finishing
+Body finishing: Alu - Natural Aluminum
+Cover: Clear
+Powered by TCPDF (www.tcpdf.org)
+TEC IT, Tecnologia, Inteligência e Domótica, S.A.
+Travessa Cabo do Mundo, 681 | 4455-427 Perafita Matosinhos | tel: +351 229 999 230 | e-mail: comercial@tecit.pt | www.tecit.pt
+Last update: 2025-05-23. Datasheet v.: 1.69 | Specifications and design subject to change without notice. Pag. 3/3

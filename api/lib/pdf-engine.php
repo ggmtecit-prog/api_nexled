@@ -23,6 +23,7 @@ require_once TCPDF_PATH . "tcpdf_include.php";
 require_once TCPDF_PATH . "tcpdf.php";
 require_once TCPDF_PATH . "classes.php";
 
+require_once dirname(__FILE__) . "/validate.php";
 require_once dirname(__FILE__) . "/images.php";
 require_once dirname(__FILE__) . "/reference-decoder.php";
 require_once dirname(__FILE__) . "/luminotechnical.php";
@@ -48,7 +49,19 @@ require_once dirname(__FILE__) . "/pdf-layout.php";
  * @return string  Footer text with date and version substituted in
  */
 function criarFooter(string $productId, string $lang): string {
-    return getFooter($productId, $lang);
+    $footer = getFooter($productId, $lang);
+    $customFooterNote = trim((string) ($GLOBALS["customPdfFooterNote"] ?? ""));
+    $customFooterMarker = trim((string) ($GLOBALS["customPdfFooterMarker"] ?? ""));
+
+    if ($customFooterNote !== "") {
+        $footer .= " | " . htmlspecialchars($customFooterNote, ENT_QUOTES, "UTF-8");
+    }
+
+    if ($customFooterMarker !== "") {
+        $footer .= " | " . htmlspecialchars($customFooterMarker, ENT_QUOTES, "UTF-8");
+    }
+
+    return $footer;
 }
 
 
@@ -211,12 +224,12 @@ function validateStrictExperimentalBarCompleteness(array $data, array $parts, ?s
 // ---------------------------------------------------------------------------
 
 /**
- * Builds a PDF datasheet binary from a normalized input payload.
+ * Builds the official datasheet snapshot used by both official and custom PDFs.
  *
- * Returns the raw PDF bytes.
+ * Returns the normalized render context.
  * Throws DatasheetRequestException for validation/runtime errors.
  */
-function buildDatasheetPdfBinary(array $input): string {
+function buildDatasheetRenderContext(array $input): array {
     $reference = "";
     $productId = "";
     $stage = "parse_input";
@@ -379,40 +392,18 @@ function buildDatasheetPdfBinary(array $input): string {
         }
     }
 
-    // --- Build HTML ---
-    $stage = "build_layout";
-    $css  = "<style>" . file_get_contents(APP_CSS_PATH) . "</style>";
-    $html = $css . buildPdfLayout($data);
-
-    // --- Set TCPDF globals (read by NEXLEDPDF::Header() and NEXLEDPDF::Footer()) ---
-    // NEXLEDPDF uses: global $pdf, $descricaoProduto, $empresa, $IDProduto, $lang
-    global $pdf, $descricaoProduto, $empresa, $IDProduto;
-    $descricaoProduto  = $description;
-    $empresa           = $company;
-    $IDProduto         = $productId;
-    $GLOBALS["lang"]   = $lang;  // NEXLEDPDF::Footer() reads the global $lang
-
-    // --- Generate PDF ---
-    $stage = "render_pdf";
-    set_time_limit(0);
-    ini_set("memory_limit", "640M");
-
-    ob_start();
-
-    $pdf = new NEXLEDPDF("p", "mm", "A4", true, "UTF-8", false);
-    $pdf->SetTopMargin(25);
-    $pdf->SetLeftMargin(10);
-    $pdf->SetRightMargin(10);
-    $pdf->AddPage();
-    $pdf->setAllowLocalFiles(true);
-    $pdf->setRasterizeVectorImages(false);
-    $pdf->setFontSubsetting(true);
-    $pdf->SetFont("helvetica", "", 10, "", true);
-    $pdf->writeHTML($html, true, false, true, false, "");
-
-    ob_end_clean();
-
-    return (string) $pdf->Output("", "S");
+    return [
+        "data" => $data,
+        "reference" => $reference,
+        "product_id" => $productId,
+        "description" => $description,
+        "document_title" => $description,
+        "company" => $company,
+        "lang" => $lang,
+        "footer_note" => "",
+        "footer_marker" => "officPDF",
+        "filename_reference" => preg_replace("/[^a-zA-Z0-9_-]/", "", $reference) ?: "datasheet",
+    ];
     } catch (DatasheetRequestException $error) {
         throw $error;
     } catch (\Throwable $error) {
@@ -428,6 +419,79 @@ function buildDatasheetPdfBinary(array $input): string {
             "reference" => $reference,
         ]);
     }
+}
+
+/**
+ * Renders one datasheet PDF binary from a prepared render context.
+ *
+ * @param  array $context
+ * @return string
+ */
+function renderDatasheetPdfBinaryFromContext(array $context): string {
+    $stage = "build_layout";
+    $reference = (string) ($context["reference"] ?? "");
+    $productId = (string) ($context["product_id"] ?? "");
+
+    try {
+        $css = "<style>" . file_get_contents(APP_CSS_PATH) . "</style>";
+        $html = $css . buildPdfLayout($context["data"] ?? []);
+
+        // --- Set TCPDF globals (read by NEXLEDPDF::Header() and NEXLEDPDF::Footer()) ---
+        global $pdf, $descricaoProduto, $empresa, $IDProduto;
+        $descricaoProduto = (string) ($context["document_title"] ?? $context["description"] ?? "");
+        $empresa = (string) ($context["company"] ?? "0");
+        $IDProduto = $productId;
+        $GLOBALS["lang"] = (string) ($context["lang"] ?? "pt");
+        $GLOBALS["customPdfFooterNote"] = (string) ($context["footer_note"] ?? "");
+        $GLOBALS["customPdfFooterMarker"] = (string) ($context["footer_marker"] ?? "");
+
+        // --- Generate PDF ---
+        $stage = "render_pdf";
+        set_time_limit(0);
+        ini_set("memory_limit", "640M");
+
+        ob_start();
+
+        $pdf = new NEXLEDPDF("p", "mm", "A4", true, "UTF-8", false);
+        $pdf->SetTopMargin(25);
+        $pdf->SetLeftMargin(10);
+        $pdf->SetRightMargin(10);
+        $pdf->AddPage();
+        $pdf->setAllowLocalFiles(true);
+        $pdf->setRasterizeVectorImages(false);
+        $pdf->setFontSubsetting(true);
+        $pdf->SetFont("helvetica", "", 10, "", true);
+        $pdf->writeHTML($html, true, false, true, false, "");
+
+        ob_end_clean();
+
+        return (string) $pdf->Output("", "S");
+    } catch (DatasheetRequestException $error) {
+        throw $error;
+    } catch (\Throwable $error) {
+        error_log(
+            "NexLed datasheet render fatal: stage={$stage}; reference={$reference}; productId={$productId}; " .
+            "message=" . $error->getMessage()
+        );
+
+        throw new DatasheetRequestException(500, [
+            "error" => "Datasheet internal error",
+            "stage" => $stage,
+            "detail" => $error->getMessage(),
+            "reference" => $reference,
+        ]);
+    }
+}
+
+/**
+ * Builds a PDF datasheet binary from a normalized input payload.
+ *
+ * Returns the raw PDF bytes.
+ * Throws DatasheetRequestException for validation/runtime errors.
+ */
+function buildDatasheetPdfBinary(array $input): string {
+    $context = buildDatasheetRenderContext($input);
+    return renderDatasheetPdfBinaryFromContext($context);
 }
 
 function generateDatasheet(): void {

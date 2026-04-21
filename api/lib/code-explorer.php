@@ -1424,9 +1424,11 @@ function loadFamilyReadyProductsBaseRows(string $familyCode): ?array {
 
     $payload = json_decode((string) @file_get_contents($path), true);
 
+    $version = intval($payload["version"] ?? 0);
+
     if (
         !is_array($payload) ||
-        intval($payload["version"] ?? 0) !== FAMILY_READY_PRODUCTS_CACHE_VERSION ||
+        !in_array($version, [3, FAMILY_READY_PRODUCTS_CACHE_VERSION], true) ||
         !isset($payload["rows"]) ||
         !is_array($payload["rows"])
     ) {

@@ -336,6 +336,7 @@ function normalizeShowcaseExpandedSegments(mixed $expanded, string $family): arr
 
 function normalizeShowcaseSections(mixed $sections, string $family, array $defaultSections): array {
     if ($sections === null) {
+        $defaultSections = enforceRequiredShowcaseSections($defaultSections, $family);
         return [
             "ok" => true,
             "data" => $defaultSections,
@@ -381,10 +382,36 @@ function normalizeShowcaseSections(mixed $sections, string $family, array $defau
         );
     }
 
+    $normalized = enforceRequiredShowcaseSections($normalized, $family);
+
     return [
         "ok" => true,
         "data" => $normalized,
     ];
+}
+
+function enforceRequiredShowcaseSections(array $sections, string $family): array {
+    $normalized = array_values(array_unique(array_filter(array_map(
+        static fn($section): string => strtolower(trim((string) $section)),
+        $sections
+    ))));
+
+    if (getFamilyShowcaseRenderer($family) !== "downlight") {
+        return $normalized;
+    }
+
+    if (!in_array($family, ["29", "30"], true)) {
+        return $normalized;
+    }
+
+    if (
+        in_array("option_codes", $normalized, true) &&
+        !in_array("finish_gallery", $normalized, true)
+    ) {
+        $normalized[] = "finish_gallery";
+    }
+
+    return $normalized;
 }
 
 function normalizeShowcaseFilters(mixed $filters, array $defaults): array {

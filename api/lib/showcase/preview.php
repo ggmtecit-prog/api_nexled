@@ -22,7 +22,7 @@ function buildShowcasePreview(array $normalizedRequest, array $warnings = []): a
     }
 
     $renderer = (string) (getFamilyShowcaseRenderer($family) ?? "");
-    $estimate = estimateShowcasePageCount($renderer, $sections, $querySummary);
+    $estimate = estimateShowcasePageCount($renderer, $sections, $querySummary, $normalizedRequest);
     $estimatedPages = (int) ($estimate["estimated_pages"] ?? 0);
     $maxVariants = (int) ($filters["max_variants"] ?? 80);
     $maxPages = (int) ($filters["max_pages"] ?? 30);
@@ -77,10 +77,19 @@ function buildShowcasePreview(array $normalizedRequest, array $warnings = []): a
     ];
 }
 
-function estimateShowcasePageCount(string $renderer, array $sections, array $querySummary): array {
+function estimateShowcasePageCount(string $renderer, array $sections, array $querySummary, array $normalizedRequest = []): array {
     $profile = getShowcaseEstimateProfile($renderer);
     $counts = $querySummary["distinct_counts"] ?? [];
     $variantCount = (int) ($querySummary["variant_count"] ?? 0);
+    $expandedSegments = array_values(array_filter(
+        array_map(static fn($segment): string => strtolower(trim((string) $segment)), $normalizedRequest["expanded"] ?? [])
+    ));
+    $legendGroupCount = max(1, count($expandedSegments));
+
+    if ($renderer === "downlight") {
+        return estimateDownlightShowcasePageCount($sections, $counts, $variantCount, $legendGroupCount);
+    }
+
     $estimatedPages = 0;
 
     foreach ($sections as $section) {
@@ -99,12 +108,59 @@ function estimateShowcasePageCount(string $renderer, array $sections, array $que
             "finish_gallery" => ((int) ($counts["finishes"] ?? 0)) > 0
                 ? max(1, (int) ceil(((int) ($counts["finishes"] ?? 0)) / max(1, (int) ($profile["finish_gallery_per_page"] ?? 6))))
                 : 0,
-            "option_codes" => 1,
+            "option_codes" => max(1, (int) ceil($legendGroupCount / max(1, (int) ($profile["option_code_groups_per_page"] ?? 2)))),
             "accessories" => 1,
             "power_supplies" => 1,
             "connection_cables" => 1,
             default => 0,
         };
+    }
+
+    return [
+        "estimated_pages" => max(1, $estimatedPages),
+        "warnings" => ["showcase_estimated_pages_is_heuristic"],
+    ];
+}
+
+function estimateDownlightShowcasePageCount(array $sections, array $counts, int $variantCount, int $legendGroupCount): array {
+    $estimatedPages = 0;
+    $identityCount = max(1, (int) ($counts["identities"] ?? $variantCount));
+    $spectraGroupEstimate = max(0, min(
+        $identityCount,
+        max(1, (int) ceil((int) ($counts["led_ids"] ?? 0) * 0.7))
+    ));
+    $hasOverview = in_array("overview", $sections, true);
+    $hasLumino = in_array("luminotechnical", $sections, true);
+    $hasDrawing = in_array("technical_drawings", $sections, true);
+    $hasSpectra = in_array("spectra", $sections, true);
+    $hasLens = in_array("lens_diagrams", $sections, true);
+    $hasOptions = in_array("option_codes", $sections, true);
+
+    if ($hasOverview) {
+        $estimatedPages++;
+    }
+
+    if ($hasLumino || $hasDrawing) {
+        if ($hasLumino) {
+            $estimatedPages += max(1, (int) ceil($identityCount / 14));
+        } else {
+            $estimatedPages++;
+        }
+    }
+
+    if ($hasSpectra) {
+        $estimatedPages += $spectraGroupEstimate > 0
+            ? max(1, (int) ceil($spectraGroupEstimate / 3))
+            : 0;
+    }
+
+    if ($hasLens || $hasOptions) {
+        $lensPages = $hasLens && ((int) ($counts["lenses"] ?? 0)) > 0
+            ? max(1, (int) ceil(((int) ($counts["lenses"] ?? 0)) / 2))
+            : 0;
+        $suffixLegendGroupCount = min(3, $legendGroupCount);
+        $optionPages = $hasOptions ? max(1, (int) ceil($suffixLegendGroupCount / 3)) : 0;
+        $estimatedPages += max($lensPages, $optionPages, 1);
     }
 
     return [
@@ -121,6 +177,7 @@ function getShowcaseEstimateProfile(string $renderer): array {
             "technical_drawings_per_page" => 2,
             "lens_diagrams_per_page" => 6,
             "finish_gallery_per_page" => 8,
+            "option_code_groups_per_page" => 2,
         ],
         "downlight" => [
             "luminotechnical_rows_per_page" => 18,
@@ -128,6 +185,7 @@ function getShowcaseEstimateProfile(string $renderer): array {
             "technical_drawings_per_page" => 2,
             "lens_diagrams_per_page" => 6,
             "finish_gallery_per_page" => 6,
+            "option_code_groups_per_page" => 2,
         ],
         "tubular", "shelf" => [
             "luminotechnical_rows_per_page" => 18,
@@ -135,6 +193,7 @@ function getShowcaseEstimateProfile(string $renderer): array {
             "technical_drawings_per_page" => 2,
             "lens_diagrams_per_page" => 6,
             "finish_gallery_per_page" => 6,
+            "option_code_groups_per_page" => 2,
         ],
         default => [
             "luminotechnical_rows_per_page" => 16,
@@ -142,6 +201,7 @@ function getShowcaseEstimateProfile(string $renderer): array {
             "technical_drawings_per_page" => 2,
             "lens_diagrams_per_page" => 4,
             "finish_gallery_per_page" => 6,
+            "option_code_groups_per_page" => 2,
         ],
     };
 }
