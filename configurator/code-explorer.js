@@ -76,6 +76,67 @@ const EXPLORER_SEARCH_ENTRY_LIMIT = 10;
 const EXPLORER_BATCH_GROUP_ROW_LIMIT = 25;
 const EXPLORER_SEARCH_DEFAULT_PAGE_SIZE = 10;
 const EXPLORER_FILTER_DEFAULT_PAGE_SIZE = 5;
+const TECIT_LOGIC_FAMILIES = [
+    { code: "01", name: "T8 AC" },
+    { code: "02", name: "T8 VC" },
+    { code: "03", name: "T8 CC" },
+    { code: "04", name: "T5 CC" },
+    { code: "05", name: "T5 VC" },
+    { code: "06", name: "T5 AC" },
+    { code: "07", name: "PLL" },
+    { code: "08", name: "PLC" },
+    { code: "09", name: "S14" },
+    { code: "10", name: "Barra CC" },
+    { code: "11", name: "Barra 24V" },
+    { code: "12", name: "Spot" },
+    { code: "13", name: "AR111" },
+    { code: "14", name: "AR111 CC" },
+    { code: "15", name: "AR111 COB" },
+    { code: "16", name: "PAR 30" },
+    { code: "17", name: "PAR 30 CC" },
+    { code: "18", name: "PAR 30 COB" },
+    { code: "19", name: "PAR 38" },
+    { code: "20", name: "PAR 38 CC" },
+    { code: "21", name: "PAR 38 COB" },
+    { code: "22", name: "Decoracao" },
+    { code: "23", name: "Projetores" },
+    { code: "24", name: "Campanulas" },
+    { code: "25", name: "Luminarias" },
+    { code: "26", name: "Retrofit redondo" },
+    { code: "27", name: "Retrofit quadrado" },
+    { code: "28", name: "Retrofit spot" },
+    { code: "29", name: "Downlight redondo" },
+    { code: "30", name: "Downlight quadrado" },
+    { code: "31", name: "Barra RGB 24V VC" },
+    { code: "32", name: "Barra 24V T" },
+    { code: "33", name: "DL Quadrado COB" },
+    { code: "34", name: "DL Redondo COB" },
+    { code: "35", name: "Armadura emb" },
+    { code: "36", name: "Armadura ext" },
+    { code: "37", name: "Painel" },
+    { code: "38", name: "Painel Embutir" },
+    { code: "39", name: "Retrofit armadura" },
+    { code: "40", name: "Barra 24V CCT" },
+    { code: "41", name: "Projetor CCT" },
+    { code: "42", name: "BT CCT" },
+    { code: "43", name: "Decoracao2" },
+    { code: "45", name: "BT45 24V" },
+    { code: "46", name: "Projetor 2" },
+    { code: "47", name: "Retrofit campanula" },
+    { code: "48", name: "Dynamic" },
+    { code: "49", name: "ShelfLED" },
+    { code: "50", name: "Armadura IP" },
+    { code: "51", name: "Village" },
+    { code: "52", name: "DualTop embutir" },
+    { code: "53", name: "DualTop saliente" },
+    { code: "54", name: "Canopy" },
+    { code: "55", name: "Barra 12V" },
+    { code: "56", name: "BT 12V" },
+    { code: "57", name: "Projetor 3" },
+    { code: "58", name: "B 24V HOT" },
+    { code: "59", name: "NEON 24V" },
+    { code: "60", name: "B 24V I45" },
+];
 
 let apiBasePromise = null;
 let hasSuccessfulApiContact = false;
@@ -2279,15 +2340,7 @@ function renderTecitCodeLogicFamilies() {
         return;
     }
 
-    const families = Array.isArray(explorerState.families)
-        ? explorerState.families
-            .map((family) => ({
-                code: String(family?.codigo || "").trim(),
-                name: String(family?.nome || "").trim(),
-            }))
-            .filter((family) => family.code !== "")
-            .sort((left, right) => left.code.localeCompare(right.code, undefined, { numeric: true }))
-        : [];
+    const families = TECIT_LOGIC_FAMILIES;
 
     if (families.length === 0) {
         list.innerHTML = `
