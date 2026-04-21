@@ -19,11 +19,12 @@ const CODE_EXPLORER_STATUS_DATASHEET_BLOCKED = "datasheet_blocked";
 const CODE_EXPLORER_DEFAULT_LANG = "pt";
 const CODE_EXPLORER_MAX_FULL_MATRIX_ROWS = 1000000;
 const CODE_EXPLORER_SEGMENT_KEYS = ["size", "color", "cri", "series", "lens", "finish", "cap", "option"];
+const FAMILY_READY_FILTER_KEYS = ["product_type", "size", "color", "cri", "series", "lens", "finish", "cap"];
 const CODE_EXPLORER_MODE_SEARCH = "search";
 const CODE_EXPLORER_MODE_FILTERS = "filters";
 const CODE_EXPLORER_SEARCH_TYPE_CODE = "code";
 const CODE_EXPLORER_SEARCH_TYPE_DESCRIPTION = "description";
-const FAMILY_READY_PRODUCTS_CACHE_VERSION = 2;
+const FAMILY_READY_PRODUCTS_CACHE_VERSION = 3;
 
 function getCodeExplorerMode(mixed $value): string {
     $normalized = trim(strtolower((string) $value));
@@ -337,6 +338,100 @@ function getCodeExplorerSegmentLength(string $segment): int {
         "option" => REFERENCE_LENGTH_OPTION,
         default => 0,
     };
+}
+
+function normalizeFamilyReadyFilterValue(string $key, mixed $value): string {
+    $normalizedValue = preg_replace('/\s+/', '', trim((string) $value));
+
+    if ($normalizedValue === "") {
+        return "";
+    }
+
+    if ($key === "product_type") {
+        return strtolower($normalizedValue);
+    }
+
+    $segmentLength = getCodeExplorerSegmentLength($key);
+
+    if ($segmentLength > 0 && ctype_digit($normalizedValue) && strlen($normalizedValue) < $segmentLength) {
+        return str_pad($normalizedValue, $segmentLength, "0", STR_PAD_LEFT);
+    }
+
+    return $normalizedValue;
+}
+
+function getFamilyReadyFilterAllowedValues(string $key, array $options, array $baseRows): array {
+    if ($key === "product_type") {
+        return array_values(array_unique(array_filter(array_map(
+            static fn(array $row): string => strtolower((string) ($row["product_type"] ?? "")),
+            $baseRows
+        ))));
+    }
+
+    return array_values(array_filter(array_map(
+        static fn(array $option): string => (string) ($option["code"] ?? ""),
+        $options[$key] ?? []
+    )));
+}
+
+function getFamilyReadyFilters(array $input, array $options, array $baseRows): array {
+    $filters = [];
+
+    foreach (FAMILY_READY_FILTER_KEYS as $key) {
+        $rawValue = trim((string) ($input[$key] ?? ""));
+
+        if ($rawValue === "") {
+            $filters[$key] = [];
+            continue;
+        }
+
+        $allowedValues = getFamilyReadyFilterAllowedValues($key, $options, $baseRows);
+        $normalizedValues = array_values(array_unique(array_filter(array_map(
+            static fn(string $value): string => normalizeFamilyReadyFilterValue($key, $value),
+            explode(",", $rawValue)
+        ))));
+
+        $filters[$key] = array_values(array_filter(
+            $normalizedValues,
+            static fn(string $value): bool => in_array($value, $allowedValues, true)
+        ));
+    }
+
+    return $filters;
+}
+
+function filterFamilyReadyBaseRows(array $baseRows, array $filters): array {
+    return array_values(array_filter($baseRows, static function (array $row) use ($filters): bool {
+        foreach (FAMILY_READY_FILTER_KEYS as $key) {
+            $allowedValues = $filters[$key] ?? [];
+
+            if (!is_array($allowedValues) || count($allowedValues) === 0) {
+                continue;
+            }
+
+            $rowValue = normalizeFamilyReadyFilterValue($key, $row[$key] ?? "");
+
+            if (!in_array($rowValue, $allowedValues, true)) {
+                return false;
+            }
+        }
+
+        return true;
+    }));
+}
+
+function getFamilyReadyAppliedFilters(array $filters): array {
+    $applied = [];
+
+    foreach (FAMILY_READY_FILTER_KEYS as $key) {
+        $values = $filters[$key] ?? [];
+
+        if (is_array($values) && count($values) > 0) {
+            $applied[$key] = array_values($values);
+        }
+    }
+
+    return $applied;
 }
 
 function getCodeExplorerLuminosIdentities(string $familyCode): array {
@@ -1378,6 +1473,7 @@ function collectFamilyReadyProductBaseRows(string $familyCode, array $options, a
         $description = (string) ($identityData["description"] ?? "");
         $productType = $identityData["product_type"] ?? $defaultProductType;
         $ledId = (string) ($identityData["led_id"] ?? "");
+        $identityParts = decodeReference($identity . str_repeat("0", REFERENCE_LENGTH_FULL - REFERENCE_LENGTH_IDENTITY));
         $validatorCache = [];
 
         foreach ($options["lens"] as $lens) {
@@ -1422,6 +1518,10 @@ function collectFamilyReadyProductBaseRows(string $familyCode, array $options, a
                         "product_type" => $productType,
                         "product_id" => $productId,
                         "led_id" => $ledId,
+                        "size" => $identityParts["size"] ?? "",
+                        "color" => $identityParts["color"] ?? "",
+                        "cri" => $identityParts["cri"] ?? "",
+                        "series" => $identityParts["series"] ?? "",
                         "lens" => $lens["code"],
                         "finish" => $finish["code"],
                         "cap" => $cap["code"],
@@ -1434,8 +1534,7 @@ function collectFamilyReadyProductBaseRows(string $familyCode, array $options, a
     return $baseRows;
 }
 
-function buildFamilyReadyProductsResponse(string $familyCode, string $familyName, array $options, array $identities, int $page, int $pageSize): array {
-    $requestedPage = max($page, 1);
+function getFamilyReadyProductsBaseRows(string $familyCode, string $familyName, array $options, array $identities): array {
     $baseRows = loadFamilyReadyProductsBaseRows($familyCode);
 
     if ($baseRows === null) {
@@ -1443,6 +1542,10 @@ function buildFamilyReadyProductsResponse(string $familyCode, string $familyName
         storeFamilyReadyProductsBaseRows($familyCode, $familyName, $baseRows);
     }
 
+    return $baseRows;
+}
+
+function getFamilyReadyOptionCodes(array $options): array {
     $optionCodes = array_values(array_filter(array_unique(array_map(
         static fn($option) => (string) ($option["code"] ?? ""),
         $options["option"] ?? []
@@ -1452,8 +1555,24 @@ function buildFamilyReadyProductsResponse(string $familyCode, string $familyName
         $optionCodes = [str_repeat("0", REFERENCE_LENGTH_OPTION)];
     }
 
+    return $optionCodes;
+}
+
+function buildFamilyReadyProductsResponse(
+    string $familyCode,
+    string $familyName,
+    array $options,
+    array $identities,
+    int $page,
+    int $pageSize,
+    array $filters = []
+): array {
+    $requestedPage = max($page, 1);
+    $baseRows = getFamilyReadyProductsBaseRows($familyCode, $familyName, $options, $identities);
+    $filteredBaseRows = filterFamilyReadyBaseRows($baseRows, $filters);
+    $optionCodes = getFamilyReadyOptionCodes($options);
     $optionCount = count($optionCodes);
-    $readyTotal = count($baseRows) * $optionCount;
+    $readyTotal = count($filteredBaseRows) * $optionCount;
     $totalPages = max(1, (int) ceil($readyTotal / $pageSize));
     $safePage = min($requestedPage, $totalPages);
     $offset = ($safePage - 1) * $pageSize;
@@ -1463,8 +1582,8 @@ function buildFamilyReadyProductsResponse(string $familyCode, string $familyName
         $baseIndex = intdiv($offset, $optionCount);
         $optionIndex = $offset % $optionCount;
 
-        while ($baseIndex < count($baseRows) && count($pageRows) < $pageSize) {
-            $baseRow = $baseRows[$baseIndex];
+        while ($baseIndex < count($filteredBaseRows) && count($pageRows) < $pageSize) {
+            $baseRow = $filteredBaseRows[$baseIndex];
 
             while ($optionIndex < $optionCount && count($pageRows) < $pageSize) {
                 $optionCode = $optionCodes[$optionIndex];
@@ -1496,6 +1615,7 @@ function buildFamilyReadyProductsResponse(string $familyCode, string $familyName
             "code" => $familyCode,
             "name" => $familyName,
         ],
+        "applied_filters" => getFamilyReadyAppliedFilters($filters),
         "summary" => [
             "total_ready_products" => $readyTotal,
         ],
@@ -1506,6 +1626,95 @@ function buildFamilyReadyProductsResponse(string $familyCode, string $familyName
             "total_rows" => $readyTotal,
         ],
         "rows" => $pageRows,
+    ];
+}
+
+function buildFamilyReadyFilterChoices(
+    string $key,
+    array $baseRows,
+    array $otherFilters,
+    array $options,
+    int $optionCount
+): array {
+    $candidateRows = filterFamilyReadyBaseRows($baseRows, $otherFilters);
+    $counts = [];
+
+    foreach ($candidateRows as $row) {
+        $value = normalizeFamilyReadyFilterValue($key, $row[$key] ?? "");
+
+        if ($value === "") {
+            continue;
+        }
+
+        $counts[$value] = ($counts[$value] ?? 0) + $optionCount;
+    }
+
+    if (count($counts) === 0) {
+        return [];
+    }
+
+    $choices = [];
+
+    if ($key === "product_type") {
+        ksort($counts);
+
+        foreach ($counts as $value => $count) {
+            $choices[] = [
+                "value" => $value,
+                "label" => $value,
+                "count" => $count,
+            ];
+        }
+
+        return $choices;
+    }
+
+    foreach ($options[$key] ?? [] as $option) {
+        $value = (string) ($option["code"] ?? "");
+
+        if (!isset($counts[$value])) {
+            continue;
+        }
+
+        $choices[] = [
+            "value" => $value,
+            "label" => (string) ($option["label"] ?? $value),
+            "count" => $counts[$value],
+        ];
+    }
+
+    return $choices;
+}
+
+function buildFamilyReadyFiltersResponse(
+    string $familyCode,
+    string $familyName,
+    array $options,
+    array $identities,
+    array $filters = []
+): array {
+    $baseRows = getFamilyReadyProductsBaseRows($familyCode, $familyName, $options, $identities);
+    $optionCodes = getFamilyReadyOptionCodes($options);
+    $optionCount = count($optionCodes);
+    $filteredBaseRows = filterFamilyReadyBaseRows($baseRows, $filters);
+    $availableFilters = [];
+
+    foreach (FAMILY_READY_FILTER_KEYS as $key) {
+        $otherFilters = $filters;
+        $otherFilters[$key] = [];
+        $availableFilters[$key] = buildFamilyReadyFilterChoices($key, $baseRows, $otherFilters, $options, $optionCount);
+    }
+
+    return [
+        "family" => [
+            "code" => $familyCode,
+            "name" => $familyName,
+        ],
+        "applied_filters" => getFamilyReadyAppliedFilters($filters),
+        "summary" => [
+            "total_ready_products" => count($filteredBaseRows) * $optionCount,
+        ],
+        "available_filters" => $availableFilters,
     ];
 }
 

@@ -129,6 +129,7 @@ This means:
 | `svg-diagnostics` | Debug resolved SVG/PNG asset readiness | Debug/support endpoint |
 | `code-explorer` | Explore generated code space by family | Live, valid-only mode useful; unsupported runtimes surfaced honestly |
 | `family-ready-products` | Ready-only family import rows for EPREL/client import flows | Live, paginated, based on real identities + exact readiness checks; caches ready base combos per family |
+| `family-ready-filters` | Real available filters for ready-only family import | Live, uses the same Central API truth as `family-ready-products`; supports EPREL UI narrowing without local fake filtering |
 | `assets` | Older coarse asset endpoint | Exists, transitional |
 | `dam` | Newer DAM tree/list/upload-style endpoint | Exists, active design/workstream |
 
@@ -196,6 +197,7 @@ Relevant family/mask docs:
 - [api/T8_ASSET_INVENTORY.md](api/T8_ASSET_INVENTORY.md)
 - [api/PRODUCT_ONBOARDING_MEMORY.md](api/PRODUCT_ONBOARDING_MEMORY.md)
 - [api/EPREL_SHARED_LOGIC.md](api/EPREL_SHARED_LOGIC.md)
+- [api/EPREL_FAMILY_FILTER_PLAN.md](api/EPREL_FAMILY_FILTER_PLAN.md)
 
 ### Current Family Runtime Snapshot
 
@@ -422,7 +424,9 @@ Relevant parity docs:
 
 - EPREL needs real family import, not synthetic family search
 - Central API now exposes `family-ready-products` for ready-only family import rows
+- Central API now also exposes `family-ready-filters` so EPREL can narrow families in its own UI while API still applies the real filter logic
 - EPREL should import from that endpoint page by page
+- EPREL should request filters from Central API and send selected filter values back unchanged
 - `code-explorer` remains analysis tooling, not the EPREL import source
 ### 6. DAM Future Work
 
@@ -629,6 +633,7 @@ Best non-Barra docs to start with for current expansion work:
 
 - `PROJECT_MEMORY.md`
 - [api/EPREL_SHARED_LOGIC.md](api/EPREL_SHARED_LOGIC.md)
+- [api/EPREL_FAMILY_FILTER_PLAN.md](api/EPREL_FAMILY_FILTER_PLAN.md)
 
 ### Active Planning / Active Current-State Docs
 

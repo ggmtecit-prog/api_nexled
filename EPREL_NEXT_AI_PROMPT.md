@@ -19,8 +19,9 @@ Do not mix them.
 1. [PROJECT_MEMORY.md](PROJECT_MEMORY.md)
 2. [api/EPREL_SHARED_LOGIC.md](api/EPREL_SHARED_LOGIC.md)
 3. [api/EPREL_FAMILY_ASSET_DELIVERY_PLAN.md](api/EPREL_FAMILY_ASSET_DELIVERY_PLAN.md)
-4. [api/PRODUCT_ONBOARDING_MEMORY.md](api/PRODUCT_ONBOARDING_MEMORY.md)
-5. [api/DAM_API_CONTRACT.md](api/DAM_API_CONTRACT.md)
+4. [api/EPREL_FAMILY_FILTER_PLAN.md](api/EPREL_FAMILY_FILTER_PLAN.md)
+5. [api/PRODUCT_ONBOARDING_MEMORY.md](api/PRODUCT_ONBOARDING_MEMORY.md)
+6. [api/DAM_API_CONTRACT.md](api/DAM_API_CONTRACT.md)
 
 Then inspect Central API files:
 
@@ -37,6 +38,7 @@ Then inspect Central API files:
 Central API now has a live endpoint:
 
 - `GET /api/?endpoint=family-ready-products&family=01&page=1&page_size=100`
+- `GET /api/?endpoint=family-ready-filters&family=01`
 
 And live file endpoints:
 
@@ -59,6 +61,25 @@ Current endpoint behavior:
 4. paginate the final ready rows
 5. cache ready base combos per family in:
    - `output/family-ready-products/<family>.json`
+
+Current filter behavior:
+
+- EPREL UI chooses filters
+- Central API applies them
+- supported filter params:
+  - `product_type`
+  - `size`
+  - `color`
+  - `cri`
+  - `series`
+  - `lens`
+  - `finish`
+  - `cap`
+- request values use raw codes
+- multi-select format is comma-separated
+- `AND` between different filters
+- `OR` within one filter
+- `option` is intentionally not supported in v1
 
 Current asset rule:
 
@@ -92,6 +113,11 @@ Do not use for family import:
 Example:
 
 - `GET /api/?endpoint=family-ready-products&family=01&page=1&page_size=100`
+- `GET /api/?endpoint=family-ready-products&family=01&size=0180,0544&color=25&lens=1&page=1&page_size=100`
+
+Filters endpoint example:
+
+- `GET /api/?endpoint=family-ready-filters&family=01&color=25&lens=1`
 
 Auth:
 
@@ -130,6 +156,33 @@ Auth:
       "spectral_url": "https://apinexled-production.up.railway.app/api/?endpoint=file-spectral&reference=01018002111010100"
     }
   ]
+}
+```
+
+### Filter response contract
+
+```json
+{
+  "family": {
+    "code": "01",
+    "name": "T8 AC"
+  },
+  "applied_filters": {
+    "color": ["25"],
+    "lens": ["1"]
+  },
+  "summary": {
+    "total_ready_products": 520
+  },
+  "available_filters": {
+    "size": [
+      { "value": "0180", "label": "180", "count": 104 },
+      { "value": "0544", "label": "544", "count": 104 }
+    ],
+    "color": [
+      { "value": "25", "label": "503", "count": 520 }
+    ]
+  }
 }
 ```
 
@@ -172,6 +225,7 @@ Browser must never receive Central API secret.
 Recommended EPREL backend routes:
 
 - `GET /api/database/families`
+- `GET /api/database/family-filters?family=01`
 - `GET /api/database/family-preview?family=01&page=1&page_size=100`
 - `POST /api/database/family-models`
 
@@ -179,11 +233,16 @@ Suggested mapping:
 
 - `families`
   - proxy Central API `families`
+- `family-filters`
+  - proxy Central API `family-ready-filters`
+  - pass selected filters through unchanged
 - `family-preview`
   - call Central API `family-ready-products`
+  - pass selected filters through unchanged
   - return preview rows + summary + pagination
 - `family-models`
   - page through `family-ready-products`
+  - pass same selected filters through unchanged
   - download:
     - `pdf_url`
     - `spectral_url`
@@ -199,12 +258,14 @@ EPREL frontend should:
 
 1. load family list
 2. let user pick one family
-3. preview ready rows
-4. show count:
+3. load real available filters for that family
+4. let user choose filters
+5. preview filtered ready rows
+6. show count:
    - total ready products
-5. let user import/build ZIP
-6. fetch page by page until done
-7. for each page:
+7. let user import/build ZIP
+8. fetch page by page until done
+9. for each page:
    - download PDF files
    - download spectral images
    - stage files locally
@@ -242,6 +303,8 @@ inside EPREL repo.
 6. do not expose Central API key in browser
 7. do not guess DAM paths or Cloudinary URLs
 8. do not guess `pdf_name` or `img_name`
+9. do not filter ready rows locally on guessed rules
+10. do not invent an `option` filter until Central API supports it
 
 ## Safe Starting Family
 
@@ -277,15 +340,17 @@ This feature is done when:
 
 1. EPREL can preview one family from Central API
 2. preview uses `family-ready-products`, not `code-explorer`
-3. EPREL imports page by page
-4. imported rows are only ready rows
-5. EPREL downloads PDF + spectral file for each imported row
-6. staged models contain valid:
-   - `pdf_name`
-   - `img_name`
-7. ZIP/model build uses imported rows only
-8. empty family returns valid empty state
-9. browser never sees Central API secret
+3. EPREL loads real filter choices from `family-ready-filters`
+4. EPREL sends selected filters back to Central API unchanged
+5. EPREL imports page by page
+6. imported rows are only ready rows
+7. EPREL downloads PDF + spectral file for each imported row
+8. staged models contain valid:
+  - `pdf_name`
+  - `img_name`
+9. ZIP/model build uses imported rows only
+10. empty family returns valid empty state
+11. browser never sees Central API secret
 
 ## If Something Fails
 

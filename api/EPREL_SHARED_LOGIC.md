@@ -11,7 +11,7 @@ Audience:
 - engineers working on EPREL import flows
 
 Last Updated:
-- 2026-04-20
+- 2026-04-21
 
 ## Core Split
 
@@ -84,7 +84,12 @@ Minimum contract direction:
    - paginated
    - built from ready base combos, then expanded into full refs page by page
    - stores per-family ready-base cache under `output/family-ready-products/`
-3. `family-ready-details`
+3. `family-ready-filters`
+   - live
+   - returns real available filters for one family
+   - backed by ready-family rows, not dropdown theory
+   - uses same filter params as `family-ready-products`
+4. `family-ready-details`
    - optional later bulk hydrate endpoint
    - returns details for exact refs only
 
@@ -93,6 +98,7 @@ Important:
 - family import endpoint must start from real `Luminos` identities
 - it must not expose giant synthetic search behavior
 - it must not assume all suffix combinations are real
+- filter values shown to EPREL must come from Central API truth
 
 ## What EPREL Must Do
 
@@ -157,6 +163,26 @@ Current `family-ready-products` rule:
 7. cache ready base combos so repeated page requests stay fast
 8. return empty rows safely when a family has no ready products
 
+Current family filter rule:
+
+1. EPREL chooses filters in its UI
+2. Central API applies the real filtering
+3. supported filter keys are:
+   - `product_type`
+   - `size`
+   - `color`
+   - `cri`
+   - `series`
+   - `lens`
+   - `finish`
+   - `cap`
+4. request values use raw codes
+5. multi-select uses comma-separated values
+6. matching is:
+   - `AND` between different filter keys
+   - `OR` within one filter key
+7. `option` is intentionally excluded in v1 because ready-family truth is still grounded at base-combo level
+
 ## Known Risk
 
 Some families have:
@@ -178,6 +204,7 @@ Those families must not appear as importable ready families just because options
 ## Best Next Work
 
 1. let EPREL consume `family-ready-products` page by page
-2. verify families/import counts against real business expectations
-3. add `family-ready-details` only if EPREL hydration needs bulk speed
-4. do not fall back to family-wide synthetic `code-explorer` import
+2. let EPREL consume `family-ready-filters` before preview/build
+3. verify filtered counts against real business expectations
+4. add `family-ready-details` only if EPREL hydration needs bulk speed
+5. do not fall back to family-wide synthetic `code-explorer` import

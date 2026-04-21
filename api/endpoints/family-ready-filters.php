@@ -18,8 +18,6 @@ if ($familyMeta === null) {
     exit();
 }
 
-$page = getCodeExplorerPage($_GET["page"] ?? null);
-$pageSize = getCodeExplorerPageSize($_GET["page_size"] ?? null);
 $options = getCodeExplorerFamilyOptions($family);
 $identities = getCodeExplorerLuminosIdentities($familyMeta["code"]);
 $filters = getFamilyReadyFilters($_GET, $options, getFamilyReadyProductsBaseRows(
@@ -30,13 +28,11 @@ $filters = getFamilyReadyFilters($_GET, $options, getFamilyReadyProductsBaseRows
 ));
 
 echo json_encode(
-    buildFamilyReadyProductsResponse(
+    buildFamilyReadyFiltersResponse(
         $familyMeta["code"],
         $familyMeta["name"],
         $options,
         $identities,
-        $page,
-        $pageSize,
         $filters
     )
 );
