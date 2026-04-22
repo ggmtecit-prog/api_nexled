@@ -125,6 +125,69 @@ function buildPdfImageTag(?string $path, string $attributes = ""): string {
     return "<img {$attrs}src=\"{$src}\">";
 }
 
+function buildCustomCopyRows(?string $text, int|string $colspan, string $className = ""): string {
+    if (!is_string($text)) {
+        return "";
+    }
+
+    $normalized = trim(str_replace(["\r\n", "\r"], "\n", $text));
+
+    if ($normalized === "") {
+        return "";
+    }
+
+    $escaped = htmlspecialchars($normalized, ENT_QUOTES, "UTF-8");
+    $escaped = str_replace("\n", "<br>", $escaped);
+    $classAttr = trim($className) !== "" ? " class=\"{$className}\"" : "";
+
+    return
+        "<tr><td colspan=\"{$colspan}\"><p{$classAttr}>{$escaped}</p></td></tr>" .
+        "<tr><td></td></tr>";
+}
+
+function buildCustomFieldSummary(array $items, string $lang): string {
+    if ($items === []) {
+        return "";
+    }
+
+    $title = $lang === "pt" ? "Dados personalizados" : "Custom values";
+    $rows = "";
+
+    foreach ($items as $item) {
+        if (!is_array($item)) {
+            continue;
+        }
+
+        $label = trim((string) ($item["label"] ?? ""));
+        $value = trim((string) ($item["value"] ?? ""));
+
+        if ($label === "" || $value === "") {
+            continue;
+        }
+
+        $labelEscaped = htmlspecialchars($label, ENT_QUOTES, "UTF-8");
+        $valueEscaped = nl2br(htmlspecialchars($value, ENT_QUOTES, "UTF-8"));
+
+        $rows .=
+            "<tr>" .
+                "<td class=\"linha-tabela-contorno\" colspan=\"2\"><p><b>{$labelEscaped}</b></p></td>" .
+                "<td class=\"linha-tabela-contorno\" colspan=\"3\"><p>{$valueEscaped}</p></td>" .
+            "</tr>";
+    }
+
+    if ($rows === "") {
+        return "";
+    }
+
+    return
+        "<table class=\"tabela\" border=\"0\" cellpadding=\"2\">" .
+            "<tr><td colspan=\"5\" class=\"titulo-tabela\"><h2>{$title}</h2></td></tr>" .
+            $rows .
+            "<tr><td></td></tr>" .
+            "<tr><td></td></tr>" .
+        "</table>";
+}
+
 function getLegacySvgDimensionAttributes(?string $path, string $existingAttributes = ""): string {
     if (!is_string($path) || trim($path) === "") {
         return "";
@@ -250,6 +313,7 @@ function buildHeader(array $header, string $energyClass): string {
     $energyClassImg = getPdfEnergyLabelPath($energyClass);
     $productImageTag = buildPdfImageTag($header["image"] ?? null);
     $energyClassTag = buildPdfImageTag($energyClassImg, "width=\"40\"");
+    $description = nl2br(htmlspecialchars((string) ($header["description"] ?? ""), ENT_QUOTES, "UTF-8"));
 
     return
     "<table nobr=\"true\">" .
@@ -261,7 +325,7 @@ function buildHeader(array $header, string $energyClass): string {
             "</td>" .
             "<td colspan=\"1\"></td>" .
             "<td colspan=\"15\">" .
-                "<p class=\"descricao\">{$header["description"]}</p>" .
+                "<p class=\"descricao\">{$description}</p>" .
             "</td>" .
         "</tr>" .
     "</table>";
@@ -280,9 +344,10 @@ function buildHeader(array $header, string $energyClass): string {
  * @param  string $lang             Language code
  * @return string  HTML
  */
-function buildCharacteristics(array $characteristics, string $lang): string {
+function buildCharacteristics(array $characteristics, string $lang, ?string $customIntro = null): string {
     $json  = json_decode(file_get_contents(DATASHEET_JSON_PATH));
     $title = $json->caracteristicas->titulo->$lang;
+    $intro = buildCustomCopyRows($customIntro, 5);
 
     $rows = "";
     foreach ($characteristics as $label => $value) {
@@ -296,6 +361,7 @@ function buildCharacteristics(array $characteristics, string $lang): string {
     return
     "<table class=\"tabela\" border=\"0\" cellpadding=\"2\">" .
         "<tr><td colspan=\"5\" class=\"titulo-tabela\"><h2>$title</h2></td></tr>" .
+        $intro .
         $rows .
         "<tr><td></td></tr>" .
         "<tr><td></td></tr>" .
@@ -319,11 +385,15 @@ function buildCharacteristics(array $characteristics, string $lang): string {
  * @param  string $lang      Language code
  * @return string  HTML
  */
-function buildLuminotechnical(array $lumino, string $reference, string $description, string $lensName, string $ipRating, string $lang): string {
+function buildLuminotechnical(array $lumino, string $reference, string $description, string $lensName, string $ipRating, string $lang, ?string $customIntro = null, ?string $displayReference = null): string {
     $json    = json_decode(file_get_contents(DATASHEET_JSON_PATH));
     $section = $json->luminotecnicas;
+    $intro = buildCustomCopyRows($customIntro, 80);
 
-    $values = [$reference, $description, $lumino["flux"], $lumino["efficacy"], $lumino["cct"], $lumino["color_label"], $lumino["cri"], $lensName];
+    $tableReference = is_string($displayReference) && trim($displayReference) !== ""
+        ? trim($displayReference)
+        : $reference;
+    $values = [$tableReference, $description, $lumino["flux"], $lumino["efficacy"], $lumino["cct"], $lumino["color_label"], $lumino["cri"], $lensName];
 
     $header = "";
     $row    = "";
@@ -337,6 +407,7 @@ function buildLuminotechnical(array $lumino, string $reference, string $descript
     return
     "<table cellpadding=\"0.5\" class=\"tabela\" nobr=\"true\">" .
         "<tr><td colspan=\"80\" class=\"titulo-tabela\"><h2>{$section->titulo->$lang}</h2></td></tr>" .
+        $intro .
         "<tr>$header</tr>" .
         "<tr>$row</tr>" .
         "<tr><td></td></tr>" .
@@ -406,7 +477,7 @@ function buildLuminotechnicalNotes(string $reference, string $ipRating, object $
  * @param  string $lang     Language code
  * @return string  HTML
  */
-function buildTechnicalDrawing(array $drawing, string $lang): string {
+function buildTechnicalDrawing(array $drawing, string $lang, ?string $customIntro = null): string {
     $json  = json_decode(file_get_contents(DATASHEET_JSON_PATH));
     $title = $json->desenhotecnico->titulo->$lang;
     $note  = $json->notaMedidas->$lang;
@@ -423,9 +494,12 @@ function buildTechnicalDrawing(array $drawing, string $lang): string {
         $colCount++;
     }
 
+    $intro = buildCustomCopyRows($customIntro, max($colCount, 1));
+
     return
     "<table nobr=\"true\">" .
         "<tr><td colspan=\"$colCount\"><h2>$title</h2></td></tr>" .
+        $intro .
         "<tr><td colspan=\"$colCount\">" . buildPdfImageTag($drawing["drawing"] ?? null) . "</td></tr>" .
         "<tr><td colspan=\"$colCount\"></td></tr>" .
         "<tr>$headerCells</tr>" .
@@ -451,7 +525,7 @@ function buildTechnicalDrawing(array $drawing, string $lang): string {
  * @param  string $lang    Language code
  * @return string  HTML
  */
-function buildColorGraph(array $graph, string $reference, string $lang): string {
+function buildColorGraph(array $graph, string $reference, string $lang, ?string $customIntro = null): string {
     $json   = json_decode(file_get_contents(DATASHEET_JSON_PATH));
     $title  = $json->graficocor->titulo->$lang;
     $parts  = decodeReference($reference);
@@ -460,10 +534,12 @@ function buildColorGraph(array $graph, string $reference, string $lang): string 
     $sdcm = isset($json->graficocor->SDCM->$family->$lang)
         ? $json->graficocor->SDCM->$family->$lang
         : $json->graficocor->SDCM->all->$lang;
+    $intro = buildCustomCopyRows($customIntro, 5);
 
     return
     "<table nobr=\"true\">" .
         "<tr><td colspan=\"5\"><h2>$title</h2></td></tr>" .
+        $intro .
         "<tr><td colspan=\"5\"><p><b>{$graph["label"]}</b></p></td></tr>" .
         "<tr><td colspan=\"4\">" . buildPdfImageTag($graph["image"] ?? null) . "</td></tr>" .
         "<tr><td colspan=\"5\"><p>$sdcm</p></td></tr>" .
@@ -486,9 +562,10 @@ function buildColorGraph(array $graph, string $reference, string $lang): string 
  * @param  string $lang     Language code
  * @return string  HTML
  */
-function buildLensDiagram(array $diagram, string $lensName, string $lang): string {
+function buildLensDiagram(array $diagram, string $lensName, string $lang, ?string $customIntro = null): string {
     $json  = json_decode(file_get_contents(DATASHEET_JSON_PATH));
     $title = $json->diagramalente->titulo->$lang;
+    $intro = buildCustomCopyRows($customIntro, 2);
 
     $illuminanceCell = "";
     if ($diagram["illuminance"] !== null) {
@@ -498,6 +575,7 @@ function buildLensDiagram(array $diagram, string $lensName, string $lang): strin
     return
     "<table nobr=\"true\">" .
         "<tr><td colspan=\"2\"><h2>$title</h2></td></tr>" .
+        $intro .
         "<tr><td colspan=\"2\"><p><b>$lensName</b></p></td></tr>" .
         "<tr>" .
             "<td colspan=\"1\">" . buildPdfImageTag($diagram["diagram"] ?? null, "height=\"210\"") . "</td>" .
@@ -523,7 +601,7 @@ function buildLensDiagram(array $diagram, string $lensName, string $lang): strin
  * @param  string $lang        Language code
  * @return string  HTML
  */
-function buildFinishAndLens(array $finishData, string $lensName, string $reference, string $lang): string {
+function buildFinishAndLens(array $finishData, string $lensName, string $reference, string $lang, ?string $customIntro = null): string {
     $json    = json_decode(file_get_contents(DATASHEET_JSON_PATH));
     $section = $json->acabamento;
     $parts   = decodeReference($reference);
@@ -544,9 +622,12 @@ function buildFinishAndLens(array $finishData, string $lensName, string $referen
         $note = $section->notas->semlink->$lang ?? "";
     }
 
+    $intro = buildCustomCopyRows($customIntro, 3);
+
     return
     "<table nobr=\"true\">" .
         "<tr><td colspan=\"3\"><h2>$title</h2></td></tr>" .
+        $intro .
         "<tr><td colspan=\"3\"><p><b>$bodyLabel:</b> {$finishData["finish_name"]}<br><b>$lensLabel:</b> $lensName</p></td></tr>" .
         "<tr><td></td></tr>" .
         "<tr><td colspan=\"1\">" . buildPdfImageTag($finishData["image"] ?? null) . "</td></tr>" .
@@ -569,7 +650,7 @@ function buildFinishAndLens(array $finishData, string $lensName, string $referen
  * @param  string $lang    Language code
  * @return string  HTML
  */
-function buildFixing(array $fixing, string $reference, string $lang): string {
+function buildFixing(array $fixing, string $reference, string $lang, ?string $customIntro = null): string {
     $json    = json_decode(file_get_contents(DATASHEET_JSON_PATH));
     $section = $json->fixacao;
     $parts   = decodeReference($reference);
@@ -586,9 +667,12 @@ function buildFixing(array $fixing, string $reference, string $lang): string {
         }
     }
 
+    $intro = buildCustomCopyRows($customIntro, 3);
+
     return
     "<table nobr=\"true\">" .
         "<tr><td colspan=\"3\"><h2>$title</h2></td></tr>" .
+        $intro .
         "<tr><td colspan=\"3\"><p><b>{$fixing["name"]}</b></p></td></tr>" .
         "<tr><td></td></tr>" .
         "<tr>" .
@@ -616,15 +700,19 @@ function buildFixing(array $fixing, string $reference, string $lang): string {
  * @param  string $lang    Language code
  * @return string  HTML
  */
-function buildPowerSupply(array $supply, string $lang): string {
+function buildPowerSupply(array $supply, string $lang, ?string $customIntro = null): string {
     $json  = json_decode(file_get_contents(DATASHEET_JSON_PATH));
     $title = $json->fonte->titulo->$lang;
     $note  = $json->notaMedidas->$lang;
+    $descriptionText = is_string($customIntro) && trim($customIntro) !== ""
+        ? $customIntro
+        : (string) ($supply["description"] ?? "");
+    $description = nl2br(htmlspecialchars($descriptionText, ENT_QUOTES, "UTF-8"));
 
     return
     "<table nobr=\"true\">" .
         "<tr><td colspan=\"3\"><h2>$title</h2></td></tr>" .
-        "<tr><td colspan=\"3\"><p>{$supply["description"]}</p></td></tr>" .
+        "<tr><td colspan=\"3\"><p>{$description}</p></td></tr>" .
         "<tr><td></td></tr>" .
         "<tr>" .
             "<td colspan=\"2\">" . buildPdfImageTag($supply["drawing"] ?? null) . "</td>" .
@@ -649,15 +737,19 @@ function buildPowerSupply(array $supply, string $lang): string {
  * @param  string $lang   Language code
  * @return string  HTML
  */
-function buildConnectionCable(array $cable, string $lang): string {
+function buildConnectionCable(array $cable, string $lang, ?string $customIntro = null): string {
     $json  = json_decode(file_get_contents(DATASHEET_JSON_PATH));
     $title = $json->ligacao->titulo->$lang;
     $note  = $json->notaLigacao->$lang ?? "";
+    $descriptionText = is_string($customIntro) && trim($customIntro) !== ""
+        ? $customIntro
+        : (string) ($cable["description"] ?? "");
+    $description = nl2br(htmlspecialchars($descriptionText, ENT_QUOTES, "UTF-8"));
 
     return
     "<table nobr=\"true\">" .
         "<tr><td colspan=\"4\"><h2>$title</h2></td></tr>" .
-        "<tr><td colspan=\"4\"><p>{$cable["description"]}</p></td></tr>" .
+        "<tr><td colspan=\"4\"><p>{$description}</p></td></tr>" .
         "<tr><td></td></tr>" .
         "<tr><td colspan=\"2\">" . buildPdfImageTag($cable["image"] ?? null, "height=\"210\"") . "</td></tr>" .
         "<tr><td></td></tr>" .
@@ -686,30 +778,31 @@ function buildPdfLayout(array $data): string {
     $ref   = $data["reference"];
 
     $html .= buildHeader($data["header"], $data["energy_class"]);
-    $html .= buildCharacteristics($data["characteristics"], $lang);
-    $html .= buildLuminotechnical($data["luminotechnical"], $ref, $data["description"], $data["lens_name"], $data["ip_rating"], $lang);
-    $html .= buildTechnicalDrawing($data["drawing"], $lang);
+    $html .= buildCustomFieldSummary(is_array($data["custom_field_summary"] ?? null) ? $data["custom_field_summary"] : [], $lang);
+    $html .= buildCharacteristics($data["characteristics"], $lang, $data["characteristics_intro"] ?? null);
+    $html .= buildLuminotechnical($data["luminotechnical"], $ref, $data["description"], $data["lens_name"], $data["ip_rating"], $lang, $data["luminotechnical_intro"] ?? null, $data["display_reference"] ?? null);
+    $html .= buildTechnicalDrawing($data["drawing"], $lang, $data["drawing_intro"] ?? null);
 
     if (!empty($data["color_graph"])) {
-        $html .= buildColorGraph($data["color_graph"], $ref, $lang);
+        $html .= buildColorGraph($data["color_graph"], $ref, $lang, $data["color_graph_intro"] ?? null);
     }
 
     if (!empty($data["lens_diagram"])) {
-        $html .= buildLensDiagram($data["lens_diagram"], $data["lens_name"], $lang);
+        $html .= buildLensDiagram($data["lens_diagram"], $data["lens_name"], $lang, $data["lens_diagram_intro"] ?? null);
     }
 
-    $html .= buildFinishAndLens($data["finish"], $data["lens_name"], $ref, $lang);
+    $html .= buildFinishAndLens($data["finish"], $data["lens_name"], $ref, $lang, $data["finish_intro"] ?? null);
 
     if (isset($data["fixing"])) {
-        $html .= buildFixing($data["fixing"], $ref, $lang);
+        $html .= buildFixing($data["fixing"], $ref, $lang, $data["fixing_intro"] ?? null);
     }
 
     if (isset($data["power_supply"])) {
-        $html .= buildPowerSupply($data["power_supply"], $lang);
+        $html .= buildPowerSupply($data["power_supply"], $lang, $data["power_supply_intro"] ?? null);
     }
 
     if (isset($data["connection_cable"])) {
-        $html .= buildConnectionCable($data["connection_cable"], $lang);
+        $html .= buildConnectionCable($data["connection_cable"], $lang, $data["connection_cable_intro"] ?? null);
     }
 
     return $html;

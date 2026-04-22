@@ -244,3 +244,29 @@ Shared rule:
    - exact `pdf_specs`
 4. do not fake missing upstream fields
 5. `tech_lum_flux` may be derived from `luminous_flux` if EPREL needs an alias later
+
+## EPREL Correlation Persistence Rule
+
+For TecIt <-> EPREL registration correlation:
+
+- Central API owns durable mapping storage
+- EPREL may review and confirm matches
+- EPREL must not remain the final owner of saved mapping truth
+
+Current persistence contract:
+
+- `POST /api/?endpoint=eprel-code-mappings-save`
+- `GET /api/?endpoint=eprel-code-mappings`
+- `POST /api/?endpoint=eprel-code-mappings-batch`
+
+Current storage:
+
+- dedicated database `nexled_eprel`
+- table `eprel_code_mappings`
+
+Hard rules:
+
+1. store only explicitly confirmed mappings
+2. no fuzzy guess persistence on API side
+3. TecIt canonical key is full `17`-digit code
+4. EPREL saved key is registration number

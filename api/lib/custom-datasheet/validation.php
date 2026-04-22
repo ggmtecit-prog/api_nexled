@@ -3,7 +3,7 @@
 require_once dirname(__FILE__) . "/../family-registry.php";
 
 const CUSTOM_DATASHEET_ALLOWED_TOP_LEVEL_KEYS = ["base_request", "custom"];
-const CUSTOM_DATASHEET_ALLOWED_CUSTOM_KEYS = ["mode", "text_overrides", "asset_overrides", "section_visibility", "footer"];
+const CUSTOM_DATASHEET_ALLOWED_CUSTOM_KEYS = ["mode", "text_overrides", "asset_overrides", "section_visibility", "footer", "copy_mode", "field_overrides", "copy_overrides"];
 const CUSTOM_DATASHEET_ALLOWED_ASSET_OVERRIDE_KEYS = ["source", "asset_id", "asset_key"];
 const CUSTOM_DATASHEET_ALLOWED_FOOTER_KEYS = ["marker"];
 
@@ -24,6 +24,85 @@ function getCustomDatasheetTextOverrideLimits(): array {
         "header_copy" => 1200,
         "footer_note" => 160,
     ];
+}
+
+function getCustomDatasheetCopyOverrideLimits(): array {
+    return [
+        "header" => ["intro" => 1200],
+        "characteristics" => ["intro" => 800],
+        "luminotechnical" => ["intro" => 800],
+        "drawing" => ["intro" => 800],
+        "color_graph" => ["intro" => 800],
+        "lens_diagram" => ["intro" => 800],
+        "finish" => ["intro" => 800],
+        "fixing" => ["intro" => 800],
+        "power_supply" => ["intro" => 1200],
+        "connection_cable" => ["intro" => 1200],
+        "footer" => ["note" => 160],
+    ];
+}
+
+function getCustomDatasheetFieldOverrideLimits(): array {
+    return [
+        "display_reference" => 64,
+        "display_description" => 160,
+        "display_size" => 80,
+        "display_color" => 120,
+        "display_cri" => 80,
+        "display_series" => 120,
+        "display_lens_name" => 120,
+        "display_finish_name" => 120,
+        "display_cap" => 120,
+        "display_option_code" => 120,
+        "display_connector_cable" => 120,
+        "display_cable_type" => 120,
+        "display_extra_length" => 80,
+        "display_end_cap" => 120,
+        "display_gasket" => 120,
+        "display_ip" => 120,
+        "display_fixing" => 120,
+        "display_power_supply" => 160,
+        "display_connection_cable" => 160,
+        "display_connection_connector" => 120,
+        "display_connection_cable_length" => 80,
+        "display_purpose" => 120,
+        "display_company" => 120,
+        "display_language" => 80,
+        "display_flux" => 80,
+        "display_efficacy" => 80,
+        "display_cct" => 80,
+        "display_color_label" => 120,
+        "display_cri_label" => 80,
+        "drawing_dimension_A" => 32,
+        "drawing_dimension_B" => 32,
+        "drawing_dimension_C" => 32,
+        "drawing_dimension_D" => 32,
+        "drawing_dimension_E" => 32,
+        "drawing_dimension_F" => 32,
+        "drawing_dimension_G" => 32,
+        "drawing_dimension_H" => 32,
+        "drawing_dimension_I" => 32,
+        "drawing_dimension_J" => 32,
+        "fixing_name" => 120,
+        "power_supply_description" => 1200,
+        "connection_cable_description" => 1200,
+    ];
+}
+
+function getCustomDatasheetCopyOverrideFieldMap(string $family): array {
+    $allowedSections = getFamilyCustomDatasheetAllowedFields($family)["copy_overrides"] ?? [];
+    $limitMap = getCustomDatasheetCopyOverrideLimits();
+    $fieldMap = [];
+
+    foreach ($allowedSections as $section) {
+        if (!is_string($section) || !isset($limitMap[$section])) {
+            continue;
+        }
+
+        $fieldMap[$section] = array_keys($limitMap[$section]);
+    }
+
+    return $fieldMap;
 }
 
 function validateCustomDatasheetUnknownKeys(array $input, array $allowedKeys, string $errorCode, string $message, array $details = []): ?array {
@@ -98,6 +177,203 @@ function normalizeCustomDatasheetTextOverrides(mixed $value, string $family): ar
                 "custom_datasheet_text_too_long",
                 "Custom datasheet text override exceeds maximum length.",
                 ["group" => "text_overrides", "field" => $field, "max_length" => $limit]
+            );
+        }
+
+        $normalized[$field] = $text;
+    }
+
+    return ["ok" => true, "data" => $normalized];
+}
+
+function normalizeCustomDatasheetCopyMode(mixed $value, string $family): array {
+    $defaults = getFamilyCustomDatasheetDefaults($family);
+    $fallback = strtolower(trim((string) ($defaults["copy_mode"] ?? "simple")));
+    $copyMode = $value === null
+        ? $fallback
+        : strtolower(trim((string) $value));
+
+    if ($copyMode === "") {
+        $copyMode = $fallback;
+    }
+
+    if (!in_array($copyMode, ["simple", "advanced"], true)) {
+        return buildCustomDatasheetRequestError(
+            400,
+            "custom_datasheet_invalid_override",
+            "Custom datasheet copy mode must be simple or advanced.",
+            ["group" => "copy_mode"]
+        );
+    }
+
+    return [
+        "ok" => true,
+        "data" => $copyMode,
+    ];
+}
+
+function normalizeCustomDatasheetCopyOverrides(mixed $value, string $family): array {
+    if ($value === null) {
+        return ["ok" => true, "data" => []];
+    }
+
+    if (!is_array($value)) {
+        return buildCustomDatasheetRequestError(
+            400,
+            "custom_datasheet_invalid_override",
+            "Advanced copy overrides must be an object."
+        );
+    }
+
+    $allowedSections = getFamilyCustomDatasheetAllowedFields($family)["copy_overrides"] ?? [];
+    $unknownSections = validateCustomDatasheetUnknownKeys(
+        $value,
+        $allowedSections,
+        "custom_datasheet_copy_unsupported_field",
+        "Advanced custom copy contains unsupported sections.",
+        ["group" => "copy_overrides"]
+    );
+
+    if ($unknownSections !== null) {
+        return $unknownSections;
+    }
+
+    $fieldMap = getCustomDatasheetCopyOverrideFieldMap($family);
+    $limitMap = getCustomDatasheetCopyOverrideLimits();
+    $normalized = [];
+
+    foreach ($value as $section => $sectionValue) {
+        if ($sectionValue === null) {
+            continue;
+        }
+
+        if (!is_array($sectionValue)) {
+            return buildCustomDatasheetRequestError(
+                400,
+                "custom_datasheet_invalid_override",
+                "Advanced copy section override must be an object.",
+                ["group" => "copy_overrides", "section" => $section]
+            );
+        }
+
+        $allowedFields = $fieldMap[$section] ?? [];
+        $unknownFields = validateCustomDatasheetUnknownKeys(
+            $sectionValue,
+            $allowedFields,
+            "custom_datasheet_copy_unsupported_field",
+            "Advanced custom copy section contains unsupported fields.",
+            ["group" => "copy_overrides", "section" => $section]
+        );
+
+        if ($unknownFields !== null) {
+            return $unknownFields;
+        }
+
+        $normalizedSection = [];
+
+        foreach ($sectionValue as $field => $fieldValue) {
+            if ($fieldValue === null) {
+                continue;
+            }
+
+            if (!is_scalar($fieldValue)) {
+                return buildCustomDatasheetRequestError(
+                    400,
+                    "custom_datasheet_invalid_override",
+                    "Advanced copy field must be plain text.",
+                    ["group" => "copy_overrides", "section" => $section, "field" => $field]
+                );
+            }
+
+            $text = normalizeCustomDatasheetPlainText((string) $fieldValue, true);
+
+            if ($text === "") {
+                continue;
+            }
+
+            $limit = intval($limitMap[$section][$field] ?? 800);
+
+            if (mb_strlen($text) > $limit) {
+                return buildCustomDatasheetRequestError(
+                    400,
+                    "custom_datasheet_copy_too_long",
+                    "Advanced custom copy exceeds maximum length.",
+                    ["group" => "copy_overrides", "section" => $section, "field" => $field, "max_length" => $limit]
+                );
+            }
+
+            $normalizedSection[$field] = $text;
+        }
+
+        if ($normalizedSection !== []) {
+            $normalized[$section] = $normalizedSection;
+        }
+    }
+
+    return [
+        "ok" => true,
+        "data" => $normalized,
+    ];
+}
+
+function normalizeCustomDatasheetFieldOverrides(mixed $value, string $family): array {
+    if ($value === null) {
+        return ["ok" => true, "data" => []];
+    }
+
+    if (!is_array($value)) {
+        return buildCustomDatasheetRequestError(
+            400,
+            "custom_datasheet_invalid_override",
+            "Field overrides must be an object."
+        );
+    }
+
+    $allowedFields = getFamilyCustomDatasheetAllowedFields($family)["field_overrides"] ?? [];
+    $unknown = validateCustomDatasheetUnknownKeys(
+        $value,
+        $allowedFields,
+        "custom_datasheet_field_unsupported",
+        "Custom datasheet field override contains unsupported fields.",
+        ["group" => "field_overrides"]
+    );
+
+    if ($unknown !== null) {
+        return $unknown;
+    }
+
+    $limits = getCustomDatasheetFieldOverrideLimits();
+    $normalized = [];
+
+    foreach ($value as $field => $fieldValue) {
+        if ($fieldValue === null) {
+            continue;
+        }
+
+        if (!is_scalar($fieldValue)) {
+            return buildCustomDatasheetRequestError(
+                400,
+                "custom_datasheet_invalid_override",
+                "Field override value must be plain text.",
+                ["group" => "field_overrides", "field" => $field]
+            );
+        }
+
+        $allowMultiline = in_array($field, ["power_supply_description", "connection_cable_description"], true);
+        $text = normalizeCustomDatasheetPlainText((string) $fieldValue, $allowMultiline);
+
+        if ($text === "") {
+            continue;
+        }
+
+        $limit = $limits[$field] ?? 255;
+
+        if (mb_strlen($text) > $limit) {
+            return buildCustomDatasheetRequestError(
+                400,
+                "custom_datasheet_field_too_long",
+                "Custom datasheet field override exceeds maximum length.",
+                ["group" => "field_overrides", "field" => $field, "max_length" => $limit]
             );
         }
 

@@ -238,7 +238,7 @@
                         <span class="input-icon-area" aria-hidden="true">
                             <i class="ri-search-line text-icon-md"></i>
                         </span>
-                        <input type="text" id="searchInput" placeholder="Search assets..." class="input-icon-field" aria-label="Search assets" data-i18n-placeholder="dam.searchPlaceholder" data-i18n-aria-label="dam.searchAria">
+                        <input type="text" id="searchInput" placeholder="Search folders and assets..." class="input-icon-field" aria-label="Search assets" data-i18n-placeholder="dam.searchPlaceholder" data-i18n-aria-label="dam.searchAria">
                     </div>
 
                     <div class="card overflow-hidden" data-dam-main-card>
@@ -256,7 +256,7 @@
                                             <i class="ri-folder-open-line text-icon-lg" aria-hidden="true"></i>
                                         </span>
                                         <div class="empty-state-copy">
-                                            <h3 class="empty-state-title" data-dam-empty-state-label data-i18n="dam.emptyFolder">This folder is empty</h3>
+                                            <h3 class="empty-state-title" data-dam-empty-state-label data-i18n="dam.emptyFolder">No assets in this folder</h3>
                                         </div>
                                     </div>
                                 </div>
@@ -324,7 +324,7 @@
                     <div class="panel panel-sm flex h-72 sm:h-80 lg:h-96 items-center justify-center overflow-hidden" data-dam-asset-preview>
                         <div class="flex flex-col items-center gap-12 text-center" data-dam-empty-asset>
                             <i class="ri-file-search-line text-icon-xxl text-grey-quaternary" aria-hidden="true"></i>
-                            <span class="text-body-sm text-grey-primary" data-i18n="dam.noAssetSelected">Select an asset to inspect details.</span>
+                            <span class="text-body-sm text-grey-primary" data-i18n="dam.noAssetSelected">Select an asset to view details.</span>
                         </div>
                     </div>
 
@@ -353,11 +353,11 @@
                             </button>
                             <button type="button" class="btn btn-secondary btn-sm justify-center" data-dam-copy-asset-url disabled>
                                 <i class="ri-link text-icon-sm" aria-hidden="true"></i>
-                                <span data-i18n="dam.copyAssetUrl">Copy Asset URL</span>
+                                <span data-i18n="dam.copyAssetUrl">Copy asset URL</span>
                             </button>
                             <button type="button" class="btn btn-secondary btn-sm btn-toggle" data-toggle-pressed data-dam-toggle-linking aria-expanded="false" aria-pressed="false" aria-controls="damAssetLinkingPanel">
                                 <i class="ri-eye-line text-icon-lg" aria-hidden="true" data-dam-toggle-linking-icon></i>
-                                <span data-dam-toggle-linking-label>Show linking</span>
+                                <span data-dam-toggle-linking-label>Show linking fields</span>
                             </button>
                         </div>
                     </div>
@@ -392,7 +392,7 @@
 
                         <div class="flex flex-col gap-8">
                             <div class="flex flex-col gap-8" data-dam-links-list></div>
-                            <span class="text-body-sm text-grey-primary" data-dam-empty-links data-i18n="dam.noLinks">No links yet.</span>
+                            <span class="text-body-sm text-grey-primary" data-dam-empty-links data-i18n="dam.noLinks">No asset links yet.</span>
                         </div>
                     </div>
 
@@ -460,21 +460,21 @@
 
             <div id="damFolderPolicyBody" class="modal-body">
                 <div class="flex flex-col gap-16">
-                    <p class="text-body-sm text-grey-primary" data-i18n="dam.folderPolicyIntro">The DAM folder tree is ready in cloud storage, but legacy local assets remain in place until the PDF pipeline is moved.</p>
+                    <p class="text-body-sm text-grey-primary" data-i18n="dam.folderPolicyIntro">The DAM folder structure is ready, but the PDF workflow still reads local assets.</p>
 
                     <div class="flex flex-col gap-4">
                         <span class="input-label" data-i18n="dam.folderPolicyKeepTitle">Active Cloud Folders Now</span>
-                        <p class="text-body-sm text-black" data-i18n="dam.folderPolicyKeepBody">Keep `nexled/datasheet` and `nexled/media` as the live DAM roots, with uploads routed into their seeded child folders.</p>
+                        <p class="text-body-sm text-black" data-i18n="dam.folderPolicyKeepBody">Keep `nexled/datasheet` and `nexled/media` as the live DAM roots, with uploads routed into the existing child folders.</p>
                     </div>
 
                     <div class="flex flex-col gap-4">
                         <span class="input-label" data-i18n="dam.folderPolicyLaterTitle">Deferred Until Later</span>
-                        <p class="text-body-sm text-black" data-i18n="dam.folderPolicyLaterBody">Do not change the PDF pipeline to read DAM assets directly yet. Local datasheet assets still remain the active fallback.</p>
+                        <p class="text-body-sm text-black" data-i18n="dam.folderPolicyLaterBody">Do not switch the PDF workflow to DAM reads yet. Local datasheet assets still act as the fallback.</p>
                     </div>
 
                     <div class="flex flex-col gap-4">
                         <span class="input-label" data-i18n="dam.folderPolicyLocalTitle">Local Asset Rule</span>
-                        <p class="text-body-sm text-black" data-i18n="dam.folderPolicyLocalBody">Do not move or delete the current local PDF assets yet. They still support PDF generation.</p>
+                        <p class="text-body-sm text-black" data-i18n="dam.folderPolicyLocalBody">Do not move or delete the local PDF assets yet. They still support PDF generation.</p>
                     </div>
                 </div>
             </div>

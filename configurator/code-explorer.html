@@ -222,7 +222,7 @@
     <div class="flex-1 min-w-0 flex flex-col lg:h-screen overflow-y-auto">
         <main class="flex-1 px-16 pt-32 pb-32 sm:px-20 sm:pt-40 sm:pb-40 md:px-24 md:pt-48 md:pb-48 lg:px-32 lg:pt-64 lg:pb-64 w-full">
             <header class="flex flex-col gap-12 pb-32" data-reveal="hero">
-                <h1 class="text-h1 font-medium text-black" data-i18n="codeExplorer.heading">Explore Valid Tecit Codes</h1>
+                <h1 class="text-h1 font-medium text-black" data-i18n="codeExplorer.heading">Explore Tecit Codes</h1>
             </header>
 
             <section class="grid grid-cols-1 xl:grid-cols-12 gap-24 items-start" data-reveal="section">
@@ -483,8 +483,8 @@
                                                     <i class="ri-inbox-archive-line text-icon-lg" aria-hidden="true"></i>
                                                 </span>
                                                 <div class="empty-state-copy">
-                                                    <h3 class="empty-state-title" data-i18n="codeExplorer.emptyStateTitle">No codes loaded yet</h3>
-                                                    <p class="empty-state-text" data-i18n="codeExplorer.emptyStateBody">Use the panel to the right to search.</p>
+                                        <h3 class="empty-state-title" data-i18n="codeExplorer.emptyStateTitle">No codes loaded</h3>
+                                        <p class="empty-state-text" data-i18n="codeExplorer.emptyStateBody">Use the panel on the right to load codes.</p>
                                                 </div>
                                             </div>
                                         </div>
@@ -581,7 +581,8 @@
                     <i id="status-message-icon" class="ri-information-line text-icon-lg" aria-hidden="true"></i>
                 </span>
                 <div class="toast-copy">
-                    <p id="status-message-copy" class="toast-title" data-i18n="codeExplorer.runtime.chooseFamily">Select one family to load valid code rows.</p>
+                    <p id="status-message-title" class="toast-title" data-i18n="codeExplorer.runtime.chooseFamily">Select one family to load valid code rows.</p>
+                    <p id="status-message-text" class="toast-text" hidden></p>
                 </div>
                 <div class="toast-actions">
                     <button type="button" id="status-message-close" class="btn btn-ghost btn-icon btn-xs" aria-label="Close notification" data-i18n-aria-label="shared.actions.closeNotification">
@@ -620,7 +621,7 @@
                                 <div id="detail-status-badges" class="flex flex-wrap items-center gap-8"></div>
                                 <button id="detail-load-pdf-specs" type="button" class="btn btn-secondary btn-xs self-start lg:self-auto">
                                     <i class="ri-file-list-3-line text-icon-sm" aria-hidden="true"></i>
-                                    <span id="detail-load-pdf-specs-label" data-i18n="codeExplorer.detailsPdfSpecsButton">Show more details</span>
+                                    <span id="detail-load-pdf-specs-label" data-i18n="codeExplorer.detailsPdfSpecsButton">Load PDF details</span>
                                 </button>
                             </div>
                         </div>

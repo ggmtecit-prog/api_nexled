@@ -13,6 +13,7 @@ function queryShowcaseVariants(array $normalizedRequest): array {
     $locked = is_array($normalizedRequest["locked"] ?? null) ? $normalizedRequest["locked"] : [];
     $filters = is_array($normalizedRequest["filters"] ?? null) ? $normalizedRequest["filters"] : [];
     $datasheetReadyOnly = (bool) ($filters["datasheet_ready_only"] ?? true);
+    $effectiveDatasheetReadyOnly = $datasheetReadyOnly;
     $familyEntry = getFamilyRegistryEntry($family);
     $options = getCodeExplorerFamilyOptions((int) $family);
     $labelLookups = getCodeExplorerSegmentLabelLookups($options);
@@ -22,12 +23,19 @@ function queryShowcaseVariants(array $normalizedRequest): array {
         return buildShowcaseEmptyQueryResult($family, $lang, $datasheetReadyOnly, $familyEntry, $options, $selectedOptions, $labelLookups);
     }
 
-    $baseRows = $datasheetReadyOnly
-        ? getShowcaseReadyBaseRows($family, $options, $labelLookups)
-        : collectShowcaseConfiguratorValidBaseRows($family, $options, $selectedOptions, $locked, $labelLookups);
+    if ($datasheetReadyOnly) {
+        $baseRows = getShowcaseScopedReadyBaseRows($family, $options, $selectedOptions, $locked, $labelLookups);
+
+        if ($baseRows === []) {
+            $baseRows = collectShowcaseConfiguratorValidBaseRows($family, $options, $selectedOptions, $locked, $labelLookups);
+            $effectiveDatasheetReadyOnly = false;
+        }
+    } else {
+        $baseRows = collectShowcaseConfiguratorValidBaseRows($family, $options, $selectedOptions, $locked, $labelLookups);
+    }
 
     if ($baseRows === []) {
-        return buildShowcaseEmptyQueryResult($family, $lang, $datasheetReadyOnly, $familyEntry, $options, $selectedOptions, $labelLookups);
+        return buildShowcaseEmptyQueryResult($family, $lang, $effectiveDatasheetReadyOnly, $familyEntry, $options, $selectedOptions, $labelLookups);
     }
 
     $matchedBaseRows = array_values(array_filter(
@@ -38,7 +46,7 @@ function queryShowcaseVariants(array $normalizedRequest): array {
     usort($matchedBaseRows, "compareShowcaseBaseRows");
 
     if ($matchedBaseRows === []) {
-        return buildShowcaseEmptyQueryResult($family, $lang, $datasheetReadyOnly, $familyEntry, $options, $selectedOptions, $labelLookups);
+        return buildShowcaseEmptyQueryResult($family, $lang, $effectiveDatasheetReadyOnly, $familyEntry, $options, $selectedOptions, $labelLookups);
     }
 
     $variantRows = buildShowcaseVariantRows($family, $matchedBaseRows, $selectedOptions, $labelLookups, $options);
@@ -47,7 +55,7 @@ function queryShowcaseVariants(array $normalizedRequest): array {
         "family" => $family,
         "family_name" => (string) ($familyEntry["name"] ?? $family),
         "lang" => $lang,
-        "datasheet_ready_only" => $datasheetReadyOnly,
+        "datasheet_ready_only" => $effectiveDatasheetReadyOnly,
         "options" => $options,
         "selected_options" => $selectedOptions,
         "label_lookups" => $labelLookups,
@@ -224,6 +232,71 @@ function getShowcaseReadyBaseRows(string $familyCode, array $options, array $lab
         static fn(array $baseRow): array => enrichShowcaseBaseRow($familyCode, $baseRow, $labelLookups, $options),
         $baseRows
     ));
+}
+
+function getShowcaseScopedReadyBaseRows(
+    string $familyCode,
+    array $options,
+    array $selectedOptions,
+    array $locked,
+    array $labelLookups
+): array {
+    $cachedBaseRows = loadFamilyReadyProductsBaseRows($familyCode);
+
+    if (is_array($cachedBaseRows)) {
+        return array_values(array_map(
+            static fn(array $baseRow): array => enrichShowcaseBaseRow($familyCode, $baseRow, $labelLookups, $options),
+            $cachedBaseRows
+        ));
+    }
+
+    if (!hasShowcaseLockedScope($locked)) {
+        return getShowcaseReadyBaseRows($familyCode, $options, $labelLookups);
+    }
+
+    $candidateBaseRows = collectShowcaseConfiguratorValidBaseRows($familyCode, $options, $selectedOptions, $locked, $labelLookups);
+    return filterShowcaseReadyBaseRows($candidateBaseRows, $options);
+}
+
+function hasShowcaseLockedScope(array $locked): bool {
+    foreach (array_merge(SHOWCASE_IDENTITY_SEGMENTS, SHOWCASE_SUFFIX_SEGMENTS) as $segment) {
+        if (trim((string) ($locked[$segment] ?? "")) !== "") {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+function filterShowcaseReadyBaseRows(array $baseRows, array $options): array {
+    if ($baseRows === []) {
+        return [];
+    }
+
+    $validatorCache = [];
+    $defaultOptionCode = $options["option"][0]["code"] ?? str_repeat("0", REFERENCE_LENGTH_OPTION);
+
+    return array_values(array_filter($baseRows, static function (array $baseRow) use ($options, $defaultOptionCode, &$validatorCache): bool {
+        $referencePrefix = trim((string) ($baseRow["reference_prefix"] ?? ""));
+        $productId = trim((string) ($baseRow["product_id"] ?? ""));
+        $productType = trim((string) ($baseRow["product_type"] ?? ""));
+        $ledId = trim((string) ($baseRow["led_id"] ?? ""));
+
+        if ($referencePrefix === "" || $productId === "" || $productType === "" || $ledId === "") {
+            return false;
+        }
+
+        $readiness = getCodeExplorerDatasheetReadiness(
+            $referencePrefix . $defaultOptionCode,
+            $productId,
+            $productType,
+            $ledId,
+            $options,
+            $validatorCache
+        );
+
+        return ($readiness["datasheet_ready"] ?? false) === true;
+    }));
 }
 
 function collectShowcaseConfiguratorValidBaseRows(

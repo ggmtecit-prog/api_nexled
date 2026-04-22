@@ -106,6 +106,35 @@ if (!function_exists("connectDBDam")) {
     }
 }
 
+if (!function_exists("connectDBEprelMappings")) {
+    function connectDBEprelMappings() {
+        $databaseName = getRuntimeDatabaseName(["EPREL_MAP_DB_NAME"], ["nexled_eprel"]);
+
+        if (!hasEprelMappingsRuntimeDatabaseConfig() && !hasRuntimeDatabaseConfig()) {
+            if (!function_exists("mysqli_connect")) {
+                failRuntimeBootstrap("The MySQLi extension is not available.");
+            }
+
+            $connection = mysqli_connect("localhost", "root", "", $databaseName);
+
+            if ($connection === false || mysqli_connect_errno()) {
+                failRuntimeDatabaseConnection($databaseName, mysqli_connect_error() ?: "Unable to connect to the database.");
+            }
+
+            mysqli_set_charset($connection, "utf8");
+            return $connection;
+        }
+
+        return connectDedicatedRuntimeDatabase(
+            $databaseName,
+            ["EPREL_MAP_DB_USER", "MYSQLUSER"],
+            ["EPREL_MAP_DB_PASS", "MYSQLPASSWORD"],
+            ["EPREL_MAP_DB_HOST", "DB_HOST", "MYSQLHOST"],
+            ["EPREL_MAP_DB_PORT", "DB_PORT", "MYSQLPORT"]
+        );
+    }
+}
+
 if (!function_exists("tryConnectDBDam")) {
     function tryConnectDBDam() {
         $databaseName = getRuntimeDatabaseName(["DAM_DB_NAME"], ["nexled_dam"]);
@@ -184,6 +213,14 @@ function hasDamRuntimeDatabaseConfig(): bool {
         || getRuntimeEnvValue("DAM_DB_NAME") !== null
         || getRuntimeEnvValue("DAM_DB_USER") !== null
         || getRuntimeEnvValue("DAM_DB_PASS") !== null;
+}
+
+function hasEprelMappingsRuntimeDatabaseConfig(): bool {
+    return getRuntimeEnvValue("EPREL_MAP_DB_HOST") !== null
+        || getRuntimeEnvValue("EPREL_MAP_DB_PORT") !== null
+        || getRuntimeEnvValue("EPREL_MAP_DB_NAME") !== null
+        || getRuntimeEnvValue("EPREL_MAP_DB_USER") !== null
+        || getRuntimeEnvValue("EPREL_MAP_DB_PASS") !== null;
 }
 
 function getRuntimeDatabaseName(array $envKeys, array $fallbacks): string {

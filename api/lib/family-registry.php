@@ -111,7 +111,7 @@ function getFamilyShowcaseMetadata(string $familyCode, string $productType): arr
     $rendererConfig = $rendererConfigs[$productType] ?? null;
     $status = getFamilyShowcaseStatus($familyCode);
     $supported = $rendererConfig !== null && $status !== "blocked_until_mapped";
-    $runtimeImplemented = in_array($familyCode, ["29", "30"], true) && ($rendererConfig["renderer"] ?? null) === "downlight";
+    $runtimeImplemented = $supported && isShowcaseRendererImplemented((string) ($rendererConfig["renderer"] ?? ""));
 
     if ($rendererConfig === null) {
         return [
@@ -140,6 +140,10 @@ function getFamilyShowcaseMetadata(string $familyCode, string $productType): arr
             "filters" => getDefaultShowcaseFilters(),
         ],
     ];
+}
+
+function isShowcaseRendererImplemented(string $renderer): bool {
+    return in_array(trim($renderer), ["downlight", "tubular", "barra", "dynamic", "shelf"], true);
 }
 
 function getShowcaseRendererConfigs(): array {
@@ -245,6 +249,64 @@ function getDefaultCustomDatasheetAllowedFields(): array {
         "asset_overrides" => ["header_image", "drawing_image", "finish_image"],
         "section_visibility" => ["fixing", "power_supply", "connection_cable"],
         "footer" => ["marker"],
+        "copy_mode" => ["simple", "advanced"],
+        "field_overrides" => [
+            "display_reference",
+            "display_description",
+            "display_size",
+            "display_color",
+            "display_cri",
+            "display_series",
+            "display_lens_name",
+            "display_finish_name",
+            "display_cap",
+            "display_option_code",
+            "display_connector_cable",
+            "display_cable_type",
+            "display_extra_length",
+            "display_end_cap",
+            "display_gasket",
+            "display_ip",
+            "display_fixing",
+            "display_power_supply",
+            "display_connection_cable",
+            "display_connection_connector",
+            "display_connection_cable_length",
+            "display_purpose",
+            "display_company",
+            "display_language",
+            "display_flux",
+            "display_efficacy",
+            "display_cct",
+            "display_color_label",
+            "display_cri_label",
+            "drawing_dimension_A",
+            "drawing_dimension_B",
+            "drawing_dimension_C",
+            "drawing_dimension_D",
+            "drawing_dimension_E",
+            "drawing_dimension_F",
+            "drawing_dimension_G",
+            "drawing_dimension_H",
+            "drawing_dimension_I",
+            "drawing_dimension_J",
+            "fixing_name",
+            "power_supply_description",
+            "connection_cable_description",
+        ],
+        "copy_overrides" => [
+            "header",
+            "characteristics",
+            "luminotechnical",
+            "drawing",
+            "color_graph",
+            "lens_diagram",
+            "finish",
+            "fixing",
+            "power_supply",
+            "connection_cable",
+            "footer",
+        ],
     ];
 }
 
@@ -268,6 +330,9 @@ function getDefaultCustomDatasheetDefaults(): array {
         "footer" => [
             "marker" => "CustPDF",
         ],
+        "copy_mode" => "simple",
+        "field_overrides" => [],
+        "copy_overrides" => [],
     ];
 }
 

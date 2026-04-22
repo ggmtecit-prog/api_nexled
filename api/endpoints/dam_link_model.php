@@ -123,6 +123,7 @@ function damUploadAsset(): void {
     $folder = damFetchFolderById($con, $folderId);
     if ($folder === null) { closeDB($con); damRespondError(404, "folder_not_found", "Folder not found.", ["id" => $folderId]); }
     if (!$folder["can_upload"]) { closeDB($con); damRespondError(409, "invalid_folder", "Folder does not allow uploads.", ["id" => $folderId]); }
+    $isCustomDatasheetUpload = damIsCustomDatasheetFolderId((string) ($folder["id"] ?? ""));
     $providedKindRaw = trim((string) ($_POST["kind"] ?? ""));
     $providedKind = damValidateRole($providedKindRaw !== "" ? $providedKindRaw : null);
     if ($providedKindRaw !== "" && $providedKind === null) { closeDB($con); damRespondError(400, "invalid_metadata", "Invalid role. Use one of: " . implode(", ", DAM_ALLOWED_ROLES)); }
@@ -139,6 +140,9 @@ function damUploadAsset(): void {
     $resourceType = damDetectResourceType($displayName, (string) ($file["type"] ?? ""));
     $format = strtolower(pathinfo($displayName, PATHINFO_EXTENSION));
     if ($tags === null) { closeDB($con); damRespondError(400, "invalid_metadata", "Tags must be valid JSON array."); }
+    if ($isCustomDatasheetUpload) {
+        $tags = array_values(array_unique(array_merge($tags, ["custom-datasheet", "isolated-upload", "no-product-link"])));
+    }
     $duplicateStmt = damPrepareOrFail($con, "SELECT `id` FROM `dam_assets` WHERE `folder_id` = ? AND `filename` = ? LIMIT 1");
     $duplicateParams = [$folder["id"], $displayName];
     damBindParams($duplicateStmt, "ss", $duplicateParams);
@@ -147,7 +151,12 @@ function damUploadAsset(): void {
     $duplicate = $duplicateResult ? mysqli_fetch_assoc($duplicateResult) : null;
     mysqli_stmt_close($duplicateStmt);
     if ($duplicate !== null) { closeDB($con); damRespondError(409, "invalid_metadata", "Asset with same filename already exists in folder.", ["id" => (int) $duplicate["id"]]); }
-    $uploadOutcome = cloudinaryUploadDetailed($file["tmp_name"], $publicId, $resourceType, ["asset_folder" => $folder["path"], "display_name" => $displayName]);
+    $uploadOutcome = cloudinaryUploadDetailed($file["tmp_name"], $publicId, $resourceType, [
+        "asset_folder" => $folder["path"],
+        "display_name" => $displayName,
+        "overwrite" => false,
+        "tags" => $tags,
+    ]);
     if (!($uploadOutcome["ok"] ?? false)) { closeDB($con); damRespondError(500, "cloudinary_upload_failed", (string) ($uploadOutcome["error"] ?? "Cloudinary upload failed."), ["http_code" => $uploadOutcome["http_code"] ?? null]); }
     $uploadResult = $uploadOutcome["data"] ?? null;
     $secureUrl = $uploadResult["secure_url"] ?? null;
@@ -219,6 +228,10 @@ function damLinkAsset(): void {
     $con = connectDBDam();
     $asset = damFetchAssetById($con, $assetId);
     if ($asset === null) { closeDB($con); damRespondError(404, "asset_not_found", "Asset not found.", ["id" => $assetId]); }
+    if (damIsCustomDatasheetFolderId((string) ($asset["folder_id"] ?? ""))) {
+        closeDB($con);
+        damRespondError(409, "custom_asset_link_forbidden", "Custom datasheet uploads cannot be linked to products or families.", ["id" => $assetId]);
+    }
     $existingStmt = damPrepareOrFail($con, "SELECT `id` FROM `dam_asset_links` WHERE `asset_id` = ? AND `role` = ? AND `product_code` <=> ? AND `family_code` <=> ? LIMIT 1");
     $existingParams = [$assetId, $role, $productCode, $familyCode];
     damBindParams($existingStmt, "isss", $existingParams);
@@ -293,6 +306,11 @@ function damValidateRole(?string $role): ?string { if (!is_string($role) || trim
 function damNormalizeName($value): string { $value = strtolower(trim((string) $value)); $value = preg_replace("/[^a-z0-9]+/", "-", $value) ?? ""; $value = trim($value, "-"); return substr($value, 0, 80); }
 function damNormalizeFamilyCode($value): ?string { if (!is_string($value) && !is_numeric($value)) return null; $familyCode = preg_replace("/[^0-9]/", "", (string) $value) ?? ""; return $familyCode !== "" ? $familyCode : null; }
 function damNormalizeProductCode($value): ?string { if (!is_string($value) && !is_numeric($value)) return null; $productCode = preg_replace("/[^a-zA-Z0-9_-]/", "", (string) $value) ?? ""; return $productCode !== "" ? substr($productCode, 0, 64) : null; }
+function damIsCustomDatasheetFolderId(string $folderId): bool {
+    $normalized = trim(str_replace("\\", "/", $folderId), "/");
+    return $normalized === "nexled/media/custom-datasheet"
+        || str_starts_with($normalized, "nexled/media/custom-datasheet/");
+}
 function damSafeFilename(string $filename): string {
     $filename = trim($filename);
     if ($filename === "") return "asset";

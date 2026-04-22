@@ -90,6 +90,24 @@ function normalizeCustomDatasheetRequest(array $input): array {
         return $assetOverridesResult;
     }
 
+    $copyModeResult = normalizeCustomDatasheetCopyMode($customInput["copy_mode"] ?? null, $family);
+
+    if (($copyModeResult["ok"] ?? false) !== true) {
+        return $copyModeResult;
+    }
+
+    $fieldOverridesResult = normalizeCustomDatasheetFieldOverrides($customInput["field_overrides"] ?? null, $family);
+
+    if (($fieldOverridesResult["ok"] ?? false) !== true) {
+        return $fieldOverridesResult;
+    }
+
+    $copyOverridesResult = normalizeCustomDatasheetCopyOverrides($customInput["copy_overrides"] ?? null, $family);
+
+    if (($copyOverridesResult["ok"] ?? false) !== true) {
+        return $copyOverridesResult;
+    }
+
     $sectionVisibilityResult = normalizeCustomDatasheetSectionVisibility($customInput["section_visibility"] ?? null, $family);
 
     if (($sectionVisibilityResult["ok"] ?? false) !== true) {
@@ -104,10 +122,13 @@ function normalizeCustomDatasheetRequest(array $input): array {
 
     $textOverrides = $textOverridesResult["data"];
     $assetOverrides = $assetOverridesResult["data"];
+    $copyMode = $copyModeResult["data"];
+    $fieldOverrides = $fieldOverridesResult["data"];
+    $copyOverrides = $copyOverridesResult["data"];
     $sectionVisibility = $sectionVisibilityResult["data"];
     $footer = $footerResult["data"];
 
-    if ($textOverrides === [] && $assetOverrides === [] && $sectionVisibility === []) {
+    if ($textOverrides === [] && $assetOverrides === [] && $fieldOverrides === [] && $copyOverrides === [] && $sectionVisibility === []) {
         $warnings[] = "custom_datasheet_no_overrides";
     }
 
@@ -122,8 +143,11 @@ function normalizeCustomDatasheetRequest(array $input): array {
         ]),
         "custom" => [
             "mode" => "custom",
+            "copy_mode" => $copyMode,
             "text_overrides" => $textOverrides,
             "asset_overrides" => $assetOverrides,
+            "field_overrides" => $fieldOverrides,
+            "copy_overrides" => $copyOverrides,
             "section_visibility" => $sectionVisibility,
             "footer" => $footer,
         ],

@@ -17,6 +17,8 @@ Related docs:
 - [OFFICIAL_DATASHEET_LAYOUT_SPEC.md](./OFFICIAL_DATASHEET_LAYOUT_SPEC.md)
 - [SHOWCASE_PDF_FEATURE_SPEC.md](./SHOWCASE_PDF_FEATURE_SPEC.md)
 - [SHOWCASE_PDF_IMPLEMENTATION_PLAN.md](./SHOWCASE_PDF_IMPLEMENTATION_PLAN.md)
+- [ADVANCED_CUSTOM_COPY_FEATURE_SPEC.md](./ADVANCED_CUSTOM_COPY_FEATURE_SPEC.md)
+- [ADVANCED_CUSTOM_FIELD_OVERRIDES_FEATURE_SPEC.md](./ADVANCED_CUSTOM_FIELD_OVERRIDES_FEATURE_SPEC.md)
 
 ## 1. Summary
 
@@ -40,6 +42,12 @@ The new feature is a third PDF product:
 The custom datasheet is for internal sales, marketing, and customer-specific PDF preparation.
 
 It must not weaken the current official datasheet flow.
+
+Advanced extension:
+- section-based copy editing is documented separately in [ADVANCED_CUSTOM_COPY_FEATURE_SPEC.md](./ADVANCED_CUSTOM_COPY_FEATURE_SPEC.md)
+- that extension should remain an optional layer on top of this custom datasheet foundation
+- field-level display editing is documented separately in [ADVANCED_CUSTOM_FIELD_OVERRIDES_FEATURE_SPEC.md](./ADVANCED_CUSTOM_FIELD_OVERRIDES_FEATURE_SPEC.md)
+- that extension should also remain an optional layer and must preserve exact base product lookup
 
 ## 2. Product Positioning
 

@@ -12,6 +12,10 @@ require_once dirname(__FILE__) . "/../sections.php";
 require_once dirname(__FILE__) . "/request.php";
 require_once dirname(__FILE__) . "/assembler.php";
 require_once dirname(__FILE__) . "/renderers/downlight.php";
+require_once dirname(__FILE__) . "/renderers/tubular.php";
+require_once dirname(__FILE__) . "/renderers/barra.php";
+require_once dirname(__FILE__) . "/renderers/dynamic.php";
+require_once dirname(__FILE__) . "/renderers/shelf.php";
 
 class NEXLEDSHOWCASEPDF extends TCPDF {
     public string $showcaseTitle = "";
@@ -118,7 +122,16 @@ function renderShowcasePdfBinary(array $normalizedRequest, array $assembledShowc
     $family = (string) ($assembledShowcase["family"]["code"] ?? "");
     $renderer = (string) ($assembledShowcase["renderer"] ?? "");
 
-    if ($renderer !== "downlight" || !in_array($family, ["29", "30"], true)) {
+    $pages = match ($renderer) {
+        "downlight" => buildShowcaseDownlightPages($assembledShowcase, $normalizedRequest),
+        "tubular" => buildShowcaseTubularPages($assembledShowcase, $normalizedRequest),
+        "barra" => buildShowcaseBarraPages($assembledShowcase, $normalizedRequest),
+        "dynamic" => buildShowcaseDynamicPages($assembledShowcase, $normalizedRequest),
+        "shelf" => buildShowcaseShelfPages($assembledShowcase, $normalizedRequest),
+        default => [],
+    };
+
+    if ($pages === []) {
         return buildShowcaseRequestError(
             501,
             "showcase_not_implemented",
@@ -127,16 +140,6 @@ function renderShowcasePdfBinary(array $normalizedRequest, array $assembledShowc
                 "family" => $family,
                 "renderer" => $renderer,
             ]
-        );
-    }
-
-    $pages = buildShowcaseDownlightPages($assembledShowcase, $normalizedRequest);
-
-    if ($pages === []) {
-        return buildShowcaseRequestError(
-            500,
-            "showcase_render_failed",
-            "Showcase renderer produced no pages."
         );
     }
 
@@ -197,11 +200,26 @@ function renderShowcasePdfBinary(array $normalizedRequest, array $assembledShowc
 }
 
 function buildShowcasePdfTitle(array $assembledShowcase, array $normalizedRequest): string {
-    if (
-        (string) ($assembledShowcase["renderer"] ?? "") === "downlight" &&
-        function_exists("buildShowcaseDownlightDocumentTitle")
-    ) {
+    $renderer = (string) ($assembledShowcase["renderer"] ?? "");
+
+    if ($renderer === "downlight" && function_exists("buildShowcaseDownlightDocumentTitle")) {
         return buildShowcaseDownlightDocumentTitle($assembledShowcase, $normalizedRequest);
+    }
+
+    if ($renderer === "tubular" && function_exists("buildShowcaseTubularDocumentTitle")) {
+        return buildShowcaseTubularDocumentTitle($assembledShowcase, $normalizedRequest);
+    }
+
+    if ($renderer === "barra" && function_exists("buildShowcaseBarraDocumentTitle")) {
+        return buildShowcaseBarraDocumentTitle($assembledShowcase, $normalizedRequest);
+    }
+
+    if ($renderer === "dynamic" && function_exists("buildShowcaseDynamicDocumentTitle")) {
+        return buildShowcaseDynamicDocumentTitle($assembledShowcase, $normalizedRequest);
+    }
+
+    if ($renderer === "shelf" && function_exists("buildShowcaseShelfDocumentTitle")) {
+        return buildShowcaseShelfDocumentTitle($assembledShowcase, $normalizedRequest);
     }
 
     $familyName = trim((string) ($assembledShowcase["family"]["name"] ?? "Showcase"));
@@ -210,11 +228,26 @@ function buildShowcasePdfTitle(array $assembledShowcase, array $normalizedReques
 }
 
 function buildShowcasePdfFilename(array $assembledShowcase, array $normalizedRequest): string {
-    if (
-        (string) ($assembledShowcase["renderer"] ?? "") === "downlight" &&
-        function_exists("buildShowcaseDownlightFilename")
-    ) {
+    $renderer = (string) ($assembledShowcase["renderer"] ?? "");
+
+    if ($renderer === "downlight" && function_exists("buildShowcaseDownlightFilename")) {
         return buildShowcaseDownlightFilename($assembledShowcase, $normalizedRequest);
+    }
+
+    if ($renderer === "tubular" && function_exists("buildShowcaseTubularFilename")) {
+        return buildShowcaseTubularFilename($assembledShowcase, $normalizedRequest);
+    }
+
+    if ($renderer === "barra" && function_exists("buildShowcaseBarraFilename")) {
+        return buildShowcaseBarraFilename($assembledShowcase, $normalizedRequest);
+    }
+
+    if ($renderer === "dynamic" && function_exists("buildShowcaseDynamicFilename")) {
+        return buildShowcaseDynamicFilename($assembledShowcase, $normalizedRequest);
+    }
+
+    if ($renderer === "shelf" && function_exists("buildShowcaseShelfFilename")) {
+        return buildShowcaseShelfFilename($assembledShowcase, $normalizedRequest);
     }
 
     $family = (string) ($assembledShowcase["family"]["code"] ?? "showcase");

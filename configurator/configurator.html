@@ -239,7 +239,7 @@
                             <div class="flex flex-col gap-16">
                                 <div class="flex flex-col gap-4">
                                     <h3 class="card-title" data-i18n="configurator.familyLabel">Family</h3>
-                                    <p class="text-body-sm text-grey-primary max-w-readable" data-i18n="configurator.familyHint">Select a family to load the valid option set.</p>
+                                    <p class="text-body-sm text-grey-primary max-w-readable" data-i18n="configurator.familyHint">Select a product family to load the valid options for this reference.</p>
                                 </div>
                                 <div id="family-combobox" class="combobox combobox-md">
                                     <div class="combobox-control">
@@ -259,27 +259,177 @@
                                 </div>
                             </div>
 
-                            <div id="options-group" class="hidden flex flex-col gap-40 pt-40">
-                                <div id="showcase-scope" class="hidden flex flex-col gap-16">
-                                    <div class="divider"></div>
+                            <div id="custom-editing-mode-panel" class="hidden flex flex-col gap-16 pt-24 px-4 md:px-6">
+                                <div class="divider"></div>
 
-                                    <div class="panel panel-sm">
-                                        <div class="flex flex-col gap-6">
-                                            <span class="text-label text-grey-primary" data-i18n="configurator.showcase.scopeTitle">Showcase Scope</span>
-                                            <p class="text-body-sm text-grey-primary max-w-readable" data-i18n="configurator.showcase.scopeHint">Use baseline filters to narrow the family. Expand checkboxes decide which code segments should open into grouped showcase content.</p>
-                                        </div>
-                                        <div id="showcase-scope-grid" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-16 pt-12"></div>
+                                <section class="flex flex-col gap-16">
+                                    <div class="flex flex-col gap-4 pt-24">
+                                        <h3 class="card-title" data-i18n="configurator.custom.editingModeTitle">Editing Mode</h3>
+                                        <p class="text-body-sm text-grey-primary max-w-readable" data-i18n="configurator.custom.editingModeHint">Choose basic or advanced editing first. Basic keeps the simple title, image, and footer controls. Advanced also unlocks editable copy per section.</p>
                                     </div>
+                                    <div role="radiogroup" aria-label="Custom editing mode" class="grid grid-cols-1 xl:grid-cols-2 gap-16 items-start pt-8">
+                                        <label class="radio-wrapper radio-md items-start">
+                                            <input type="radio" name="custom-edit-mode" id="custom-edit-mode-basic" checked>
+                                            <span class="flex flex-col gap-4">
+                                                <span class="text-body-sm text-black" data-i18n="configurator.custom.editingModeBasicTitle">Basic Editing</span>
+                                                <span class="text-body-xs text-grey-primary" data-i18n="configurator.custom.editingModeBasicHint">Use the simple text, image, and footer overrides only.</span>
+                                            </span>
+                                        </label>
+                                        <label class="radio-wrapper radio-md items-start">
+                                            <input type="radio" name="custom-edit-mode" id="custom-edit-mode-advanced">
+                                            <span class="flex flex-col gap-4">
+                                                <span class="text-body-sm text-black" data-i18n="configurator.custom.editingModeAdvancedTitle">Advanced Editing</span>
+                                                <span class="text-body-xs text-grey-primary" data-i18n="configurator.custom.editingModeAdvancedHint">Unlock editable copy for the visible datasheet sections while technical data stays locked.</span>
+                                            </span>
+                                        </label>
+                                    </div>
+                                    <input type="checkbox" id="custom-advanced-copy-toggle" class="hidden" aria-hidden="true" tabindex="-1">
+                                </section>
+                            </div>
+
+                            <div id="custom-controls" class="hidden flex flex-col gap-16 pt-16 px-4 md:px-6">
+                                <div class="divider"></div>
+
+                                <section id="custom-images-section" class="flex flex-col gap-16">
+                                    <div class="flex flex-col gap-4 pt-24">
+                                        <h3 class="card-title" data-i18n="configurator.custom.assetsTitle">Custom Images</h3>
+                                        <p class="text-body-sm text-grey-primary max-w-readable" data-i18n="configurator.custom.assetsHint">Use a DAM asset ID or upload a new image. Upload sends the file to DAM and fills the asset ID automatically.</p>
+                                    </div>
+                                    <div class="grid grid-cols-1 xl:grid-cols-3 gap-16 items-start pt-8">
+                                        <div class="flex flex-col gap-12">
+                                            <div class="uploader uploader-image is-default" data-uploader>
+                                                <label class="uploader-label" for="custom-header-image-upload" data-i18n="configurator.custom.uploadImageButton">Upload Image</label>
+                                                <div id="custom-header-image-upload-trigger" class="uploader-zone" data-uploader-zone role="button" tabindex="0" aria-describedby="custom-header-image-upload-status">
+                                                    <input type="file" id="custom-header-image-upload" class="uploader-input" data-uploader-input accept="image/*,.svg,.png,.jpg,.jpeg,.webp">
+                                                    <div class="uploader-icon" aria-hidden="true">
+                                                        <i class="ri-image-add-line"></i>
+                                                    </div>
+                                                    <div class="uploader-text" data-uploader-text data-uploader-idle-text="Drag &amp; Drop images here" aria-live="polite" data-i18n="configurator.custom.uploadImageDropText">Drag &amp; Drop images here</div>
+                                                    <div class="uploader-subtext" data-i18n="configurator.custom.uploadImageDropSubtext">or click to browse your computer</div>
+                                                </div>
+                                                <p id="custom-header-image-upload-status" class="uploader-note text-grey-primary" data-i18n="configurator.custom.assetUploadHint">Upload sends the image to DAM and fills the asset ID automatically.</p>
+                                            </div>
+                                            <label class="input-label ml-12" for="custom-header-image-asset" data-i18n="configurator.custom.headerImageAsset">Header Image Asset ID</label>
+                                            <input type="text" id="custom-header-image-asset" class="input input-sm" placeholder="asset_123">
+                                        </div>
+                                        <div class="flex flex-col gap-12">
+                                            <div class="uploader uploader-image is-default" data-uploader>
+                                                <label class="uploader-label" for="custom-drawing-image-upload" data-i18n="configurator.custom.uploadImageButton">Upload Image</label>
+                                                <div id="custom-drawing-image-upload-trigger" class="uploader-zone" data-uploader-zone role="button" tabindex="0" aria-describedby="custom-drawing-image-upload-status">
+                                                    <input type="file" id="custom-drawing-image-upload" class="uploader-input" data-uploader-input accept="image/*,.svg,.png,.jpg,.jpeg,.webp">
+                                                    <div class="uploader-icon" aria-hidden="true">
+                                                        <i class="ri-image-add-line"></i>
+                                                    </div>
+                                                    <div class="uploader-text" data-uploader-text data-uploader-idle-text="Drag &amp; Drop images here" aria-live="polite" data-i18n="configurator.custom.uploadImageDropText">Drag &amp; Drop images here</div>
+                                                    <div class="uploader-subtext" data-i18n="configurator.custom.uploadImageDropSubtext">or click to browse your computer</div>
+                                                </div>
+                                                <p id="custom-drawing-image-upload-status" class="uploader-note text-grey-primary" data-i18n="configurator.custom.assetUploadHint">Upload sends the image to DAM and fills the asset ID automatically.</p>
+                                            </div>
+                                            <label class="input-label ml-12" for="custom-drawing-image-asset" data-i18n="configurator.custom.drawingImageAsset">Drawing Image Asset ID</label>
+                                            <input type="text" id="custom-drawing-image-asset" class="input input-sm" placeholder="asset_456">
+                                        </div>
+                                        <div class="flex flex-col gap-12">
+                                            <div class="uploader uploader-image is-default" data-uploader>
+                                                <label class="uploader-label" for="custom-finish-image-upload" data-i18n="configurator.custom.uploadImageButton">Upload Image</label>
+                                                <div id="custom-finish-image-upload-trigger" class="uploader-zone" data-uploader-zone role="button" tabindex="0" aria-describedby="custom-finish-image-upload-status">
+                                                    <input type="file" id="custom-finish-image-upload" class="uploader-input" data-uploader-input accept="image/*,.svg,.png,.jpg,.jpeg,.webp">
+                                                    <div class="uploader-icon" aria-hidden="true">
+                                                        <i class="ri-image-add-line"></i>
+                                                    </div>
+                                                    <div class="uploader-text" data-uploader-text data-uploader-idle-text="Drag &amp; Drop images here" aria-live="polite" data-i18n="configurator.custom.uploadImageDropText">Drag &amp; Drop images here</div>
+                                                    <div class="uploader-subtext" data-i18n="configurator.custom.uploadImageDropSubtext">or click to browse your computer</div>
+                                                </div>
+                                                <p id="custom-finish-image-upload-status" class="uploader-note text-grey-primary" data-i18n="configurator.custom.assetUploadHint">Upload sends the image to DAM and fills the asset ID automatically.</p>
+                                            </div>
+                                            <label class="input-label ml-12" for="custom-finish-image-asset" data-i18n="configurator.custom.finishImageAsset">Finish Image Asset ID</label>
+                                            <input type="text" id="custom-finish-image-asset" class="input input-sm" placeholder="asset_789">
+                                        </div>
+                                    </div>
+                                </section>
+
+                                <div class="flex flex-col">
+                                    <div class="panel panel-sm flex flex-col gap-12">
+                                        <div class="flex flex-col gap-6">
+                                            <span class="text-label text-grey-primary" data-i18n="configurator.custom.textTitle">Custom Text</span>
+                                            <p class="text-body-sm text-grey-primary max-w-readable" data-i18n="configurator.custom.textHint">Override approved copy blocks without changing technical values.</p>
+                                        </div>
+                                        <div class="grid grid-cols-1 gap-16 pt-4">
+                                            <div>
+                                                <label class="input-label ml-12" for="custom-document-title" data-i18n="configurator.custom.documentTitle">Document Title</label>
+                                                <input type="text" id="custom-document-title" class="input input-sm" maxlength="120">
+                                            </div>
+                                            <div>
+                                                <label class="input-label ml-12" for="custom-header-copy" data-i18n="configurator.custom.headerCopy">Header Copy</label>
+                                                <textarea id="custom-header-copy" class="input input-sm min-h-[132px] resize-y" maxlength="1200"></textarea>
+                                            </div>
+                                            <div>
+                                                <label class="input-label ml-12" for="custom-footer-note" data-i18n="configurator.custom.footerNote">Footer Note</label>
+                                                <input type="text" id="custom-footer-note" class="input input-sm" maxlength="160">
+                                            </div>
+                                        </div>
+                                    </div>
+
                                 </div>
 
-                                <section id="datasheet-section-dimensions" class="flex flex-col gap-0">
+                                <div id="custom-field-overrides-panel" class="hidden panel panel-sm flex flex-col gap-12">
+                                    <div class="flex flex-col gap-6">
+                                        <span class="text-label text-grey-primary" data-i18n="configurator.custom.fieldOverridesTitle">Advanced Field Overrides</span>
+                                        <p id="custom-field-overrides-message" class="text-body-sm text-grey-primary max-w-readable" data-i18n="configurator.custom.fieldOverridesWaiting">Enable advanced editing to turn any visible field into a custom text override.</p>
+                                    </div>
+                                    <div id="custom-field-overrides-editors" class="grid grid-cols-1 xl:grid-cols-2 gap-16 pt-4"></div>
+                                </div>
+
+                                <div id="custom-advanced-copy-panel" class="hidden panel panel-sm flex flex-col gap-12">
+                                    <div class="flex flex-col gap-6">
+                                        <span class="text-label text-grey-primary" data-i18n="configurator.custom.advancedEditorsTitle">Editable Section Copy</span>
+                                        <p id="custom-advanced-copy-message" class="text-body-sm text-grey-primary max-w-readable" data-i18n="configurator.custom.advancedEditorsWaiting">Enable advanced copy and wait for the custom preview to load editable section text.</p>
+                                    </div>
+                                    <div id="custom-advanced-copy-editors" class="grid grid-cols-1 xl:grid-cols-2 gap-16 pt-4"></div>
+                                </div>
+
+                                <div class="grid grid-cols-1 gap-16 items-start">
+                                    <div class="panel panel-sm flex flex-col gap-12">
+                                        <div class="flex flex-col gap-6">
+                                            <span class="text-label text-grey-primary" data-i18n="configurator.custom.sectionsTitle">Optional Sections</span>
+                                            <p class="text-body-sm text-grey-primary max-w-readable" data-i18n="configurator.custom.sectionsHint">Hide only optional blocks. Core technical sections stay locked.</p>
+                                        </div>
+                                        <div class="grid grid-cols-1 md:grid-cols-3 gap-12 pt-4">
+                                            <label class="flex items-center gap-10 rounded-16 border border-grey-secondary bg-white px-12 py-10 text-body-sm text-black">
+                                                <input type="checkbox" id="custom-section-fixing" class="h-16 w-16 shrink-0" checked>
+                                                <span data-i18n="configurator.fields.fixing">Fixing</span>
+                                            </label>
+                                            <label class="flex items-center gap-10 rounded-16 border border-grey-secondary bg-white px-12 py-10 text-body-sm text-black">
+                                                <input type="checkbox" id="custom-section-power-supply" class="h-16 w-16 shrink-0" checked>
+                                                <span data-i18n="configurator.fields.powerSupply">Power Supply</span>
+                                            </label>
+                                            <label class="flex items-center gap-10 rounded-16 border border-grey-secondary bg-white px-12 py-10 text-body-sm text-black">
+                                                <input type="checkbox" id="custom-section-connection-cable" class="h-16 w-16 shrink-0" checked>
+                                                <span data-i18n="configurator.fields.connectionCable">Connection Cable</span>
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div id="options-group" class="hidden flex flex-col gap-40 pt-40 px-8 md:px-12 xl:px-16">
+                                <div id="showcase-scope" class="hidden flex flex-col gap-16 px-4 md:px-6">
                                     <div class="divider"></div>
 
-                                    <div class="flex flex-col gap-4 pt-16">
-                                        <h3 class="card-title" data-i18n="configurator.sections.dimensionsTitle">Dimensions</h3>
-                                        <p class="text-body-sm text-grey-primary max-w-readable" data-i18n="configurator.sections.dimensionsText">Set the size and any extra length required for the product build.</p>
+                                    <div class="flex flex-col gap-4 pt-24">
+                                        <h3 class="card-title" data-i18n="configurator.showcase.scopeTitle">Showcase Scope</h3>
+                                        <p class="text-body-sm text-grey-primary max-w-readable" data-i18n="configurator.showcase.scopeHint">Use baseline filters to narrow the family. Expand checkboxes decide which code segments should open into grouped showcase content.</p>
                                     </div>
-                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-24 items-start">
+                                    <div id="showcase-scope-grid" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-x-24 gap-y-32 items-start pt-8"></div>
+                                </div>
+
+                                <section id="datasheet-section-dimensions" class="flex flex-col gap-16 px-4 md:px-6">
+                                    <div class="divider"></div>
+
+                                    <div class="flex flex-col gap-4 pt-24">
+                                        <h3 class="card-title" data-i18n="configurator.sections.dimensionsTitle">Dimensions</h3>
+                                        <p class="text-body-sm text-grey-primary max-w-readable" data-i18n="configurator.sections.dimensionsText">Set the product length and any extra length used in the build.</p>
+                                    </div>
+                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-x-24 gap-y-32 items-start pt-8">
                                         <div id="field-size">
                                         <label class="input-label ml-12" for="select-size" data-i18n="configurator.fields.size">Size</label>
                                         <select id="select-size" class="input input-sm"></select>
@@ -291,14 +441,14 @@
                                     </div>
                                 </section>
 
-                                <section id="datasheet-section-light" class="flex flex-col gap-0">
+                                <section id="datasheet-section-light" class="flex flex-col gap-16 px-4 md:px-6">
                                     <div class="divider"></div>
 
-                                    <div class="flex flex-col gap-4 pt-16">
+                                    <div class="flex flex-col gap-4 pt-24">
                                         <h3 class="card-title" data-i18n="configurator.sections.lightTitle">Light Source Configuration</h3>
-                                        <p class="text-body-sm text-grey-primary max-w-readable" data-i18n="configurator.sections.lightText">Choose the light output, rendering profile, and compatible series code.</p>
+                                        <p class="text-body-sm text-grey-primary max-w-readable" data-i18n="configurator.sections.lightText">Choose color, CRI, and series for the current product.</p>
                                     </div>
-                                    <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-24 items-start">
+                                    <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-x-24 gap-y-32 items-start pt-8">
                                         <div id="field-color">
                                         <label class="input-label ml-12" for="select-color" data-i18n="configurator.fields.color">Color</label>
                                         <select id="select-color" class="input input-sm"></select>
@@ -314,14 +464,14 @@
                                     </div>
                                 </section>
 
-                                <section id="datasheet-section-optics" class="flex flex-col gap-0">
+                                <section id="datasheet-section-optics" class="flex flex-col gap-16 px-4 md:px-6">
                                     <div class="divider"></div>
 
-                                    <div class="flex flex-col gap-4 pt-16">
+                                    <div class="flex flex-col gap-4 pt-24">
                                         <h3 class="card-title" data-i18n="configurator.sections.opticsTitle">Optics and Finish</h3>
-                                        <p class="text-body-sm text-grey-primary max-w-readable" data-i18n="configurator.sections.opticsText">Define the lens behavior, finishing code, end cap, and option bundle.</p>
+                                        <p class="text-body-sm text-grey-primary max-w-readable" data-i18n="configurator.sections.opticsText">Set lens, finish, cap, and option codes.</p>
                                     </div>
-                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-24 items-start">
+                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-x-24 gap-y-32 items-start pt-8">
                                         <div id="field-lens">
                                         <label class="input-label ml-12" for="select-lens" data-i18n="configurator.fields.lens">Lens</label>
                                         <select id="select-lens" class="input input-sm"></select>
@@ -341,15 +491,15 @@
                                     </div>
                                 </section>
 
-                                <section id="datasheet-section-cable" class="flex flex-col gap-0">
+                                <section id="datasheet-section-cable" class="flex flex-col gap-16 px-4 md:px-6">
                                     <div class="divider"></div>
 
-                                    <div class="flex flex-col gap-4 pt-16">
+                                    <div class="flex flex-col gap-4 pt-24">
                                         <h3 class="card-title" data-i18n="configurator.sections.cableTitle">Cable and Connectors</h3>
-                                        <p class="text-body-sm text-grey-primary max-w-readable" data-i18n="configurator.sections.cableText">Configure the outgoing cable, connector family, and cable length used in the build.</p>
+                                        <p class="text-body-sm text-grey-primary max-w-readable" data-i18n="configurator.sections.cableText">Set the outgoing cable, connector, and cable length.</p>
                                     </div>
-                                    <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-24 items-start">
-                                        <div>
+                                    <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-x-24 gap-y-32 items-start pt-8">
+                                        <div id="field-connector-cable">
                                         <label class="input-label ml-12" for="select-connector-cable" data-i18n="configurator.fields.cableConnector">Cable Connector</label>
                                         <select id="select-connector-cable" class="input input-sm">
                                             <option value="0" data-i18n="configurator.staticOptions.none">None</option>
@@ -360,7 +510,7 @@
                                             <option value="c2p">C2P</option>
                                         </select>
                                     </div>
-                                    <div>
+                                    <div id="field-cable-type">
                                         <label class="input-label ml-12" for="select-cable-type" data-i18n="configurator.fields.cableType">Cable Type</label>
                                         <select id="select-cable-type" class="input input-sm">
                                             <option value="branco" data-i18n="configurator.staticOptions.white">White</option>
@@ -377,15 +527,15 @@
                                     </div>
                                 </section>
 
-                                <section id="datasheet-section-mounting" class="flex flex-col gap-0">
+                                <section id="datasheet-section-mounting" class="flex flex-col gap-16 px-4 md:px-6">
                                     <div class="divider"></div>
 
-                                    <div class="flex flex-col gap-4 pt-16">
+                                    <div class="flex flex-col gap-4 pt-24">
                                         <h3 class="card-title" data-i18n="configurator.sections.mountingTitle">Mounting and Protection</h3>
-                                        <p class="text-body-sm text-grey-primary max-w-readable" data-i18n="configurator.sections.mountingText">Control the end cap, gasket, IP rating, and mechanical fixing profile.</p>
+                                        <p class="text-body-sm text-grey-primary max-w-readable" data-i18n="configurator.sections.mountingText">Set the end cap, gasket, IP rating, and fixing.</p>
                                     </div>
-                                    <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-24 items-start">
-                                        <div>
+                                    <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-x-24 gap-y-32 items-start pt-8">
+                                        <div id="field-end-cap">
                                         <label class="input-label ml-12" for="select-end-cap" data-i18n="configurator.fields.endCap">End Cap</label>
                                         <select id="select-end-cap" class="input input-sm">
                                             <option value="0" data-i18n="configurator.staticOptions.standard">Standard</option>
@@ -393,14 +543,14 @@
                                             <option value="2" data-i18n="configurator.staticOptions.plate">Plate</option>
                                         </select>
                                     </div>
-                                    <div>
+                                    <div id="field-gasket">
                                         <label class="input-label ml-12" for="select-gasket" data-i18n="configurator.fields.gasket">Gasket</label>
                                         <select id="select-gasket" class="input input-sm">
                                             <option value="5">5 mm</option>
                                             <option value="0.5">0.5 mm</option>
                                         </select>
                                     </div>
-                                    <div>
+                                    <div id="field-ip">
                                         <label class="input-label ml-12" for="select-ip" data-i18n="configurator.fields.ip">IP Rating</label>
                                         <select id="select-ip" class="input input-sm">
                                             <option value="0" data-i18n="configurator.staticOptions.autoDetect">Auto-detect</option>
@@ -415,7 +565,7 @@
                                             <option value="IP67">IP67</option>
                                         </select>
                                     </div>
-                                    <div>
+                                    <div id="field-fixing">
                                         <label class="input-label ml-12" for="select-fixing" data-i18n="configurator.fields.fixing">Fixing</label>
                                         <select id="select-fixing" class="input input-sm">
                                             <option value="0" data-i18n="configurator.staticOptions.none">None</option>
@@ -429,22 +579,22 @@
                                     </div>
                                 </section>
 
-                                <section id="datasheet-section-power" class="flex flex-col gap-0">
+                                <section id="datasheet-section-power" class="flex flex-col gap-16 px-4 md:px-6">
                                     <div class="divider"></div>
 
-                                    <div class="flex flex-col gap-4 pt-16">
+                                    <div class="flex flex-col gap-4 pt-24">
                                         <h3 class="card-title" data-i18n="configurator.sections.powerTitle">Power and Wiring</h3>
-                                        <p class="text-body-sm text-grey-primary max-w-readable" data-i18n="configurator.sections.powerText">Set the power supply and the connection cable details used in the datasheet export.</p>
+                                        <p class="text-body-sm text-grey-primary max-w-readable" data-i18n="configurator.sections.powerText">Set the power supply and connection cable used in the export.</p>
                                     </div>
-                                    <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-24 items-start">
-                                        <div>
+                                    <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-x-24 gap-y-32 items-start pt-8">
+                                        <div id="field-power-supply">
                                         <label class="input-label ml-12" for="select-power-supply" data-i18n="configurator.fields.powerSupply">Power Supply</label>
                                         <select id="select-power-supply" class="input input-sm">
                                             <option value="0" data-i18n="configurator.staticOptions.none">None</option>
                                             <option value="30w">30W</option>
                                         </select>
                                     </div>
-                                    <div>
+                                    <div id="field-connection-cable">
                                         <label class="input-label ml-12" for="select-connection-cable" data-i18n="configurator.fields.connectionCable">Connection Cable</label>
                                         <select id="select-connection-cable" class="input input-sm">
                                             <option value="0" data-i18n="configurator.staticOptions.none">None</option>
@@ -454,7 +604,7 @@
                                             <option value="transparente" data-i18n="configurator.staticOptions.transparent">Transparent</option>
                                         </select>
                                     </div>
-                                    <div>
+                                    <div id="field-connection-connector">
                                         <label class="input-label ml-12" for="select-connection-connector" data-i18n="configurator.fields.connectionConnector">Connection Connector</label>
                                         <select id="select-connection-connector" class="input input-sm">
                                             <option value="0" data-i18n="configurator.staticOptions.none">None</option>
@@ -465,21 +615,49 @@
                                             <option value="dcj">DCJ</option>
                                         </select>
                                     </div>
-                                    <div>
+                                    <div id="field-connection-cable-length">
                                         <label class="input-label ml-12" for="input-connection-cable-length" data-i18n="configurator.fields.connectionCableLength">Connection Cable Length (m)</label>
                                         <input type="number" id="input-connection-cable-length" class="input input-sm" value="0" min="0" step="0.01">
                                     </div>
                                     </div>
                                 </section>
 
-                                <section id="shared-section-metadata" class="flex flex-col gap-0">
+                                <div id="showcase-controls" class="hidden flex flex-col gap-16 pt-16 px-4 md:px-6">
                                     <div class="divider"></div>
 
-                                    <div class="flex flex-col gap-4 pt-16">
-                                        <h3 id="metadata-section-title" class="card-title" data-i18n="configurator.sections.metadataTitle">Datasheet Metadata</h3>
-                                        <p id="metadata-section-text" class="text-body-sm text-grey-primary max-w-readable" data-i18n="configurator.sections.metadataText">Choose the application context, branded export, and output language used in the PDF.</p>
+                                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-24 items-start">
+                                        <div class="flex flex-col gap-16">
+                                            <div class="flex flex-col gap-4">
+                                                <h4 class="card-title" data-i18n="configurator.showcase.expandTitle">Expand Valid Options</h4>
+                                                <p id="showcase-family-note" class="text-body-sm text-grey-primary max-w-readable" data-i18n="configurator.runtime.showcaseFamilyHint">Current selections stay locked unless you expand them. Showcase mode is live for families 29 and 30.</p>
+                                            </div>
+                                            <div id="showcase-expand-grid" class="pt-4"></div>
+                                        </div>
+
+                                        <div class="flex flex-col gap-16">
+                                            <div class="flex flex-col gap-4">
+                                                <h4 class="card-title" data-i18n="configurator.showcase.sectionsTitle">Showcase Sections</h4>
+                                                <p class="text-body-sm text-grey-primary max-w-readable" data-i18n="configurator.showcase.sectionsHint">Choose which grouped sections should appear in the showcase PDF.</p>
+                                            </div>
+                                            <div id="showcase-sections-grid" class="pt-4"></div>
+                                        </div>
                                     </div>
-                                    <div id="metadata-fields-grid" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-24 items-start">
+
+                                    <div class="hidden" aria-hidden="true">
+                                        <p id="showcase-preview-message" data-i18n="configurator.runtime.showcasePreviewWaiting">Choose scope filters and showcase sections to preview variant count and estimated pages.</p>
+                                        <span id="showcase-preview-variants">--</span>
+                                        <span id="showcase-preview-pages">--</span>
+                                    </div>
+                                </div>
+
+                                <section id="shared-section-metadata" class="flex flex-col gap-16 px-4 md:px-6">
+                                    <div class="divider"></div>
+
+                                    <div class="flex flex-col gap-4 pt-24">
+                                        <h3 id="metadata-section-title" class="card-title" data-i18n="configurator.sections.metadataTitle">Datasheet Metadata</h3>
+                                        <p id="metadata-section-text" class="text-body-sm text-grey-primary max-w-readable" data-i18n="configurator.sections.metadataText">Choose the application, logo, and PDF language.</p>
+                                    </div>
+                                    <div id="metadata-fields-grid" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-x-24 gap-y-32 items-start pt-8">
                                         <div id="field-purpose">
                                         <label class="input-label ml-12" for="select-purpose" data-i18n="configurator.fields.purpose">Purpose</label>
                                         <select id="select-purpose" class="input input-sm">
@@ -517,136 +695,6 @@
                                     </div>
                                 </section>
 
-                                <div id="showcase-controls" class="hidden flex flex-col gap-16 pt-16">
-                                    <div class="divider"></div>
-
-                                    <div class="grid grid-cols-1 xl:grid-cols-2 gap-16 items-start">
-                                        <div class="panel panel-sm flex flex-col gap-12">
-                                            <div class="flex flex-col gap-6">
-                                                <span class="text-label text-grey-primary" data-i18n="configurator.showcase.expandTitle">Expand Valid Options</span>
-                                                <p id="showcase-family-note" class="text-body-sm text-grey-primary max-w-readable" data-i18n="configurator.runtime.showcaseFamilyHint">Current selections stay locked unless you expand them. Showcase mode is live for families 29 and 30.</p>
-                                            </div>
-                                            <div id="showcase-expand-grid"></div>
-                                        </div>
-
-                                        <div class="panel panel-sm flex flex-col gap-12">
-                                            <div class="flex flex-col gap-6">
-                                                <span class="text-label text-grey-primary" data-i18n="configurator.showcase.sectionsTitle">Showcase Sections</span>
-                                                <p class="text-body-sm text-grey-primary max-w-readable" data-i18n="configurator.showcase.sectionsHint">Choose which grouped sections should appear in the showcase PDF.</p>
-                                            </div>
-                                            <div id="showcase-sections-grid"></div>
-                                        </div>
-                                    </div>
-
-                                    <div class="hidden" aria-hidden="true">
-                                        <p id="showcase-preview-message" data-i18n="configurator.runtime.showcasePreviewWaiting">Choose scope filters and showcase sections to preview variant count and estimated pages.</p>
-                                        <span id="showcase-preview-variants">--</span>
-                                        <span id="showcase-preview-pages">--</span>
-                                    </div>
-                                </div>
-
-                                <div id="custom-controls" class="hidden flex flex-col gap-16 pt-16">
-                                    <div class="divider"></div>
-
-                                    <div class="panel panel-sm">
-                                        <div class="flex flex-col gap-6">
-                                            <span class="text-label text-grey-primary" data-i18n="configurator.custom.title">Custom Datasheet</span>
-                                            <p id="custom-family-note" class="text-body-sm text-grey-primary max-w-readable" data-i18n="configurator.runtime.customFamilyHint">Custom mode uses the exact product datasheet and applies approved text and image overrides.</p>
-                                        </div>
-                                    </div>
-
-                                    <div class="grid grid-cols-1 xl:grid-cols-2 gap-16 items-start">
-                                        <div class="panel panel-sm flex flex-col gap-12">
-                                            <div class="flex flex-col gap-6">
-                                                <span class="text-label text-grey-primary" data-i18n="configurator.custom.textTitle">Custom Text</span>
-                                                <p class="text-body-sm text-grey-primary max-w-readable" data-i18n="configurator.custom.textHint">Override approved copy blocks without changing technical values.</p>
-                                            </div>
-                                            <div class="grid grid-cols-1 gap-16 pt-4">
-                                                <div>
-                                                    <label class="input-label ml-12" for="custom-document-title" data-i18n="configurator.custom.documentTitle">Document Title</label>
-                                                    <input type="text" id="custom-document-title" class="input input-sm" maxlength="120">
-                                                </div>
-                                                <div>
-                                                    <label class="input-label ml-12" for="custom-header-copy" data-i18n="configurator.custom.headerCopy">Header Copy</label>
-                                                    <textarea id="custom-header-copy" class="input input-sm min-h-[132px] resize-y" maxlength="1200"></textarea>
-                                                </div>
-                                                <div>
-                                                    <label class="input-label ml-12" for="custom-footer-note" data-i18n="configurator.custom.footerNote">Footer Note</label>
-                                                    <input type="text" id="custom-footer-note" class="input input-sm" maxlength="160">
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        <div class="panel panel-sm flex flex-col gap-12">
-                                            <div class="flex flex-col gap-6">
-                                                <span class="text-label text-grey-primary" data-i18n="configurator.custom.assetsTitle">Custom Images</span>
-                                                <p class="text-body-sm text-grey-primary max-w-readable" data-i18n="configurator.custom.assetsHint">Use DAM asset IDs for the first version of custom image replacement.</p>
-                                            </div>
-                                            <div class="grid grid-cols-1 gap-16 pt-4">
-                                                <div>
-                                                    <label class="input-label ml-12" for="custom-header-image-asset" data-i18n="configurator.custom.headerImageAsset">Header Image Asset ID</label>
-                                                    <input type="text" id="custom-header-image-asset" class="input input-sm" placeholder="asset_123">
-                                                </div>
-                                                <div>
-                                                    <label class="input-label ml-12" for="custom-drawing-image-asset" data-i18n="configurator.custom.drawingImageAsset">Drawing Image Asset ID</label>
-                                                    <input type="text" id="custom-drawing-image-asset" class="input input-sm" placeholder="asset_456">
-                                                </div>
-                                                <div>
-                                                    <label class="input-label ml-12" for="custom-finish-image-asset" data-i18n="configurator.custom.finishImageAsset">Finish Image Asset ID</label>
-                                                    <input type="text" id="custom-finish-image-asset" class="input input-sm" placeholder="asset_789">
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <div class="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_320px] gap-16 items-start">
-                                        <div class="panel panel-sm flex flex-col gap-12">
-                                            <div class="flex flex-col gap-6">
-                                                <span class="text-label text-grey-primary" data-i18n="configurator.custom.sectionsTitle">Optional Sections</span>
-                                                <p class="text-body-sm text-grey-primary max-w-readable" data-i18n="configurator.custom.sectionsHint">Hide only optional blocks. Core technical sections stay locked.</p>
-                                            </div>
-                                            <div class="grid grid-cols-1 md:grid-cols-3 gap-12 pt-4">
-                                                <label class="flex items-center gap-10 rounded-16 border border-grey-secondary bg-white px-12 py-10 text-body-sm text-black">
-                                                    <input type="checkbox" id="custom-section-fixing" class="h-16 w-16 shrink-0" checked>
-                                                    <span data-i18n="configurator.fields.fixing">Fixing</span>
-                                                </label>
-                                                <label class="flex items-center gap-10 rounded-16 border border-grey-secondary bg-white px-12 py-10 text-body-sm text-black">
-                                                    <input type="checkbox" id="custom-section-power-supply" class="h-16 w-16 shrink-0" checked>
-                                                    <span data-i18n="configurator.fields.powerSupply">Power Supply</span>
-                                                </label>
-                                                <label class="flex items-center gap-10 rounded-16 border border-grey-secondary bg-white px-12 py-10 text-body-sm text-black">
-                                                    <input type="checkbox" id="custom-section-connection-cable" class="h-16 w-16 shrink-0" checked>
-                                                    <span data-i18n="configurator.fields.connectionCable">Connection Cable</span>
-                                                </label>
-                                            </div>
-                                        </div>
-
-                                        <div class="panel panel-sm flex flex-col gap-12">
-                                            <div class="flex flex-col gap-6">
-                                                <span class="text-label text-grey-primary" data-i18n="configurator.custom.previewTitle">Custom Preview</span>
-                                                <p id="custom-preview-message" class="text-body-sm text-grey-primary max-w-readable" data-i18n="configurator.runtime.customPreviewWaiting">Add approved overrides to validate the custom datasheet payload.</p>
-                                            </div>
-                                            <div class="grid grid-cols-1 gap-10 pt-4">
-                                                <div class="flex items-center justify-between gap-12">
-                                                    <span class="text-body-sm text-grey-primary" data-i18n="configurator.custom.previewTextCount">Text overrides</span>
-                                                    <span id="custom-preview-text-count" class="text-label text-black">0</span>
-                                                </div>
-                                                <div class="flex items-center justify-between gap-12">
-                                                    <span class="text-body-sm text-grey-primary" data-i18n="configurator.custom.previewAssetCount">Image overrides</span>
-                                                    <span id="custom-preview-asset-count" class="text-label text-black">0</span>
-                                                </div>
-                                                <div class="flex items-center justify-between gap-12">
-                                                    <span class="text-body-sm text-grey-primary" data-i18n="configurator.custom.previewHiddenCount">Hidden sections</span>
-                                                    <span id="custom-preview-hidden-count" class="text-label text-black">0</span>
-                                                </div>
-                                            </div>
-                                            <button type="button" id="custom-reset-button" class="btn btn-secondary btn-sm mt-4">
-                                                <i class="ri-refresh-line text-icon-sm" aria-hidden="true"></i>
-                                                <span data-i18n="configurator.custom.resetButton">Reset Customizations</span>
-                                            </button>
-                                        </div>
-                                    </div>
-                                </div>
                             </div>
                         </div>
                     </div>
@@ -657,7 +705,7 @@
                         <div class="segmented-control segmented-control-lg w-full" role="radiogroup" aria-label="Configurator PDF mode" data-i18n-aria-label="configurator.quickActions.outputModeAria">
                             <label class="segmented-control-option flex-1">
                                 <input id="output-mode-datasheet" class="segmented-control-input" type="radio" name="output-mode" value="datasheet" checked>
-                                <span class="segmented-control-label" data-i18n="configurator.quickActions.modeDatasheet">Datasheet</span>
+                                <span class="segmented-control-label" data-i18n="configurator.quickActions.modeDatasheet">Official</span>
                             </label>
                             <label class="segmented-control-option flex-1">
                                 <input id="output-mode-showcase" class="segmented-control-input" type="radio" name="output-mode" value="showcase">
@@ -670,15 +718,21 @@
                         </div>
                     </div>
                     <div class="card-body p-24 pt-64">
-                        <div class="flex flex-col gap-12 pt-16">
-                            <span class="input-label" data-i18n="configurator.quickActions.liveReference">Live Reference</span>
+                        <div id="field-display-reference" class="flex flex-col gap-16 pt-24">
+                            <label class="input-label ml-12" for="output-reference" data-i18n="configurator.quickActions.liveReference">Live Tecit Reference</label>
                             <div class="flex flex-col gap-8 w-full">
                                 <div class="flex flex-col gap-8 xl:flex-row xl:items-center">
-                                    <div class="w-full">
+                                    <div class="text-field-shell text-field-shell-trailing-action w-full">
                                         <input type="text" id="output-reference" class="input input-sm w-full" placeholder="11037581110010100" maxlength="17" autocomplete="off" spellcheck="false" data-i18n-placeholder="configurator.tecitCodePlaceholder">
+                                        <button type="button" class="tooltip-wrapper text-field-shell-action btn btn-ghost btn-icon btn-xs" style="position:absolute; inset-inline-end:var(--space-12); top:50%; transform:translateY(-50%); z-index:1;" data-tooltip-placement="bottom" data-copy-target="output-reference" aria-label="Copy reference" data-i18n-aria-label="shared.actions.copyReference">
+                                            <i class="ri-file-copy-line text-icon-xs" aria-hidden="true"></i>
+                                            <span class="tooltip tooltip-black tooltip-xs">
+                                                <span data-i18n="configurator.quickActions.copyReference">Copy Reference</span>
+                                            </span>
+                                        </button>
                                     </div>
                                     <div class="flex flex-wrap items-center justify-start gap-8 shrink-0">
-                                        <span class="tooltip-wrapper shrink-0">
+                                        <span class="tooltip-wrapper shrink-0" data-tooltip-placement="bottom">
                                             <button type="button" id="btn-load-output-reference" class="btn btn-secondary btn-icon btn-sm shrink-0" aria-label="Load Code" data-i18n-aria-label="configurator.loadTecitCode">
                                                 <i class="ri-scan-line text-icon-lg" aria-hidden="true"></i>
                                             </button>
@@ -686,53 +740,44 @@
                                                 <span data-i18n="configurator.loadTecitCode">Load Code</span>
                                             </div>
                                         </span>
-                                        <span class="tooltip-wrapper shrink-0">
-                                            <button type="button" class="btn btn-ghost btn-icon btn-sm shrink-0" data-copy-target="output-reference" aria-label="Copy reference" data-i18n-aria-label="shared.actions.copyReference">
-                                                <i class="ri-file-copy-line text-icon-lg" aria-hidden="true"></i>
-                                            </button>
-                                            <div class="tooltip tooltip-black tooltip-xs">
-                                                <span data-i18n="configurator.quickActions.copyReference">Copy Reference</span>
-                                            </div>
-                                        </span>
                                     </div>
                                 </div>
                             </div>
-                            <p class="input-hint" data-i18n="configurator.tecitCodeHint">Paste a full Tecit code to prefill family, size, light, optics, and finish fields.</p>
                         </div>
 
                         <div id="output-fields" class="hidden flex flex-col gap-12 pt-24">
-                            <label class="input-label" for="output-description" data-i18n="configurator.quickActions.description">Description</label>
-                            <div class="flex items-center gap-8 w-full">
-                                <input type="text" id="output-description" class="input input-sm flex-1 min-w-0" readonly>
-                                <span class="tooltip-wrapper shrink-0">
-                                    <button type="button" class="btn btn-ghost btn-icon btn-sm shrink-0" data-copy-target="output-description" aria-label="Copy description" data-i18n-aria-label="configurator.quickActions.copyDescription">
-                                        <i class="ri-file-copy-line text-icon-lg" aria-hidden="true"></i>
-                                    </button>
-                                    <div class="tooltip tooltip-black tooltip-xs">
+                            <div id="field-display-description" class="flex flex-col gap-12">
+                            <label class="input-label ml-12" for="output-description" data-i18n="configurator.quickActions.description">Description</label>
+                            <div class="text-field-shell text-field-shell-trailing-action w-full">
+                                <input type="text" id="output-description" class="input input-sm w-full" readonly>
+                                <button type="button" class="tooltip-wrapper text-field-shell-action btn btn-ghost btn-icon btn-xs" style="position:absolute; inset-inline-end:var(--space-12); top:50%; transform:translateY(-50%); z-index:1;" data-tooltip-placement="bottom" data-copy-target="output-description" aria-label="Copy description" data-i18n-aria-label="configurator.quickActions.copyDescription">
+                                    <i class="ri-file-copy-line text-icon-xs" aria-hidden="true"></i>
+                                    <span class="tooltip tooltip-black tooltip-xs">
                                         <span data-i18n="configurator.quickActions.copyDescription">Copy Description</span>
-                                    </div>
-                                </span>
+                                    </span>
+                                </button>
+                            </div>
                             </div>
                         </div>
 
-                        <div class="flex flex-col gap-12 pt-32 items-center">
-                            <div class="flex flex-wrap items-center justify-center gap-12">
-                                <button id="btn-generate" type="button" class="btn btn-primary btn-sm" disabled>
+                        <div class="flex flex-col gap-12 pt-40 w-full">
+                            <div class="flex items-center gap-12 w-full">
+                                <button id="btn-generate" type="button" class="btn btn-primary btn-sm justify-center flex-1 min-w-0" disabled>
                                     <i class="ri-file-pdf-line text-icon-sm" aria-hidden="true"></i>
                                     <span id="btn-generate-label" data-i18n="configurator.quickActions.generatePdf">Generate PDF</span>
                                 </button>
-                                <span class="tooltip-wrapper shrink-0">
-                                    <button type="button" class="btn btn-secondary btn-icon btn-sm" id="reset-configurator-panel" aria-label="Reset configurator" data-i18n-aria-label="shared.actions.resetConfigurator">
-                                        <i class="ri-delete-bin-2-line text-icon-lg" aria-hidden="true"></i>
+                                <span class="tooltip-wrapper shrink-0" data-tooltip-placement="bottom">
+                                    <button type="button" class="btn btn-secondary btn-icon btn-sm" id="reset-configurator-panel" aria-label="Clear fields" data-i18n-aria-label="shared.actions.resetConfigurator">
+                                        <i class="ri-eraser-line text-icon-lg" aria-hidden="true"></i>
                                     </button>
                                     <div class="tooltip tooltip-black tooltip-xs">
-                                        <span data-i18n="shared.actions.resetConfigurator">Reset configurator</span>
+                                        <span data-i18n="shared.actions.resetConfigurator">Clear fields</span>
                                     </div>
                                 </span>
                             </div>
                         </div>
 
-                        <div class="flex flex-col gap-12 pt-24">
+                        <div class="flex flex-col gap-12 pt-8">
                             <button type="button" class="btn btn-ghost btn-sm justify-center w-full" data-modal-target="tecitCodeLogicModal">
                                 <i class="ri-information-line text-icon-sm" aria-hidden="true"></i>
                                 <span data-i18n="configurator.tecitCodeLogicButton">View Tecit Code Logic</span>
@@ -879,7 +924,8 @@
                     <i id="status-message-icon" class="ri-information-line text-icon-lg" aria-hidden="true"></i>
                 </span>
                 <div class="toast-copy">
-                    <p id="status-message-copy" class="toast-title" data-i18n="configurator.runtime.chooseFamilyToBegin">Choose a family to begin.</p>
+                    <p id="status-message-title" class="toast-title" data-i18n="configurator.runtime.chooseFamilyToBegin">Select a product family to start.</p>
+                    <p id="status-message-text" class="toast-text" hidden></p>
                 </div>
                 <div class="toast-actions">
                     <button type="button" id="status-message-close" class="btn btn-ghost btn-icon btn-xs" aria-label="Close notification" data-i18n-aria-label="shared.actions.closeNotification">

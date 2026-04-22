@@ -1,48 +1,62 @@
 <?php
 
-function connectDBReferencias() {
-    $con = mysqli_connect(
-        getenv("DB_HOST")     ?: "localhost",
-        getenv("DB_USER_REF") ?: "root",
-        getenv("DB_PASS_REF") ?: "",
-        "tecit_referencias"
-    );
-    if (mysqli_connect_errno()) {
-        echo "Failed to connect to MySQL: " . mysqli_connect_error();
-        exit();
+if (!function_exists("nexledDbPool")) {
+    function &nexledDbPool(): array {
+        static $pool = [];
+        return $pool;
     }
-    mysqli_set_charset($con, "utf8");
-    return $con;
+}
+
+if (!function_exists("nexledConnectDb")) {
+    function nexledConnectDb(string $poolKey, string $database, string $userEnv, string $passEnv): mysqli {
+        $pool = &nexledDbPool();
+
+        if (($pool[$poolKey] ?? null) instanceof mysqli && @$pool[$poolKey]->ping()) {
+            return $pool[$poolKey];
+        }
+
+        $con = mysqli_connect(
+            getenv("DB_HOST") ?: "localhost",
+            getenv($userEnv) ?: "root",
+            getenv($passEnv) ?: "",
+            $database
+        );
+
+        if (!$con || mysqli_connect_errno()) {
+            echo "Failed to connect to MySQL: " . mysqli_connect_error();
+            exit();
+        }
+
+        mysqli_set_charset($con, "utf8");
+        $pool[$poolKey] = $con;
+        return $con;
+    }
+}
+
+function connectDBReferencias() {
+    return nexledConnectDb("referencias", "tecit_referencias", "DB_USER_REF", "DB_PASS_REF");
 }
 
 function connectDBLampadas() {
-    $con = mysqli_connect(
-        getenv("DB_HOST")      ?: "localhost",
-        getenv("DB_USER_LAMP") ?: "root",
-        getenv("DB_PASS_LAMP") ?: "",
-        "tecit_lampadas"
-    );
-    if (mysqli_connect_errno()) {
-        echo "Failed to connect to MySQL: " . mysqli_connect_error();
-        exit();
-    }
-    mysqli_set_charset($con, "utf8");
-    return $con;
+    return nexledConnectDb("lampadas", "tecit_lampadas", "DB_USER_LAMP", "DB_PASS_LAMP");
 }
 
 function connectDBInf() {
-    $con = mysqli_connect(
-        getenv("DB_HOST")     ?: "localhost",
-        getenv("DB_USER_INF") ?: "root",
-        getenv("DB_PASS_INF") ?: "",
-        "info_nexled_2024"
-    );
-    mysqli_set_charset($con, "utf8");
-    return $con;
+    return nexledConnectDb("inf", "info_nexled_2024", "DB_USER_INF", "DB_PASS_INF");
 }
 
 function closeDB($con) {
-    mysqli_close($con);
+    $pool = &nexledDbPool();
+
+    foreach ($pool as $sharedConnection) {
+        if ($sharedConnection === $con) {
+            return;
+        }
+    }
+
+    if ($con instanceof mysqli) {
+        mysqli_close($con);
+    }
 }
 
 if (!function_exists('str_contains')) {

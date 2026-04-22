@@ -11,11 +11,10 @@ const PDF_LOADING_SUCCESS_HOLD_MS = 2800;
 const SHOWCASE_PREVIEW_DEBOUNCE_MS = 260;
 const CUSTOM_PREVIEW_DEBOUNCE_MS = 260;
 const LOCAL_API_HOSTNAMES = new Set(["localhost", "127.0.0.1", "[::1]"]);
-const SHOWCASE_IMPLEMENTED_FAMILY_CODES = new Set(["29", "30"]);
 const SHOWCASE_DEFAULT_FILTERS = {
     datasheet_ready_only: true,
-    max_variants: 80,
-    max_pages: 30,
+    max_variants: 250,
+    max_pages: 60,
 };
 const SHOWCASE_EXPANDABLE_SEGMENTS = [
     "size",
@@ -45,36 +44,154 @@ const SHOWCASE_SECTION_DEFINITIONS = [
     { id: "finish_gallery", labelKey: "configurator.showcase.sectionFinishGallery", fallback: "Finish gallery", defaultChecked: true },
     { id: "option_codes", labelKey: "configurator.showcase.sectionOptionCodes", fallback: "Option codes", defaultChecked: true },
 ];
-const REFERENCE_PLACEHOLDER_SELECT_IDS = new Set([
-    "select-size",
-    "select-color",
-    "select-cri",
-    "select-series",
-    "select-lens",
-    "select-finish",
-    "select-cap",
-    "select-option",
-]);
+const SELECT_REQUEST_DEFAULTS = Object.freeze({
+    "select-language": "pt",
+    "select-company": "0",
+    "select-purpose": "0",
+    "select-connector-cable": "0",
+    "select-cable-type": "branco",
+    "select-end-cap": "0",
+    "select-gasket": "5",
+    "select-ip": "0",
+    "select-fixing": "0",
+    "select-power-supply": "0",
+    "select-connection-cable": "0",
+    "select-connection-connector": "0",
+});
 const CUSTOM_TEXT_OVERRIDE_FIELDS = [
     { id: "custom-document-title", key: "document_title" },
     { id: "custom-header-copy", key: "header_copy" },
     { id: "custom-footer-note", key: "footer_note" },
 ];
 const CUSTOM_ASSET_OVERRIDE_FIELDS = [
-    { id: "custom-header-image-asset", key: "header_image" },
-    { id: "custom-drawing-image-asset", key: "drawing_image" },
-    { id: "custom-finish-image-asset", key: "finish_image" },
+    {
+        id: "custom-header-image-asset",
+        key: "header_image",
+        uploadTriggerId: "custom-header-image-upload-trigger",
+        uploadInputId: "custom-header-image-upload",
+        uploadStatusId: "custom-header-image-upload-status",
+        uploadFolderId: "nexled/media/custom-datasheet/packshots",
+        uploadRole: "packshot",
+    },
+    {
+        id: "custom-drawing-image-asset",
+        key: "drawing_image",
+        uploadTriggerId: "custom-drawing-image-upload-trigger",
+        uploadInputId: "custom-drawing-image-upload",
+        uploadStatusId: "custom-drawing-image-upload-status",
+        uploadFolderId: "nexled/media/custom-datasheet/drawings",
+        uploadRole: "drawing",
+    },
+    {
+        id: "custom-finish-image-asset",
+        key: "finish_image",
+        uploadTriggerId: "custom-finish-image-upload-trigger",
+        uploadInputId: "custom-finish-image-upload",
+        uploadStatusId: "custom-finish-image-upload-status",
+        uploadFolderId: "nexled/media/custom-datasheet/finishes",
+        uploadRole: "finish",
+    },
 ];
 const CUSTOM_SECTION_VISIBILITY_FIELDS = [
     { id: "custom-section-fixing", key: "fixing" },
     { id: "custom-section-power-supply", key: "power_supply" },
     { id: "custom-section-connection-cable", key: "connection_cable" },
 ];
+const CUSTOM_EDIT_MODE_BASIC_ID = "custom-edit-mode-basic";
+const CUSTOM_EDIT_MODE_ADVANCED_ID = "custom-edit-mode-advanced";
+const CUSTOM_ADVANCED_TOGGLE_ID = "custom-advanced-copy-toggle";
+const CUSTOM_ADVANCED_COPY_SECTION_DEFINITIONS = [
+    { section: "header", field: "intro", labelKey: "configurator.custom.copySectionHeader", fallback: "Header", maxLength: 1200 },
+    { section: "characteristics", field: "intro", labelKey: "configurator.custom.copySectionCharacteristics", fallback: "Characteristics", maxLength: 800 },
+    { section: "luminotechnical", field: "intro", labelKey: "configurator.custom.copySectionLuminotechnical", fallback: "Luminotechnical", maxLength: 800 },
+    { section: "drawing", field: "intro", labelKey: "configurator.custom.copySectionDrawing", fallback: "Technical drawing", maxLength: 800 },
+    { section: "color_graph", field: "intro", labelKey: "configurator.custom.copySectionColorGraph", fallback: "Color graph", maxLength: 800 },
+    { section: "lens_diagram", field: "intro", labelKey: "configurator.custom.copySectionLensDiagram", fallback: "Lens diagram", maxLength: 800 },
+    { section: "finish", field: "intro", labelKey: "configurator.custom.copySectionFinish", fallback: "Finish", maxLength: 800 },
+    { section: "fixing", field: "intro", labelKey: "configurator.custom.copySectionFixing", fallback: "Fixing", maxLength: 800 },
+    { section: "power_supply", field: "intro", labelKey: "configurator.custom.copySectionPowerSupply", fallback: "Power supply", maxLength: 1200 },
+    { section: "connection_cable", field: "intro", labelKey: "configurator.custom.copySectionConnectionCable", fallback: "Connection cable", maxLength: 1200 },
+    { section: "footer", field: "note", labelKey: "configurator.custom.copySectionFooter", fallback: "Footer", maxLength: 160 },
+];
+const CUSTOM_FIELD_OVERRIDE_GROUPS = [
+    {
+        id: "identity",
+        titleKey: "configurator.custom.fieldGroupIdentity",
+        fallback: "Displayed Product Data",
+        fields: [
+            { key: "display_reference", labelKey: "configurator.quickActions.reference", fallback: "Reference", maxLength: 64, containerId: "field-display-reference" },
+            { key: "display_description", labelKey: "configurator.quickActions.description", fallback: "Description", maxLength: 160, containerId: "field-display-description" },
+            { key: "display_size", labelKey: "configurator.fields.size", fallback: "Size", maxLength: 80, containerId: "field-size" },
+            { key: "display_color", labelKey: "configurator.fields.color", fallback: "Color", maxLength: 120, containerId: "field-color" },
+            { key: "display_cri", labelKey: "configurator.fields.cri", fallback: "CRI", maxLength: 80, containerId: "field-cri" },
+            { key: "display_series", labelKey: "configurator.fields.series", fallback: "Series", maxLength: 120, containerId: "field-series" },
+            { key: "display_lens_name", labelKey: "configurator.fields.lens", fallback: "Lens", maxLength: 120, containerId: "field-lens" },
+            { key: "display_finish_name", labelKey: "configurator.fields.finish", fallback: "Finish", maxLength: 120, containerId: "field-finish" },
+            { key: "display_cap", labelKey: "configurator.fields.cap", fallback: "Cap", maxLength: 120, containerId: "field-cap" },
+            { key: "display_option_code", labelKey: "configurator.fields.option", fallback: "Option", maxLength: 120, containerId: "field-option" },
+        ],
+    },
+    {
+        id: "config",
+        titleKey: "configurator.custom.fieldGroupConfig",
+        fallback: "Configuration Labels",
+        fields: [
+            { key: "display_connector_cable", labelKey: "configurator.fields.cableConnector", fallback: "Cable Connector", maxLength: 120, containerId: "field-connector-cable" },
+            { key: "display_cable_type", labelKey: "configurator.fields.cableType", fallback: "Cable Type", maxLength: 120, containerId: "field-cable-type" },
+            { key: "display_extra_length", labelKey: "configurator.fields.extraLength", fallback: "Extra Length (mm)", maxLength: 80, containerId: "field-extra-length" },
+            { key: "display_end_cap", labelKey: "configurator.fields.endCap", fallback: "End Cap", maxLength: 120, containerId: "field-end-cap" },
+            { key: "display_gasket", labelKey: "configurator.fields.gasket", fallback: "Gasket", maxLength: 120, containerId: "field-gasket" },
+            { key: "display_ip", labelKey: "configurator.fields.ip", fallback: "IP Rating", maxLength: 120, containerId: "field-ip" },
+            { key: "display_fixing", labelKey: "configurator.fields.fixing", fallback: "Fixing", maxLength: 120, containerId: "field-fixing" },
+            { key: "display_power_supply", labelKey: "configurator.fields.powerSupply", fallback: "Power Supply", maxLength: 160, containerId: "field-power-supply" },
+            { key: "display_connection_cable", labelKey: "configurator.fields.connectionCable", fallback: "Connection Cable", maxLength: 160, containerId: "field-connection-cable" },
+            { key: "display_connection_connector", labelKey: "configurator.fields.connectionConnector", fallback: "Connection Connector", maxLength: 120, containerId: "field-connection-connector" },
+            { key: "display_connection_cable_length", labelKey: "configurator.fields.connectionCableLength", fallback: "Connection Cable Length (m)", maxLength: 80, containerId: "field-connection-cable-length" },
+            { key: "display_purpose", labelKey: "configurator.fields.purpose", fallback: "Purpose", maxLength: 120, containerId: "field-purpose" },
+            { key: "display_company", labelKey: "configurator.fields.company", fallback: "Company Logo", maxLength: 120, containerId: "field-company" },
+            { key: "display_language", labelKey: "configurator.fields.language", fallback: "Language", maxLength: 80, containerId: "field-language" },
+        ],
+    },
+    {
+        id: "technical",
+        titleKey: "configurator.custom.fieldGroupTechnical",
+        fallback: "Technical Values",
+        fields: [
+            { key: "display_flux", labelKey: "configurator.custom.fieldDisplayFlux", fallback: "Flux (Lm)", maxLength: 80 },
+            { key: "display_efficacy", labelKey: "configurator.custom.fieldDisplayEfficacy", fallback: "Efficacy (Lm/W)", maxLength: 80 },
+            { key: "display_cct", labelKey: "configurator.custom.fieldDisplayCct", fallback: "Color Temperature (K)", maxLength: 80 },
+            { key: "display_color_label", labelKey: "configurator.custom.fieldDisplayColorLabel", fallback: "Displayed Color Label", maxLength: 120 },
+            { key: "display_cri_label", labelKey: "configurator.custom.fieldDisplayCriLabel", fallback: "Displayed CRI Value", maxLength: 80 },
+            { key: "drawing_dimension_A", labelKey: "configurator.custom.fieldDrawingA", fallback: "Drawing Dimension A", maxLength: 32 },
+            { key: "drawing_dimension_B", labelKey: "configurator.custom.fieldDrawingB", fallback: "Drawing Dimension B", maxLength: 32 },
+            { key: "drawing_dimension_C", labelKey: "configurator.custom.fieldDrawingC", fallback: "Drawing Dimension C", maxLength: 32 },
+            { key: "drawing_dimension_D", labelKey: "configurator.custom.fieldDrawingD", fallback: "Drawing Dimension D", maxLength: 32 },
+            { key: "drawing_dimension_E", labelKey: "configurator.custom.fieldDrawingE", fallback: "Drawing Dimension E", maxLength: 32 },
+            { key: "drawing_dimension_F", labelKey: "configurator.custom.fieldDrawingF", fallback: "Drawing Dimension F", maxLength: 32 },
+            { key: "drawing_dimension_G", labelKey: "configurator.custom.fieldDrawingG", fallback: "Drawing Dimension G", maxLength: 32 },
+            { key: "drawing_dimension_H", labelKey: "configurator.custom.fieldDrawingH", fallback: "Drawing Dimension H", maxLength: 32 },
+            { key: "drawing_dimension_I", labelKey: "configurator.custom.fieldDrawingI", fallback: "Drawing Dimension I", maxLength: 32 },
+            { key: "drawing_dimension_J", labelKey: "configurator.custom.fieldDrawingJ", fallback: "Drawing Dimension J", maxLength: 32 },
+            { key: "fixing_name", labelKey: "configurator.custom.fieldFixingName", fallback: "Fixing Name", maxLength: 120 },
+            { key: "power_supply_description", labelKey: "configurator.custom.fieldPowerSupplyDescription", fallback: "Power Supply Description", maxLength: 1200, multiline: true },
+            { key: "connection_cable_description", labelKey: "configurator.custom.fieldConnectionCableDescription", fallback: "Connection Cable Description", maxLength: 1200, multiline: true },
+        ],
+    },
+];
+const CUSTOM_FIELD_OVERRIDE_DEFINITIONS = CUSTOM_FIELD_OVERRIDE_GROUPS.flatMap((group) =>
+    group.fields.map((field) => ({ ...field, group: group.id }))
+);
 const CUSTOM_CONTROL_IDS = [
     ...CUSTOM_TEXT_OVERRIDE_FIELDS.map((field) => field.id),
     ...CUSTOM_ASSET_OVERRIDE_FIELDS.map((field) => field.id),
     ...CUSTOM_SECTION_VISIBILITY_FIELDS.map((field) => field.id),
+    CUSTOM_ADVANCED_TOGGLE_ID,
 ];
+const CUSTOM_ASSET_UPLOAD_TONES = {
+    neutral: "text-grey-primary",
+    success: "text-green-primary",
+    error: "text-red-600",
+};
 
 const REF_LENGTHS = {
     size: 4,
@@ -179,13 +296,15 @@ const COPY_LABEL_KEYS = {
 };
 
 const STATUS_TOAST_BASE_CLASS = "toast toast-sm";
+const STATUS_TOAST_TITLE_MAX_LENGTH = 64;
 const STATUS_TOAST_AUTOHIDE_DELAY = 4000;
 const STATUS_TOAST_HIDE_DELAY = 320;
 const STATUS_TOAST_VARIANT = {
-    neutral: { className: "toast-info", iconClass: "ri-information-line", role: "status", autoHide: true },
-    loading: { className: "toast-info", iconClass: "ri-information-line", role: "status", autoHide: false },
-    success: { className: "toast-success", iconClass: "ri-checkbox-circle-line", role: "status", autoHide: true },
-    error: { className: "toast-danger", iconClass: "ri-close-circle-line", role: "alert", autoHide: true },
+    neutral: { className: "toast-info", iconClass: "ri-information-line", role: "status", autoHide: true, titleKey: "shared.toast.infoTitle", titleFallback: "Info" },
+    loading: { className: "toast-info", iconClass: "ri-information-line", role: "status", autoHide: false, titleKey: "shared.toast.loadingTitle", titleFallback: "Loading" },
+    success: { className: "toast-success", iconClass: "ri-checkbox-circle-line", role: "status", autoHide: true, titleKey: "shared.toast.successTitle", titleFallback: "Success" },
+    warning: { className: "toast-warning", iconClass: "ri-alert-line", role: "status", autoHide: false, titleKey: "shared.toast.warningTitle", titleFallback: "Warning" },
+    error: { className: "toast-danger", iconClass: "ri-close-circle-line", role: "alert", autoHide: true, titleKey: "shared.toast.errorTitle", titleFallback: "Error" },
 };
 const API_BADGE_BASE_CLASS = "badge badge-md shrink-0";
 const API_BADGE_VARIANT_CLASS = {
@@ -254,6 +373,10 @@ let showcasePreviewRequestToken = 0;
 let customPreviewState = createEmptyCustomPreviewState();
 let customPreviewTimer = null;
 let customPreviewRequestToken = 0;
+let customEditableCopySnapshot = {};
+let customEditableCopyReference = "";
+let customFieldOverrideSnapshot = {};
+let customFieldOverrideReference = "";
 const showcaseScopeFieldHomes = new Map();
 let showcaseDropdownDocumentBound = false;
 
@@ -313,6 +436,8 @@ function createEmptyCustomPreviewState() {
         signature: "",
         textOverrideCount: 0,
         assetOverrideCount: 0,
+        fieldOverrideCount: 0,
+        advancedCopySectionCount: 0,
         hiddenSectionCount: 0,
         messageVariables: {},
         messageKey: "configurator.runtime.customPreviewWaiting",
@@ -339,14 +464,11 @@ function renderShowcaseControls() {
         }))
     );
 
-    renderShowcaseMultiDropdown(
+    renderShowcaseSectionsSelector(
         document.getElementById("showcase-sections-grid"),
         {
-            group: "section",
             labelKey: "configurator.showcase.sectionsTitle",
             labelFallback: "Showcase Sections",
-            emptyLabelKey: "configurator.showcase.dropdownSectionsEmpty",
-            emptyLabelFallback: "Select sections",
         },
         SHOWCASE_SECTION_DEFINITIONS.map((section) => ({
             type: "section",
@@ -363,59 +485,174 @@ function renderShowcaseMultiDropdown(container, config, items) {
         return;
     }
 
+    const previousAllExpandToggle = container.querySelector("[data-showcase-all-expand]");
     const previousSelections = new Set(
-        Array.from(container.querySelectorAll('input[type="checkbox"]:checked'))
+        Array.from(container.querySelectorAll("[data-showcase-expand]:checked"))
             .map((input) => input.value)
     );
 
     const label = t(config.labelKey, {}, config.labelFallback);
-    const emptyLabel = t(config.emptyLabelKey, {}, config.emptyLabelFallback);
+    const allOptionsLabel = t(
+        "configurator.showcase.expandAllOptions",
+        {},
+        "All options"
+    );
+    const hasPreviousSelections = previousSelections.size > 0;
+    const allOptionsChecked = previousAllExpandToggle instanceof HTMLInputElement
+        ? previousAllExpandToggle.checked
+        : true;
     const itemsMarkup = items.map((item) => {
-        const checked = previousSelections.has(item.id) || (!previousSelections.size && item.defaultChecked);
+        const checked = allOptionsChecked || previousSelections.has(item.id) || (!hasPreviousSelections && item.defaultChecked);
         const inputId = "showcase-" + item.type + "-" + item.id;
-        const inputDataAttribute = item.type === "expand"
-            ? 'data-showcase-expand="true"'
-            : 'data-showcase-section="true"';
+        const itemLabel = t(item.labelKey, {}, item.fallback);
 
         return `
-            <li class="dropdown-item" role="option" aria-selected="${checked ? "true" : "false"}" data-value="${escapeHtml(item.id)}">
-                <label class="checkbox-wrapper checkbox-md">
-                    <span class="relative inline-flex items-center justify-center">
-                        <input
-                            type="checkbox"
-                            id="${escapeHtml(inputId)}"
-                            value="${escapeHtml(item.id)}"
-                            ${inputDataAttribute}
-                            ${checked ? "checked" : ""}
-                            class="peer"
-                        >
-                        <i class="ri-check-line absolute inset-0 flex items-center justify-center leading-none text-white text-icon-md opacity-0 peer-checked:opacity-100 pointer-events-none" aria-hidden="true"></i>
-                    </span>
-                    <span class="text-body-sm">${escapeHtml(t(item.labelKey, {}, item.fallback))}</span>
-                </label>
-            </li>
+            <label class="checkbox-wrapper checkbox-md">
+                <span class="relative inline-flex items-center justify-center">
+                    <input
+                        type="checkbox"
+                        id="${escapeHtml(inputId)}"
+                        value="${escapeHtml(item.id)}"
+                        data-showcase-expand="true"
+                        ${checked ? "checked" : ""}
+                        class="peer"
+                    >
+                    <i class="ri-check-line absolute inset-0 flex items-center justify-center leading-none text-white text-icon-md opacity-0 peer-checked:opacity-100 pointer-events-none" aria-hidden="true"></i>
+                </span>
+                <span class="text-body-sm text-black">${escapeHtml(itemLabel)}</span>
+            </label>
         `;
     }).join("");
 
     container.innerHTML = `
-        <div
-            class="dropdown dropdown-multi dropdown-md w-full"
-            data-showcase-multi-dropdown="true"
-            data-showcase-multi-group="${escapeHtml(config.group)}"
-            data-empty-label="${escapeHtml(emptyLabel)}"
-            data-selected-suffix="${escapeHtml(t("configurator.showcase.dropdownSelectedSuffix", {}, "selected"))}"
-        >
-            <button type="button" class="dropdown-trigger" aria-haspopup="listbox" aria-expanded="false">
-                <span class="dropdown-value">${escapeHtml(emptyLabel)}</span>
-                <i class="ri-arrow-down-s-line dropdown-arrow" aria-hidden="true"></i>
-            </button>
-            <ul class="dropdown-menu custom-scrollbar" role="listbox" aria-multiselectable="true" aria-label="${escapeHtml(label)}">
-                ${itemsMarkup}
-            </ul>
+        <div class="flex flex-col gap-16 pt-4" role="group" aria-label="${escapeHtml(label)}">
+            <div class="px-4 md:px-6">
+                <label class="toggle toggle-md">
+                    <input
+                        type="checkbox"
+                        data-showcase-all-expand="true"
+                        ${allOptionsChecked ? "checked" : ""}
+                        class="toggle-input"
+                        role="switch"
+                    >
+                    <span class="toggle-track"><span class="toggle-thumb"></span></span>
+                    <span class="toggle-label">${escapeHtml(allOptionsLabel)}</span>
+                </label>
+            </div>
+            <div data-showcase-expand-options="true" class="px-4 md:px-6">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-12 pt-4 items-start" style="max-width: 32rem; margin-inline: auto;">
+                    ${itemsMarkup}
+                </div>
+            </div>
         </div>
     `;
 
-    initShowcaseMultiDropdown(container.querySelector('[data-showcase-multi-dropdown="true"]'));
+    syncShowcaseExpandVisibility(container);
+}
+
+function renderShowcaseSectionsSelector(container, config, items) {
+    if (!container) {
+        return;
+    }
+
+    const previousAllSectionsToggle = container.querySelector("[data-showcase-all-sections]");
+    const previousSelections = new Set(
+        Array.from(container.querySelectorAll("[data-showcase-section]:checked"))
+            .map((input) => input.value)
+    );
+
+    const label = t(config.labelKey, {}, config.labelFallback);
+    const allSectionsLabel = t(
+        "configurator.showcase.allSectionsToggle",
+        {},
+        "All sections appear?"
+    );
+    const allSectionsChecked = previousAllSectionsToggle instanceof HTMLInputElement
+        ? previousAllSectionsToggle.checked
+        : true;
+    const itemsMarkup = items.map((item) => {
+        const checked = previousSelections.has(item.id) || (!previousSelections.size && item.defaultChecked);
+        const inputId = "showcase-" + item.type + "-" + item.id;
+        const itemLabel = t(item.labelKey, {}, item.fallback);
+
+        return `
+            <label class="checkbox-wrapper checkbox-md">
+                <span class="relative inline-flex items-center justify-center">
+                    <input
+                        type="checkbox"
+                        id="${escapeHtml(inputId)}"
+                        value="${escapeHtml(item.id)}"
+                        data-showcase-section="true"
+                        ${checked ? "checked" : ""}
+                        class="peer"
+                    >
+                    <i class="ri-check-line absolute inset-0 flex items-center justify-center leading-none text-white text-icon-md opacity-0 peer-checked:opacity-100 pointer-events-none" aria-hidden="true"></i>
+                </span>
+                <span class="text-body-sm text-black">${escapeHtml(itemLabel)}</span>
+            </label>
+        `;
+    }).join("");
+
+    container.innerHTML = `
+        <div class="flex flex-col gap-16 pt-4" role="group" aria-label="${escapeHtml(label)}">
+            <div class="px-4 md:px-6">
+                <label class="toggle toggle-md">
+                    <input
+                        type="checkbox"
+                        data-showcase-all-sections="true"
+                        ${allSectionsChecked ? "checked" : ""}
+                        class="toggle-input"
+                        role="switch"
+                    >
+                    <span class="toggle-track"><span class="toggle-thumb"></span></span>
+                    <span class="toggle-label">${escapeHtml(allSectionsLabel)}</span>
+                </label>
+            </div>
+            <div data-showcase-sections-options="true" class="px-4 md:px-6">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-12 pt-4 items-start" style="max-width: 32rem; margin-inline: auto;">
+                    ${itemsMarkup}
+                </div>
+            </div>
+        </div>
+    `;
+
+    syncShowcaseSectionsVisibility(container);
+}
+
+function syncShowcaseSectionsVisibility(container) {
+    if (!container) {
+        return;
+    }
+
+    const allSectionsToggle = container.querySelector("[data-showcase-all-sections]");
+    const optionsGrid = container.querySelector("[data-showcase-sections-options]");
+
+    if (!(allSectionsToggle instanceof HTMLInputElement) || !(optionsGrid instanceof HTMLElement)) {
+        return;
+    }
+
+    const showOptions = !allSectionsToggle.checked;
+    optionsGrid.classList.toggle("hidden", !showOptions);
+    optionsGrid.toggleAttribute("hidden", !showOptions);
+    optionsGrid.setAttribute("aria-hidden", String(!showOptions));
+}
+
+function syncShowcaseExpandVisibility(container) {
+    if (!container) {
+        return;
+    }
+
+    const allExpandToggle = container.querySelector("[data-showcase-all-expand]");
+    const optionsGrid = container.querySelector("[data-showcase-expand-options]");
+
+    if (!(allExpandToggle instanceof HTMLInputElement) || !(optionsGrid instanceof HTMLElement)) {
+        return;
+    }
+
+    const showOptions = !allExpandToggle.checked;
+    optionsGrid.classList.toggle("hidden", !showOptions);
+    optionsGrid.toggleAttribute("hidden", !showOptions);
+    optionsGrid.setAttribute("aria-hidden", String(!showOptions));
 }
 
 function initShowcaseMultiDropdown(dropdown) {
@@ -652,6 +889,10 @@ function bindShowcaseControls() {
             return;
         }
 
+        if (event.target.matches("[data-showcase-all-expand]")) {
+            syncShowcaseExpandVisibility(expandGrid);
+        }
+
         syncShowcaseScopeFieldStates();
         scheduleShowcasePreview();
     });
@@ -659,6 +900,10 @@ function bindShowcaseControls() {
     sectionsGrid?.addEventListener("change", (event) => {
         if (!(event.target instanceof HTMLInputElement) || event.target.type !== "checkbox") {
             return;
+        }
+
+        if (event.target.matches("[data-showcase-all-sections]")) {
+            syncShowcaseSectionsVisibility(sectionsGrid);
         }
 
         scheduleShowcasePreview();
@@ -678,6 +923,10 @@ function bindCustomControls() {
             : "input";
 
         element.addEventListener(eventName, () => {
+            if (id === CUSTOM_ADVANCED_TOGGLE_ID) {
+                renderCustomAdvancedCopyEditors();
+            }
+
             scheduleCustomPreview();
         });
         element.dataset.customBound = "true";
@@ -689,6 +938,47 @@ function bindCustomControls() {
         resetButton.addEventListener("click", resetCustomOverrides);
         resetButton.dataset.customBound = "true";
     }
+
+    [CUSTOM_EDIT_MODE_BASIC_ID, CUSTOM_EDIT_MODE_ADVANCED_ID].forEach((id) => {
+        const element = document.getElementById(id);
+
+        if (!(element instanceof HTMLInputElement) || element.dataset.customBound === "true") {
+            return;
+        }
+
+        element.addEventListener("change", () => {
+            if (!element.checked) {
+                return;
+            }
+
+            setCustomAdvancedCopyEnabled(id === CUSTOM_EDIT_MODE_ADVANCED_ID);
+        });
+        element.dataset.customBound = "true";
+    });
+
+    CUSTOM_ASSET_OVERRIDE_FIELDS.forEach((field) => {
+        const trigger = document.getElementById(field.uploadTriggerId);
+        const fileInput = document.getElementById(field.uploadInputId);
+
+        if (fileInput instanceof HTMLInputElement && fileInput.dataset.customUploadBound !== "true") {
+            fileInput.addEventListener("change", async (event) => {
+                const input = event.currentTarget instanceof HTMLInputElement ? event.currentTarget : null;
+                const file = input?.files?.[0];
+
+                if (!file) {
+                    return;
+                }
+
+                await uploadCustomAssetOverride(field, file);
+            });
+            fileInput.dataset.customUploadBound = "true";
+        }
+    });
+
+    resetCustomAssetUploadStatuses();
+    syncCustomEditingModeControls();
+    renderCustomFieldOverrideEditors({}, false);
+    syncCustomFieldOverrideVisibility();
 }
 
 function setOutputMode(mode) {
@@ -746,16 +1036,11 @@ function applyOutputModeState() {
     }
 
     if (generateLabel) {
-        generateLabel.textContent = isShowcase
-            ? t("configurator.quickActions.generateShowcasePdf", {}, "Generate Showcase PDF")
-            : isCustom
-                ? t("configurator.quickActions.generateCustomPdf", {}, "Generate Custom PDF")
-                : t("configurator.quickActions.generatePdf", {}, "Generate PDF");
+        generateLabel.textContent = t("configurator.quickActions.generatePdf", {}, "Generate PDF");
     }
 
     applyBuilderModeState();
     updateShowcaseFamilyHint();
-    updateCustomFamilyHint();
     syncShowcaseScopeFieldStates();
     renderShowcasePreviewState();
     renderCustomPreviewState();
@@ -779,6 +1064,7 @@ function applyBuilderModeState() {
 
     setHidden("showcase-scope", !isShowcase);
     setHidden("showcase-controls", !isShowcase);
+    setHidden("custom-editing-mode-panel", !isCustom);
     setHidden("custom-controls", !isCustom);
     setHidden("field-purpose", isShowcase);
 
@@ -870,16 +1156,23 @@ function syncShowcaseScopeFieldStates() {
         const input = inputId ? document.getElementById(inputId) : null;
         const isDisabled = showcaseActive && expandedSegments.has(segment);
 
-        if (field) {
-            field.classList.toggle("opacity-60", isDisabled);
-        }
-
         if (!(input instanceof HTMLInputElement || input instanceof HTMLSelectElement || input instanceof HTMLTextAreaElement)) {
             return;
         }
 
         input.disabled = isDisabled;
         input.setAttribute("aria-disabled", String(isDisabled));
+
+        if (input instanceof HTMLSelectElement) {
+            const dropdown = selectDropdowns.get(input.id) || null;
+            const trigger = dropdown?.root?.querySelector(".dropdown-trigger");
+
+            dropdown?.syncFromSelect();
+
+            if (trigger instanceof HTMLButtonElement) {
+                trigger.style.opacity = isDisabled ? "1" : "";
+            }
+        }
     });
 }
 
@@ -890,13 +1183,7 @@ function getCurrentFamilyMetadata() {
 
 function isCurrentFamilyShowcaseAvailable() {
     const family = getCurrentFamilyMetadata();
-    const familyCode = String(family?.codigo || get("select-family") || "").trim();
-
-    if (typeof family?.showcase_runtime_implemented === "boolean") {
-        return family.showcase_runtime_implemented;
-    }
-
-    return SHOWCASE_IMPLEMENTED_FAMILY_CODES.has(familyCode);
+    return Boolean(family?.showcase_runtime_implemented);
 }
 
 function updateShowcaseFamilyHint() {
@@ -910,7 +1197,7 @@ function updateShowcaseFamilyHint() {
         hint.textContent = t(
             "configurator.runtime.showcaseSelectFamilyFirst",
             {},
-            "Select a family first. Showcase mode is currently mapped for families 29 and 30."
+            "Select a family first to load showcase availability."
         );
         return;
     }
@@ -919,7 +1206,7 @@ function updateShowcaseFamilyHint() {
         hint.textContent = t(
             "configurator.runtime.showcaseUnsupportedFamily",
             {},
-            "Showcase mode is currently available only for mapped families. Use 29 or 30 for this first renderer."
+            "Showcase mode is not implemented yet for the selected family."
         );
         return;
     }
@@ -927,7 +1214,7 @@ function updateShowcaseFamilyHint() {
     hint.textContent = t(
         "configurator.runtime.showcaseFamilyHint",
         {},
-        "Current selections stay locked unless you expand them. Showcase mode is live for families 29 and 30."
+        "Current selections stay locked unless you expand them. Showcase mode is live for the selected family."
     );
 }
 
@@ -939,47 +1226,6 @@ function isCurrentFamilyCustomDatasheetAvailable() {
 function isCurrentFamilyCustomDatasheetRuntimeImplemented() {
     const family = getCurrentFamilyMetadata();
     return Boolean(family?.custom_datasheet_runtime_implemented);
-}
-
-function updateCustomFamilyHint() {
-    const hint = document.getElementById("custom-family-note");
-
-    if (!hint) {
-        return;
-    }
-
-    if (!get("select-family")) {
-        hint.textContent = t(
-            "configurator.runtime.customSelectFamilyFirst",
-            {},
-            "Select a family first. Custom datasheet works only on families that already support the official datasheet runtime."
-        );
-        return;
-    }
-
-    if (!isCurrentFamilyCustomDatasheetAvailable()) {
-        hint.textContent = t(
-            "configurator.runtime.customUnsupportedFamily",
-            {},
-            "Custom datasheet is currently blocked for families without official datasheet runtime support."
-        );
-        return;
-    }
-
-    if (!isCurrentFamilyCustomDatasheetRuntimeImplemented()) {
-        hint.textContent = t(
-            "configurator.runtime.customRuntimePending",
-            {},
-            "Custom datasheet preview is scaffolded. PDF render is still pending implementation."
-        );
-        return;
-    }
-
-    hint.textContent = t(
-        "configurator.runtime.customFamilyHint",
-        {},
-        "Custom mode uses the exact product datasheet and applies approved text and image overrides."
-    );
 }
 
 function resetShowcasePreviewState() {
@@ -1002,6 +1248,770 @@ function resetCustomPreviewState() {
     customPreviewRequestToken += 1;
     customPreviewState = createEmptyCustomPreviewState();
     renderCustomPreviewState();
+}
+
+function isCustomAdvancedCopyEnabled() {
+    const advancedRadio = document.getElementById(CUSTOM_EDIT_MODE_ADVANCED_ID);
+
+    if (advancedRadio instanceof HTMLInputElement) {
+        return advancedRadio.checked;
+    }
+
+    const toggle = document.getElementById(CUSTOM_ADVANCED_TOGGLE_ID);
+    return toggle instanceof HTMLInputElement && toggle.checked;
+}
+
+function syncCustomEditingModeControls() {
+    const toggle = document.getElementById(CUSTOM_ADVANCED_TOGGLE_ID);
+    const basicRadio = document.getElementById(CUSTOM_EDIT_MODE_BASIC_ID);
+    const advancedRadio = document.getElementById(CUSTOM_EDIT_MODE_ADVANCED_ID);
+    const advancedEnabled = toggle instanceof HTMLInputElement && toggle.checked;
+
+    if (basicRadio instanceof HTMLInputElement) {
+        basicRadio.checked = !advancedEnabled;
+    }
+
+    if (advancedRadio instanceof HTMLInputElement) {
+        advancedRadio.checked = advancedEnabled;
+    }
+}
+
+function setCustomAdvancedCopyEnabled(enabled, shouldPreview = true) {
+    const toggle = document.getElementById(CUSTOM_ADVANCED_TOGGLE_ID);
+
+    if (toggle instanceof HTMLInputElement) {
+        toggle.checked = Boolean(enabled);
+    }
+
+    syncCustomEditingModeControls();
+    renderCustomFieldOverrideEditors();
+    renderCustomAdvancedCopyEditors();
+
+    if (shouldPreview) {
+        scheduleCustomPreview();
+    }
+}
+
+function getCustomAdvancedCopyFieldId(section, field) {
+    return "custom-advanced-" + section + "-" + field;
+}
+
+function clearCustomAdvancedCopySnapshot() {
+    customEditableCopySnapshot = {};
+    customEditableCopyReference = "";
+    renderCustomAdvancedCopyEditors({}, false);
+}
+
+function setCustomAdvancedCopySnapshot(snapshot, reference = "") {
+    const nextSnapshot = snapshot && typeof snapshot === "object" ? snapshot : {};
+    const preserveCurrentValues = customEditableCopyReference === String(reference || "");
+
+    customEditableCopySnapshot = nextSnapshot;
+    customEditableCopyReference = String(reference || "");
+    renderCustomAdvancedCopyEditors(nextSnapshot, preserveCurrentValues);
+}
+
+function getCustomAdvancedCopyDefinition(section) {
+    return CUSTOM_ADVANCED_COPY_SECTION_DEFINITIONS.find((definition) => definition.section === section) || null;
+}
+
+function syncCustomAdvancedCopyVisibility() {
+    const panel = document.getElementById("custom-advanced-copy-panel");
+    const message = document.getElementById("custom-advanced-copy-message");
+    const enabled = isCustomAdvancedCopyEnabled();
+
+    if (panel) {
+        setHidden(panel.id, !enabled);
+    }
+
+    if (!message) {
+        return;
+    }
+
+    if (!enabled) {
+        message.textContent = t(
+            "configurator.custom.advancedEditorsWaiting",
+            {},
+            "Enable advanced copy and wait for the custom preview to load editable section text."
+        );
+        return;
+    }
+
+    const sectionCount = Object.keys(customEditableCopySnapshot || {}).length;
+
+    if (customPreviewState.pending) {
+        message.textContent = t(
+            "configurator.custom.advancedEditorsLoading",
+            {},
+            "Loading editable section copy..."
+        );
+        return;
+    }
+
+    if (!customPreviewState.ok) {
+        message.textContent = t(
+            "configurator.custom.advancedEditorsNeedPreview",
+            {},
+            "Wait for the custom preview to validate the base product before editing section copy."
+        );
+        return;
+    }
+
+    if (sectionCount === 0) {
+        message.textContent = t(
+            "configurator.custom.advancedEditorsEmpty",
+            {},
+            "No editable section copy is available for this product yet."
+        );
+        return;
+    }
+
+    message.textContent = t(
+        "configurator.custom.advancedEditorsReady",
+        { count: sectionCount },
+        "Editable section copy loaded."
+    );
+}
+
+function renderCustomAdvancedCopyEditors(snapshot = customEditableCopySnapshot, preserveCurrentValues = true) {
+    const panel = document.getElementById("custom-advanced-copy-panel");
+    const container = document.getElementById("custom-advanced-copy-editors");
+
+    if (!panel || !container) {
+        return;
+    }
+
+    const nextSnapshot = snapshot && typeof snapshot === "object" ? snapshot : {};
+    const currentValues = {};
+
+    if (preserveCurrentValues) {
+        Array.from(container.querySelectorAll("[data-custom-advanced-field]")).forEach((element) => {
+            if (element instanceof HTMLTextAreaElement) {
+                currentValues[element.id] = {
+                    value: element.value,
+                    defaultValue: String(element.dataset.defaultValue || ""),
+                };
+            }
+        });
+    }
+
+    container.innerHTML = "";
+
+    CUSTOM_ADVANCED_COPY_SECTION_DEFINITIONS.forEach((definition) => {
+        const sectionData = nextSnapshot[definition.section];
+
+        if (!sectionData || typeof sectionData !== "object" || !(definition.field in sectionData)) {
+            return;
+        }
+
+        const fieldId = getCustomAdvancedCopyFieldId(definition.section, definition.field);
+        const defaultValue = String(sectionData[definition.field] || "");
+        const wrapper = document.createElement("div");
+        const label = document.createElement("label");
+        const textarea = document.createElement("textarea");
+        const helper = document.createElement("p");
+
+        wrapper.className = "flex flex-col gap-8";
+        label.className = "input-label ml-12";
+        label.htmlFor = fieldId;
+        label.textContent = t(definition.labelKey, {}, definition.fallback);
+
+        textarea.id = fieldId;
+        textarea.className = "input input-sm min-h-[132px] resize-y";
+        textarea.dataset.customAdvancedField = "true";
+        textarea.dataset.section = definition.section;
+        textarea.dataset.field = definition.field;
+        textarea.dataset.defaultValue = defaultValue;
+        textarea.maxLength = Number(definition.maxLength || 800);
+        if (Object.prototype.hasOwnProperty.call(currentValues, fieldId)) {
+            const currentState = currentValues[fieldId];
+            const currentValue = String(currentState?.value || "");
+            const oldDefaultValue = String(currentState?.defaultValue || "");
+
+            textarea.value = currentValue.trim() !== oldDefaultValue.trim()
+                ? currentValue
+                : defaultValue;
+        } else {
+            textarea.value = defaultValue;
+        }
+
+        helper.className = "text-body-xs text-grey-primary ml-12";
+        helper.textContent = t(
+            "configurator.custom.advancedFieldHint",
+            {},
+            "Leave the default text unchanged to keep the official copy for this section."
+        );
+
+        textarea.addEventListener("input", () => {
+            scheduleCustomPreview();
+        });
+
+        wrapper.append(label, textarea, helper);
+        container.appendChild(wrapper);
+    });
+
+    syncCustomAdvancedCopyVisibility();
+}
+
+function collectCustomAdvancedCopyOverrides() {
+    if (!isCustomAdvancedCopyEnabled()) {
+        return {};
+    }
+
+    const overrides = {};
+
+    Array.from(document.querySelectorAll("[data-custom-advanced-field]")).forEach((element) => {
+        if (!(element instanceof HTMLTextAreaElement)) {
+            return;
+        }
+
+        const section = String(element.dataset.section || "").trim();
+        const field = String(element.dataset.field || "").trim();
+        const defaultValue = String(element.dataset.defaultValue || "").trim();
+        const value = String(element.value || "").trim();
+
+        if (!section || !field || value === "" || value === defaultValue) {
+            return;
+        }
+
+        if (!overrides[section]) {
+            overrides[section] = {};
+        }
+
+        overrides[section][field] = value;
+    });
+
+    return overrides;
+}
+
+function getCustomFieldOverrideDefinition(key) {
+    return CUSTOM_FIELD_OVERRIDE_DEFINITIONS.find((definition) => definition.key === key) || null;
+}
+
+function getCustomFieldOverrideToggleId(key) {
+    return "custom-field-override-toggle-" + key;
+}
+
+function getCustomFieldOverrideInputId(key) {
+    return "custom-field-override-input-" + key;
+}
+
+function buildLocalCustomFieldOverrideSnapshot() {
+    return {
+        display_reference: sanitizeTecitCode(document.getElementById("output-reference")?.value || ""),
+        display_description: String(document.getElementById("output-description")?.value || "").trim(),
+        display_size: getDisplayText("select-size") || get("select-size"),
+        display_color: getDisplayText("select-color") || get("select-color"),
+        display_cri: getDisplayText("select-cri") || get("select-cri"),
+        display_series: getDisplayText("select-series") || get("select-series"),
+        display_lens_name: getDisplayText("select-lens") || getSelectedOptionHint("select-lens"),
+        display_finish_name: getDisplayText("select-finish") || getSelectedOptionHint("select-finish"),
+        display_cap: getDisplayText("select-cap") || get("select-cap"),
+        display_option_code: getDisplayText("select-option") || get("select-option"),
+        display_connector_cable: getDisplayText("select-connector-cable") || getRequestSelectValue("select-connector-cable"),
+        display_cable_type: getDisplayText("select-cable-type") || getRequestSelectValue("select-cable-type"),
+        display_extra_length: String(get("input-extra-length") || "0").trim(),
+        display_end_cap: getDisplayText("select-end-cap") || getRequestSelectValue("select-end-cap"),
+        display_gasket: getDisplayText("select-gasket") || getRequestSelectValue("select-gasket"),
+        display_ip: getDisplayText("select-ip") || getRequestSelectValue("select-ip"),
+        display_fixing: getDisplayText("select-fixing") || getRequestSelectValue("select-fixing"),
+        display_power_supply: getDisplayText("select-power-supply") || getRequestSelectValue("select-power-supply"),
+        display_connection_cable: getDisplayText("select-connection-cable") || getRequestSelectValue("select-connection-cable"),
+        display_connection_connector: getDisplayText("select-connection-connector") || getRequestSelectValue("select-connection-connector"),
+        display_connection_cable_length: String(get("input-connection-cable-length") || "0").trim(),
+        display_purpose: getDisplayText("select-purpose") || getRequestSelectValue("select-purpose"),
+        display_company: getDisplayText("select-company") || getRequestSelectValue("select-company"),
+        display_language: getDisplayText("select-language") || getRequestSelectValue("select-language"),
+    };
+}
+
+function clearCustomFieldOverrideSnapshot() {
+    customFieldOverrideSnapshot = {};
+    customFieldOverrideReference = "";
+    renderCustomFieldOverrideEditors({}, false);
+}
+
+function setCustomFieldOverrideSnapshot(snapshot, reference = "") {
+    const nextSnapshot = snapshot && typeof snapshot === "object" ? snapshot : {};
+    const preserveCurrentValues = customFieldOverrideReference === String(reference || "");
+
+    customFieldOverrideSnapshot = nextSnapshot;
+    customFieldOverrideReference = String(reference || "");
+    renderCustomFieldOverrideEditors(nextSnapshot, preserveCurrentValues);
+}
+
+function syncCustomFieldOverrideVisibility() {
+    const panel = document.getElementById("custom-field-overrides-panel");
+    const message = document.getElementById("custom-field-overrides-message");
+    const enabled = isCustomAdvancedCopyEnabled();
+
+    if (panel) {
+        setHidden(panel.id, !enabled);
+    }
+
+    if (!message) {
+        return;
+    }
+
+    if (!enabled) {
+        message.textContent = t(
+            "configurator.custom.fieldOverridesWaiting",
+            {},
+            "Enable advanced editing to turn any visible field into a custom text override."
+        );
+        return;
+    }
+
+    if (customPreviewState.pending) {
+        message.textContent = t(
+            "configurator.custom.fieldOverridesLoading",
+            {},
+            "Loading field values from the base datasheet..."
+        );
+        return;
+    }
+
+    if (!customPreviewState.ok) {
+        message.textContent = t(
+            "configurator.custom.fieldOverridesFallback",
+            {},
+            "Toggle any field to override it. Exact technical defaults fill in after the custom preview finishes."
+        );
+        return;
+    }
+
+    message.textContent = t(
+        "configurator.custom.fieldOverridesReady",
+        {},
+        "Toggle any field to replace the displayed PDF value without changing the real product configuration."
+    );
+}
+
+function captureCurrentCustomFieldOverrideStates() {
+    const states = {};
+
+    Array.from(document.querySelectorAll("[data-custom-field-override-input]")).forEach((element) => {
+        if (!(element instanceof HTMLInputElement || element instanceof HTMLTextAreaElement)) {
+            return;
+        }
+
+        const key = String(element.dataset.customFieldKey || "").trim();
+
+        if (!key) {
+            return;
+        }
+
+        const toggle = document.getElementById(getCustomFieldOverrideToggleId(key));
+
+        states[key] = {
+            checked: toggle instanceof HTMLInputElement ? toggle.checked : false,
+            value: element.value,
+            defaultValue: String(element.dataset.defaultValue || ""),
+        };
+    });
+
+    return states;
+}
+
+function buildEffectiveCustomFieldOverrideSnapshot(snapshot = customFieldOverrideSnapshot) {
+    return {
+        ...(snapshot && typeof snapshot === "object" ? snapshot : {}),
+        ...buildLocalCustomFieldOverrideSnapshot(),
+    };
+}
+
+function buildCustomFieldOverrideControl(field, defaultValue, previousState = null, variant = "panel") {
+    const toggleId = getCustomFieldOverrideToggleId(field.key);
+    const inputId = getCustomFieldOverrideInputId(field.key);
+    const checked = previousState ? Boolean(previousState.checked) : false;
+    const inputValue = previousState && checked ? previousState.value : defaultValue;
+    const compact = variant === "inline";
+
+    const wrapper = document.createElement("div");
+    const row = document.createElement("div");
+    const textWrap = document.createElement("div");
+    const label = document.createElement("span");
+    const baseValue = document.createElement("p");
+    const toggleLabel = document.createElement("label");
+    const toggleInput = document.createElement("input");
+    const toggleText = document.createElement("span");
+    const inputWrap = document.createElement("div");
+    const inputLabel = document.createElement("label");
+    const input = field.multiline ? document.createElement("textarea") : document.createElement("input");
+
+    wrapper.className = compact
+        ? "mt-10 rounded-16 border border-dashed border-grey-secondary bg-grey-50/40 px-12 py-12"
+        : "rounded-16 border border-grey-secondary bg-white px-14 py-14";
+    wrapper.dataset.customFieldOverrideInline = compact ? "true" : "false";
+    wrapper.dataset.customFieldOverrideWrapper = field.key;
+    row.className = "flex items-start justify-between gap-12";
+    textWrap.className = "flex flex-col gap-4 min-w-0";
+    label.className = "text-label text-black";
+    label.textContent = t(field.labelKey, {}, field.fallback);
+    baseValue.className = "text-body-xs text-grey-primary break-words";
+    baseValue.textContent = t(
+        "configurator.custom.fieldBaseValue",
+        { value: defaultValue !== "" ? defaultValue : "—" },
+        "Base value: " + (defaultValue !== "" ? defaultValue : "—")
+    );
+
+    toggleLabel.className = "flex items-center gap-8 shrink-0 text-body-xs text-grey-primary";
+    toggleInput.type = "checkbox";
+    toggleInput.id = toggleId;
+    toggleInput.className = "h-16 w-16 shrink-0";
+    toggleInput.checked = checked;
+    toggleText.textContent = t("configurator.custom.fieldOverrideToggle", {}, "Override");
+
+    textWrap.append(label, baseValue);
+    toggleLabel.append(toggleInput, toggleText);
+    row.append(textWrap, toggleLabel);
+
+    inputWrap.className = compact ? "pt-10" : "pt-12";
+    inputWrap.dataset.customFieldOverrideInputWrap = field.key;
+
+    inputLabel.className = "input-label ml-12";
+    inputLabel.htmlFor = inputId;
+    inputLabel.textContent = t("configurator.custom.fieldCustomValue", {}, "Custom value");
+
+    input.id = inputId;
+    input.className = field.multiline
+        ? "input input-sm min-h-[132px] resize-y"
+        : "input input-sm";
+    input.dataset.customFieldOverrideInput = "true";
+    input.dataset.customFieldKey = field.key;
+    input.dataset.defaultValue = defaultValue;
+    input.maxLength = Number(field.maxLength || 255);
+    input.value = inputValue;
+
+    if (input instanceof HTMLInputElement) {
+        input.type = "text";
+    }
+
+    const syncInputState = () => {
+        inputWrap.classList.toggle("hidden", !toggleInput.checked);
+        input.disabled = !toggleInput.checked;
+    };
+
+    toggleInput.addEventListener("change", () => {
+        if (toggleInput.checked && String(input.value || "").trim() === "") {
+            input.value = defaultValue;
+        }
+
+        syncInputState();
+        scheduleCustomPreview();
+    });
+
+    input.addEventListener("input", () => {
+        scheduleCustomPreview();
+    });
+
+    inputWrap.append(inputLabel, input);
+    wrapper.append(row, inputWrap);
+    syncInputState();
+
+    return wrapper;
+}
+
+function renderCustomInlineFieldOverrideEditors(snapshot = customFieldOverrideSnapshot, preserveCurrentValues = true) {
+    const currentValues = preserveCurrentValues ? captureCurrentCustomFieldOverrideStates() : {};
+    const effectiveSnapshot = buildEffectiveCustomFieldOverrideSnapshot(snapshot);
+    const enabled = isCustomMode() && isCustomAdvancedCopyEnabled();
+
+    CUSTOM_FIELD_OVERRIDE_DEFINITIONS
+        .filter((field) => Boolean(field.containerId))
+        .forEach((field) => {
+            const target = document.getElementById(field.containerId);
+
+            if (!target) {
+                return;
+            }
+
+            Array.from(target.querySelectorAll('[data-custom-field-override-inline="true"]')).forEach((node) => node.remove());
+
+            const defaultValue = String(effectiveSnapshot[field.key] || "");
+            const control = buildCustomFieldOverrideControl(field, defaultValue, currentValues[field.key] || null, "inline");
+            control.classList.toggle("hidden", !enabled);
+            target.appendChild(control);
+        });
+}
+
+function renderCustomFieldOverrideEditors(snapshot = customFieldOverrideSnapshot, preserveCurrentValues = true) {
+    const panel = document.getElementById("custom-field-overrides-panel");
+    const container = document.getElementById("custom-field-overrides-editors");
+
+    if (!panel || !container) {
+        return;
+    }
+
+    const currentValues = preserveCurrentValues ? captureCurrentCustomFieldOverrideStates() : {};
+    const effectiveSnapshot = buildEffectiveCustomFieldOverrideSnapshot(snapshot);
+
+    renderCustomInlineFieldOverrideEditors(snapshot, preserveCurrentValues);
+
+    container.innerHTML = "";
+
+    CUSTOM_FIELD_OVERRIDE_GROUPS.forEach((group) => {
+        const groupFields = group.fields.filter((field) => !field.containerId);
+
+        if (groupFields.length === 0) {
+            return;
+        }
+
+        const groupCard = document.createElement("div");
+        const groupHeader = document.createElement("div");
+        const groupTitle = document.createElement("span");
+        const groupBody = document.createElement("div");
+
+        groupCard.className = "panel panel-sm flex flex-col gap-12";
+        groupHeader.className = "flex flex-col gap-4";
+        groupTitle.className = "text-label text-grey-primary";
+        groupTitle.textContent = t(group.titleKey, {}, group.fallback);
+        groupHeader.appendChild(groupTitle);
+
+        groupBody.className = "grid grid-cols-1 gap-12 pt-4";
+
+        groupFields.forEach((field) => {
+            const defaultValue = String(effectiveSnapshot[field.key] || "");
+            const wrapper = buildCustomFieldOverrideControl(field, defaultValue, currentValues[field.key] || null, "panel");
+            groupBody.appendChild(wrapper);
+        });
+
+        groupCard.append(groupHeader, groupBody);
+        container.appendChild(groupCard);
+    });
+
+    syncCustomFieldOverrideVisibility();
+}
+
+function collectCustomFieldOverrides() {
+    if (!isCustomAdvancedCopyEnabled()) {
+        return {};
+    }
+
+    const overrides = {};
+
+    Array.from(document.querySelectorAll("[data-custom-field-override-input]")).forEach((element) => {
+        if (!(element instanceof HTMLInputElement || element instanceof HTMLTextAreaElement)) {
+            return;
+        }
+
+        const key = String(element.dataset.customFieldKey || "").trim();
+        const defaultValue = String(element.dataset.defaultValue || "").trim();
+        const toggle = document.getElementById(getCustomFieldOverrideToggleId(key));
+
+        if (!(toggle instanceof HTMLInputElement) || !toggle.checked) {
+            return;
+        }
+
+        const value = String(element.value || "").trim();
+
+        if (key === "" || value === "" || value === defaultValue) {
+            return;
+        }
+
+        overrides[key] = value;
+    });
+
+    return overrides;
+}
+
+function setCustomAssetUploadStatus(field, messageKey, fallback, variables = {}, tone = "neutral") {
+    const status = document.getElementById(field?.uploadStatusId || "");
+
+    if (!status) {
+        return;
+    }
+
+    status.textContent = t(messageKey, variables, fallback);
+    Object.values(CUSTOM_ASSET_UPLOAD_TONES).forEach((className) => {
+        status.classList.remove(className);
+    });
+    status.classList.add(CUSTOM_ASSET_UPLOAD_TONES[tone] || CUSTOM_ASSET_UPLOAD_TONES.neutral);
+}
+
+function setCustomAssetUploadTriggerDisabled(trigger, disabled) {
+    if (!(trigger instanceof HTMLElement)) {
+        return;
+    }
+
+    if (trigger instanceof HTMLButtonElement) {
+        trigger.disabled = disabled;
+        return;
+    }
+
+    trigger.setAttribute("aria-disabled", disabled ? "true" : "false");
+    trigger.tabIndex = disabled ? -1 : 0;
+    trigger.classList.toggle("pointer-events-none", disabled);
+
+    const uploader = trigger.closest("[data-uploader]");
+
+    if (uploader instanceof HTMLElement) {
+        uploader.setAttribute("aria-disabled", disabled ? "true" : "false");
+    }
+}
+
+function resetCustomAssetUploaderVisual(field) {
+    const fileInput = document.getElementById(field?.uploadInputId || "");
+    const uploader = fileInput instanceof HTMLInputElement ? fileInput.closest("[data-uploader]") : null;
+    const text = uploader instanceof HTMLElement ? uploader.querySelector("[data-uploader-text]") : null;
+    const icon = uploader instanceof HTMLElement ? uploader.querySelector(".uploader-icon i") : null;
+
+    if (!(uploader instanceof HTMLElement)) {
+        return;
+    }
+
+    uploader.classList.remove("has-files", "is-error", "is-dragover");
+    uploader.classList.add("is-default");
+
+    if (text instanceof HTMLElement) {
+        text.textContent = text.dataset.uploaderIdleText || text.textContent.trim();
+    }
+
+    if (icon instanceof HTMLElement) {
+        icon.className = icon.dataset.uploaderIdleIcon || "ri-image-add-line";
+    }
+}
+
+function resetCustomAssetUploadStatuses() {
+    CUSTOM_ASSET_OVERRIDE_FIELDS.forEach((field) => {
+        const fileInput = document.getElementById(field.uploadInputId);
+        const trigger = document.getElementById(field.uploadTriggerId);
+
+        if (fileInput instanceof HTMLInputElement) {
+            fileInput.value = "";
+        }
+
+        setCustomAssetUploadTriggerDisabled(trigger, false);
+
+        setCustomAssetUploadStatus(
+            field,
+            "configurator.custom.assetUploadHint",
+            "Upload sends the image to DAM and fills the asset ID automatically."
+        );
+        resetCustomAssetUploaderVisual(field);
+    });
+}
+
+async function ensureDamFolderPath(folderId) {
+    const normalizedFolderId = String(folderId || "").trim().replace(/\\/g, "/").replace(/\/+/g, "/");
+    const segments = normalizedFolderId.split("/").filter(Boolean);
+
+    if (segments.length < 2 || segments[0] !== "nexled") {
+        throw new Error("Custom upload folder is invalid.");
+    }
+
+    let parentId = segments[0];
+
+    for (let index = 1; index < segments.length; index += 1) {
+        const segment = segments[index];
+        const currentFolderId = parentId + "/" + segment;
+        const response = await apiPost("/?endpoint=dam&action=create-folder", {
+            parent_id: parentId,
+            name: segment,
+        });
+
+        if (response.ok) {
+            parentId = currentFolderId;
+            continue;
+        }
+
+        const errorData = await readApiJsonError(response, "Unable to prepare DAM folder.");
+        const normalizedMessage = String(errorData.message || "").toLowerCase();
+
+        if (response.status === 409 && normalizedMessage.includes("already exists")) {
+            parentId = currentFolderId;
+            continue;
+        }
+
+        throw new Error(errorData.message || "Unable to prepare DAM folder.");
+    }
+
+    return normalizedFolderId;
+}
+
+async function uploadCustomAssetOverride(field, file) {
+    const targetInput = document.getElementById(field.id);
+    const trigger = document.getElementById(field.uploadTriggerId);
+    const fileInput = document.getElementById(field.uploadInputId);
+
+    if (!(targetInput instanceof HTMLInputElement)) {
+        throw new Error("Custom asset target field is missing.");
+    }
+
+    if (!(file instanceof File)) {
+        throw new Error("No upload file selected.");
+    }
+
+    setCustomAssetUploadTriggerDisabled(trigger, true);
+
+    setCustomAssetUploadStatus(
+        field,
+        "configurator.custom.assetUploadStarted",
+        "Uploading image to DAM..."
+    );
+
+    try {
+        const folderId = await ensureDamFolderPath(field.uploadFolderId);
+        const formData = new FormData();
+        formData.append("file", file);
+        formData.append("folder_id", folderId);
+        formData.append("kind", field.uploadRole);
+
+        const response = await apiPostFormData("/?endpoint=dam&action=upload", formData);
+
+        if (!response.ok) {
+            const errorData = await readApiJsonError(response, "Image upload failed.");
+            throw new Error(errorData.message || "Image upload failed.");
+        }
+
+        const payload = await readApiJsonPayload(response, "Image upload returned an invalid response.");
+        const asset = payload?.data?.asset || null;
+        const assetId = String(asset?.id || "").trim();
+
+        if (assetId === "") {
+            throw new Error("Image upload returned no DAM asset id.");
+        }
+
+        targetInput.value = assetId;
+        setCustomAssetUploadStatus(
+            field,
+            "configurator.custom.assetUploadDone",
+            "Upload finished. Isolated custom DAM asset #{id} is now used only as a custom override field value.",
+            { id: assetId },
+            "success"
+        );
+        scheduleCustomPreview();
+        setStatusKey(
+            "configurator.custom.assetUploadDone",
+            "success",
+            { id: assetId },
+            "Upload finished. Isolated custom DAM asset #" + assetId + " is ready for this custom override."
+        );
+    } catch (error) {
+        const message = error && error.message ? error.message : "Image upload failed.";
+
+        setCustomAssetUploadStatus(
+            field,
+            "configurator.custom.assetUploadFailed",
+            "Image upload failed: {message}",
+            { message },
+            "error"
+        );
+        setStatusKey(
+            "configurator.custom.assetUploadFailed",
+            "error",
+            { message },
+            "Image upload failed: " + message
+        );
+        console.error(error);
+    } finally {
+        if (fileInput instanceof HTMLInputElement) {
+            fileInput.value = "";
+        }
+
+        setCustomAssetUploadTriggerDisabled(trigger, false);
+        resetCustomAssetUploaderVisual(field);
+    }
 }
 
 function resetCustomOverrides(shouldPreview = true) {
@@ -1028,6 +2038,21 @@ function resetCustomOverrides(shouldPreview = true) {
             element.checked = true;
         }
     });
+
+    const advancedToggle = document.getElementById(CUSTOM_ADVANCED_TOGGLE_ID);
+
+    if (advancedToggle instanceof HTMLInputElement) {
+        advancedToggle.checked = false;
+    }
+
+    syncCustomEditingModeControls();
+
+    clearCustomFieldOverrideSnapshot();
+    clearCustomAdvancedCopySnapshot();
+    renderCustomFieldOverrideEditors({}, false);
+    syncCustomAdvancedCopyVisibility();
+    syncCustomFieldOverrideVisibility();
+    resetCustomAssetUploadStatuses();
 
     resetCustomPreviewState();
 
@@ -1061,15 +2086,19 @@ function renderShowcasePreviewState() {
 function renderCustomPreviewState() {
     const textCount = document.getElementById("custom-preview-text-count");
     const assetCount = document.getElementById("custom-preview-asset-count");
+    const fieldCount = document.getElementById("custom-preview-field-count");
+    const advancedCount = document.getElementById("custom-preview-advanced-count");
     const hiddenCount = document.getElementById("custom-preview-hidden-count");
     const message = document.getElementById("custom-preview-message");
 
-    if (!textCount || !assetCount || !hiddenCount || !message) {
+    if (!textCount || !assetCount || !fieldCount || !advancedCount || !hiddenCount || !message) {
         return;
     }
 
     textCount.textContent = String(customPreviewState.textOverrideCount || 0);
     assetCount.textContent = String(customPreviewState.assetOverrideCount || 0);
+    fieldCount.textContent = String(customPreviewState.fieldOverrideCount || 0);
+    advancedCount.textContent = String(customPreviewState.advancedCopySectionCount || 0);
     hiddenCount.textContent = String(customPreviewState.hiddenSectionCount || 0);
     message.textContent = customPreviewState.pending
         ? t("configurator.runtime.customPreviewLoading", {}, "Validating custom datasheet...")
@@ -1080,15 +2109,29 @@ function renderCustomPreviewState() {
         );
     message.classList.toggle("text-red-600", !customPreviewState.pending && !customPreviewState.ok && customPreviewState.family !== "");
     message.classList.toggle("text-grey-primary", customPreviewState.pending || customPreviewState.ok || customPreviewState.family === "");
+    syncCustomAdvancedCopyVisibility();
+    syncCustomFieldOverrideVisibility();
 }
 
 function getSelectedShowcaseExpandedSegments() {
+    const allExpandToggle = document.querySelector("[data-showcase-all-expand]");
+
+    if (allExpandToggle instanceof HTMLInputElement && allExpandToggle.checked) {
+        return [...SHOWCASE_EXPANDABLE_SEGMENTS];
+    }
+
     return Array.from(document.querySelectorAll("[data-showcase-expand]:checked"))
         .map((input) => String(input.value || "").trim())
         .filter(Boolean);
 }
 
 function getSelectedShowcaseSections() {
+    const allSectionsToggle = document.querySelector("[data-showcase-all-sections]");
+
+    if (allSectionsToggle instanceof HTMLInputElement && allSectionsToggle.checked) {
+        return SHOWCASE_SECTION_DEFINITIONS.map((section) => section.id);
+    }
+
     return Array.from(document.querySelectorAll("[data-showcase-section]:checked"))
         .map((input) => String(input.value || "").trim())
         .filter(Boolean);
@@ -1135,8 +2178,8 @@ function buildShowcaseRequestBody() {
 
     const body = {
         family: get("select-family"),
-        lang: get("select-language"),
-        company: get("select-company"),
+        lang: getRequestSelectValue("select-language"),
+        company: getRequestSelectValue("select-company"),
         locked,
         expanded,
         sections,
@@ -1155,7 +2198,9 @@ function enforceDownlightShowcaseFinishSection(sections) {
         return;
     }
 
-    if (!SHOWCASE_IMPLEMENTED_FAMILY_CODES.has(String(get("select-family") || ""))) {
+    const family = getCurrentFamilyMetadata();
+
+    if (!family || !family.showcase_runtime_implemented || family.showcase_renderer !== "downlight") {
         return;
     }
 
@@ -1185,29 +2230,31 @@ function buildDatasheetRequestBody() {
     return {
         referencia: document.getElementById("output-reference").value,
         descricao: document.getElementById("output-description").value,
-        idioma: get("select-language"),
-        empresa: get("select-company"),
+        idioma: getRequestSelectValue("select-language"),
+        empresa: getRequestSelectValue("select-company"),
         lente: getSelectedOptionHint("select-lens"),
         acabamento: getSelectedOptionHint("select-finish"),
         opcao: get("select-option"),
-        conectorcabo: get("select-connector-cable"),
-        tipocabo: get("select-cable-type"),
-        tampa: get("select-end-cap"),
-        vedante: get("select-gasket"),
+        conectorcabo: getRequestSelectValue("select-connector-cable"),
+        tipocabo: getRequestSelectValue("select-cable-type"),
+        tampa: getRequestSelectValue("select-end-cap"),
+        vedante: getRequestSelectValue("select-gasket"),
         acrescimo: get("input-extra-length") || "0",
-        ip: get("select-ip"),
-        fixacao: get("select-fixing"),
-        fonte: get("select-power-supply"),
-        caboligacao: get("select-connection-cable"),
-        conectorligacao: get("select-connection-connector"),
+        ip: getRequestSelectValue("select-ip"),
+        fixacao: getRequestSelectValue("select-fixing"),
+        fonte: getRequestSelectValue("select-power-supply"),
+        caboligacao: getRequestSelectValue("select-connection-cable"),
+        conectorligacao: getRequestSelectValue("select-connection-connector"),
         tamanhocaboligacao: get("input-connection-cable-length") || "0",
-        finalidade: get("select-purpose"),
+        finalidade: getRequestSelectValue("select-purpose"),
     };
 }
 
 function buildCustomRequestBody() {
     const textOverrides = {};
     const assetOverrides = {};
+    const fieldOverrides = collectCustomFieldOverrides();
+    const copyOverrides = collectCustomAdvancedCopyOverrides();
     const sectionVisibility = {};
 
     CUSTOM_TEXT_OVERRIDE_FIELDS.forEach((field) => {
@@ -1245,8 +2292,11 @@ function buildCustomRequestBody() {
         base_request: buildDatasheetRequestBody(),
         custom: {
             mode: "custom",
+            copy_mode: isCustomAdvancedCopyEnabled() ? "advanced" : "simple",
             text_overrides: textOverrides,
             asset_overrides: assetOverrides,
+            field_overrides: fieldOverrides,
+            copy_overrides: copyOverrides,
             section_visibility: sectionVisibility,
             footer: {
                 marker: "CustPDF",
@@ -1297,7 +2347,7 @@ function scheduleShowcasePreview() {
             ...createEmptyShowcasePreviewState(),
             family: get("select-family"),
             messageKey: "configurator.runtime.showcaseUnsupportedFamily",
-            messageFallback: "Showcase mode is currently available only for mapped families. Use 29 or 30 for this first renderer.",
+            messageFallback: "Showcase mode is not implemented yet for the selected family.",
         };
         renderShowcasePreviewState();
         syncGenerateButton();
@@ -1376,20 +2426,28 @@ async function runShowcasePreview() {
 
             const errorData = await readApiJsonError(response, "Showcase preview failed.");
 
+            const failureMessage = resolveRuntimeFailureMessage("showcasePreview", errorData.message);
+
             showcasePreviewState = {
                 ...createEmptyShowcasePreviewState(),
                 family: requestBody.family,
                 reference: requestReference,
-                messageVariables: { message: errorData.message },
-                messageKey: "configurator.runtime.showcasePreviewFailedWithMessage",
-                messageFallback: "Showcase preview failed: " + errorData.message,
+                messageVariables: failureMessage.variables,
+                messageKey: failureMessage.key,
+                messageFallback: failureMessage.fallback,
             };
+            setStatusKey(
+                failureMessage.key,
+                "error",
+                failureMessage.variables,
+                failureMessage.fallback
+            );
             renderShowcasePreviewState();
             syncGenerateButton();
             return;
         }
 
-        const payload = await response.json();
+        const payload = await readApiJsonPayload(response, "Showcase preview returned an invalid response.");
         const previewData = payload?.data || {};
 
         if (
@@ -1420,14 +2478,22 @@ async function runShowcasePreview() {
 
         const message = error && error.message ? error.message : "Showcase preview failed.";
 
+        const failureMessage = resolveRuntimeFailureMessage("showcasePreview", message);
+
         showcasePreviewState = {
             ...createEmptyShowcasePreviewState(),
             family: requestBody.family,
             reference: requestReference,
-            messageVariables: { message },
-            messageKey: "configurator.runtime.showcasePreviewFailedWithMessage",
-            messageFallback: "Showcase preview failed: " + message,
+            messageVariables: failureMessage.variables,
+            messageKey: failureMessage.key,
+            messageFallback: failureMessage.fallback,
         };
+        setStatusKey(
+            failureMessage.key,
+            "error",
+            failureMessage.variables,
+            failureMessage.fallback
+        );
         renderShowcasePreviewState();
         syncGenerateButton();
         console.error(error);
@@ -1445,12 +2511,16 @@ function scheduleCustomPreview() {
     }
 
     if (!get("select-family")) {
+        clearCustomFieldOverrideSnapshot();
+        clearCustomAdvancedCopySnapshot();
         resetCustomPreviewState();
         syncGenerateButton();
         return;
     }
 
     if (!isCurrentFamilyCustomDatasheetAvailable()) {
+        clearCustomFieldOverrideSnapshot();
+        clearCustomAdvancedCopySnapshot();
         customPreviewState = {
             ...createEmptyCustomPreviewState(),
             family: get("select-family"),
@@ -1463,6 +2533,8 @@ function scheduleCustomPreview() {
     }
 
     if (!canRequestCustomPreview()) {
+        clearCustomFieldOverrideSnapshot();
+        clearCustomAdvancedCopySnapshot();
         customPreviewState = {
             ...createEmptyCustomPreviewState(),
             family: get("select-family"),
@@ -1521,20 +2593,28 @@ async function runCustomPreview() {
             }
 
             const errorData = await readApiJsonError(response, "Custom datasheet preview failed.");
+            const failureMessage = resolveRuntimeFailureMessage("customPreview", errorData.message);
+
             customPreviewState = {
                 ...createEmptyCustomPreviewState(),
                 family: get("select-family"),
                 reference: requestReference,
-                messageVariables: { message: errorData.message },
-                messageKey: "configurator.runtime.customPreviewFailedWithMessage",
-                messageFallback: "Custom datasheet preview failed: " + errorData.message,
+                messageVariables: failureMessage.variables,
+                messageKey: failureMessage.key,
+                messageFallback: failureMessage.fallback,
             };
+            setStatusKey(
+                failureMessage.key,
+                "error",
+                failureMessage.variables,
+                failureMessage.fallback
+            );
             renderCustomPreviewState();
             syncGenerateButton();
             return;
         }
 
-        const payload = await response.json();
+        const payload = await readApiJsonPayload(response, "Custom datasheet preview returned an invalid response.");
         const previewData = payload?.data || {};
 
         if (
@@ -1547,6 +2627,11 @@ async function runCustomPreview() {
 
         const appliedFields = previewData.applied_fields || {};
         const runtimeImplemented = Boolean(previewData.custom_datasheet?.runtime_implemented);
+        const fieldSnapshot = previewData.field_snapshot || {};
+        const editableCopy = previewData.editable_copy || {};
+
+        setCustomFieldOverrideSnapshot(fieldSnapshot, requestReference);
+        setCustomAdvancedCopySnapshot(editableCopy, requestReference);
 
         customPreviewState = {
             pending: false,
@@ -1557,6 +2642,8 @@ async function runCustomPreview() {
             signature: requestSignature,
             textOverrideCount: Number((appliedFields.text || []).length || 0),
             assetOverrideCount: Number((appliedFields.assets || []).length || 0),
+            fieldOverrideCount: Number((appliedFields.field_overrides || []).length || 0),
+            advancedCopySectionCount: Number((appliedFields.advanced_copy_sections || []).length || 0),
             hiddenSectionCount: Number((appliedFields.hidden_sections || []).length || 0),
             messageKey: runtimeImplemented
                 ? "configurator.runtime.customPreviewReady"
@@ -1574,14 +2661,22 @@ async function runCustomPreview() {
 
         const message = error && error.message ? error.message : "Custom datasheet preview failed.";
 
+        const failureMessage = resolveRuntimeFailureMessage("customPreview", message);
+
         customPreviewState = {
             ...createEmptyCustomPreviewState(),
             family: get("select-family"),
             reference: requestReference,
-            messageVariables: { message },
-            messageKey: "configurator.runtime.customPreviewFailedWithMessage",
-            messageFallback: "Custom datasheet preview failed: " + message,
+            messageVariables: failureMessage.variables,
+            messageKey: failureMessage.key,
+            messageFallback: failureMessage.fallback,
         };
+        setStatusKey(
+            failureMessage.key,
+            "error",
+            failureMessage.variables,
+            failureMessage.fallback
+        );
         renderCustomPreviewState();
         syncGenerateButton();
         console.error(error);
@@ -1596,10 +2691,18 @@ async function readApiJsonError(response, fallbackMessage) {
     if (contentType.includes("application/json") && raw.trim() !== "") {
         try {
             const payload = JSON.parse(raw);
-            const detail = typeof payload?.detail === "string" && payload.detail.trim() !== "" ? payload.detail.trim() : "";
-            message = typeof payload?.error === "string" && payload.error.trim() !== ""
+            const detail = typeof payload?.detail === "string" && payload.detail.trim() !== ""
+                ? payload.detail.trim()
+                : typeof payload?.error?.details?.detail === "string" && payload.error.details.detail.trim() !== ""
+                    ? payload.error.details.detail.trim()
+                    : "";
+            const topLevelError = typeof payload?.error === "string" && payload.error.trim() !== ""
                 ? payload.error.trim()
-                : message;
+                : "";
+            const nestedError = typeof payload?.error?.message === "string" && payload.error.message.trim() !== ""
+                ? payload.error.message.trim()
+                : "";
+            message = topLevelError || nestedError || message;
 
             if (detail !== "") {
                 message += " - " + detail;
@@ -1610,6 +2713,98 @@ async function readApiJsonError(response, fallbackMessage) {
     }
 
     return { message };
+}
+
+function resolveRuntimeFailureMessage(kind, rawMessage) {
+    const normalizedMessage = typeof rawMessage === "string"
+        ? rawMessage.replace(/\s+/g, " ").trim()
+        : "";
+    const isMemoryFailure = /allowed memory size|memory exhausted|exhausted/i.test(normalizedMessage);
+    const isInternalFailure = /fatal error|uncaught|stack trace| on line \d+| in [A-Z]:\\| in \/[^\s]+|<br/i.test(normalizedMessage);
+    const fallbackMap = {
+        showcasePreview: {
+            genericKey: "configurator.runtime.showcasePreviewFailed",
+            genericFallback: "Showcase preview failed. Try again.",
+            tooLargeKey: "configurator.runtime.showcasePreviewTooLarge",
+            tooLargeFallback: "Showcase preview too large. Narrow the scope and try again.",
+            withMessageKey: "configurator.runtime.showcasePreviewFailedWithMessage",
+            withMessageFallback: (message) => "Showcase preview failed: " + message,
+        },
+        customPreview: {
+            genericKey: "configurator.runtime.customPreviewFailed",
+            genericFallback: "Custom preview failed. Try again.",
+            tooLargeKey: "configurator.runtime.customPreviewTooLarge",
+            tooLargeFallback: "Custom preview too large. Reduce overrides and try again.",
+            withMessageKey: "configurator.runtime.customPreviewFailedWithMessage",
+            withMessageFallback: (message) => "Custom datasheet preview failed: " + message,
+        },
+        showcasePdf: {
+            genericKey: "configurator.runtime.showcaseFailed",
+            genericFallback: "Showcase PDF generation failed.",
+            tooLargeKey: "configurator.runtime.showcaseFailedTooLarge",
+            tooLargeFallback: "Showcase PDF too large. Narrow the scope and try again.",
+            withMessageKey: "configurator.runtime.showcaseFailedWithMessage",
+            withMessageFallback: (message) => "Showcase PDF generation failed: " + message,
+        },
+        customPdf: {
+            genericKey: "configurator.runtime.customFailed",
+            genericFallback: "Custom datasheet generation failed.",
+            tooLargeKey: "configurator.runtime.customFailedTooLarge",
+            tooLargeFallback: "Custom PDF too large. Reduce overrides and try again.",
+            withMessageKey: "configurator.runtime.customFailedWithMessage",
+            withMessageFallback: (message) => "Custom datasheet generation failed: " + message,
+        },
+        datasheetPdf: {
+            genericKey: "configurator.runtime.datasheetFailed",
+            genericFallback: "Datasheet generation failed.",
+            tooLargeKey: "configurator.runtime.datasheetFailedTooLarge",
+            tooLargeFallback: "PDF request too large. Adjust the selection and try again.",
+            withMessageKey: "configurator.runtime.datasheetFailedWithMessage",
+            withMessageFallback: (message) => "Datasheet generation failed: " + message,
+        },
+    };
+    const config = fallbackMap[kind] || fallbackMap.datasheetPdf;
+
+    if (isMemoryFailure) {
+        return {
+            key: config.tooLargeKey,
+            variables: {},
+            fallback: config.tooLargeFallback,
+        };
+    }
+
+    if (isInternalFailure || normalizedMessage === "") {
+        return {
+            key: config.genericKey,
+            variables: {},
+            fallback: config.genericFallback,
+        };
+    }
+
+    return {
+        key: config.withMessageKey,
+        variables: { message: normalizedMessage },
+        fallback: config.withMessageFallback(normalizedMessage),
+    };
+}
+
+async function readApiJsonPayload(response, fallbackMessage) {
+    const raw = await response.text();
+    const contentType = response.headers.get("content-type") || "";
+
+    if (raw.trim() === "") {
+        throw new Error(fallbackMessage || "Endpoint returned an empty response.");
+    }
+
+    if (!contentType.includes("application/json")) {
+        throw new Error(extractResponseMessage(raw) || fallbackMessage || "Endpoint returned a non-JSON response.");
+    }
+
+    try {
+        return JSON.parse(raw);
+    } catch (_parseError) {
+        throw new Error(extractResponseMessage(raw) || fallbackMessage || "Endpoint returned invalid JSON.");
+    }
 }
 
 function getDownloadFilename(response, fallbackFilename) {
@@ -1675,12 +2870,8 @@ async function generateShowcasePdf() {
             }
 
             const errorData = await readApiJsonError(response, "Showcase PDF generation failed.");
-            setStatusKey(
-                "configurator.runtime.showcaseFailedWithMessage",
-                "error",
-                { message: errorData.message },
-                "Showcase PDF generation failed: " + errorData.message
-            );
+            const failureMessage = resolveRuntimeFailureMessage("showcasePdf", errorData.message);
+            setStatusKey(failureMessage.key, "error", failureMessage.variables, failureMessage.fallback);
             return;
         }
 
@@ -1714,12 +2905,8 @@ async function generateShowcasePdf() {
         const message = error && error.message ? error.message : "";
 
         if (message !== "") {
-            setStatusKey(
-                "configurator.runtime.showcaseFailedWithMessage",
-                "error",
-                { message },
-                "Showcase PDF generation failed: " + message
-            );
+            const failureMessage = resolveRuntimeFailureMessage("showcasePdf", message);
+            setStatusKey(failureMessage.key, "error", failureMessage.variables, failureMessage.fallback);
             console.error(error);
             return;
         }
@@ -1791,12 +2978,8 @@ async function generateCustomDatasheetPdf() {
             }
 
             const errorData = await readApiJsonError(response, "Custom datasheet generation failed.");
-            setStatusKey(
-                "configurator.runtime.customFailedWithMessage",
-                "error",
-                { message: errorData.message },
-                "Custom datasheet generation failed: " + errorData.message
-            );
+            const failureMessage = resolveRuntimeFailureMessage("customPdf", errorData.message);
+            setStatusKey(failureMessage.key, "error", failureMessage.variables, failureMessage.fallback);
             return;
         }
 
@@ -1830,12 +3013,8 @@ async function generateCustomDatasheetPdf() {
         const message = error && error.message ? error.message : "";
 
         if (message !== "") {
-            setStatusKey(
-                "configurator.runtime.customFailedWithMessage",
-                "error",
-                { message },
-                "Custom datasheet generation failed: " + message
-            );
+            const failureMessage = resolveRuntimeFailureMessage("customPdf", message);
+            setStatusKey(failureMessage.key, "error", failureMessage.variables, failureMessage.fallback);
             console.error(error);
             return;
         }
@@ -1885,10 +3064,6 @@ function prependBlankSelectOption(select, shouldSelect = false) {
 
 function primeSelectPlaceholders() {
     document.querySelectorAll("select[id]").forEach((select) => {
-        if (!REFERENCE_PLACEHOLDER_SELECT_IDS.has(select.id)) {
-            return;
-        }
-
         prependBlankSelectOption(select, true);
     });
 }
@@ -1906,6 +3081,11 @@ function bindSystemTooltips(root = document) {
         if (!tooltip) {
             return;
         }
+
+        const isBottomPlacement = wrapper.dataset.tooltipPlacement === "bottom";
+
+        tooltip.style.top = isBottomPlacement ? "calc(100% + var(--space-8))" : "auto";
+        tooltip.style.bottom = isBottomPlacement ? "auto" : "calc(100% + var(--space-8))";
 
         const showTooltip = () => {
             tooltip.style.opacity = "1";
@@ -2060,7 +3240,7 @@ async function fetchApiHealth() {
     let data = {};
 
     if (contentType.includes("application/json")) {
-        data = await response.json();
+        data = await readApiJsonPayload(response, "Health endpoint returned an invalid response.");
     }
 
     return {
@@ -2896,6 +4076,28 @@ function applyStatusState() {
     applyStatusText(statusState.text || "", statusState.tone, "");
 }
 
+function buildStatusToastCopy(message, tone) {
+    const variant = STATUS_TOAST_VARIANT[tone] || STATUS_TOAST_VARIANT.neutral;
+    const normalizedMessage = typeof message === "string"
+        ? message.replace(/\s+/g, " ").trim()
+        : "";
+    const shouldUseBodyCopy = normalizedMessage.length > STATUS_TOAST_TITLE_MAX_LENGTH
+        || normalizedMessage.includes(":")
+        || normalizedMessage.includes("\n");
+
+    if (!shouldUseBodyCopy) {
+        return {
+            title: normalizedMessage,
+            text: "",
+        };
+    }
+
+    return {
+        title: t(variant.titleKey, {}, variant.titleFallback),
+        text: normalizedMessage,
+    };
+}
+
 function setSummaryStateKeys(stepKey, titleKey, subtitleKey, variables = {}, fallbacks = {}) {
     summaryState = {
         stepKey,
@@ -3053,6 +4255,25 @@ async function apiPost(path, body) {
     }
 }
 
+async function apiPostFormData(path, formData) {
+    const apiBase = await getApiBase();
+
+    try {
+        const response = await fetch(apiBase + path, {
+            method: "POST",
+            headers: {
+                "X-API-Key": API_KEY,
+            },
+            body: formData,
+        });
+        noteSuccessfulApiContact();
+        return response;
+    } catch (error) {
+        markApiUnavailable();
+        throw error;
+    }
+}
+
 async function loadFamilies() {
     setApiBadgeKey("loading", "shared.badge.apiConnecting", "Connecting to API");
     setStatusKey("configurator.runtime.familyLoading", "loading", {}, "Loading families...");
@@ -3182,7 +4403,6 @@ async function loadOptions(familyCode) {
 
     buildReference();
     updateShowcaseFamilyHint();
-    updateCustomFamilyHint();
     syncShowcaseScopeFieldStates();
     scheduleShowcasePreview();
     scheduleCustomPreview();
@@ -3547,7 +4767,7 @@ async function loadTecitCodeIntoForm(sourceInputId = "output-reference") {
                 "configurator.runtime.tecitCodeInvalidLuminos",
                 "error",
                 {},
-                "The family, size, color, CRI, and series combination does not exist in the Luminos view."
+                "No Luminos match for the selected family, size, color, CRI, and series."
             );
             return false;
         }
@@ -3715,7 +4935,7 @@ async function updateDescription(reference) {
                 "configurator.runtime.referenceInvalidLuminos",
                 "error",
                 {},
-                "The family, size, color, CRI, and series combination does not exist in the Luminos view."
+                "No Luminos match for the selected family, size, color, CRI, and series."
             );
             console.error(error);
             return;
@@ -3794,12 +5014,8 @@ async function generateDatasheet() {
                 message = "Request failed with status " + response.status;
             }
 
-            setStatusKey(
-                "configurator.runtime.datasheetFailedWithMessage",
-                "error",
-                { message },
-                "Datasheet generation failed: " + message
-            );
+            const failureMessage = resolveRuntimeFailureMessage("datasheetPdf", message);
+            setStatusKey(failureMessage.key, "error", failureMessage.variables, failureMessage.fallback);
             return;
         }
 
@@ -3835,12 +5051,8 @@ async function generateDatasheet() {
         const message = error && error.message ? error.message : "";
 
         if (message !== "") {
-            setStatusKey(
-                "configurator.runtime.datasheetFailedWithMessage",
-                "error",
-                { message },
-                "Datasheet generation failed: " + message
-            );
+            const failureMessage = resolveRuntimeFailureMessage("datasheetPdf", message);
+            setStatusKey(failureMessage.key, "error", failureMessage.variables, failureMessage.fallback);
             console.error(error);
             return;
         }
@@ -3929,7 +5141,6 @@ function resetConfiguratorState() {
     resetCustomPreviewState();
     resetCustomOverrides(false);
     updateShowcaseFamilyHint();
-    updateCustomFamilyHint();
     syncGenerateButton();
     syncCopyButtons();
     setSummaryStateKeys(
@@ -4083,16 +5294,21 @@ function setStatus(message, tone = "neutral") {
 
 function applyStatusText(message, tone = "neutral", key = "") {
     const toast = document.getElementById("status-message");
-    const copy = document.getElementById("status-message-copy");
+    const title = document.getElementById("status-message-title");
+    const text = document.getElementById("status-message-text");
     const icon = document.getElementById("status-message-icon");
     const variant = STATUS_TOAST_VARIANT[tone] || STATUS_TOAST_VARIANT.neutral;
     const shouldHide = !message || (tone === "neutral" && key === "configurator.runtime.chooseFamilyToBegin");
 
-    if (!toast || !copy || !icon) {
+    if (!toast || !title || !text || !icon) {
         return;
     }
 
-    copy.textContent = message;
+    const content = buildStatusToastCopy(message, tone);
+    title.textContent = content.title;
+    title.hidden = content.title === "";
+    text.textContent = content.text;
+    text.hidden = content.text === "";
     toast.className = STATUS_TOAST_BASE_CLASS + " " + variant.className;
     toast.setAttribute("role", variant.role);
     icon.className = variant.iconClass + " text-icon-lg";
@@ -4177,6 +5393,16 @@ function get(id) {
     }
 
     return element.value;
+}
+
+function getRequestSelectValue(id) {
+    const value = get(id);
+
+    if (value !== "") {
+        return value;
+    }
+
+    return SELECT_REQUEST_DEFAULTS[id] ?? "";
 }
 
 function getDisplayText(id) {

@@ -187,7 +187,7 @@ function getShowcaseEstimateProfile(string $renderer): array {
             "finish_gallery_per_page" => 6,
             "option_code_groups_per_page" => 2,
         ],
-        "tubular", "shelf" => [
+        "tubular", "dynamic", "shelf" => [
             "luminotechnical_rows_per_page" => 18,
             "spectra_per_page" => 4,
             "technical_drawings_per_page" => 2,

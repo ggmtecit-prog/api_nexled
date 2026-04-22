@@ -42,6 +42,9 @@ require_once "./lib/validate.php";
 // Route: /api/?endpoint=code-explorer&family=11&page=1&page_size=100&search=&status=all
 // Route: /api/?endpoint=family-ready-products&family=01&page=1&page_size=100
 // Route: /api/?endpoint=family-ready-filters&family=01
+// Route: /api/?endpoint=eprel-code-mappings-save (POST)
+// Route: /api/?endpoint=eprel-code-mappings&tecit_code=...
+// Route: /api/?endpoint=eprel-code-mappings-batch (POST)
 // Route: /api/?endpoint=code-repair&reference=11007502110010100&lang=pt
 // Route: /api/?endpoint=showcase-preview (POST)
 // Route: /api/?endpoint=showcase-pdf (POST)
@@ -90,6 +93,15 @@ switch ($endpoint) {
         break;
     case "family-ready-filters":
         require "./endpoints/family-ready-filters.php";
+        break;
+    case "eprel-code-mappings-save":
+        require "./endpoints/eprel-code-mappings-save.php";
+        break;
+    case "eprel-code-mappings":
+        require "./endpoints/eprel-code-mappings.php";
+        break;
+    case "eprel-code-mappings-batch":
+        require "./endpoints/eprel-code-mappings-batch.php";
         break;
     case "code-repair":
         require "./endpoints/code-repair.php";

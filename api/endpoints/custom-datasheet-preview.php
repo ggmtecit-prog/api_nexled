@@ -1,6 +1,7 @@
 <?php
 
 require_once dirname(__FILE__) . "/../lib/custom-datasheet/request.php";
+require_once dirname(__FILE__) . "/../lib/custom-datasheet/render.php";
 
 if ($_SERVER["REQUEST_METHOD"] !== "POST") {
     http_response_code(405);
@@ -42,37 +43,61 @@ if ($familyEntry === null || !isFamilyCustomDatasheetSupported($family)) {
     exit();
 }
 
-$warnings = $normalization["warnings"] ?? [];
-$custom = $normalizedRequest["custom"] ?? [];
-$textOverrides = array_keys($custom["text_overrides"] ?? []);
-$assetOverrides = array_keys($custom["asset_overrides"] ?? []);
-$hiddenSections = array_keys(array_filter(
-    $custom["section_visibility"] ?? [],
-    static fn(mixed $value): bool => $value === false
-));
+try {
+    $warnings = $normalization["warnings"] ?? [];
+    $custom = $normalizedRequest["custom"] ?? [];
+    $textOverrides = array_keys($custom["text_overrides"] ?? []);
+    $assetOverrides = array_keys($custom["asset_overrides"] ?? []);
+    $fieldOverrides = array_keys($custom["field_overrides"] ?? []);
+    $advancedCopySections = array_keys($custom["copy_overrides"] ?? []);
+    $hiddenSections = array_keys(array_filter(
+        $custom["section_visibility"] ?? [],
+        static fn(mixed $value): bool => $value === false
+    ));
+    $previewSnapshot = buildCustomDatasheetPreviewSnapshot($normalizedRequest);
+    $editableCopy = $previewSnapshot["editable_copy"] ?? [];
+    $fieldSnapshot = $previewSnapshot["field_snapshot"] ?? [];
 
-echo json_encode([
-    "ok" => true,
-    "data" => [
-        "implemented" => true,
-        "family" => [
-            "code" => $family,
-            "name" => $familyEntry["name"] ?? "",
+    echo json_encode([
+        "ok" => true,
+        "data" => [
+            "implemented" => true,
+            "family" => [
+                "code" => $family,
+                "name" => $familyEntry["name"] ?? "",
+            ],
+            "base_reference" => $normalizedRequest["base_reference"],
+            "normalized_request" => $normalizedRequest,
+            "custom_datasheet" => [
+                "status" => getFamilyCustomDatasheetStatus($family),
+                "runtime_implemented" => isFamilyCustomDatasheetRuntimeImplemented($family),
+                "allowed_fields" => getFamilyCustomDatasheetAllowedFields($family),
+                "defaults" => getFamilyCustomDatasheetDefaults($family),
+            ],
+            "applied_fields" => [
+                "text" => $textOverrides,
+                "assets" => $assetOverrides,
+                "field_overrides" => $fieldOverrides,
+                "advanced_copy_sections" => $advancedCopySections,
+                "hidden_sections" => $hiddenSections,
+                "footer_marker" => $custom["footer"]["marker"] ?? "CustPDF",
+            ],
+            "field_snapshot" => $fieldSnapshot,
+            "editable_copy" => $editableCopy,
+            "warnings" => $warnings,
         ],
-        "base_reference" => $normalizedRequest["base_reference"],
-        "normalized_request" => $normalizedRequest,
-        "custom_datasheet" => [
-            "status" => getFamilyCustomDatasheetStatus($family),
-            "runtime_implemented" => isFamilyCustomDatasheetRuntimeImplemented($family),
-            "allowed_fields" => getFamilyCustomDatasheetAllowedFields($family),
-            "defaults" => getFamilyCustomDatasheetDefaults($family),
-        ],
-        "applied_fields" => [
-            "text" => $textOverrides,
-            "assets" => $assetOverrides,
-            "hidden_sections" => $hiddenSections,
-            "footer_marker" => $custom["footer"]["marker"] ?? "CustPDF",
-        ],
-        "warnings" => $warnings,
-    ],
-], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+    ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+} catch (DatasheetRequestException $error) {
+    http_response_code($error->statusCode);
+    echo json_encode($error->payload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+    exit();
+} catch (\Throwable $error) {
+    http_response_code(500);
+    echo json_encode([
+        "error" => "Custom datasheet preview internal error",
+        "error_code" => "custom_datasheet_preview_internal_error",
+        "detail" => $error->getMessage(),
+        "family" => $family,
+    ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+    exit();
+}

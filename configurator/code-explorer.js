@@ -1,14 +1,15 @@
 const API_KEY = "7b8edd27a16f60bf7a1c92b8ceb40cda474588d24491140c130418153053063b";
 const DEFAULT_API_BASE = "https://apinexled-production.up.railway.app/api";
 const STATUS_TOAST_BASE_CLASS = "toast toast-sm";
+const STATUS_TOAST_TITLE_MAX_LENGTH = 64;
 const STATUS_TOAST_AUTOHIDE_DELAY = 4000;
 const STATUS_TOAST_HIDE_DELAY = 320;
 const STATUS_TOAST_VARIANT = {
-    neutral: { className: "toast-info", iconClass: "ri-information-line", role: "status", autoHide: true },
-    loading: { className: "toast-info", iconClass: "ri-information-line", role: "status", autoHide: false },
-    success: { className: "toast-success", iconClass: "ri-checkbox-circle-line", role: "status", autoHide: true },
-    warning: { className: "toast-warning", iconClass: "ri-alert-line", role: "status", autoHide: false },
-    error: { className: "toast-danger", iconClass: "ri-close-circle-line", role: "alert", autoHide: true },
+    neutral: { className: "toast-info", iconClass: "ri-information-line", role: "status", autoHide: true, titleKey: "shared.toast.infoTitle", titleFallback: "Info" },
+    loading: { className: "toast-info", iconClass: "ri-information-line", role: "status", autoHide: false, titleKey: "shared.toast.loadingTitle", titleFallback: "Loading" },
+    success: { className: "toast-success", iconClass: "ri-checkbox-circle-line", role: "status", autoHide: true, titleKey: "shared.toast.successTitle", titleFallback: "Success" },
+    warning: { className: "toast-warning", iconClass: "ri-alert-line", role: "status", autoHide: false, titleKey: "shared.toast.warningTitle", titleFallback: "Warning" },
+    error: { className: "toast-danger", iconClass: "ri-close-circle-line", role: "alert", autoHide: true, titleKey: "shared.toast.errorTitle", titleFallback: "Error" },
 };
 const EXPLORER_TABLE_HEAD_FALLBACK_COLUMNS = [
     "minmax(0, 1.35fr)",
@@ -3929,18 +3930,45 @@ function applyPageStatusState() {
     );
 }
 
+function buildStatusToastCopy(message, tone) {
+    const variant = STATUS_TOAST_VARIANT[tone] || STATUS_TOAST_VARIANT.neutral;
+    const normalizedMessage = typeof message === "string"
+        ? message.replace(/\s+/g, " ").trim()
+        : "";
+    const shouldUseBodyCopy = normalizedMessage.length > STATUS_TOAST_TITLE_MAX_LENGTH
+        || normalizedMessage.includes(":")
+        || normalizedMessage.includes("\n");
+
+    if (!shouldUseBodyCopy) {
+        return {
+            title: normalizedMessage,
+            text: "",
+        };
+    }
+
+    return {
+        title: t(variant.titleKey, {}, variant.titleFallback),
+        text: normalizedMessage,
+    };
+}
+
 function applyStatusText(message, tone = "neutral", key = "") {
     const toast = document.getElementById("status-message");
-    const copy = document.getElementById("status-message-copy");
+    const title = document.getElementById("status-message-title");
+    const text = document.getElementById("status-message-text");
     const icon = document.getElementById("status-message-icon");
     const variant = STATUS_TOAST_VARIANT[tone] || STATUS_TOAST_VARIANT.neutral;
     const shouldHide = !message || (tone === "neutral" && key === "codeExplorer.runtime.chooseFamily");
 
-    if (!toast || !copy || !icon) {
+    if (!toast || !title || !text || !icon) {
         return;
     }
 
-    copy.textContent = message;
+    const content = buildStatusToastCopy(message, tone);
+    title.textContent = content.title;
+    title.hidden = content.title === "";
+    text.textContent = content.text;
+    text.hidden = content.text === "";
     toast.className = STATUS_TOAST_BASE_CLASS + " " + variant.className;
     toast.setAttribute("role", variant.role);
     icon.className = variant.iconClass + " text-icon-lg";

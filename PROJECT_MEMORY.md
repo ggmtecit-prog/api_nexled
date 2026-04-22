@@ -450,6 +450,26 @@ Relevant parity docs:
     - `family-ready-products`
     - exact `pdf_specs`
 - `tech_lum_flux` does not need its own upstream source if derived from `luminous_flux`
+
+### 5B. EPREL Correlation Persistence
+
+- Central API now owns durable TecIt <-> EPREL registration mapping persistence
+- dedicated storage was introduced so this feature does not touch company product DB tables
+- current storage:
+  - database `nexled_eprel`
+  - table `eprel_code_mappings`
+- current API endpoints:
+  - `POST /api/?endpoint=eprel-code-mappings-save`
+  - `GET /api/?endpoint=eprel-code-mappings`
+  - `POST /api/?endpoint=eprel-code-mappings-batch`
+- current validation truth:
+  - TecIt code = numeric `17` digits
+  - EPREL registration number = digits only, non-empty
+- current rule:
+  - only explicitly confirmed mappings may be saved
+  - no fuzzy matching or guessed persistence on API side
+- current contract doc:
+  - [api/EPREL_CODE_MAPPINGS_API.md](api/EPREL_CODE_MAPPINGS_API.md)
 ### 6. DAM Future Work
 
 - Phase 1 cutover is done locally:

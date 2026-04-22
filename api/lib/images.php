@@ -314,16 +314,19 @@ function findImage(string $path): ?string {
         }
 
         if ($ext === ".png" && extension_loaded("gd")) {
-            $src   = imagecreatefrompng($path . $ext);
-            $w     = imagesx($src);
-            $h     = imagesy($src);
-            $flat  = imagecreatetruecolor($w, $h);
-            $white = imagecolorallocate($flat, 255, 255, 255);
-            imagefill($flat, 0, 0, $white);
-            imagecopy($flat, $src, 0, 0, 0, 0, $w, $h);
-            imagepng($flat, $path . $ext);
-            imagedestroy($src);
-            imagedestroy($flat);
+            $src = @imagecreatefrompng($path . $ext);
+
+            if ($src instanceof GdImage || is_resource($src)) {
+                $w     = imagesx($src);
+                $h     = imagesy($src);
+                $flat  = imagecreatetruecolor($w, $h);
+                $white = imagecolorallocate($flat, 255, 255, 255);
+                imagefill($flat, 0, 0, $white);
+                imagecopy($flat, $src, 0, 0, 0, 0, $w, $h);
+                @imagepng($flat, $path . $ext);
+                imagedestroy($src);
+                imagedestroy($flat);
+            }
         }
 
         return $cache[$path] = ($path . $ext);
