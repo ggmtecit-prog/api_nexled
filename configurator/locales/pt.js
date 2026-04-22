@@ -690,7 +690,7 @@ window.NexLedLocales.pt = {
         },
         custom: {
             editingModeTitle: "Modo de Edicao",
-            editingModeHint: "Escolha primeiro a edicao basica ou avancada. A basica usa os controlos simples de titulo, imagem e rodape. A avancada tambem desbloqueia copy editavel por secao.",
+            editingModeHint: "A basica edita titulo, imagem e rodape. A avancada tambem edita copy por secao.",
             editingModeBasicTitle: "Edicao Basica",
             editingModeBasicHint: "Use apenas os overrides simples de texto, imagem e rodape.",
             editingModeAdvancedTitle: "Edicao Avancada",

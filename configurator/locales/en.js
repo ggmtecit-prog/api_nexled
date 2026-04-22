@@ -623,7 +623,7 @@ window.NexLedLocales.en = {
         },
         custom: {
             editingModeTitle: "Editing Mode",
-            editingModeHint: "Choose basic or advanced editing first. Basic keeps the simple title, image, and footer controls. Advanced also unlocks editable copy per section.",
+            editingModeHint: "Basic edits title, image, and footer. Advanced also edits section copy.",
             editingModeBasicTitle: "Basic Editing",
             editingModeBasicHint: "Use the simple text, image, and footer overrides only.",
             editingModeAdvancedTitle: "Advanced Editing",
