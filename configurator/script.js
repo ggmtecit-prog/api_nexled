@@ -72,6 +72,10 @@ const CUSTOM_ASSET_OVERRIDE_FIELDS = [
         uploadStatusId: "custom-header-image-upload-status",
         uploadFolderId: "nexled/media/custom-datasheet/packshots",
         uploadRole: "packshot",
+        summaryId: "custom-header-image-asset-summary",
+        browserButtonId: "custom-header-image-browser-button",
+        targetLabelKey: "configurator.custom.browserTargetHeader",
+        targetFallback: "Header image",
     },
     {
         id: "custom-drawing-image-asset",
@@ -81,6 +85,10 @@ const CUSTOM_ASSET_OVERRIDE_FIELDS = [
         uploadStatusId: "custom-drawing-image-upload-status",
         uploadFolderId: "nexled/media/custom-datasheet/drawings",
         uploadRole: "drawing",
+        summaryId: "custom-drawing-image-asset-summary",
+        browserButtonId: "custom-drawing-image-browser-button",
+        targetLabelKey: "configurator.custom.browserTargetDrawing",
+        targetFallback: "Drawing image",
     },
     {
         id: "custom-finish-image-asset",
@@ -90,6 +98,10 @@ const CUSTOM_ASSET_OVERRIDE_FIELDS = [
         uploadStatusId: "custom-finish-image-upload-status",
         uploadFolderId: "nexled/media/custom-datasheet/finishes",
         uploadRole: "finish",
+        summaryId: "custom-finish-image-asset-summary",
+        browserButtonId: "custom-finish-image-browser-button",
+        targetLabelKey: "configurator.custom.browserTargetFinish",
+        targetFallback: "Finish image",
     },
 ];
 const CUSTOM_SECTION_VISIBILITY_FIELDS = [
@@ -100,6 +112,14 @@ const CUSTOM_SECTION_VISIBILITY_FIELDS = [
 const CUSTOM_EDIT_MODE_BASIC_ID = "custom-edit-mode-basic";
 const CUSTOM_EDIT_MODE_ADVANCED_ID = "custom-edit-mode-advanced";
 const CUSTOM_ADVANCED_TOGGLE_ID = "custom-advanced-copy-toggle";
+const CUSTOM_IMAGES_TOGGLE_ID = "custom-images-enabled";
+const CUSTOM_TEXT_TOGGLE_ID = "custom-text-enabled";
+const CUSTOM_SECTIONS_TOGGLE_ID = "custom-sections-enabled";
+const CUSTOM_OPTIONAL_BLOCK_DEFINITIONS = [
+    { toggleId: CUSTOM_IMAGES_TOGGLE_ID, fieldsId: "custom-images-fields" },
+    { toggleId: CUSTOM_TEXT_TOGGLE_ID, fieldsId: "custom-text-fields" },
+    { toggleId: CUSTOM_SECTIONS_TOGGLE_ID, fieldsId: "custom-sections-fields" },
+];
 const CUSTOM_ADVANCED_COPY_SECTION_DEFINITIONS = [
     { section: "header", field: "intro", labelKey: "configurator.custom.copySectionHeader", fallback: "Header", maxLength: 1200 },
     { section: "characteristics", field: "intro", labelKey: "configurator.custom.copySectionCharacteristics", fallback: "Characteristics", maxLength: 800 },
@@ -186,12 +206,16 @@ const CUSTOM_CONTROL_IDS = [
     ...CUSTOM_ASSET_OVERRIDE_FIELDS.map((field) => field.id),
     ...CUSTOM_SECTION_VISIBILITY_FIELDS.map((field) => field.id),
     CUSTOM_ADVANCED_TOGGLE_ID,
+    CUSTOM_IMAGES_TOGGLE_ID,
+    CUSTOM_TEXT_TOGGLE_ID,
+    CUSTOM_SECTIONS_TOGGLE_ID,
 ];
 const CUSTOM_ASSET_UPLOAD_TONES = {
     neutral: "text-grey-primary",
     success: "text-green-primary",
     error: "text-red-600",
 };
+const CUSTOM_IMAGE_BROWSER_DEBOUNCE_MS = 180;
 
 const REF_LENGTHS = {
     size: 4,
@@ -377,6 +401,21 @@ let customEditableCopySnapshot = {};
 let customEditableCopyReference = "";
 let customFieldOverrideSnapshot = {};
 let customFieldOverrideReference = "";
+let customImageBrowserFolderRequestToken = 0;
+let customImageBrowserAssetRequestToken = 0;
+let customImageBrowserSearchTimer = null;
+let customImageBrowserLastFocus = null;
+let customImageBrowserState = {
+    activeFieldId: CUSTOM_ASSET_OVERRIDE_FIELDS[0]?.id || "",
+    currentFolderId: "",
+    currentFolder: null,
+    folders: [],
+    assets: [],
+    selectedAsset: null,
+    selectedAssetId: null,
+    searchQuery: "",
+    searchScope: "folder",
+};
 const showcaseScopeFieldHomes = new Map();
 let showcaseDropdownDocumentBound = false;
 
@@ -399,6 +438,7 @@ function initializeConfigurator() {
     renderShowcaseControls();
     bindShowcaseControls();
     bindCustomControls();
+    bindCustomImageBrowserControls();
     document.getElementById("select-family").addEventListener("change", handleFamilyChange);
     document.getElementById("btn-generate").addEventListener("click", handleGenerateAction);
 
@@ -525,9 +565,9 @@ function renderShowcaseMultiDropdown(container, config, items) {
     }).join("");
 
     container.innerHTML = `
-        <div class="flex flex-col gap-16 pt-4" role="group" aria-label="${escapeHtml(label)}">
-            <div class="px-4 md:px-6">
-                <label class="toggle toggle-md">
+        <div class="flex flex-col gap-16" role="group" aria-label="${escapeHtml(label)}">
+            <div>
+                <label class="toggle toggle-md self-start">
                     <input
                         type="checkbox"
                         data-showcase-all-expand="true"
@@ -539,8 +579,8 @@ function renderShowcaseMultiDropdown(container, config, items) {
                     <span class="toggle-label">${escapeHtml(allOptionsLabel)}</span>
                 </label>
             </div>
-            <div data-showcase-expand-options="true" class="px-4 md:px-6">
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-12 pt-4 items-start" style="max-width: 32rem; margin-inline: auto;">
+            <div data-showcase-expand-options="true" class="pt-8">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-x-24 gap-y-16 items-start">
                     ${itemsMarkup}
                 </div>
             </div>
@@ -594,9 +634,9 @@ function renderShowcaseSectionsSelector(container, config, items) {
     }).join("");
 
     container.innerHTML = `
-        <div class="flex flex-col gap-16 pt-4" role="group" aria-label="${escapeHtml(label)}">
-            <div class="px-4 md:px-6">
-                <label class="toggle toggle-md">
+        <div class="flex flex-col gap-16" role="group" aria-label="${escapeHtml(label)}">
+            <div>
+                <label class="toggle toggle-md self-start">
                     <input
                         type="checkbox"
                         data-showcase-all-sections="true"
@@ -608,8 +648,8 @@ function renderShowcaseSectionsSelector(container, config, items) {
                     <span class="toggle-label">${escapeHtml(allSectionsLabel)}</span>
                 </label>
             </div>
-            <div data-showcase-sections-options="true" class="px-4 md:px-6">
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-12 pt-4 items-start" style="max-width: 32rem; margin-inline: auto;">
+            <div data-showcase-sections-options="true" class="pt-8">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-x-24 gap-y-16 items-start">
                     ${itemsMarkup}
                 </div>
             </div>
@@ -871,6 +911,7 @@ function closeAllShowcaseMultiDropdowns(exceptDropdown = null) {
 
 function bindShowcaseControls() {
     const modeInputs = document.querySelectorAll('input[name="output-mode"]');
+    const designVariantInputs = document.querySelectorAll('input[name="datasheet-design-variant"]');
     const expandGrid = document.getElementById("showcase-expand-grid");
     const sectionsGrid = document.getElementById("showcase-sections-grid");
 
@@ -881,6 +922,16 @@ function bindShowcaseControls() {
             }
 
             setOutputMode(event.target.value);
+        });
+    });
+
+    designVariantInputs.forEach((input) => {
+        input.addEventListener("change", (event) => {
+            if (!(event.target instanceof HTMLInputElement) || !event.target.checked) {
+                return;
+            }
+
+            syncGenerateButton();
         });
     });
 
@@ -925,6 +976,14 @@ function bindCustomControls() {
         element.addEventListener(eventName, () => {
             if (id === CUSTOM_ADVANCED_TOGGLE_ID) {
                 renderCustomAdvancedCopyEditors();
+            }
+
+            if (
+                id === CUSTOM_IMAGES_TOGGLE_ID
+                || id === CUSTOM_TEXT_TOGGLE_ID
+                || id === CUSTOM_SECTIONS_TOGGLE_ID
+            ) {
+                syncCustomOptionalBlockVisibility();
             }
 
             scheduleCustomPreview();
@@ -979,6 +1038,8 @@ function bindCustomControls() {
     syncCustomEditingModeControls();
     renderCustomFieldOverrideEditors({}, false);
     syncCustomFieldOverrideVisibility();
+    syncCustomOptionalBlockVisibility();
+    syncCustomAssetFieldSummaries();
 }
 
 function setOutputMode(mode) {
@@ -1066,6 +1127,7 @@ function applyBuilderModeState() {
     setHidden("showcase-controls", !isShowcase);
     setHidden("custom-editing-mode-panel", !isCustom);
     setHidden("custom-controls", !isCustom);
+    setHidden("datasheet-design-variant-panel", isShowcase || isCustom);
     setHidden("field-purpose", isShowcase);
 
     SHOWCASE_DATASHEET_SECTION_IDS.forEach((id) => {
@@ -1292,6 +1354,655 @@ function setCustomAdvancedCopyEnabled(enabled, shouldPreview = true) {
     }
 }
 
+function isCustomBlockEnabled(toggleId) {
+    const toggle = document.getElementById(toggleId);
+    return toggle instanceof HTMLInputElement && toggle.checked;
+}
+
+function syncCustomOptionalBlockVisibility() {
+    CUSTOM_OPTIONAL_BLOCK_DEFINITIONS.forEach((definition) => {
+        setHidden(definition.fieldsId, !isCustomBlockEnabled(definition.toggleId));
+    });
+}
+
+function getCustomImageBrowserElements() {
+    const overlay = document.getElementById("customImageBrowserModal");
+    const title = document.getElementById("customImageBrowserTitle");
+    const modalHint = document.getElementById("custom-image-browser-modal-hint");
+    const search = document.getElementById("custom-image-browser-search");
+    const breadcrumb = document.getElementById("custom-image-browser-breadcrumb");
+    const grid = document.getElementById("custom-image-browser-grid");
+    const empty = document.getElementById("custom-image-browser-empty");
+    const emptyLabel = document.getElementById("custom-image-browser-empty-label");
+    const activeLabel = document.getElementById("custom-image-browser-active-label");
+    const preview = document.getElementById("custom-image-browser-preview");
+    const previewEmpty = document.getElementById("custom-image-browser-preview-empty");
+    const previewImage = document.getElementById("custom-image-browser-preview-image");
+    const manual = document.getElementById("custom-image-browser-manual-id");
+    const clearButton = document.getElementById("custom-image-browser-clear");
+    const applyButton = document.getElementById("custom-image-browser-apply");
+    const status = document.getElementById("custom-image-browser-status");
+
+    if (
+        !(overlay instanceof HTMLElement)
+        || !(title instanceof HTMLElement)
+        || !(modalHint instanceof HTMLElement)
+        || !(search instanceof HTMLInputElement)
+        || !(breadcrumb instanceof HTMLElement)
+        || !(grid instanceof HTMLElement)
+        || !(empty instanceof HTMLElement)
+        || !(emptyLabel instanceof HTMLElement)
+        || !(activeLabel instanceof HTMLElement)
+        || !(preview instanceof HTMLElement)
+        || !(previewEmpty instanceof HTMLElement)
+        || !(previewImage instanceof HTMLImageElement)
+        || !(manual instanceof HTMLInputElement)
+        || !(clearButton instanceof HTMLButtonElement)
+        || !(applyButton instanceof HTMLButtonElement)
+        || !(status instanceof HTMLElement)
+    ) {
+        return null;
+    }
+
+    return {
+        overlay,
+        title,
+        modalHint,
+        search,
+        breadcrumb,
+        grid,
+        empty,
+        emptyLabel,
+        activeLabel,
+        preview,
+        previewEmpty,
+        previewImage,
+        manual,
+        clearButton,
+        applyButton,
+        status,
+    };
+}
+
+function getCustomAssetFieldById(fieldId) {
+    return CUSTOM_ASSET_OVERRIDE_FIELDS.find((field) => field.id === fieldId) || CUSTOM_ASSET_OVERRIDE_FIELDS[0] || null;
+}
+
+function getCustomAssetFieldLabel(field) {
+    if (!field) {
+        return "";
+    }
+
+    return t(field.targetLabelKey, {}, field.targetFallback);
+}
+
+function getCustomAssetFieldValue(fieldId) {
+    const input = document.getElementById(fieldId);
+    return input instanceof HTMLInputElement ? String(input.value || "").trim() : "";
+}
+
+function syncCustomAssetFieldSummaries() {
+    CUSTOM_ASSET_OVERRIDE_FIELDS.forEach((field) => {
+        const summary = document.getElementById(field.summaryId);
+
+        if (!(summary instanceof HTMLElement)) {
+            return;
+        }
+
+        const value = getCustomAssetFieldValue(field.id);
+        const empty = value === "";
+        summary.textContent = empty
+            ? t("configurator.custom.browserNoAssetSelected", {}, "No asset selected")
+            : "#" + value;
+        summary.classList.toggle("text-grey-primary", empty);
+        summary.classList.toggle("text-black", !empty);
+    });
+}
+
+function bindCustomImageBrowserControls() {
+    const elements = getCustomImageBrowserElements();
+
+    CUSTOM_ASSET_OVERRIDE_FIELDS.forEach((field) => {
+        const button = document.getElementById(field.browserButtonId);
+
+        if (!(button instanceof HTMLButtonElement) || button.dataset.customBrowserBound === "true") {
+            return;
+        }
+
+        button.addEventListener("click", () => {
+            void openCustomImageBrowserForField(field.id, button);
+        });
+        button.dataset.customBrowserBound = "true";
+    });
+
+    if (!elements) {
+        return;
+    }
+
+    if (elements.search.dataset.customBrowserBound !== "true") {
+        elements.search.addEventListener("input", () => {
+            window.clearTimeout(customImageBrowserSearchTimer);
+            customImageBrowserState.searchQuery = String(elements.search.value || "").trim();
+            customImageBrowserSearchTimer = window.setTimeout(() => {
+                if (customImageBrowserState.currentFolderId) {
+                    void loadCustomImageBrowserFolder(customImageBrowserState.currentFolderId);
+                }
+            }, CUSTOM_IMAGE_BROWSER_DEBOUNCE_MS);
+        });
+        elements.search.dataset.customBrowserBound = "true";
+    }
+
+    if (elements.manual.dataset.customBrowserBound !== "true") {
+        elements.manual.addEventListener("input", () => {
+            const manualValue = String(elements.manual.value || "").trim();
+
+            if (!/^\d+$/.test(manualValue) || String(customImageBrowserState.selectedAsset?.id || "") !== manualValue) {
+                customImageBrowserState.selectedAsset = null;
+                customImageBrowserState.selectedAssetId = null;
+            }
+
+            renderCustomImageBrowserPreview();
+        });
+        elements.manual.dataset.customBrowserBound = "true";
+    }
+
+    if (elements.clearButton.dataset.customBrowserBound !== "true") {
+        elements.clearButton.addEventListener("click", () => {
+            elements.manual.value = "";
+            customImageBrowserState.selectedAsset = null;
+            customImageBrowserState.selectedAssetId = null;
+            renderCustomImageBrowserPreview();
+            setCustomImageBrowserStatus(
+                "configurator.custom.browserStatusIdle",
+                {},
+                "Browse the custom DAM folders or type an asset ID."
+            );
+        });
+        elements.clearButton.dataset.customBrowserBound = "true";
+    }
+
+    if (elements.applyButton.dataset.customBrowserBound !== "true") {
+        elements.applyButton.addEventListener("click", () => {
+            applyCustomImageBrowserSelection();
+        });
+        elements.applyButton.dataset.customBrowserBound = "true";
+    }
+
+    if (elements.overlay.dataset.customBrowserBound !== "true") {
+        elements.overlay.addEventListener("click", (event) => {
+            if (event.target === elements.overlay) {
+                setCustomImageBrowserModalOpen(false);
+            }
+        });
+
+        const closeButtons = Array.from(elements.overlay.querySelectorAll("[data-close-custom-image-browser]"));
+        closeButtons.forEach((button) => {
+            button.addEventListener("click", () => {
+                setCustomImageBrowserModalOpen(false);
+            });
+        });
+
+        document.addEventListener("keydown", (event) => {
+            if (!isCustomImageBrowserModalOpen()) {
+                return;
+            }
+
+            if (event.key === "Escape") {
+                event.preventDefault();
+                setCustomImageBrowserModalOpen(false);
+            }
+        });
+
+        elements.overlay.dataset.customBrowserBound = "true";
+    }
+
+    syncCustomAssetFieldSummaries();
+}
+
+function isCustomImageBrowserModalOpen() {
+    const overlay = document.getElementById("customImageBrowserModal");
+    return overlay instanceof HTMLElement && overlay.classList.contains("is-open");
+}
+
+function setCustomImageBrowserModalOpen(isOpen) {
+    const elements = getCustomImageBrowserElements();
+
+    if (!elements) {
+        return;
+    }
+
+    elements.overlay.classList.toggle("is-open", isOpen);
+    elements.overlay.setAttribute("aria-hidden", String(!isOpen));
+    elements.overlay.inert = !isOpen;
+    document.body.classList.toggle(
+        "modal-open",
+        Array.from(document.querySelectorAll(".modal-overlay")).some((item) => item.classList.contains("is-open"))
+    );
+
+    if (isOpen) {
+        window.requestAnimationFrame(() => {
+            elements.search.focus({ preventScroll: true });
+        });
+        return;
+    }
+
+    if (customImageBrowserLastFocus instanceof HTMLElement && typeof customImageBrowserLastFocus.focus === "function") {
+        customImageBrowserLastFocus.focus({ preventScroll: true });
+    }
+}
+
+async function openCustomImageBrowserForField(fieldId, trigger = null) {
+    const field = getCustomAssetFieldById(fieldId);
+    const elements = getCustomImageBrowserElements();
+
+    if (!field || !elements) {
+        return;
+    }
+
+    if (trigger instanceof HTMLElement && !elements.overlay.contains(trigger)) {
+        customImageBrowserLastFocus = trigger;
+    }
+    customImageBrowserState.activeFieldId = field.id;
+    customImageBrowserState.searchQuery = "";
+    customImageBrowserState.searchScope = "folder";
+    customImageBrowserState.selectedAsset = null;
+    customImageBrowserState.selectedAssetId = null;
+    elements.search.value = "";
+    elements.manual.value = getCustomAssetFieldValue(field.id);
+
+    syncCustomImageBrowserHeader(field);
+    renderCustomImageBrowserBreadcrumb();
+    renderCustomImageBrowserPreview();
+    setCustomImageBrowserStatus(
+        "configurator.custom.browserLoadingFolder",
+        { target: getCustomAssetFieldLabel(field) },
+        "Loading DAM folder for " + getCustomAssetFieldLabel(field) + "..."
+    );
+    setCustomImageBrowserModalOpen(true);
+
+    await loadCustomImageBrowserFolder(field.uploadFolderId);
+    await hydrateCustomImageBrowserAsset(elements.manual.value);
+}
+
+function syncCustomImageBrowserHeader(field) {
+    const elements = getCustomImageBrowserElements();
+
+    if (!elements || !field) {
+        return;
+    }
+
+    const fieldLabel = getCustomAssetFieldLabel(field);
+    elements.title.textContent = fieldLabel;
+    elements.modalHint.textContent = t(
+        "configurator.custom.browserModalHintSingle",
+        { target: fieldLabel },
+        "Browse isolated DAM folders, search assets, or type an asset ID manually for " + fieldLabel + "."
+    );
+}
+
+async function loadCustomImageBrowserFolder(folderId) {
+    const requestToken = ++customImageBrowserFolderRequestToken;
+    const normalizedFolderId = String(folderId || "").trim();
+    const isGlobalSearch = customImageBrowserState.searchQuery !== "";
+
+    if (normalizedFolderId === "") {
+        return;
+    }
+
+    customImageBrowserState.currentFolderId = normalizedFolderId;
+    renderCustomImageBrowserBreadcrumb();
+    renderCustomImageBrowserGrid();
+
+    try {
+        const payload = await apiFetch(
+            "/?endpoint=dam&action=list&folder_id=" + encodeURIComponent(normalizedFolderId)
+            + (customImageBrowserState.searchQuery ? "&q=" + encodeURIComponent(customImageBrowserState.searchQuery) : "")
+            + (isGlobalSearch ? "&global=1" : "")
+        );
+
+        if (requestToken !== customImageBrowserFolderRequestToken) {
+            return;
+        }
+
+        customImageBrowserState.currentFolder = payload?.data?.folder || null;
+        customImageBrowserState.folders = Array.isArray(payload?.data?.folders) ? payload.data.folders : [];
+        customImageBrowserState.assets = Array.isArray(payload?.data?.assets) ? payload.data.assets : [];
+        customImageBrowserState.searchScope = String(payload?.data?.search_scope || (isGlobalSearch ? "global" : "folder"));
+        renderCustomImageBrowserBreadcrumb();
+        renderCustomImageBrowserGrid();
+        setCustomImageBrowserStatus(
+            customImageBrowserState.searchScope === "global"
+                ? "configurator.custom.browserStatusGlobalResults"
+                : "configurator.custom.browserStatusIdle",
+            { query: customImageBrowserState.searchQuery },
+            customImageBrowserState.searchScope === "global"
+                ? "Showing DAM search results for \"" + customImageBrowserState.searchQuery + "\"."
+                : "Browse the custom DAM folders or type an asset ID."
+        );
+    } catch (error) {
+        if (requestToken !== customImageBrowserFolderRequestToken) {
+            return;
+        }
+
+        customImageBrowserState.currentFolder = {
+            id: normalizedFolderId,
+            name: normalizedFolderId.split("/").pop() || normalizedFolderId,
+            path: normalizedFolderId,
+        };
+        customImageBrowserState.folders = [];
+        customImageBrowserState.assets = [];
+        customImageBrowserState.searchScope = isGlobalSearch ? "global" : "folder";
+        renderCustomImageBrowserBreadcrumb();
+        renderCustomImageBrowserGrid();
+        setCustomImageBrowserStatus(
+            "configurator.custom.browserFolderLoadFailed",
+            { message: error?.message || "" },
+            "Unable to load DAM folder right now."
+        );
+    }
+}
+
+function renderCustomImageBrowserBreadcrumb() {
+    const elements = getCustomImageBrowserElements();
+
+    if (!elements) {
+        return;
+    }
+
+    const currentPath = String(
+        customImageBrowserState.currentFolder?.path
+        || customImageBrowserState.currentFolderId
+        || getCustomAssetFieldById(customImageBrowserState.activeFieldId)?.uploadFolderId
+        || ""
+    );
+
+    elements.breadcrumb.innerHTML = "";
+
+    if (customImageBrowserState.searchScope === "global" && customImageBrowserState.searchQuery !== "") {
+        const item = document.createElement("li");
+        item.className = "breadcrumb-item";
+
+        const current = document.createElement("span");
+        current.className = "breadcrumb-current";
+        current.textContent = t(
+            "configurator.custom.browserSearchAllBreadcrumb",
+            { query: customImageBrowserState.searchQuery },
+            "All DAM search: " + customImageBrowserState.searchQuery
+        );
+
+        item.appendChild(current);
+        elements.breadcrumb.appendChild(item);
+        return;
+    }
+
+    if (currentPath === "") {
+        return;
+    }
+
+    const parts = currentPath.split("/").filter(Boolean);
+    let folderPath = "";
+
+    parts.forEach((part, index) => {
+        folderPath = folderPath ? folderPath + "/" + part : part;
+
+        const item = document.createElement("li");
+        item.className = "breadcrumb-item";
+
+        if (index === parts.length - 1) {
+            const current = document.createElement("span");
+            current.className = "breadcrumb-current";
+            current.textContent = part;
+            item.appendChild(current);
+        } else {
+            const button = document.createElement("button");
+            button.type = "button";
+            button.className = "breadcrumb-link";
+            button.textContent = part;
+            button.addEventListener("click", () => {
+                void loadCustomImageBrowserFolder(folderPath);
+            });
+            item.appendChild(button);
+        }
+
+        elements.breadcrumb.appendChild(item);
+    });
+}
+
+function renderCustomImageBrowserGrid() {
+    const elements = getCustomImageBrowserElements();
+
+    if (!elements) {
+        return;
+    }
+
+    elements.grid.innerHTML = "";
+    const itemsCount = customImageBrowserState.folders.length + customImageBrowserState.assets.length;
+
+    elements.emptyLabel.textContent = customImageBrowserState.searchScope === "global"
+        ? t("configurator.custom.browserEmptyGlobal", {}, "No DAM folders or assets match this search.")
+        : t("configurator.custom.browserEmpty", {}, "No folders or assets found here.");
+    elements.empty.classList.toggle("hidden", itemsCount !== 0);
+
+    if (itemsCount === 0) {
+        return;
+    }
+
+    const fragment = document.createDocumentFragment();
+
+    customImageBrowserState.folders.forEach((folder) => {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = "group relative flex w-full flex-col items-center gap-12 rounded-8 p-16";
+        button.title = folder.path || folder.name || "";
+        button.setAttribute("aria-label", "Open folder: " + (folder.name || folder.path || ""));
+        button.addEventListener("click", () => {
+            if (customImageBrowserState.searchScope === "global" && customImageBrowserState.searchQuery !== "") {
+                const elementsRef = getCustomImageBrowserElements();
+
+                customImageBrowserState.searchQuery = "";
+                customImageBrowserState.searchScope = "folder";
+
+                if (elementsRef) {
+                    elementsRef.search.value = "";
+                }
+            }
+
+            void loadCustomImageBrowserFolder(folder.id);
+        });
+
+        const icon = document.createElement("i");
+        icon.className = "ri-folder-3-line text-icon-xxl text-grey-primary";
+        icon.setAttribute("aria-hidden", "true");
+
+        const name = document.createElement("span");
+        name.className = "text-body-sm text-center leading-tight text-grey-primary break-all";
+        name.textContent = folder.name || folder.path || "";
+
+        if (customImageBrowserState.searchScope === "global" && folder.path) {
+            const path = document.createElement("span");
+            path.className = "text-body-xs text-center leading-tight text-grey-primary break-all";
+            path.textContent = folder.path;
+            button.append(icon, name, path);
+            fragment.appendChild(button);
+            return;
+        }
+
+        button.append(icon, name);
+        fragment.appendChild(button);
+    });
+
+    customImageBrowserState.assets.forEach((asset) => {
+        const wrapper = document.createElement("button");
+        wrapper.type = "button";
+        wrapper.className = "group relative flex w-full flex-col items-center gap-12 rounded-8 p-16";
+        wrapper.title = asset.display_name || asset.filename || "";
+        wrapper.setAttribute("aria-pressed", String(String(customImageBrowserState.selectedAssetId || "") === String(asset.id || "")));
+        wrapper.addEventListener("click", () => {
+            const elementsRef = getCustomImageBrowserElements();
+
+            customImageBrowserState.selectedAsset = asset;
+            customImageBrowserState.selectedAssetId = asset.id || null;
+
+            if (elementsRef) {
+                elementsRef.manual.value = String(asset.id || "");
+            }
+
+            renderCustomImageBrowserGrid();
+            renderCustomImageBrowserPreview();
+            setCustomImageBrowserStatus(
+                "configurator.custom.browserAssetSelected",
+                { id: String(asset.id || "") },
+                "Selected asset #" + String(asset.id || "") + "."
+            );
+        });
+
+        const preview = document.createElement("div");
+        preview.className = "relative flex w-full items-center justify-center overflow-hidden rounded-lg border border-grey-secondary bg-grey-tertiary";
+        preview.style.aspectRatio = "1 / 1";
+        preview.style.minHeight = "120px";
+
+        const imageUrl = resolveCustomImageBrowserAssetImageUrl(asset);
+
+        if (imageUrl) {
+            const image = document.createElement("img");
+            image.src = imageUrl;
+            image.alt = asset.display_name || asset.filename || "Asset";
+            image.className = "block h-full w-full object-cover object-center";
+            image.loading = "lazy";
+            preview.appendChild(image);
+        } else {
+            const fallback = document.createElement("i");
+            fallback.className = "ri-image-line text-icon-xxl text-grey-primary";
+            fallback.setAttribute("aria-hidden", "true");
+            preview.appendChild(fallback);
+        }
+
+        const name = document.createElement("span");
+        name.className = "text-body-sm text-center leading-tight text-grey-primary break-all";
+        name.textContent = asset.display_name || asset.filename || ("#" + String(asset.id || ""));
+
+        const folderPath = String(asset.folder_path || asset.asset_folder || "").trim();
+        const path = document.createElement("span");
+        path.className = "text-body-xs text-center leading-tight text-grey-primary break-all";
+        path.textContent = folderPath;
+
+        if (String(customImageBrowserState.selectedAssetId || "") === String(asset.id || "")) {
+            wrapper.classList.add("ring-2", "ring-green-primary");
+        }
+
+        wrapper.append(preview, name);
+
+        if (customImageBrowserState.searchScope === "global" && folderPath !== "") {
+            wrapper.append(path);
+        }
+
+        fragment.appendChild(wrapper);
+    });
+
+    elements.grid.appendChild(fragment);
+}
+
+function resolveCustomImageBrowserAssetImageUrl(asset) {
+    const thumbnail = typeof asset?.thumbnail_url === "string" ? asset.thumbnail_url.trim() : "";
+    const secure = typeof asset?.secure_url === "string" ? asset.secure_url.trim() : "";
+    return thumbnail || secure || "";
+}
+
+function renderCustomImageBrowserPreview() {
+    const elements = getCustomImageBrowserElements();
+    const activeField = getCustomAssetFieldById(customImageBrowserState.activeFieldId);
+
+    if (!elements || !activeField) {
+        return;
+    }
+
+    elements.activeLabel.textContent = getCustomAssetFieldLabel(activeField);
+
+    const imageUrl = resolveCustomImageBrowserAssetImageUrl(customImageBrowserState.selectedAsset);
+    const showImage = imageUrl !== "";
+
+    elements.previewEmpty.classList.toggle("hidden", showImage);
+    elements.previewImage.classList.toggle("hidden", !showImage);
+
+    if (showImage) {
+        elements.previewImage.src = imageUrl;
+        elements.previewImage.alt = customImageBrowserState.selectedAsset?.display_name || customImageBrowserState.selectedAsset?.filename || getCustomAssetFieldLabel(activeField);
+    } else {
+        elements.previewImage.removeAttribute("src");
+        elements.previewImage.alt = "";
+    }
+}
+
+async function hydrateCustomImageBrowserAsset(assetId) {
+    const numericId = String(assetId || "").trim();
+
+    if (!/^\d+$/.test(numericId)) {
+        customImageBrowserState.selectedAsset = null;
+        customImageBrowserState.selectedAssetId = null;
+        renderCustomImageBrowserPreview();
+        return;
+    }
+
+    const requestToken = ++customImageBrowserAssetRequestToken;
+
+    try {
+        const payload = await apiFetch("/?endpoint=dam&action=asset&id=" + encodeURIComponent(numericId));
+
+        if (requestToken !== customImageBrowserAssetRequestToken || !isCustomImageBrowserModalOpen()) {
+            return;
+        }
+
+        customImageBrowserState.selectedAsset = payload?.data?.asset || null;
+        customImageBrowserState.selectedAssetId = customImageBrowserState.selectedAsset?.id || null;
+        renderCustomImageBrowserGrid();
+        renderCustomImageBrowserPreview();
+    } catch (error) {
+        if (requestToken !== customImageBrowserAssetRequestToken) {
+            return;
+        }
+
+        customImageBrowserState.selectedAsset = null;
+        customImageBrowserState.selectedAssetId = null;
+        renderCustomImageBrowserPreview();
+    }
+}
+
+function applyCustomImageBrowserSelection() {
+    const elements = getCustomImageBrowserElements();
+    const activeField = getCustomAssetFieldById(customImageBrowserState.activeFieldId);
+
+    if (!elements || !activeField) {
+        return;
+    }
+
+    const input = document.getElementById(activeField.id);
+
+    if (!(input instanceof HTMLInputElement)) {
+        return;
+    }
+
+    input.value = String(elements.manual.value || "").trim();
+    syncCustomAssetFieldSummaries();
+    scheduleCustomPreview();
+    setStatusKey(
+        "configurator.custom.browserApplyDone",
+        "success",
+        { target: getCustomAssetFieldLabel(activeField) },
+        getCustomAssetFieldLabel(activeField) + " updated for this custom PDF."
+    );
+    setCustomImageBrowserModalOpen(false);
+}
+
+function setCustomImageBrowserStatus(key, variables = {}, fallback = "") {
+    const elements = getCustomImageBrowserElements();
+
+    if (!elements) {
+        return;
+    }
+
+    elements.status.textContent = t(key, variables, fallback);
+}
+
 function getCustomAdvancedCopyFieldId(section, field) {
     return "custom-advanced-" + section + "-" + field;
 }
@@ -1409,15 +2120,17 @@ function renderCustomAdvancedCopyEditors(snapshot = customEditableCopySnapshot, 
         const wrapper = document.createElement("div");
         const label = document.createElement("label");
         const textarea = document.createElement("textarea");
+        const textareaShell = document.createElement("div");
+        const textareaShellIcon = document.createElement("span");
         const helper = document.createElement("p");
 
-        wrapper.className = "flex flex-col gap-8";
+        wrapper.className = "flex flex-col gap-12";
         label.className = "input-label ml-12";
         label.htmlFor = fieldId;
         label.textContent = t(definition.labelKey, {}, definition.fallback);
 
         textarea.id = fieldId;
-        textarea.className = "input input-sm min-h-[132px] resize-y";
+        textarea.className = "input input-md min-h-[132px] resize-y";
         textarea.dataset.customAdvancedField = "true";
         textarea.dataset.section = definition.section;
         textarea.dataset.field = definition.field;
@@ -1435,6 +2148,11 @@ function renderCustomAdvancedCopyEditors(snapshot = customEditableCopySnapshot, 
             textarea.value = defaultValue;
         }
 
+        textareaShell.className = "text-field-shell text-field-shell-meta";
+        textareaShellIcon.className = "text-field-shell-meta-icon";
+        textareaShellIcon.setAttribute("aria-hidden", "true");
+        textareaShellIcon.innerHTML = '<i class="ri-expand-diagonal-s-2-fill text-icon-sm"></i>';
+
         helper.className = "text-body-xs text-grey-primary ml-12";
         helper.textContent = t(
             "configurator.custom.advancedFieldHint",
@@ -1446,7 +2164,8 @@ function renderCustomAdvancedCopyEditors(snapshot = customEditableCopySnapshot, 
             scheduleCustomPreview();
         });
 
-        wrapper.append(label, textarea, helper);
+        textareaShell.append(textarea, textareaShellIcon);
+        wrapper.append(label, textareaShell, helper);
         container.appendChild(wrapper);
     });
 
@@ -1641,10 +2360,10 @@ function buildCustomFieldOverrideControl(field, defaultValue, previousState = nu
 
     wrapper.className = compact
         ? "mt-10 rounded-16 border border-dashed border-grey-secondary bg-grey-50/40 px-12 py-12"
-        : "rounded-16 border border-grey-secondary bg-white px-14 py-14";
+        : "flex flex-col gap-12";
     wrapper.dataset.customFieldOverrideInline = compact ? "true" : "false";
     wrapper.dataset.customFieldOverrideWrapper = field.key;
-    row.className = "flex items-start justify-between gap-12";
+    row.className = "flex items-start justify-between gap-16";
     textWrap.className = "flex flex-col gap-4 min-w-0";
     label.className = "text-label text-black";
     label.textContent = t(field.labelKey, {}, field.fallback);
@@ -1666,7 +2385,7 @@ function buildCustomFieldOverrideControl(field, defaultValue, previousState = nu
     toggleLabel.append(toggleInput, toggleText);
     row.append(textWrap, toggleLabel);
 
-    inputWrap.className = compact ? "pt-10" : "pt-12";
+    inputWrap.className = compact ? "pt-10" : "pt-8";
     inputWrap.dataset.customFieldOverrideInputWrap = field.key;
 
     inputLabel.className = "input-label ml-12";
@@ -1716,23 +2435,45 @@ function renderCustomInlineFieldOverrideEditors(snapshot = customFieldOverrideSn
     const currentValues = preserveCurrentValues ? captureCurrentCustomFieldOverrideStates() : {};
     const effectiveSnapshot = buildEffectiveCustomFieldOverrideSnapshot(snapshot);
     const enabled = isCustomMode() && isCustomAdvancedCopyEnabled();
+    const inlineTargets = new Set();
+    const renderedKeys = new Set();
+    const renderedContainers = new Set();
+    const inlineFields = CUSTOM_FIELD_OVERRIDE_DEFINITIONS.filter((field) => Boolean(field.containerId));
 
-    CUSTOM_FIELD_OVERRIDE_DEFINITIONS
-        .filter((field) => Boolean(field.containerId))
-        .forEach((field) => {
-            const target = document.getElementById(field.containerId);
+    inlineFields.forEach((field) => {
+        inlineTargets.add(field.containerId);
+    });
 
-            if (!target) {
-                return;
-            }
+    inlineTargets.forEach((containerId) => {
+        const target = document.getElementById(containerId);
 
-            Array.from(target.querySelectorAll('[data-custom-field-override-inline="true"]')).forEach((node) => node.remove());
+        if (!target) {
+            return;
+        }
 
-            const defaultValue = String(effectiveSnapshot[field.key] || "");
-            const control = buildCustomFieldOverrideControl(field, defaultValue, currentValues[field.key] || null, "inline");
-            control.classList.toggle("hidden", !enabled);
-            target.appendChild(control);
-        });
+        Array.from(target.querySelectorAll('[data-custom-field-override-inline="true"]')).forEach((node) => node.remove());
+    });
+
+    inlineFields.forEach((field) => {
+        const containerId = String(field.containerId || "").trim();
+
+        if (containerId === "" || renderedKeys.has(field.key) || renderedContainers.has(containerId)) {
+            return;
+        }
+
+        const target = document.getElementById(containerId);
+
+        if (!target) {
+            return;
+        }
+
+        const defaultValue = String(effectiveSnapshot[field.key] || "");
+        const control = buildCustomFieldOverrideControl(field, defaultValue, currentValues[field.key] || null, "inline");
+        control.classList.toggle("hidden", !enabled);
+        target.appendChild(control);
+        renderedKeys.add(field.key);
+        renderedContainers.add(containerId);
+    });
 }
 
 function renderCustomFieldOverrideEditors(snapshot = customFieldOverrideSnapshot, preserveCurrentValues = true) {
@@ -1745,13 +2486,26 @@ function renderCustomFieldOverrideEditors(snapshot = customFieldOverrideSnapshot
 
     const currentValues = preserveCurrentValues ? captureCurrentCustomFieldOverrideStates() : {};
     const effectiveSnapshot = buildEffectiveCustomFieldOverrideSnapshot(snapshot);
+    const inlineKeys = new Set(
+        CUSTOM_FIELD_OVERRIDE_DEFINITIONS
+            .filter((field) => Boolean(field.containerId))
+            .map((field) => field.key)
+    );
+    const renderedPanelKeys = new Set();
 
     renderCustomInlineFieldOverrideEditors(snapshot, preserveCurrentValues);
 
     container.innerHTML = "";
 
     CUSTOM_FIELD_OVERRIDE_GROUPS.forEach((group) => {
-        const groupFields = group.fields.filter((field) => !field.containerId);
+        const groupFields = group.fields.filter((field) => {
+            if (field.containerId || inlineKeys.has(field.key) || renderedPanelKeys.has(field.key)) {
+                return false;
+            }
+
+            renderedPanelKeys.add(field.key);
+            return true;
+        });
 
         if (groupFields.length === 0) {
             return;
@@ -1762,13 +2516,13 @@ function renderCustomFieldOverrideEditors(snapshot = customFieldOverrideSnapshot
         const groupTitle = document.createElement("span");
         const groupBody = document.createElement("div");
 
-        groupCard.className = "panel panel-sm flex flex-col gap-12";
+        groupCard.className = "flex flex-col gap-16";
         groupHeader.className = "flex flex-col gap-4";
-        groupTitle.className = "text-label text-grey-primary";
+        groupTitle.className = "text-label text-grey-primary ml-12";
         groupTitle.textContent = t(group.titleKey, {}, group.fallback);
         groupHeader.appendChild(groupTitle);
 
-        groupBody.className = "grid grid-cols-1 gap-12 pt-4";
+        groupBody.className = "grid grid-cols-1 gap-16 pt-4";
 
         groupFields.forEach((field) => {
             const defaultValue = String(effectiveSnapshot[field.key] || "");
@@ -1890,6 +2644,8 @@ function resetCustomAssetUploadStatuses() {
         );
         resetCustomAssetUploaderVisual(field);
     });
+
+    syncCustomAssetFieldSummaries();
 }
 
 async function ensureDamFolderPath(folderId) {
@@ -1973,6 +2729,7 @@ async function uploadCustomAssetOverride(field, file) {
         }
 
         targetInput.value = assetId;
+        syncCustomAssetFieldSummaries();
         setCustomAssetUploadStatus(
             field,
             "configurator.custom.assetUploadDone",
@@ -2045,14 +2802,24 @@ function resetCustomOverrides(shouldPreview = true) {
         advancedToggle.checked = false;
     }
 
+    [CUSTOM_IMAGES_TOGGLE_ID, CUSTOM_TEXT_TOGGLE_ID, CUSTOM_SECTIONS_TOGGLE_ID].forEach((id) => {
+        const element = document.getElementById(id);
+
+        if (element instanceof HTMLInputElement) {
+            element.checked = false;
+        }
+    });
+
     syncCustomEditingModeControls();
 
     clearCustomFieldOverrideSnapshot();
     clearCustomAdvancedCopySnapshot();
-    renderCustomFieldOverrideEditors({}, false);
-    syncCustomAdvancedCopyVisibility();
-    syncCustomFieldOverrideVisibility();
-    resetCustomAssetUploadStatuses();
+        renderCustomFieldOverrideEditors({}, false);
+        syncCustomAdvancedCopyVisibility();
+        syncCustomFieldOverrideVisibility();
+        syncCustomOptionalBlockVisibility();
+        resetCustomAssetUploadStatuses();
+        syncCustomAssetFieldSummaries();
 
     resetCustomPreviewState();
 
@@ -2226,6 +2993,17 @@ function buildShowcaseRequestSignature(body = buildShowcaseRequestBody()) {
     });
 }
 
+function getSelectedDatasheetDesignVariant() {
+    if (isShowcaseMode() || isCustomMode()) {
+        return "classic";
+    }
+
+    const selected = document.querySelector('input[name="datasheet-design-variant"]:checked');
+    return selected instanceof HTMLInputElement && selected.value === "modern"
+        ? "modern"
+        : "classic";
+}
+
 function buildDatasheetRequestBody() {
     return {
         referencia: document.getElementById("output-reference").value,
@@ -2247,6 +3025,7 @@ function buildDatasheetRequestBody() {
         conectorligacao: getRequestSelectValue("select-connection-connector"),
         tamanhocaboligacao: get("input-connection-cable-length") || "0",
         finalidade: getRequestSelectValue("select-purpose"),
+        design_variant: getSelectedDatasheetDesignVariant(),
     };
 }
 
@@ -2256,37 +3035,46 @@ function buildCustomRequestBody() {
     const fieldOverrides = collectCustomFieldOverrides();
     const copyOverrides = collectCustomAdvancedCopyOverrides();
     const sectionVisibility = {};
+    const customImagesEnabled = isCustomBlockEnabled(CUSTOM_IMAGES_TOGGLE_ID);
+    const customTextEnabled = isCustomBlockEnabled(CUSTOM_TEXT_TOGGLE_ID);
+    const customSectionsEnabled = isCustomBlockEnabled(CUSTOM_SECTIONS_TOGGLE_ID);
 
-    CUSTOM_TEXT_OVERRIDE_FIELDS.forEach((field) => {
-        const element = document.getElementById(field.id);
-        const value = String(element?.value || "").trim();
+    if (customTextEnabled) {
+        CUSTOM_TEXT_OVERRIDE_FIELDS.forEach((field) => {
+            const element = document.getElementById(field.id);
+            const value = String(element?.value || "").trim();
 
-        if (value !== "") {
-            textOverrides[field.key] = value;
-        }
-    });
+            if (value !== "") {
+                textOverrides[field.key] = value;
+            }
+        });
+    }
 
-    CUSTOM_ASSET_OVERRIDE_FIELDS.forEach((field) => {
-        const element = document.getElementById(field.id);
-        const value = String(element?.value || "").trim();
+    if (customImagesEnabled) {
+        CUSTOM_ASSET_OVERRIDE_FIELDS.forEach((field) => {
+            const element = document.getElementById(field.id);
+            const value = String(element?.value || "").trim();
 
-        if (value !== "") {
-            assetOverrides[field.key] = {
-                source: "dam",
-                asset_id: value,
-            };
-        }
-    });
+            if (value !== "") {
+                assetOverrides[field.key] = {
+                    source: "dam",
+                    asset_id: value,
+                };
+            }
+        });
+    }
 
-    CUSTOM_SECTION_VISIBILITY_FIELDS.forEach((field) => {
-        const element = document.getElementById(field.id);
+    if (customSectionsEnabled) {
+        CUSTOM_SECTION_VISIBILITY_FIELDS.forEach((field) => {
+            const element = document.getElementById(field.id);
 
-        if (!(element instanceof HTMLInputElement)) {
-            return;
-        }
+            if (!(element instanceof HTMLInputElement)) {
+                return;
+            }
 
-        sectionVisibility[field.key] = element.checked;
-    });
+            sectionVisibility[field.key] = element.checked;
+        });
+    }
 
     return {
         base_request: buildDatasheetRequestBody(),
@@ -4166,6 +4954,17 @@ function refreshLocalizedControls() {
     });
     renderShowcaseControls();
     renderTecitCodeLogicFamilies();
+    syncCustomAssetFieldSummaries();
+    if (isCustomImageBrowserModalOpen()) {
+        syncCustomImageBrowserHeader(getCustomAssetFieldById(customImageBrowserState.activeFieldId));
+        renderCustomImageBrowserBreadcrumb();
+        renderCustomImageBrowserPreview();
+        setCustomImageBrowserStatus(
+            "configurator.custom.browserStatusIdle",
+            {},
+            "Browse the custom DAM folders or type an asset ID."
+        );
+    }
     applyStatusState();
     applySummaryState();
     applyApiBadgeState();

@@ -5,6 +5,14 @@ const DAM_DEFAULT_FOLDER_ID = "nexled/datasheet";
 const DAM_ROLE_OPTIONS = ["packshot", "finish", "drawing", "diagram", "diagram-inv", "mounting", "connector", "temperature", "energy-label", "icon", "logo", "power-supply", "product-photo", "lifestyle", "datasheet-pdf", "eprel-label", "eprel-fiche", "brand-logo", "brand-asset", "hero", "banner", "category", "support-asset", "web-asset"];
 const DAM_GRID_THUMB_TRANSFORM = "c_fit,w_240,h_240,dpr_auto,f_auto,q_auto";
 const DAM_GRID_PDF_FETCH_TRANSFORM = "c_fit,w_240,h_240,f_auto,q_auto";
+const DAM_TOAST_BASE_CLASS = "toast toast-sm";
+const DAM_TOAST_HIDE_DELAY = 320;
+const DAM_TOAST_AUTOHIDE_DELAY = 3200;
+const DAM_TOAST_VARIANT = {
+    success: { className: "toast-success", iconClass: "ri-checkbox-circle-line", role: "status", titleKey: "shared.toast.successTitle", titleFallback: "Success" },
+    error: { className: "toast-danger", iconClass: "ri-close-circle-line", role: "alert", titleKey: "shared.toast.errorTitle", titleFallback: "Error" },
+    info: { className: "toast-info", iconClass: "ri-information-line", role: "status", titleKey: "shared.toast.infoTitle", titleFallback: "Info" },
+};
 
 const damState = {
     tree: [],
@@ -29,6 +37,8 @@ let listRequestToken = 0;
 let assetDetailsRequestToken = 0;
 let searchTimer = 0;
 let damElements = null;
+let damToastTimer = 0;
+let damToastHideTimer = 0;
 
 document.addEventListener("DOMContentLoaded", () => {
     damElements = getDamElements();
@@ -215,10 +225,12 @@ function bindDamEvents() {
 
         try {
             await navigator.clipboard.writeText(damState.selectedAsset.secure_url);
-            setAssetStatus(t("dam.copyAssetUrlDone", "Asset URL copied."));
+            setAssetStatus("");
+            showDamToast(t("dam.copyAssetUrlDone", "Asset URL copied."), "success");
         } catch (error) {
             console.error(error);
-            setAssetStatus(t("dam.copyAssetUrlFailed", "Unable to copy asset URL."));
+            setAssetStatus("");
+            showDamToast(t("dam.copyAssetUrlFailed", "Unable to copy asset URL."), "error");
         }
     });
 
@@ -1435,14 +1447,16 @@ function syncAssetLinkControls() {
     }
 
     const hasAsset = Boolean(damState.selectedAsset?.id);
-    const disabled = !hasAsset || damState.selectedAssetLinksLoading || damState.selectedAssetLinkActionBusy;
+    const canLink = hasAsset && canShowAssetLinkingControls();
+    const disabled = !canLink || damState.selectedAssetLinksLoading || damState.selectedAssetLinkActionBusy;
 
     damElements.linkFamilyCodeInput.disabled = disabled;
     damElements.linkProductCodeInput.disabled = disabled;
     damElements.linkRoleSelect.disabled = disabled;
     damElements.linkSortOrderInput.disabled = disabled;
     damElements.linkSubmitButton.disabled = disabled;
-    damElements.toggleLinkingButton.disabled = !hasAsset;
+    damElements.toggleLinkingButton.disabled = !canLink;
+    damElements.toggleLinkingButton.classList.toggle("hidden", !canLink);
 }
 
 function syncAssetLinkPanelVisibility(options = {}) {
@@ -1452,11 +1466,13 @@ function syncAssetLinkPanelVisibility(options = {}) {
 
     const { syncPressed = true } = options;
     const hasAsset = Boolean(damState.selectedAsset?.id);
-    const isHidden = !hasAsset || damState.assetLinkPanelHidden;
+    const canLink = hasAsset && canShowAssetLinkingControls();
+    const isHidden = !canLink || damState.assetLinkPanelHidden;
     const labelKey = isHidden ? "dam.showAssetLinks" : "dam.hideAssetLinks";
     const labelFallback = isHidden ? "Show linking" : "Hide linking";
 
     damElements.linkingPanel.classList.toggle("hidden", isHidden);
+    damElements.toggleLinkingButton.classList.toggle("hidden", !canLink);
     damElements.toggleLinkingButton.setAttribute("aria-expanded", String(!isHidden));
     if (syncPressed) {
         damElements.toggleLinkingButton.setAttribute("aria-pressed", String(!isHidden));
@@ -1543,8 +1559,99 @@ function setUploadStatus(message) {
 
 function setAssetStatus(message) {
     if (damElements) {
-    damElements.assetStatus.textContent = message;
+        damElements.assetStatus.textContent = message;
     }
+}
+
+function hideDamToast(root, immediate = false) {
+    const toast = root?.querySelector("[data-dam-toast]");
+
+    if (!(root instanceof HTMLElement) || !(toast instanceof HTMLElement)) {
+        return;
+    }
+
+    window.clearTimeout(damToastTimer);
+    window.clearTimeout(damToastHideTimer);
+    toast.classList.remove("is-visible");
+    toast.setAttribute("aria-hidden", "true");
+
+    if (immediate) {
+        root.innerHTML = "";
+        return;
+    }
+
+    damToastHideTimer = window.setTimeout(() => {
+        root.innerHTML = "";
+        damToastHideTimer = 0;
+    }, DAM_TOAST_HIDE_DELAY);
+}
+
+function showDamToast(message, tone = "success") {
+    const root = document.getElementById("damToastRoot");
+
+    if (!(root instanceof HTMLElement) || String(message || "").trim() === "") {
+        return;
+    }
+
+    window.clearTimeout(damToastTimer);
+    window.clearTimeout(damToastHideTimer);
+    root.innerHTML = "";
+
+    const variant = DAM_TOAST_VARIANT[tone] || DAM_TOAST_VARIANT.info;
+    const panel = document.createElement("div");
+    const toast = document.createElement("div");
+    const iconWrap = document.createElement("span");
+    const icon = document.createElement("i");
+    const copy = document.createElement("div");
+    const title = document.createElement("p");
+    const text = document.createElement("span");
+    const actions = document.createElement("div");
+    const closeButton = document.createElement("button");
+    const closeIcon = document.createElement("i");
+
+    panel.className = "panel border-0 bg-transparent";
+
+    toast.className = DAM_TOAST_BASE_CLASS + " " + variant.className;
+    toast.setAttribute("role", variant.role);
+    toast.setAttribute("aria-hidden", "true");
+    toast.dataset.damToast = "true";
+
+    iconWrap.className = "toast-icon";
+    icon.className = variant.iconClass + " text-icon-lg";
+    icon.setAttribute("aria-hidden", "true");
+    iconWrap.appendChild(icon);
+
+    copy.className = "toast-copy";
+    title.className = "toast-title";
+    title.textContent = t(variant.titleKey, variant.titleFallback);
+    text.className = "toast-text";
+    text.textContent = String(message || "").trim();
+    copy.append(title, text);
+
+    actions.className = "toast-actions";
+    closeButton.type = "button";
+    closeButton.className = "btn btn-ghost btn-icon btn-xs";
+    closeButton.setAttribute("aria-label", t("shared.actions.closeNotification", "Close notification"));
+    closeButton.addEventListener("click", () => {
+        hideDamToast(root);
+    });
+    closeIcon.className = "ri-close-line text-icon-md";
+    closeIcon.setAttribute("aria-hidden", "true");
+    closeButton.appendChild(closeIcon);
+    actions.appendChild(closeButton);
+
+    toast.append(iconWrap, copy, actions);
+    panel.appendChild(toast);
+    root.appendChild(panel);
+
+    requestAnimationFrame(() => {
+        toast.classList.add("is-visible");
+        toast.setAttribute("aria-hidden", "false");
+    });
+
+    damToastTimer = window.setTimeout(() => {
+        hideDamToast(root);
+    }, DAM_TOAST_AUTOHIDE_DELAY);
 }
 
 function resolveSelectedAssetPreviewUrl(asset) {
@@ -1727,6 +1834,16 @@ function formatDamRoleLabel(role) {
         .filter(Boolean)
         .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
         .join(" ");
+}
+
+function canShowAssetLinkingControls(asset = damState.selectedAsset) {
+    const folderId = String(asset?.asset_folder || asset?.folder_id || "").trim();
+
+    if (folderId === "") {
+        return false;
+    }
+
+    return folderId === DAM_DEFAULT_FOLDER_ID || folderId.startsWith(DAM_DEFAULT_FOLDER_ID + "/");
 }
 
 function resolveAssetThumbnailUrl(asset) {

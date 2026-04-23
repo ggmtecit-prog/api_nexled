@@ -19,6 +19,18 @@
     <script src="https://ggmtecit-prog.github.io/NexLed_UI_System/src/config-cdn.js?v=1.3"></script>
     <link rel="stylesheet" href="https://ggmtecit-prog.github.io/NexLed_UI_System/src/nexled.css?v=1.3">
     <script src="https://ggmtecit-prog.github.io/NexLed_UI_System/src/nexled.js?v=1.3"></script>
+    <style>
+        .dropdown-menu.custom-scrollbar,
+        .language-selector-menu.custom-scrollbar,
+        .modal-body.custom-scrollbar {
+            scrollbar-gutter: stable;
+        }
+
+        .dropdown-menu.custom-scrollbar,
+        .language-selector-menu.custom-scrollbar {
+            --scrollbar-thumb-inset: var(--space-2);
+        }
+    </style>
 </head>
 <body class="bg-grey-tertiary text-black selection:bg-green-primary/10 min-h-screen lg:flex">
 
@@ -319,7 +331,7 @@
                 </button>
             </div>
 
-            <div id="damAssetDetailsBody" class="modal-body flex-1 min-h-0 overflow-y-auto overflow-x-hidden">
+            <div id="damAssetDetailsBody" class="modal-body custom-scrollbar flex-1 min-h-0 overflow-y-auto overflow-x-hidden">
                 <div class="flex flex-col gap-16">
                     <div class="panel panel-sm flex h-72 sm:h-80 lg:h-96 items-center justify-center overflow-hidden" data-dam-asset-preview>
                         <div class="flex flex-col items-center gap-12 text-center" data-dam-empty-asset>
@@ -402,6 +414,8 @@
         </div>
     </div>
 
+    <div id="damToastRoot" class="toast-viewport" style="z-index: 3200;" aria-live="polite" aria-atomic="true"></div>
+
     <div class="modal-overlay" id="damCreateFolderModal" aria-hidden="true" data-dam-create-folder-modal>
         <div class="modal" role="dialog" aria-modal="true" aria-labelledby="damCreateFolderTitle" aria-describedby="damCreateFolderBody">
             <div class="modal-header">
@@ -413,7 +427,7 @@
                 </button>
             </div>
 
-            <div id="damCreateFolderBody" class="modal-body">
+            <div id="damCreateFolderBody" class="modal-body custom-scrollbar">
                 <div class="flex flex-col gap-16">
                     <div class="flex flex-col gap-8">
                         <label class="input-label" for="dam-create-folder-name" data-i18n="dam.newFolderName">New Folder Name</label>
@@ -458,7 +472,7 @@
                 </button>
             </div>
 
-            <div id="damFolderPolicyBody" class="modal-body">
+            <div id="damFolderPolicyBody" class="modal-body custom-scrollbar">
                 <div class="flex flex-col gap-16">
                     <p class="text-body-sm text-grey-primary" data-i18n="dam.folderPolicyIntro">The DAM folder structure is ready, but the PDF workflow still reads local assets.</p>
 

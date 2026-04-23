@@ -19,6 +19,19 @@
     <script src="https://ggmtecit-prog.github.io/NexLed_UI_System/src/config-cdn.js?v=1.3"></script>
     <link rel="stylesheet" href="https://ggmtecit-prog.github.io/NexLed_UI_System/src/nexled.css?v=1.3">
     <script src="https://ggmtecit-prog.github.io/NexLed_UI_System/src/nexled.js?v=1.3"></script>
+    <style>
+        .dropdown-menu.custom-scrollbar,
+        .language-selector-menu.custom-scrollbar,
+        .combobox-list.custom-scrollbar,
+        .modal-body.custom-scrollbar {
+            scrollbar-gutter: stable;
+        }
+
+        .dropdown-menu.custom-scrollbar,
+        .language-selector-menu.custom-scrollbar {
+            --scrollbar-thumb-inset: var(--space-2);
+        }
+    </style>
 </head>
 <body class="bg-grey-tertiary text-black selection:bg-green-primary/10 min-h-screen lg:flex">
 
@@ -253,33 +266,33 @@
                                     </div>
                                     <input type="hidden" id="select-family" value="">
                                     <div class="combobox-panel" id="family-combobox-panel" hidden aria-hidden="true">
-                                        <div class="combobox-list" id="family-combobox-list"></div>
+                                        <div class="combobox-list custom-scrollbar" id="family-combobox-list"></div>
                                         <p class="combobox-empty" id="family-combobox-empty" hidden data-i18n="configurator.familyEmpty">No matching families</p>
                                     </div>
                                 </div>
                             </div>
 
-                            <div id="custom-editing-mode-panel" class="hidden flex flex-col gap-16 pt-24 px-4 md:px-6">
-                                <div class="divider"></div>
+                            <div id="custom-editing-mode-panel" class="hidden flex flex-col pt-40 px-8 md:px-12 xl:px-16">
+                                <section class="flex flex-col gap-16 px-4 md:px-6">
+                                    <div class="divider"></div>
 
-                                <section class="flex flex-col gap-16">
                                     <div class="flex flex-col gap-4 pt-24">
                                         <h3 class="card-title" data-i18n="configurator.custom.editingModeTitle">Editing Mode</h3>
                                         <p class="text-body-sm text-grey-primary max-w-readable" data-i18n="configurator.custom.editingModeHint">Choose basic or advanced editing first. Basic keeps the simple title, image, and footer controls. Advanced also unlocks editable copy per section.</p>
                                     </div>
-                                    <div role="radiogroup" aria-label="Custom editing mode" class="grid grid-cols-1 xl:grid-cols-2 gap-16 items-start pt-8">
-                                        <label class="radio-wrapper radio-md items-start">
-                                            <input type="radio" name="custom-edit-mode" id="custom-edit-mode-basic" checked>
-                                            <span class="flex flex-col gap-4">
-                                                <span class="text-body-sm text-black" data-i18n="configurator.custom.editingModeBasicTitle">Basic Editing</span>
-                                                <span class="text-body-xs text-grey-primary" data-i18n="configurator.custom.editingModeBasicHint">Use the simple text, image, and footer overrides only.</span>
+                                    <div role="radiogroup" aria-label="Custom editing mode" class="grid grid-cols-1 xl:grid-cols-2 gap-x-24 gap-y-20 items-start pt-8">
+                                        <label class="radio-wrapper radio-lg items-start">
+                                            <input type="radio" name="custom-edit-mode" id="custom-edit-mode-basic" class="shrink-0" checked>
+                                            <span class="flex min-w-0 flex-col gap-6">
+                                                <span class="text-body-md text-black" data-i18n="configurator.custom.editingModeBasicTitle">Basic Editing</span>
+                                                <span class="text-body-sm text-grey-primary max-w-readable" data-i18n="configurator.custom.editingModeBasicHint">Use the simple text, image, and footer overrides only.</span>
                                             </span>
                                         </label>
-                                        <label class="radio-wrapper radio-md items-start">
-                                            <input type="radio" name="custom-edit-mode" id="custom-edit-mode-advanced">
-                                            <span class="flex flex-col gap-4">
-                                                <span class="text-body-sm text-black" data-i18n="configurator.custom.editingModeAdvancedTitle">Advanced Editing</span>
-                                                <span class="text-body-xs text-grey-primary" data-i18n="configurator.custom.editingModeAdvancedHint">Unlock editable copy for the visible datasheet sections while technical data stays locked.</span>
+                                        <label class="radio-wrapper radio-lg items-start">
+                                            <input type="radio" name="custom-edit-mode" id="custom-edit-mode-advanced" class="shrink-0">
+                                            <span class="flex min-w-0 flex-col gap-6">
+                                                <span class="text-body-md text-black" data-i18n="configurator.custom.editingModeAdvancedTitle">Advanced Editing</span>
+                                                <span class="text-body-sm text-grey-primary max-w-readable" data-i18n="configurator.custom.editingModeAdvancedHint">Unlock editable copy for the visible datasheet sections while technical data stays locked.</span>
                                             </span>
                                         </label>
                                     </div>
@@ -287,80 +300,33 @@
                                 </section>
                             </div>
 
-                            <div id="custom-controls" class="hidden flex flex-col gap-16 pt-16 px-4 md:px-6">
-                                <div class="divider"></div>
+                            <div id="custom-controls" class="hidden flex flex-col gap-40 pt-40 px-8 md:px-12 xl:px-16">
+                                <section id="custom-text-section" class="flex flex-col gap-16 px-4 md:px-6">
+                                    <div class="divider"></div>
 
-                                <section id="custom-images-section" class="flex flex-col gap-16">
                                     <div class="flex flex-col gap-4 pt-24">
-                                        <h3 class="card-title" data-i18n="configurator.custom.assetsTitle">Custom Images</h3>
-                                        <p class="text-body-sm text-grey-primary max-w-readable" data-i18n="configurator.custom.assetsHint">Use a DAM asset ID or upload a new image. Upload sends the file to DAM and fills the asset ID automatically.</p>
+                                        <h3 class="card-title" data-i18n="configurator.custom.textTitle">Custom Text</h3>
+                                        <p class="text-body-sm text-grey-primary max-w-readable" data-i18n="configurator.custom.textHint">Override approved copy blocks without changing technical values.</p>
                                     </div>
-                                    <div class="grid grid-cols-1 xl:grid-cols-3 gap-16 items-start pt-8">
-                                        <div class="flex flex-col gap-12">
-                                            <div class="uploader uploader-image is-default" data-uploader>
-                                                <label class="uploader-label" for="custom-header-image-upload" data-i18n="configurator.custom.uploadImageButton">Upload Image</label>
-                                                <div id="custom-header-image-upload-trigger" class="uploader-zone" data-uploader-zone role="button" tabindex="0" aria-describedby="custom-header-image-upload-status">
-                                                    <input type="file" id="custom-header-image-upload" class="uploader-input" data-uploader-input accept="image/*,.svg,.png,.jpg,.jpeg,.webp">
-                                                    <div class="uploader-icon" aria-hidden="true">
-                                                        <i class="ri-image-add-line"></i>
-                                                    </div>
-                                                    <div class="uploader-text" data-uploader-text data-uploader-idle-text="Drag &amp; Drop images here" aria-live="polite" data-i18n="configurator.custom.uploadImageDropText">Drag &amp; Drop images here</div>
-                                                    <div class="uploader-subtext" data-i18n="configurator.custom.uploadImageDropSubtext">or click to browse your computer</div>
-                                                </div>
-                                                <p id="custom-header-image-upload-status" class="uploader-note text-grey-primary" data-i18n="configurator.custom.assetUploadHint">Upload sends the image to DAM and fills the asset ID automatically.</p>
-                                            </div>
-                                            <label class="input-label ml-12" for="custom-header-image-asset" data-i18n="configurator.custom.headerImageAsset">Header Image Asset ID</label>
-                                            <input type="text" id="custom-header-image-asset" class="input input-sm" placeholder="asset_123">
-                                        </div>
-                                        <div class="flex flex-col gap-12">
-                                            <div class="uploader uploader-image is-default" data-uploader>
-                                                <label class="uploader-label" for="custom-drawing-image-upload" data-i18n="configurator.custom.uploadImageButton">Upload Image</label>
-                                                <div id="custom-drawing-image-upload-trigger" class="uploader-zone" data-uploader-zone role="button" tabindex="0" aria-describedby="custom-drawing-image-upload-status">
-                                                    <input type="file" id="custom-drawing-image-upload" class="uploader-input" data-uploader-input accept="image/*,.svg,.png,.jpg,.jpeg,.webp">
-                                                    <div class="uploader-icon" aria-hidden="true">
-                                                        <i class="ri-image-add-line"></i>
-                                                    </div>
-                                                    <div class="uploader-text" data-uploader-text data-uploader-idle-text="Drag &amp; Drop images here" aria-live="polite" data-i18n="configurator.custom.uploadImageDropText">Drag &amp; Drop images here</div>
-                                                    <div class="uploader-subtext" data-i18n="configurator.custom.uploadImageDropSubtext">or click to browse your computer</div>
-                                                </div>
-                                                <p id="custom-drawing-image-upload-status" class="uploader-note text-grey-primary" data-i18n="configurator.custom.assetUploadHint">Upload sends the image to DAM and fills the asset ID automatically.</p>
-                                            </div>
-                                            <label class="input-label ml-12" for="custom-drawing-image-asset" data-i18n="configurator.custom.drawingImageAsset">Drawing Image Asset ID</label>
-                                            <input type="text" id="custom-drawing-image-asset" class="input input-sm" placeholder="asset_456">
-                                        </div>
-                                        <div class="flex flex-col gap-12">
-                                            <div class="uploader uploader-image is-default" data-uploader>
-                                                <label class="uploader-label" for="custom-finish-image-upload" data-i18n="configurator.custom.uploadImageButton">Upload Image</label>
-                                                <div id="custom-finish-image-upload-trigger" class="uploader-zone" data-uploader-zone role="button" tabindex="0" aria-describedby="custom-finish-image-upload-status">
-                                                    <input type="file" id="custom-finish-image-upload" class="uploader-input" data-uploader-input accept="image/*,.svg,.png,.jpg,.jpeg,.webp">
-                                                    <div class="uploader-icon" aria-hidden="true">
-                                                        <i class="ri-image-add-line"></i>
-                                                    </div>
-                                                    <div class="uploader-text" data-uploader-text data-uploader-idle-text="Drag &amp; Drop images here" aria-live="polite" data-i18n="configurator.custom.uploadImageDropText">Drag &amp; Drop images here</div>
-                                                    <div class="uploader-subtext" data-i18n="configurator.custom.uploadImageDropSubtext">or click to browse your computer</div>
-                                                </div>
-                                                <p id="custom-finish-image-upload-status" class="uploader-note text-grey-primary" data-i18n="configurator.custom.assetUploadHint">Upload sends the image to DAM and fills the asset ID automatically.</p>
-                                            </div>
-                                            <label class="input-label ml-12" for="custom-finish-image-asset" data-i18n="configurator.custom.finishImageAsset">Finish Image Asset ID</label>
-                                            <input type="text" id="custom-finish-image-asset" class="input input-sm" placeholder="asset_789">
-                                        </div>
-                                    </div>
-                                </section>
-
-                                <div class="flex flex-col">
-                                    <div class="panel panel-sm flex flex-col gap-12">
-                                        <div class="flex flex-col gap-6">
-                                            <span class="text-label text-grey-primary" data-i18n="configurator.custom.textTitle">Custom Text</span>
-                                            <p class="text-body-sm text-grey-primary max-w-readable" data-i18n="configurator.custom.textHint">Override approved copy blocks without changing technical values.</p>
-                                        </div>
-                                        <div class="grid grid-cols-1 gap-16 pt-4">
+                                    <div class="flex flex-col gap-16 pt-8">
+                                        <label class="toggle toggle-lg self-start">
+                                            <input type="checkbox" id="custom-text-enabled" class="toggle-input" role="switch">
+                                            <span class="toggle-track"><span class="toggle-thumb"></span></span>
+                                            <span class="toggle-label" data-i18n="configurator.custom.textToggle">Use custom text</span>
+                                        </label>
+                                        <div id="custom-text-fields" class="hidden grid grid-cols-1 gap-24">
                                             <div>
                                                 <label class="input-label ml-12" for="custom-document-title" data-i18n="configurator.custom.documentTitle">Document Title</label>
                                                 <input type="text" id="custom-document-title" class="input input-sm" maxlength="120">
                                             </div>
                                             <div>
                                                 <label class="input-label ml-12" for="custom-header-copy" data-i18n="configurator.custom.headerCopy">Header Copy</label>
-                                                <textarea id="custom-header-copy" class="input input-sm min-h-[132px] resize-y" maxlength="1200"></textarea>
+                                                <div class="text-field-shell text-field-shell-meta">
+                                                    <textarea id="custom-header-copy" class="input input-md min-h-[132px] resize-y" rows="4" maxlength="1200"></textarea>
+                                                    <span class="text-field-shell-meta-icon" aria-hidden="true">
+                                                        <i class="ri-expand-diagonal-s-2-fill text-icon-sm"></i>
+                                                    </span>
+                                                </div>
                                             </div>
                                             <div>
                                                 <label class="input-label ml-12" for="custom-footer-note" data-i18n="configurator.custom.footerNote">Footer Note</label>
@@ -368,47 +334,156 @@
                                             </div>
                                         </div>
                                     </div>
+                                </section>
 
-                                </div>
+                                <section id="custom-images-section" class="flex flex-col gap-16 px-4 md:px-6">
+                                    <div class="divider"></div>
 
-                                <div id="custom-field-overrides-panel" class="hidden panel panel-sm flex flex-col gap-12">
-                                    <div class="flex flex-col gap-6">
-                                        <span class="text-label text-grey-primary" data-i18n="configurator.custom.fieldOverridesTitle">Advanced Field Overrides</span>
+                                    <div class="flex flex-col gap-4 pt-24">
+                                        <h3 class="card-title" data-i18n="configurator.custom.assetsTitle">Custom Images</h3>
+                                        <p class="text-body-sm text-grey-primary max-w-readable" data-i18n="configurator.custom.assetsHint">Use a DAM asset ID or upload a new image. Upload sends the file to DAM and fills the asset ID automatically.</p>
+                                    </div>
+                                    <div class="flex flex-col gap-16 pt-8">
+                                        <label class="toggle toggle-lg self-start">
+                                            <input type="checkbox" id="custom-images-enabled" class="toggle-input" role="switch">
+                                            <span class="toggle-track"><span class="toggle-thumb"></span></span>
+                                            <span class="toggle-label" data-i18n="configurator.custom.imagesToggle">Use custom images</span>
+                                        </label>
+                                        <div id="custom-images-fields" class="hidden flex flex-col gap-32">
+                                            <div class="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_280px] gap-24 items-start">
+                                                <div class="uploader uploader-image is-default" data-uploader>
+                                                    <label class="uploader-label" for="custom-header-image-upload" data-i18n="configurator.custom.headerImageTitle">Header Image</label>
+                                                    <div id="custom-header-image-upload-trigger" class="uploader-zone" data-uploader-zone role="button" tabindex="0" aria-describedby="custom-header-image-upload-status" style="border-radius: var(--panel-radius); overflow: hidden;">
+                                                        <input type="file" id="custom-header-image-upload" class="uploader-input" data-uploader-input accept="image/*,.svg,.png,.jpg,.jpeg,.webp">
+                                                        <div class="uploader-icon" aria-hidden="true">
+                                                            <i class="ri-image-add-line"></i>
+                                                        </div>
+                                                        <div class="uploader-text" data-uploader-text data-uploader-idle-text="Drag &amp; Drop images here" aria-live="polite" data-i18n="configurator.custom.uploadImageDropText">Drag &amp; Drop images here</div>
+                                                        <div class="uploader-subtext" data-i18n="configurator.custom.uploadImageDropSubtext">or click to browse your computer</div>
+                                                    </div>
+                                                    <p id="custom-header-image-upload-status" class="uploader-note text-grey-primary" data-i18n="configurator.custom.assetUploadHint">Upload sends the image to DAM and fills the asset ID automatically.</p>
+                                                </div>
+                                                <div class="flex min-w-0 flex-col gap-12 xl:pt-28">
+                                                    <div class="flex min-w-0 flex-col gap-2">
+                                                        <span class="text-body-xs text-grey-primary" data-i18n="configurator.custom.headerImageAsset">Header Image Asset ID</span>
+                                                        <span id="custom-header-image-asset-summary" class="text-body-sm text-black truncate">No asset selected</span>
+                                                    </div>
+                                                    <button type="button" id="custom-header-image-browser-button" class="btn btn-secondary btn-sm self-start xl:self-end shrink-0">
+                                                        <span data-i18n="configurator.custom.manageImagesButton">Browse DAM</span>
+                                                    </button>
+                                                </div>
+                                                <input type="text" id="custom-header-image-asset" class="hidden" placeholder="asset_123" aria-hidden="true" tabindex="-1">
+                                            </div>
+                                            <div class="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_280px] gap-24 items-start">
+                                                <div class="uploader uploader-image is-default" data-uploader>
+                                                    <label class="uploader-label" for="custom-drawing-image-upload" data-i18n="configurator.custom.drawingImageTitle">Drawing Image</label>
+                                                    <div id="custom-drawing-image-upload-trigger" class="uploader-zone" data-uploader-zone role="button" tabindex="0" aria-describedby="custom-drawing-image-upload-status" style="border-radius: var(--panel-radius); overflow: hidden;">
+                                                        <input type="file" id="custom-drawing-image-upload" class="uploader-input" data-uploader-input accept="image/*,.svg,.png,.jpg,.jpeg,.webp">
+                                                        <div class="uploader-icon" aria-hidden="true">
+                                                            <i class="ri-image-add-line"></i>
+                                                        </div>
+                                                        <div class="uploader-text" data-uploader-text data-uploader-idle-text="Drag &amp; Drop images here" aria-live="polite" data-i18n="configurator.custom.uploadImageDropText">Drag &amp; Drop images here</div>
+                                                        <div class="uploader-subtext" data-i18n="configurator.custom.uploadImageDropSubtext">or click to browse your computer</div>
+                                                    </div>
+                                                    <p id="custom-drawing-image-upload-status" class="uploader-note text-grey-primary" data-i18n="configurator.custom.assetUploadHint">Upload sends the image to DAM and fills the asset ID automatically.</p>
+                                                </div>
+                                                <div class="flex min-w-0 flex-col gap-12 xl:pt-28">
+                                                    <div class="flex min-w-0 flex-col gap-2">
+                                                        <span class="text-body-xs text-grey-primary" data-i18n="configurator.custom.drawingImageAsset">Drawing Image Asset ID</span>
+                                                        <span id="custom-drawing-image-asset-summary" class="text-body-sm text-black truncate">No asset selected</span>
+                                                    </div>
+                                                    <button type="button" id="custom-drawing-image-browser-button" class="btn btn-secondary btn-sm self-start xl:self-end shrink-0">
+                                                        <span data-i18n="configurator.custom.manageImagesButton">Browse DAM</span>
+                                                    </button>
+                                                </div>
+                                                <input type="text" id="custom-drawing-image-asset" class="hidden" placeholder="asset_456" aria-hidden="true" tabindex="-1">
+                                            </div>
+                                            <div class="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_280px] gap-24 items-start">
+                                                <div class="uploader uploader-image is-default" data-uploader>
+                                                    <label class="uploader-label" for="custom-finish-image-upload" data-i18n="configurator.custom.finishImageTitle">Finish Image</label>
+                                                    <div id="custom-finish-image-upload-trigger" class="uploader-zone" data-uploader-zone role="button" tabindex="0" aria-describedby="custom-finish-image-upload-status" style="border-radius: var(--panel-radius); overflow: hidden;">
+                                                        <input type="file" id="custom-finish-image-upload" class="uploader-input" data-uploader-input accept="image/*,.svg,.png,.jpg,.jpeg,.webp">
+                                                        <div class="uploader-icon" aria-hidden="true">
+                                                            <i class="ri-image-add-line"></i>
+                                                        </div>
+                                                        <div class="uploader-text" data-uploader-text data-uploader-idle-text="Drag &amp; Drop images here" aria-live="polite" data-i18n="configurator.custom.uploadImageDropText">Drag &amp; Drop images here</div>
+                                                        <div class="uploader-subtext" data-i18n="configurator.custom.uploadImageDropSubtext">or click to browse your computer</div>
+                                                    </div>
+                                                    <p id="custom-finish-image-upload-status" class="uploader-note text-grey-primary" data-i18n="configurator.custom.assetUploadHint">Upload sends the image to DAM and fills the asset ID automatically.</p>
+                                                </div>
+                                                <div class="flex min-w-0 flex-col gap-12 xl:pt-28">
+                                                    <div class="flex min-w-0 flex-col gap-2">
+                                                        <span class="text-body-xs text-grey-primary" data-i18n="configurator.custom.finishImageAsset">Finish Image Asset ID</span>
+                                                        <span id="custom-finish-image-asset-summary" class="text-body-sm text-black truncate">No asset selected</span>
+                                                    </div>
+                                                    <button type="button" id="custom-finish-image-browser-button" class="btn btn-secondary btn-sm self-start xl:self-end shrink-0">
+                                                        <span data-i18n="configurator.custom.manageImagesButton">Browse DAM</span>
+                                                    </button>
+                                                </div>
+                                                <input type="text" id="custom-finish-image-asset" class="hidden" placeholder="asset_789" aria-hidden="true" tabindex="-1">
+                                            </div>
+                                        </div>
+                                    </div>
+                                </section>
+
+                                <section id="custom-field-overrides-panel" class="hidden flex flex-col gap-16 px-4 md:px-6">
+                                    <div class="divider"></div>
+
+                                    <div class="flex flex-col gap-4 pt-24">
+                                        <h3 class="card-title" data-i18n="configurator.custom.fieldOverridesTitle">Advanced Field Overrides</h3>
                                         <p id="custom-field-overrides-message" class="text-body-sm text-grey-primary max-w-readable" data-i18n="configurator.custom.fieldOverridesWaiting">Enable advanced editing to turn any visible field into a custom text override.</p>
                                     </div>
-                                    <div id="custom-field-overrides-editors" class="grid grid-cols-1 xl:grid-cols-2 gap-16 pt-4"></div>
-                                </div>
+                                    <div id="custom-field-overrides-editors" class="grid grid-cols-1 xl:grid-cols-2 gap-x-24 gap-y-24 items-start pt-8"></div>
+                                </section>
 
-                                <div id="custom-advanced-copy-panel" class="hidden panel panel-sm flex flex-col gap-12">
-                                    <div class="flex flex-col gap-6">
-                                        <span class="text-label text-grey-primary" data-i18n="configurator.custom.advancedEditorsTitle">Editable Section Copy</span>
+                                <section id="custom-advanced-copy-panel" class="hidden flex flex-col gap-16 px-4 md:px-6">
+                                    <div class="divider"></div>
+
+                                    <div class="flex flex-col gap-4 pt-24">
+                                        <h3 class="card-title" data-i18n="configurator.custom.advancedEditorsTitle">Editable Section Copy</h3>
                                         <p id="custom-advanced-copy-message" class="text-body-sm text-grey-primary max-w-readable" data-i18n="configurator.custom.advancedEditorsWaiting">Enable advanced copy and wait for the custom preview to load editable section text.</p>
                                     </div>
-                                    <div id="custom-advanced-copy-editors" class="grid grid-cols-1 xl:grid-cols-2 gap-16 pt-4"></div>
-                                </div>
+                                    <div id="custom-advanced-copy-editors" class="grid grid-cols-1 xl:grid-cols-2 gap-x-24 gap-y-24 items-start pt-8"></div>
+                                </section>
 
-                                <div class="grid grid-cols-1 gap-16 items-start">
-                                    <div class="panel panel-sm flex flex-col gap-12">
-                                        <div class="flex flex-col gap-6">
-                                            <span class="text-label text-grey-primary" data-i18n="configurator.custom.sectionsTitle">Optional Sections</span>
-                                            <p class="text-body-sm text-grey-primary max-w-readable" data-i18n="configurator.custom.sectionsHint">Hide only optional blocks. Core technical sections stay locked.</p>
-                                        </div>
-                                        <div class="grid grid-cols-1 md:grid-cols-3 gap-12 pt-4">
-                                            <label class="flex items-center gap-10 rounded-16 border border-grey-secondary bg-white px-12 py-10 text-body-sm text-black">
-                                                <input type="checkbox" id="custom-section-fixing" class="h-16 w-16 shrink-0" checked>
-                                                <span data-i18n="configurator.fields.fixing">Fixing</span>
+                                <section id="custom-sections-section" class="flex flex-col gap-16 px-4 md:px-6">
+                                    <div class="divider"></div>
+
+                                    <div class="flex flex-col gap-4 pt-24">
+                                        <h3 class="card-title" data-i18n="configurator.custom.sectionsTitle">Optional Sections</h3>
+                                        <p class="text-body-sm text-grey-primary max-w-readable" data-i18n="configurator.custom.sectionsHint">Hide only optional blocks. Core technical sections stay locked.</p>
+                                    </div>
+                                    <div class="flex flex-col gap-16 pt-8">
+                                        <label class="toggle toggle-lg self-start">
+                                            <input type="checkbox" id="custom-sections-enabled" class="toggle-input" role="switch">
+                                            <span class="toggle-track"><span class="toggle-thumb"></span></span>
+                                            <span class="toggle-label" data-i18n="configurator.custom.sectionsToggle">Control optional sections</span>
+                                        </label>
+                                        <div id="custom-sections-fields" class="hidden grid grid-cols-1 md:grid-cols-3 gap-x-24 gap-y-16 items-start">
+                                            <label class="checkbox-wrapper checkbox-md">
+                                                <span class="relative inline-flex items-center justify-center">
+                                                    <input type="checkbox" id="custom-section-fixing" class="peer" checked>
+                                                    <i class="ri-check-line absolute inset-0 flex items-center justify-center leading-none text-white text-icon-md opacity-0 peer-checked:opacity-100 pointer-events-none" aria-hidden="true"></i>
+                                                </span>
+                                                <span class="text-body-sm" data-i18n="configurator.fields.fixing">Fixing</span>
                                             </label>
-                                            <label class="flex items-center gap-10 rounded-16 border border-grey-secondary bg-white px-12 py-10 text-body-sm text-black">
-                                                <input type="checkbox" id="custom-section-power-supply" class="h-16 w-16 shrink-0" checked>
-                                                <span data-i18n="configurator.fields.powerSupply">Power Supply</span>
+                                            <label class="checkbox-wrapper checkbox-md">
+                                                <span class="relative inline-flex items-center justify-center">
+                                                    <input type="checkbox" id="custom-section-power-supply" class="peer" checked>
+                                                    <i class="ri-check-line absolute inset-0 flex items-center justify-center leading-none text-white text-icon-md opacity-0 peer-checked:opacity-100 pointer-events-none" aria-hidden="true"></i>
+                                                </span>
+                                                <span class="text-body-sm" data-i18n="configurator.fields.powerSupply">Power Supply</span>
                                             </label>
-                                            <label class="flex items-center gap-10 rounded-16 border border-grey-secondary bg-white px-12 py-10 text-body-sm text-black">
-                                                <input type="checkbox" id="custom-section-connection-cable" class="h-16 w-16 shrink-0" checked>
-                                                <span data-i18n="configurator.fields.connectionCable">Connection Cable</span>
+                                            <label class="checkbox-wrapper checkbox-md">
+                                                <span class="relative inline-flex items-center justify-center">
+                                                    <input type="checkbox" id="custom-section-connection-cable" class="peer" checked>
+                                                    <i class="ri-check-line absolute inset-0 flex items-center justify-center leading-none text-white text-icon-md opacity-0 peer-checked:opacity-100 pointer-events-none" aria-hidden="true"></i>
+                                                </span>
+                                                <span class="text-body-sm" data-i18n="configurator.fields.connectionCable">Connection Cable</span>
                                             </label>
                                         </div>
                                     </div>
-                                </div>
+                                </section>
                             </div>
 
                             <div id="options-group" class="hidden flex flex-col gap-40 pt-40 px-8 md:px-12 xl:px-16">
@@ -622,24 +697,24 @@
                                     </div>
                                 </section>
 
-                                <div id="showcase-controls" class="hidden flex flex-col gap-16 pt-16 px-4 md:px-6">
+                                <section id="showcase-controls" class="hidden flex flex-col gap-16 px-4 md:px-6">
                                     <div class="divider"></div>
 
-                                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-24 items-start">
+                                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-24 items-start pt-24">
                                         <div class="flex flex-col gap-16">
                                             <div class="flex flex-col gap-4">
-                                                <h4 class="card-title" data-i18n="configurator.showcase.expandTitle">Expand Valid Options</h4>
+                                                <h3 class="card-title" data-i18n="configurator.showcase.expandTitle">Expand Valid Options</h3>
                                                 <p id="showcase-family-note" class="text-body-sm text-grey-primary max-w-readable" data-i18n="configurator.runtime.showcaseFamilyHint">Current selections stay locked unless you expand them. Showcase mode is live for families 29 and 30.</p>
                                             </div>
-                                            <div id="showcase-expand-grid" class="pt-4"></div>
+                                            <div id="showcase-expand-grid" class="pt-8"></div>
                                         </div>
 
                                         <div class="flex flex-col gap-16">
                                             <div class="flex flex-col gap-4">
-                                                <h4 class="card-title" data-i18n="configurator.showcase.sectionsTitle">Showcase Sections</h4>
+                                                <h3 class="card-title" data-i18n="configurator.showcase.sectionsTitle">Showcase Sections</h3>
                                                 <p class="text-body-sm text-grey-primary max-w-readable" data-i18n="configurator.showcase.sectionsHint">Choose which grouped sections should appear in the showcase PDF.</p>
                                             </div>
-                                            <div id="showcase-sections-grid" class="pt-4"></div>
+                                            <div id="showcase-sections-grid" class="pt-8"></div>
                                         </div>
                                     </div>
 
@@ -648,7 +723,7 @@
                                         <span id="showcase-preview-variants">--</span>
                                         <span id="showcase-preview-pages">--</span>
                                     </div>
-                                </div>
+                                </section>
 
                                 <section id="shared-section-metadata" class="flex flex-col gap-16 px-4 md:px-6">
                                     <div class="divider"></div>
@@ -718,6 +793,23 @@
                         </div>
                     </div>
                     <div class="card-body p-24 pt-64">
+                        <div id="datasheet-design-variant-panel" class="flex flex-col gap-12 pt-24">
+                            <div class="flex flex-col gap-4">
+                                <span class="input-label ml-12" data-i18n="configurator.quickActions.designVariant">Datasheet Design</span>
+                                <p class="text-body-xs text-grey-primary px-12" data-i18n="configurator.quickActions.designVariantHint">Choose which layout to export. Product data stays the same.</p>
+                            </div>
+                            <div class="segmented-control segmented-control-sm w-full" role="radiogroup" aria-label="Datasheet design variant" data-i18n-aria-label="configurator.quickActions.designVariantAria">
+                                <label class="segmented-control-option flex-1">
+                                    <input id="datasheet-design-variant-classic" class="segmented-control-input" type="radio" name="datasheet-design-variant" value="classic" checked>
+                                    <span class="segmented-control-label" data-i18n="configurator.quickActions.designVariantClassic">Current</span>
+                                </label>
+                                <label class="segmented-control-option flex-1">
+                                    <input id="datasheet-design-variant-modern" class="segmented-control-input" type="radio" name="datasheet-design-variant" value="modern">
+                                    <span class="segmented-control-label" data-i18n="configurator.quickActions.designVariantModern">New</span>
+                                </label>
+                            </div>
+                        </div>
+
                         <div id="field-display-reference" class="flex flex-col gap-16 pt-24">
                             <label class="input-label ml-12" for="output-reference" data-i18n="configurator.quickActions.liveReference">Live Tecit Reference</label>
                             <div class="flex flex-col gap-8 w-full">
@@ -790,6 +882,82 @@
         </main>
     </div>
 
+    <div class="modal-overlay" id="customImageBrowserModal" aria-hidden="true" inert>
+        <div class="modal max-h-full overflow-hidden" role="dialog" aria-modal="true" aria-labelledby="customImageBrowserTitle" aria-describedby="customImageBrowserBody">
+            <div class="modal-header">
+                <div>
+                    <h2 id="customImageBrowserTitle" class="modal-title" data-i18n="configurator.custom.browserModalTitle">Custom Image Browser</h2>
+                    <p id="custom-image-browser-modal-hint" class="text-body-sm text-grey-primary max-w-readable" data-i18n="configurator.custom.browserModalHint">Browse isolated DAM folders, search assets, or type an asset ID manually for the selected image slot.</p>
+                </div>
+                <button type="button" class="btn btn-ghost btn-icon btn-xs" aria-label="Close custom image browser" data-close-custom-image-browser>
+                    <i class="ri-close-line text-icon-md" aria-hidden="true"></i>
+                </button>
+            </div>
+
+            <div id="customImageBrowserBody" class="modal-body custom-scrollbar flex-1 min-h-0 overflow-y-auto overflow-x-hidden">
+                <div class="flex flex-col gap-24">
+                    <div class="input-icon-wrapper">
+                        <span class="input-icon-area" aria-hidden="true">
+                            <i class="ri-search-line text-icon-md"></i>
+                        </span>
+                        <input type="text" id="custom-image-browser-search" class="input-icon-field" placeholder="Search current folder..." autocomplete="off" data-i18n-placeholder="configurator.custom.browserSearchPlaceholder">
+                    </div>
+
+                    <nav aria-label="Custom image DAM breadcrumb">
+                        <ol id="custom-image-browser-breadcrumb" class="breadcrumb"></ol>
+                    </nav>
+
+                    <div class="grid grid-cols-1 xl:grid-cols-12 gap-24 items-start">
+                        <div class="xl:col-span-7 panel panel-sm flex min-h-[340px] flex-col gap-16">
+                            <div id="custom-image-browser-grid" class="grid grid-cols-2 gap-16 sm:grid-cols-3"></div>
+                            <div id="custom-image-browser-empty" class="hidden flex flex-1 items-center justify-center py-48">
+                                <div class="empty-state empty-state-md w-full max-w-xl border-0 bg-transparent" role="status" aria-live="polite">
+                                    <span class="empty-state-icon icon-box icon-box-empty-state">
+                                        <i class="ri-folder-open-line text-icon-lg" aria-hidden="true"></i>
+                                    </span>
+                                    <div class="empty-state-copy">
+                                        <h3 id="custom-image-browser-empty-label" class="empty-state-title" data-i18n="configurator.custom.browserEmpty">No folders or assets found here.</h3>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <aside class="xl:col-span-5 panel panel-sm flex flex-col gap-16">
+                            <div class="flex flex-col gap-4">
+                                <span id="custom-image-browser-active-label" class="text-label text-grey-primary">Header image</span>
+                                <p class="text-body-sm text-grey-primary max-w-readable" data-i18n="configurator.custom.browserSelectionHint">Select an asset from DAM or type an asset ID manually.</p>
+                            </div>
+
+                            <div id="custom-image-browser-preview" class="flex min-h-[220px] items-center justify-center overflow-hidden rounded-16 border border-grey-secondary bg-grey-tertiary">
+                                <div id="custom-image-browser-preview-empty" class="flex flex-col items-center gap-12 px-16 py-24 text-center text-grey-primary">
+                                    <i class="ri-image-line text-icon-xl" aria-hidden="true"></i>
+                                    <span class="text-body-sm" data-i18n="configurator.custom.browserPreviewEmpty">Choose an asset to preview it here.</span>
+                                </div>
+                                <img id="custom-image-browser-preview-image" class="hidden h-full w-full object-contain" alt="">
+                            </div>
+
+                            <div class="grid grid-cols-1 gap-16">
+                                <div>
+                                    <label class="input-label ml-12" for="custom-image-browser-manual-id" data-i18n="configurator.custom.browserManualLabel">Asset ID</label>
+                                    <input type="text" id="custom-image-browser-manual-id" class="input input-sm" placeholder="123">
+                                </div>
+                                <div class="flex items-center gap-12">
+                                    <button type="button" id="custom-image-browser-clear" class="btn btn-secondary btn-sm">
+                                        <span data-i18n="configurator.custom.browserClearButton">Clear</span>
+                                    </button>
+                                    <button type="button" id="custom-image-browser-apply" class="btn btn-primary btn-sm">
+                                        <span data-i18n="configurator.custom.browserApplyButton">Apply Image</span>
+                                    </button>
+                                </div>
+                                <p id="custom-image-browser-status" class="text-body-sm text-grey-primary max-w-readable" data-i18n="configurator.custom.browserStatusIdle">Browse the custom DAM folders or type an asset ID.</p>
+                            </div>
+                        </aside>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div class="modal-overlay" id="tecitCodeLogicModal" aria-hidden="true">
         <div class="modal max-h-full overflow-hidden" role="dialog" aria-modal="true" aria-labelledby="tecitCodeLogicTitle" aria-describedby="tecitCodeLogicBody">
             <div class="modal-header">
@@ -801,7 +969,7 @@
                 </button>
             </div>
 
-            <div id="tecitCodeLogicBody" class="modal-body flex-1 min-h-0 overflow-y-auto overflow-x-hidden">
+            <div id="tecitCodeLogicBody" class="modal-body custom-scrollbar flex-1 min-h-0 overflow-y-auto overflow-x-hidden">
                 <div class="flex flex-col gap-24">
                     <div class="flex flex-col gap-16">
                         <div class="text-style text-style-hero gap-12">

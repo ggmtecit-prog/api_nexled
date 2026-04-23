@@ -130,19 +130,37 @@ function buildCustomCopyRows(?string $text, int|string $colspan, string $classNa
         return "";
     }
 
-    $normalized = trim(str_replace(["\r\n", "\r"], "\n", $text));
+    $normalized = trim(normalizePdfMultilineText($text));
 
     if ($normalized === "") {
         return "";
     }
 
-    $escaped = htmlspecialchars($normalized, ENT_QUOTES, "UTF-8");
-    $escaped = str_replace("\n", "<br>", $escaped);
+    $escaped = formatPdfMultilineText($normalized);
     $classAttr = trim($className) !== "" ? " class=\"{$className}\"" : "";
 
     return
         "<tr><td colspan=\"{$colspan}\"><p{$classAttr}>{$escaped}</p></td></tr>" .
         "<tr><td></td></tr>";
+}
+
+function normalizePdfMultilineText(?string $text): string {
+    if (!is_string($text) || trim($text) === "") {
+        return "";
+    }
+
+    $normalized = str_replace(["<br />", "<br/>", "<br>"], "\n", $text);
+    return str_replace(["\r\n", "\r"], "\n", $normalized);
+}
+
+function formatPdfMultilineText(?string $text): string {
+    $normalized = normalizePdfMultilineText($text);
+
+    if ($normalized === "") {
+        return "";
+    }
+
+    return nl2br(htmlspecialchars($normalized, ENT_QUOTES, "UTF-8"));
 }
 
 function buildCustomFieldSummary(array $items, string $lang): string {
@@ -313,7 +331,7 @@ function buildHeader(array $header, string $energyClass): string {
     $energyClassImg = getPdfEnergyLabelPath($energyClass);
     $productImageTag = buildPdfImageTag($header["image"] ?? null);
     $energyClassTag = buildPdfImageTag($energyClassImg, "width=\"40\"");
-    $description = nl2br(htmlspecialchars((string) ($header["description"] ?? ""), ENT_QUOTES, "UTF-8"));
+    $description = formatPdfMultilineText((string) ($header["description"] ?? ""));
 
     return
     "<table nobr=\"true\">" .
@@ -707,7 +725,7 @@ function buildPowerSupply(array $supply, string $lang, ?string $customIntro = nu
     $descriptionText = is_string($customIntro) && trim($customIntro) !== ""
         ? $customIntro
         : (string) ($supply["description"] ?? "");
-    $description = nl2br(htmlspecialchars($descriptionText, ENT_QUOTES, "UTF-8"));
+    $description = formatPdfMultilineText($descriptionText);
 
     return
     "<table nobr=\"true\">" .
@@ -744,7 +762,7 @@ function buildConnectionCable(array $cable, string $lang, ?string $customIntro =
     $descriptionText = is_string($customIntro) && trim($customIntro) !== ""
         ? $customIntro
         : (string) ($cable["description"] ?? "");
-    $description = nl2br(htmlspecialchars($descriptionText, ENT_QUOTES, "UTF-8"));
+    $description = formatPdfMultilineText($descriptionText);
 
     return
     "<table nobr=\"true\">" .
@@ -754,6 +772,35 @@ function buildConnectionCable(array $cable, string $lang, ?string $customIntro =
         "<tr><td colspan=\"2\">" . buildPdfImageTag($cable["image"] ?? null, "height=\"210\"") . "</td></tr>" .
         "<tr><td></td></tr>" .
         "<tr><td colspan=\"4\"><p>$note</p></td></tr>" .
+    "</table>";
+}
+
+function buildModernHeroSummary(array $data): string {
+    $lang = (string) ($data["lang"] ?? "pt");
+    $eyebrow = $lang === "pt" ? "Ficha tecnica NexLed" : "NexLed technical datasheet";
+    $referenceLabel = $lang === "pt" ? "Referencia" : "Reference";
+    $lensLabel = $lang === "pt" ? "Lente" : "Lens";
+    $energyLabel = $lang === "pt" ? "Classe energetica" : "Energy class";
+
+    $descriptionRaw = html_entity_decode((string) ($data["description"] ?? ""), ENT_QUOTES, "UTF-8");
+    $description = formatPdfMultilineText($descriptionRaw);
+    $reference = htmlspecialchars((string) ($data["reference"] ?? ""), ENT_QUOTES, "UTF-8");
+    $lensName = htmlspecialchars(trim((string) ($data["lens_name"] ?? "")) ?: "-", ENT_QUOTES, "UTF-8");
+    $energyClass = htmlspecialchars(trim((string) ($data["energy_class"] ?? "")) ?: "-", ENT_QUOTES, "UTF-8");
+
+    return
+    "<table class=\"modern-hero\" cellpadding=\"6\" nobr=\"true\">" .
+        "<tr>" .
+            "<td colspan=\"3\"><p class=\"modern-hero-kicker\">{$eyebrow}</p></td>" .
+        "</tr>" .
+        "<tr>" .
+            "<td colspan=\"3\"><h1>{$description}</h1></td>" .
+        "</tr>" .
+        "<tr>" .
+            "<td colspan=\"1\" class=\"modern-meta-cell\"><p class=\"modern-meta-label\">{$referenceLabel}</p><p class=\"modern-meta-value\">{$reference}</p></td>" .
+            "<td colspan=\"1\" class=\"modern-meta-cell\"><p class=\"modern-meta-label\">{$lensLabel}</p><p class=\"modern-meta-value\">{$lensName}</p></td>" .
+            "<td colspan=\"1\" class=\"modern-meta-cell\"><p class=\"modern-meta-label\">{$energyLabel}</p><p class=\"modern-meta-value\">{$energyClass}</p></td>" .
+        "</tr>" .
     "</table>";
 }
 
@@ -772,7 +819,7 @@ function buildConnectionCable(array $cable, string $lang, ?string $customIntro =
  * @param  array  $data  All section data assembled by the PDF engine
  * @return string  Full HTML string ready for TCPDF
  */
-function buildPdfLayout(array $data): string {
+function buildPdfLayoutClassic(array $data): string {
     $html  = "";
     $lang  = $data["lang"];
     $ref   = $data["reference"];
@@ -806,4 +853,50 @@ function buildPdfLayout(array $data): string {
     }
 
     return $html;
+}
+
+function buildPdfLayoutModern(array $data): string {
+    $html  = "<div class=\"datasheet-variant-modern\">";
+    $lang  = $data["lang"];
+    $ref   = $data["reference"];
+
+    $html .= buildModernHeroSummary($data);
+    $html .= buildHeader($data["header"], $data["energy_class"]);
+    $html .= buildCustomFieldSummary(is_array($data["custom_field_summary"] ?? null) ? $data["custom_field_summary"] : [], $lang);
+    $html .= buildLuminotechnical($data["luminotechnical"], $ref, $data["description"], $data["lens_name"], $data["ip_rating"], $lang, $data["luminotechnical_intro"] ?? null, $data["display_reference"] ?? null);
+    $html .= buildCharacteristics($data["characteristics"], $lang, $data["characteristics_intro"] ?? null);
+    $html .= buildTechnicalDrawing($data["drawing"], $lang, $data["drawing_intro"] ?? null);
+    $html .= buildFinishAndLens($data["finish"], $data["lens_name"], $ref, $lang, $data["finish_intro"] ?? null);
+
+    if (!empty($data["color_graph"])) {
+        $html .= buildColorGraph($data["color_graph"], $ref, $lang, $data["color_graph_intro"] ?? null);
+    }
+
+    if (!empty($data["lens_diagram"])) {
+        $html .= buildLensDiagram($data["lens_diagram"], $data["lens_name"], $lang, $data["lens_diagram_intro"] ?? null);
+    }
+
+    if (isset($data["fixing"])) {
+        $html .= buildFixing($data["fixing"], $ref, $lang, $data["fixing_intro"] ?? null);
+    }
+
+    if (isset($data["power_supply"])) {
+        $html .= buildPowerSupply($data["power_supply"], $lang, $data["power_supply_intro"] ?? null);
+    }
+
+    if (isset($data["connection_cable"])) {
+        $html .= buildConnectionCable($data["connection_cable"], $lang, $data["connection_cable_intro"] ?? null);
+    }
+
+    return $html . "</div>";
+}
+
+function buildPdfLayoutForVariant(array $data, string $designVariant): string {
+    return $designVariant === "modern"
+        ? buildPdfLayoutModern($data)
+        : buildPdfLayoutClassic($data);
+}
+
+function buildPdfLayout(array $data): string {
+    return buildPdfLayoutClassic($data);
 }

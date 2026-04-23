@@ -41,15 +41,29 @@ function damListContents(): void {
     $limit = damClampInt($_GET["limit"] ?? DAM_LIST_DEFAULT_LIMIT, 1, DAM_LIST_MAX_LIMIT, DAM_LIST_DEFAULT_LIMIT);
     $cursor = damOptionalPositiveInt($_GET["cursor"] ?? null);
     $query = trim((string) ($_GET["q"] ?? ""));
+    $globalSearch = damNormalizeBool($_GET["global"] ?? null);
     $role = damValidateRole($_GET["role"] ?? null);
     if (isset($_GET["role"]) && trim((string) $_GET["role"]) !== "" && $role === null) damRespondError(400, "invalid_metadata", "Invalid role filter.");
     $con = connectDBDam();
     $folder = damFetchFolderById($con, $folderId);
     if ($folder === null) { closeDB($con); damRespondError(404, "folder_not_found", "Folder not found.", ["id" => $folderId]); }
-    $folders = damFetchChildFolders($con, $folderId);
-    [$assets, $hasMore, $nextCursor] = damFetchAssets($con, $folderId, $query, $role, $cursor, $limit);
+    $searchScope = ($globalSearch && $query !== "") ? "global" : "folder";
+    if ($searchScope === "global") {
+        $folders = damSearchFolders($con, $query, $limit);
+        [$assets, $hasMore, $nextCursor] = damSearchAssets($con, $query, $role, $cursor, $limit);
+    } else {
+        $folders = damFetchChildFolders($con, $folderId);
+        [$assets, $hasMore, $nextCursor] = damFetchAssets($con, $folderId, $query, $role, $cursor, $limit);
+    }
     closeDB($con);
-    damRespondSuccess(["folder" => $folder, "folders" => $folders, "assets" => $assets, "page" => ["cursor" => $cursor, "next_cursor" => $nextCursor, "limit" => $limit, "has_more" => $hasMore]]);
+    damRespondSuccess([
+        "folder" => $folder,
+        "folders" => $folders,
+        "assets" => $assets,
+        "search_scope" => $searchScope,
+        "query" => $query,
+        "page" => ["cursor" => $cursor, "next_cursor" => $nextCursor, "limit" => $limit, "has_more" => $hasMore],
+    ]);
 }
 function damGetAsset(): void {
     $assetId = damRequirePositiveInt($_GET["id"] ?? null, "Missing or invalid asset id.");
@@ -294,6 +308,13 @@ function damRespondError(int $status, string $code, string $message, array $deta
     exit();
 }
 function damClampInt($value, int $min, int $max, int $default): int { if (!is_numeric($value)) return $default; $intValue = (int) $value; return max($min, min($max, $intValue)); }
+function damNormalizeBool($value): bool {
+    if (is_bool($value)) return $value;
+    if (is_int($value) || is_float($value)) return (int) $value === 1;
+    if (!is_string($value)) return false;
+    $normalized = strtolower(trim($value));
+    return in_array($normalized, ["1", "true", "yes", "on"], true);
+}
 function damOptionalPositiveInt($value): ?int { if ($value === null || $value === "" || !is_numeric($value)) return null; $intValue = (int) $value; return $intValue > 0 ? $intValue : null; }
 function damRequirePositiveInt($value, string $message): int { $intValue = damOptionalPositiveInt($value); if ($intValue === null) damRespondError(400, "invalid_metadata", $message); return $intValue; }
 function damValidateFolderId($folderId): ?string {
@@ -405,6 +426,44 @@ function damFetchAssets($con, string $folderId, string $query, ?string $kind, ?i
     if ($hasMore) { $nextRow = array_pop($assets); $nextCursor = $nextRow["id"]; }
     return [$assets, $hasMore, $nextCursor];
 }
+function damSearchFolders($con, string $query, int $limit): array {
+    $needle = trim($query);
+    if ($needle === "") return [];
+    $like = "%" . substr($needle, 0, 120) . "%";
+    $stmt = damPrepareOrFail($con, "SELECT `folder_id`,`parent_id`,`name`,`path`,`scope`,`kind`,`can_upload`,`can_create_children`,`created_at`,`updated_at`,(SELECT COUNT(*) FROM `dam_folders` AS `children` WHERE `children`.`parent_id` = `dam_folders`.`folder_id`) AS `folder_count`,(SELECT COUNT(*) FROM `dam_assets` AS `assets` WHERE `assets`.`folder_id` = `dam_folders`.`folder_id`) AS `asset_count` FROM `dam_folders` WHERE (`name` LIKE ? OR `path` LIKE ?) ORDER BY CASE WHEN `name` LIKE ? THEN 0 ELSE 1 END, LENGTH(`path`) ASC, `path` ASC LIMIT ?");
+    $startsWith = substr($needle, 0, 120) . "%";
+    $searchLimit = max(1, min($limit, 80));
+    $params = [$like, $like, $startsWith, $searchLimit];
+    damBindParams($stmt, "sssi", $params);
+    damExecuteOrFail($stmt, $con);
+    $result = mysqli_stmt_get_result($stmt);
+    $folders = [];
+    if ($result) while ($row = mysqli_fetch_assoc($result)) { $folder = damMapFolderRow($row); $folder["children"] = []; $folders[] = $folder; }
+    mysqli_stmt_close($stmt);
+    return $folders;
+}
+function damSearchAssets($con, string $query, ?string $kind, ?int $cursor, int $limit): array {
+    $needle = trim($query);
+    if ($needle === "") return [[], false, null];
+    $sql = "SELECT a.`id`,a.`folder_id`,a.`display_name`,a.`filename`,a.`public_id`,a.`resource_type`,a.`format`,a.`mime_type`,a.`bytes`,a.`width`,a.`height`,a.`secure_url`,a.`thumbnail_url`,a.`kind`,a.`tags`,a.`created_at`,a.`updated_at`,f.`path` AS `folder_path`,f.`name` AS `folder_name` FROM `dam_assets` a INNER JOIN `dam_folders` f ON f.`folder_id` = a.`folder_id` WHERE (`display_name` LIKE ? OR `filename` LIKE ? OR f.`path` LIKE ?)";
+    $like = "%" . substr($needle, 0, 120) . "%";
+    $types = "sss";
+    $params = [$like, $like, $like];
+    if ($kind !== null) { $sql .= " AND a.`kind` = ?"; $types .= "s"; $params[] = $kind; }
+    if ($cursor !== null) { $sql .= " AND a.`id` < ?"; $types .= "i"; $params[] = $cursor; }
+    $sql .= " ORDER BY a.`id` DESC LIMIT " . ($limit + 1);
+    $stmt = damPrepareOrFail($con, $sql);
+    damBindParams($stmt, $types, $params);
+    damExecuteOrFail($stmt, $con);
+    $result = mysqli_stmt_get_result($stmt);
+    $assets = [];
+    if ($result) while ($row = mysqli_fetch_assoc($result)) $assets[] = damMapAssetRow($row);
+    mysqli_stmt_close($stmt);
+    $hasMore = count($assets) > $limit;
+    $nextCursor = null;
+    if ($hasMore) { $nextRow = array_pop($assets); $nextCursor = $nextRow["id"]; }
+    return [$assets, $hasMore, $nextCursor];
+}
 function damFetchAssetById($con, int $assetId): ?array {
     $stmt = damPrepareOrFail($con, "SELECT `id`,`folder_id`,`display_name`,`filename`,`public_id`,`resource_type`,`format`,`mime_type`,`bytes`,`width`,`height`,`secure_url`,`thumbnail_url`,`kind`,`tags`,`created_at`,`updated_at` FROM `dam_assets` WHERE `id` = ? LIMIT 1");
     $params = [$assetId];
@@ -438,7 +497,7 @@ function damFetchLinksByAssetId($con, int $assetId): array {
     return $links;
 }
 function damMapFolderRow(array $row): array { return ["id" => $row["folder_id"], "name" => $row["name"], "parent_id" => $row["parent_id"], "path" => $row["path"], "kind" => $row["kind"], "scope" => $row["scope"], "asset_count" => isset($row["asset_count"]) ? (int) $row["asset_count"] : 0, "folder_count" => isset($row["folder_count"]) ? (int) $row["folder_count"] : 0, "can_upload" => !empty($row["can_upload"]), "can_create_children" => !empty($row["can_create_children"]), "created_at" => $row["created_at"] ?? null, "updated_at" => $row["updated_at"] ?? null]; }
-function damMapAssetRow(array $row): array { return ["id" => (int) $row["id"], "folder_id" => $row["folder_id"], "filename" => $row["filename"], "display_name" => $row["display_name"], "public_id" => $row["public_id"], "asset_folder" => $row["folder_id"], "resource_type" => $row["resource_type"], "format" => $row["format"], "mime_type" => $row["mime_type"], "bytes" => isset($row["bytes"]) ? (int) $row["bytes"] : null, "width" => isset($row["width"]) ? (int) $row["width"] : null, "height" => isset($row["height"]) ? (int) $row["height"] : null, "secure_url" => $row["secure_url"], "thumbnail_url" => $row["thumbnail_url"], "kind" => $row["kind"], "tags" => damDecodeJsonColumn($row["tags"] ?? null, []), "created_at" => $row["created_at"] ?? null, "updated_at" => $row["updated_at"] ?? null]; }
+function damMapAssetRow(array $row): array { return ["id" => (int) $row["id"], "folder_id" => $row["folder_id"], "filename" => $row["filename"], "display_name" => $row["display_name"], "public_id" => $row["public_id"], "asset_folder" => $row["folder_id"], "folder_path" => $row["folder_path"] ?? ($row["folder_id"] ?? null), "folder_name" => $row["folder_name"] ?? null, "resource_type" => $row["resource_type"], "format" => $row["format"], "mime_type" => $row["mime_type"], "bytes" => isset($row["bytes"]) ? (int) $row["bytes"] : null, "width" => isset($row["width"]) ? (int) $row["width"] : null, "height" => isset($row["height"]) ? (int) $row["height"] : null, "secure_url" => $row["secure_url"], "thumbnail_url" => $row["thumbnail_url"], "kind" => $row["kind"], "tags" => damDecodeJsonColumn($row["tags"] ?? null, []), "created_at" => $row["created_at"] ?? null, "updated_at" => $row["updated_at"] ?? null]; }
 function damNextFolderSortOrder($con, string $parentId): int {
     $stmt = damPrepareOrFail($con, "SELECT COALESCE(MAX(`sort_order`), 0) + 10 AS `next_sort_order` FROM `dam_folders` WHERE `parent_id` = ?");
     $params = [$parentId];

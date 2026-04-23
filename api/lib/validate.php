@@ -15,6 +15,9 @@ const ALLOWED_LANGS = ["pt", "en", "es"];
 /** Allowed IP rating values from the form. */
 const ALLOWED_IP_RATINGS = ["0", "IP20", "IP40", "IP42", "IP45", "IP60", "IP64", "IP65", "IP66", "IP67"];
 
+/** Allowed exact-product datasheet design variants. */
+const ALLOWED_DATASHEET_DESIGN_VARIANTS = ["classic", "modern"];
+
 
 
 /**
@@ -39,6 +42,26 @@ function validateLang(string $lang): string {
  */
 function validateIpRating(string $ip): string {
     return in_array($ip, ALLOWED_IP_RATINGS, true) ? $ip : "0";
+}
+
+/**
+ * Validates and returns a datasheet design variant.
+ * Returns "classic" when omitted.
+ * Returns null when a non-empty unsupported value is supplied.
+ *
+ * @param  ?string $variant  Raw value from user input
+ * @return ?string  Safe variant string, or null if unsupported
+ */
+function validateDesignVariant(?string $variant): ?string {
+    $normalizedVariant = strtolower(trim((string) $variant));
+
+    if ($normalizedVariant === "") {
+        return "classic";
+    }
+
+    return in_array($normalizedVariant, ALLOWED_DATASHEET_DESIGN_VARIANTS, true)
+        ? $normalizedVariant
+        : null;
 }
 
 

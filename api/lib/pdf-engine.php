@@ -16,8 +16,9 @@
  *   caboligacao, conectorligacao, tamanhocaboligacao, finalidade
  */
 
-define("TCPDF_PATH",   dirname(__FILE__, 3) . "/appdatasheets/tcpdf/");
-define("APP_CSS_PATH", dirname(__FILE__, 3) . "/appdatasheets/style/datasheet.css");
+define("TCPDF_PATH", dirname(__FILE__, 3) . "/appdatasheets/tcpdf/");
+define("DATASHEET_CLASSIC_CSS_PATH", dirname(__FILE__, 3) . "/appdatasheets/style/datasheet.css");
+define("DATASHEET_MODERN_CSS_PATH", dirname(__FILE__, 3) . "/appdatasheets/style/datasheet-modern.css");
 
 require_once TCPDF_PATH . "tcpdf_include.php";
 require_once TCPDF_PATH . "tcpdf.php";
@@ -62,6 +63,36 @@ function criarFooter(string $productId, string $lang): string {
     }
 
     return $footer;
+}
+
+function getDatasheetCssPathForVariant(string $designVariant): string {
+    return $designVariant === "modern"
+        ? DATASHEET_MODERN_CSS_PATH
+        : DATASHEET_CLASSIC_CSS_PATH;
+}
+
+function getDatasheetCssForVariant(string $designVariant): string {
+    $cssPath = getDatasheetCssPathForVariant($designVariant);
+
+    if (!is_file($cssPath) || !is_readable($cssPath)) {
+        throwDatasheetRequestError(500, [
+            "error" => "Datasheet stylesheet not found for selected design variant",
+            "error_code" => "datasheet_stylesheet_missing",
+            "design_variant" => $designVariant,
+        ]);
+    }
+
+    $css = file_get_contents($cssPath);
+
+    if (!is_string($css)) {
+        throwDatasheetRequestError(500, [
+            "error" => "Datasheet stylesheet could not be loaded for selected design variant",
+            "error_code" => "datasheet_stylesheet_unreadable",
+            "design_variant" => $designVariant,
+        ]);
+    }
+
+    return $css;
 }
 
 
@@ -240,6 +271,7 @@ function buildDatasheetRenderContext(array $input): array {
     $reference      = validateReference($input["referencia"]         ?? "");
     $lang           = validateLang($input["idioma"]                  ?? "pt");
     $ipOverride     = validateIpRating($input["ip"]                  ?? "0");
+    $designVariant  = validateDesignVariant($input["design_variant"] ?? null);
 
     // These fields are used in file/image lookups, not SQL — strip dangerous characters
     $description    = htmlspecialchars($input["descricao"]           ?? "", ENT_QUOTES, "UTF-8");
@@ -258,6 +290,14 @@ function buildDatasheetRenderContext(array $input): array {
     $connectorId    = preg_replace("/[^a-zA-Z0-9]/", "", $input["conectorligacao"] ?? "0");
     $cableLength    = floatval($input["tamanhocaboligacao"]          ?? 0);
     $purpose        = preg_replace("/[^a-zA-Z0-9]/", "", $input["finalidade"]    ?? "0");
+
+    if ($designVariant === null) {
+        throwDatasheetRequestError(422, [
+            "error" => "Unsupported datasheet design variant",
+            "error_code" => "unsupported_design_variant",
+            "design_variant" => (string) ($input["design_variant"] ?? ""),
+        ]);
+    }
 
     if (strlen($reference) < 10) {
         throwDatasheetRequestError(400, ["error" => "Invalid or missing reference code"]);
@@ -400,6 +440,7 @@ function buildDatasheetRenderContext(array $input): array {
         "document_title" => $description,
         "company" => $company,
         "lang" => $lang,
+        "design_variant" => $designVariant,
         "footer_note" => "",
         "footer_marker" => "officPDF",
         "filename_reference" => preg_replace("/[^a-zA-Z0-9_-]/", "", $reference) ?: "datasheet",
@@ -431,10 +472,19 @@ function renderDatasheetPdfBinaryFromContext(array $context): string {
     $stage = "build_layout";
     $reference = (string) ($context["reference"] ?? "");
     $productId = (string) ($context["product_id"] ?? "");
+    $designVariant = validateDesignVariant((string) ($context["design_variant"] ?? "classic"));
 
     try {
-        $css = "<style>" . file_get_contents(APP_CSS_PATH) . "</style>";
-        $html = $css . buildPdfLayout($context["data"] ?? []);
+        if ($designVariant === null) {
+            throwDatasheetRequestError(422, [
+                "error" => "Unsupported datasheet design variant",
+                "error_code" => "unsupported_design_variant",
+                "design_variant" => (string) ($context["design_variant"] ?? ""),
+            ]);
+        }
+
+        $css = "<style>" . getDatasheetCssForVariant($designVariant) . "</style>";
+        $html = $css . buildPdfLayoutForVariant($context["data"] ?? [], $designVariant);
 
         // --- Set TCPDF globals (read by NEXLEDPDF::Header() and NEXLEDPDF::Footer()) ---
         global $pdf, $descricaoProduto, $empresa, $IDProduto;

@@ -55,6 +55,7 @@ if (($pdfSpecs["datasheet_ready"] ?? false) !== true) {
 }
 
 $payload = buildCodeExplorerDefaultDatasheetPayload($pdfSpecs);
+$payload["design_variant"] = (string) ($_GET["design_variant"] ?? "");
 
 try {
     $binary = buildDatasheetPdfBinary($payload);
