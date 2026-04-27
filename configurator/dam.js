@@ -385,7 +385,7 @@ async function loadDamTree(preserveSelection = true) {
         renderDamList();
         updateFolderSummary();
         syncFolderActionButtons();
-        setFolderActionStatus(message);
+        setFolderActionStatus(message, "error");
     }
 }
 
@@ -445,7 +445,7 @@ async function loadDamFolder(folderId) {
         renderRootDropdown();
         renderDamList();
         syncFolderActionButtons();
-        setFolderActionStatus(message);
+        setFolderActionStatus(message, "error");
     }
 }
 
@@ -453,7 +453,7 @@ async function handleCreateFolder() {
     const creatableFolders = getCreatableFolders();
 
     if (creatableFolders.length === 0) {
-        setFolderActionStatus(t("dam.folderActionBlocked", "No folder destinations available."));
+        setFolderActionStatus(t("dam.folderActionBlocked", "No folder destinations available."), "error");
         return;
     }
 
@@ -462,16 +462,16 @@ async function handleCreateFolder() {
     const name = String(damElements.createFolderInput.value || "").trim();
 
     if (!parentFolder) {
-        setFolderActionStatus(t("dam.folderDestinationRequired", "Select folder destination."));
+        setFolderActionStatus(t("dam.folderDestinationRequired", "Select folder destination."), "error");
         return;
     }
 
     if (!name) {
-        setFolderActionStatus(t("dam.folderNameRequired", "Enter folder name."));
+        setFolderActionStatus(t("dam.folderNameRequired", "Enter folder name."), "error");
         return;
     }
 
-    setFolderActionStatus(t("dam.folderCreating", "Creating folder..."));
+    setFolderActionStatus(t("dam.folderCreating", "Creating folder..."), "info");
 
     try {
         const response = await fetchDamJson("create-folder", {
@@ -489,9 +489,10 @@ async function handleCreateFolder() {
         }
 
         closeCreateFolderModal(true);
+        showDamToast(t("dam.folderCreated", "Folder created."), "success");
     } catch (error) {
         console.error(error);
-        setFolderActionStatus(getDamErrorMessage(error, t("dam.folderCreateFailed", "Unable to create folder.")));
+        setFolderActionStatus(getDamErrorMessage(error, t("dam.folderCreateFailed", "Unable to create folder.")), "error");
     }
 }
 
@@ -648,13 +649,13 @@ async function handleDeleteFolder() {
     const folder = creatableFolders.find((item) => item.id === folderId) || null;
 
     if (!folder) {
-        setFolderActionStatus(t("dam.folderDestinationRequired", "Select folder destination."));
+        setFolderActionStatus(t("dam.folderDestinationRequired", "Select folder destination."), "error");
         syncDeleteFolderButton(null);
         return;
     }
 
     if (!canDeleteFolder(folder)) {
-        setFolderActionStatus(t("dam.deleteFolderBlocked", "Only empty custom folders can be deleted."));
+        setFolderActionStatus(t("dam.deleteFolderBlocked", "Only empty custom folders can be deleted."), "error");
         syncDeleteFolderButton(folder);
         return;
     }
@@ -672,7 +673,7 @@ async function handleDeleteFolder() {
     const deletedCurrentFolder = currentViewedId === folder.id;
     const fallbackFolderId = deletedCurrentFolder ? (folder.parent_id || "") : currentViewedId;
 
-    setFolderActionStatus(t("dam.folderDeleting", "Deleting folder..."));
+    setFolderActionStatus(t("dam.folderDeleting", "Deleting folder..."), "info");
 
     try {
         await fetchDamDelete("delete-folder", {
@@ -691,7 +692,7 @@ async function handleDeleteFolder() {
         showDamToast(t("dam.folderDeleted", "Folder deleted."), "success");
     } catch (error) {
         console.error(error);
-        setFolderActionStatus(getDamErrorMessage(error, t("dam.folderDeleteFailed", "Unable to delete folder.")));
+        setFolderActionStatus(getDamErrorMessage(error, t("dam.folderDeleteFailed", "Unable to delete folder.")), "error");
         syncDeleteFolderButton(folder);
     }
 }
@@ -740,15 +741,15 @@ async function handleUploadAsset(event) {
     }
 
     if (!damState.currentFolder?.can_upload) {
-        setUploadStatus(t("dam.uploadActionBlocked", "Selected folder does not allow uploads."));
+        setUploadStatus(t("dam.uploadActionBlocked", "Selected folder does not allow uploads."), "error");
         event.target.value = "";
         return;
     }
 
-    setUploadStatus(t("dam.uploadReady", "{name} selected for upload.", { name: file.name }));
+    setUploadStatus(t("dam.uploadReady", "{name} selected for upload.", { name: file.name }), "info");
 
     try {
-        setUploadStatus(t("dam.uploadStarted", "Uploading asset..."));
+        setUploadStatus(t("dam.uploadStarted", "Uploading asset..."), "info");
         const formData = new FormData();
         formData.append("file", file);
         formData.append("folder_id", damState.currentFolder.id);
@@ -756,7 +757,7 @@ async function handleUploadAsset(event) {
         const response = await fetchDamUpload("upload", formData);
         const asset = response?.data?.asset || null;
 
-        setUploadStatus(t("dam.uploadDone", "Asset uploaded."));
+        setUploadStatus(t("dam.uploadDone", "Asset uploaded."), "success");
         await loadDamFolder(damState.currentFolder.id);
 
         if (asset?.id) {
@@ -764,7 +765,7 @@ async function handleUploadAsset(event) {
         }
     } catch (error) {
         console.error(error);
-        setUploadStatus(getDamErrorMessage(error, t("dam.uploadFailed", "Unable to upload asset.")));
+        setUploadStatus(getDamErrorMessage(error, t("dam.uploadFailed", "Unable to upload asset.")), "error");
     } finally {
         event.target.value = "";
     }
@@ -1354,7 +1355,7 @@ async function loadSelectedAssetDetails(assetId) {
         damState.selectedAssetLinks = [];
         damState.selectedAssetLinksLoading = false;
         renderSelectedAsset();
-        setAssetStatus(getDamErrorMessage(error, t("dam.assetDetailsLoadFailed", "Unable to load asset details.")));
+        setAssetStatus(getDamErrorMessage(error, t("dam.assetDetailsLoadFailed", "Unable to load asset details.")), "error");
     }
 }
 
@@ -1373,18 +1374,18 @@ async function handleCreateAssetLink() {
     const sortOrder = Number.isFinite(parsedSortOrder) ? parsedSortOrder : 0;
 
     if (!familyCode && !productCode) {
-        setAssetStatus(t("dam.linkTargetRequired", "Provide family code or product code."));
+        setAssetStatus(t("dam.linkTargetRequired", "Provide family code or product code."), "error");
         return;
     }
 
     if (!role) {
-        setAssetStatus(t("dam.linkRoleRequired", "Select link role."));
+        setAssetStatus(t("dam.linkRoleRequired", "Select link role."), "error");
         return;
     }
 
     damState.selectedAssetLinkActionBusy = true;
     syncAssetLinkControls();
-    setAssetStatus(t("dam.linkSaving", "Saving link..."));
+    setAssetStatus(t("dam.linkSaving", "Saving link..."), "info");
 
     try {
         await fetchDamJson("link", {
@@ -1398,10 +1399,10 @@ async function handleCreateAssetLink() {
         damElements.linkFamilyCodeInput.value = "";
         damElements.linkProductCodeInput.value = "";
         damElements.linkSortOrderInput.value = "0";
-        setAssetStatus(t("dam.linkSaved", "Asset linked."));
+        setAssetStatus(t("dam.linkSaved", "Asset linked."), "success");
     } catch (error) {
         console.error(error);
-        setAssetStatus(getDamErrorMessage(error, t("dam.linkFailed", "Unable to link asset.")));
+        setAssetStatus(getDamErrorMessage(error, t("dam.linkFailed", "Unable to link asset.")), "error");
     } finally {
         damState.selectedAssetLinkActionBusy = false;
         syncAssetLinkControls();
@@ -1417,17 +1418,17 @@ async function handleDeleteAssetLink(linkId) {
 
     damState.selectedAssetLinkActionBusy = true;
     syncAssetLinkControls();
-    setAssetStatus(t("dam.unlinkStarted", "Removing link..."));
+    setAssetStatus(t("dam.unlinkStarted", "Removing link..."), "info");
 
     try {
         await fetchDamDelete("unlink", {
             id: linkId,
         });
         await loadSelectedAssetDetails(asset.id);
-        setAssetStatus(t("dam.unlinkDone", "Link removed."));
+        setAssetStatus(t("dam.unlinkDone", "Link removed."), "success");
     } catch (error) {
         console.error(error);
-        setAssetStatus(getDamErrorMessage(error, t("dam.unlinkFailed", "Unable to remove link.")));
+        setAssetStatus(getDamErrorMessage(error, t("dam.unlinkFailed", "Unable to remove link.")), "error");
     } finally {
         damState.selectedAssetLinkActionBusy = false;
         syncAssetLinkControls();
@@ -1453,7 +1454,7 @@ async function handleDeleteSelectedAsset() {
     const reloadFolderId = damState.currentFolderId || asset.folder_id || DAM_DEFAULT_FOLDER_ID;
 
     damElements.deleteAssetButton.disabled = true;
-    setAssetStatus(t("dam.assetDeleting", "Deleting asset..."));
+    setAssetStatus(t("dam.assetDeleting", "Deleting asset..."), "info");
 
     try {
         await fetchDamDelete("asset", {
@@ -1465,7 +1466,7 @@ async function handleDeleteSelectedAsset() {
     } catch (error) {
         console.error(error);
         damElements.deleteAssetButton.disabled = false;
-        setAssetStatus(getDamErrorMessage(error, t("dam.assetDeleteFailed", "Unable to delete asset.")));
+        setAssetStatus(getDamErrorMessage(error, t("dam.assetDeleteFailed", "Unable to delete asset.")), "error");
     }
 }
 
@@ -1801,21 +1802,33 @@ function syncFolderActionButtons() {
     }
 }
 
-function setFolderActionStatus(message) {
+function setFolderActionStatus(message, tone = "info") {
     if (damElements) {
-        damElements.folderActionStatus.textContent = message;
+        damElements.folderActionStatus.textContent = "";
+    }
+
+    if (String(message || "").trim() !== "") {
+        showDamToast(message, tone);
     }
 }
 
-function setUploadStatus(message) {
+function setUploadStatus(message, tone = "info") {
     if (damElements) {
-        damElements.uploadStatus.textContent = message;
+        damElements.uploadStatus.textContent = "";
+    }
+
+    if (String(message || "").trim() !== "") {
+        showDamToast(message, tone);
     }
 }
 
-function setAssetStatus(message) {
+function setAssetStatus(message, tone = "info") {
     if (damElements) {
-        damElements.assetStatus.textContent = message;
+        damElements.assetStatus.textContent = "";
+    }
+
+    if (String(message || "").trim() !== "") {
+        showDamToast(message, tone);
     }
 }
 
