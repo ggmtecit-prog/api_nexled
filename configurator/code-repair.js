@@ -485,8 +485,6 @@ function renderCodeRepairSummary() {
     const familyValue = payload?.family?.code
         ? `${payload.family.code} - ${payload.family.name || payload.family.code}`
         : (payload?.family?.name || "...");
-    const blockers = Array.isArray(payload?.validation?.blockers) ? payload.validation.blockers : [];
-    const showBlockersEmptyHero = Boolean(payload) && blockers.length === 0;
 
     if (!payload) {
         codeRepairElements.summaryGrid.innerHTML = buildCodeRepairSummaryHeroMarkup({
@@ -502,8 +500,8 @@ function renderCodeRepairSummary() {
                 "neutral",
                 t("codeRepair.statusUnavailable", {}, "Unavailable")
             ),
-            gridSpanClass: "sm:col-span-2 xl:col-span-4",
-        });
+            gridSpanClass: "sm:col-span-2 xl:col-span-2",
+        }) + buildCodeRepairBlockerStatusHeroMarkup(null);
         return;
     }
 
@@ -528,8 +526,8 @@ function renderCodeRepairSummary() {
         family: familyValue,
         configuratorMarkup,
         datasheetMarkup,
-        gridSpanClass: showBlockersEmptyHero ? "sm:col-span-2 xl:col-span-2" : "sm:col-span-2 xl:col-span-4",
-    }) + (showBlockersEmptyHero ? buildCodeRepairBlockersEmptyHeroMarkup() : "");
+        gridSpanClass: "sm:col-span-2 xl:col-span-2",
+    }) + buildCodeRepairBlockerStatusHeroMarkup(payload);
 }
 
 function buildCodeRepairSummaryHeroMarkup({
@@ -569,17 +567,54 @@ function buildCodeRepairSummaryStatusBadge(label, tone, status) {
     return `<span class="badge ${toneClass} badge-sm">${escapeHtml(label)} ${escapeHtml(status)}</span>`;
 }
 
-function buildCodeRepairBlockersEmptyHeroMarkup() {
+function buildCodeRepairBlockerStatusHeroMarkup(payload) {
+    const state = getCodeRepairBlockerStatusHeroState(payload);
+
     return `
         <article class="panel border-0 bg-transparent p-20 flex items-center justify-center sm:col-span-2 xl:col-span-2">
             ${buildCodeRepairEmptyStateMarkup({
-                title: t("codeRepair.blockNoneTitle", {}, "No blockers found"),
-                body: t("codeRepair.blockNoneBody", {}, "This reference is valid and ready for the datasheet in the current runtime."),
+                title: state.title,
+                body: state.body,
                 size: "md",
-                iconClass: "ri-checkbox-circle-line",
+                iconClass: state.iconClass,
             })}
         </article>
     `;
+}
+
+function getCodeRepairBlockerStatusHeroState(payload) {
+    if (!payload) {
+        return {
+            title: t("codeRepair.blockHeroAwaitingTitle", {}, "Code state unavailable"),
+            body: t("codeRepair.blockHeroAwaitingBody", {}, "Load a reference to inspect the current code state and blockers."),
+            iconClass: "ri-information-line",
+        };
+    }
+
+    const summary = payload.summary || {};
+    const blockerText = getCodeRepairTopBlockerText(payload);
+
+    if (summary.configurator_valid !== true) {
+        return {
+            title: t("codeRepair.blockHeroConfiguratorBlockedTitle", {}, "Configurator blocked"),
+            body: t("codeRepair.blockHeroBlockedBody", { blocker: blockerText }, "Current blocker: {blocker}."),
+            iconClass: "ri-alert-line",
+        };
+    }
+
+    if (summary.datasheet_ready !== true) {
+        return {
+            title: t("codeRepair.blockHeroDatasheetBlockedTitle", {}, "Datasheet blocked"),
+            body: t("codeRepair.blockHeroBlockedBody", { blocker: blockerText }, "Current blocker: {blocker}."),
+            iconClass: "ri-alert-line",
+        };
+    }
+
+    return {
+        title: t("codeRepair.blockNoneTitle", {}, "No blockers found"),
+        body: t("codeRepair.blockNoneBody", {}, "This reference is valid and ready for the datasheet in the current runtime."),
+        iconClass: "ri-checkbox-circle-line",
+    };
 }
 
 function renderCodeRepairDatabaseChecks() {
