@@ -912,6 +912,9 @@ function closeAllShowcaseMultiDropdowns(exceptDropdown = null) {
 function bindShowcaseControls() {
     const modeInputs = document.querySelectorAll('input[name="output-mode"]');
     const designVariantInputs = document.querySelectorAll('input[name="datasheet-design-variant"]');
+    const designVariantToggle = document.getElementById("datasheet-design-variant-toggle");
+    const designVariantClassic = document.getElementById("datasheet-design-variant-classic");
+    const designVariantModern = document.getElementById("datasheet-design-variant-modern");
     const expandGrid = document.getElementById("showcase-expand-grid");
     const sectionsGrid = document.getElementById("showcase-sections-grid");
 
@@ -931,9 +934,33 @@ function bindShowcaseControls() {
                 return;
             }
 
+            syncDatasheetDesignVariantToggle();
             syncGenerateButton();
         });
     });
+
+    if (
+        designVariantToggle instanceof HTMLInputElement
+        && designVariantClassic instanceof HTMLInputElement
+        && designVariantModern instanceof HTMLInputElement
+    ) {
+        designVariantToggle.addEventListener("change", () => {
+            const nextInput = designVariantToggle.checked
+                ? designVariantModern
+                : designVariantClassic;
+
+            if (!nextInput.checked) {
+                nextInput.checked = true;
+                nextInput.dispatchEvent(new Event("change", { bubbles: true }));
+                return;
+            }
+
+            syncDatasheetDesignVariantToggle();
+            syncGenerateButton();
+        });
+    }
+
+    syncDatasheetDesignVariantToggle();
 
     expandGrid?.addEventListener("change", (event) => {
         if (!(event.target instanceof HTMLInputElement) || event.target.type !== "checkbox") {
@@ -959,6 +986,37 @@ function bindShowcaseControls() {
 
         scheduleShowcasePreview();
     });
+}
+
+function syncDatasheetDesignVariantToggle() {
+    const toggle = document.getElementById("datasheet-design-variant-toggle");
+    const classicInput = document.getElementById("datasheet-design-variant-classic");
+    const modernInput = document.getElementById("datasheet-design-variant-modern");
+    const classicLabel = document.getElementById("datasheet-design-variant-classic-label");
+    const modernLabel = document.getElementById("datasheet-design-variant-modern-label");
+
+    if (
+        !(toggle instanceof HTMLInputElement)
+        || !(classicInput instanceof HTMLInputElement)
+        || !(modernInput instanceof HTMLInputElement)
+    ) {
+        return;
+    }
+
+    const isModern = modernInput.checked;
+    toggle.checked = isModern;
+
+    if (classicLabel instanceof HTMLElement) {
+        classicLabel.classList.toggle("text-black", !isModern);
+        classicLabel.classList.toggle("font-medium", !isModern);
+        classicLabel.classList.toggle("text-grey-primary", isModern);
+    }
+
+    if (modernLabel instanceof HTMLElement) {
+        modernLabel.classList.toggle("text-black", isModern);
+        modernLabel.classList.toggle("font-medium", isModern);
+        modernLabel.classList.toggle("text-grey-primary", !isModern);
+    }
 }
 
 function bindCustomControls() {

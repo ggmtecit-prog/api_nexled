@@ -796,17 +796,18 @@
                         <div id="datasheet-design-variant-panel" class="flex flex-col gap-12 pt-24">
                             <div class="flex flex-col gap-4">
                                 <span class="input-label ml-12" data-i18n="configurator.quickActions.designVariant">Datasheet Design</span>
-                                <p class="text-body-xs text-grey-primary px-12" data-i18n="configurator.quickActions.designVariantHint">Choose which layout to export. Product data stays the same.</p>
                             </div>
-                            <div class="segmented-control segmented-control-sm w-full" role="radiogroup" aria-label="Datasheet design variant" data-i18n-aria-label="configurator.quickActions.designVariantAria">
-                                <label class="segmented-control-option flex-1">
-                                    <input id="datasheet-design-variant-classic" class="segmented-control-input" type="radio" name="datasheet-design-variant" value="classic" checked>
-                                    <span class="segmented-control-label" data-i18n="configurator.quickActions.designVariantClassic">Current</span>
+                            <div class="flex items-center gap-12 px-12">
+                                <span id="datasheet-design-variant-classic-label" class="text-body-sm font-medium text-black" data-i18n="configurator.quickActions.designVariantClassic">Current</span>
+                                <label class="toggle toggle-md">
+                                    <input id="datasheet-design-variant-toggle" class="toggle-input" type="checkbox" role="switch" aria-label="Datasheet design variant" data-i18n-aria-label="configurator.quickActions.designVariantAria">
+                                    <span class="toggle-track"><span class="toggle-thumb"></span></span>
                                 </label>
-                                <label class="segmented-control-option flex-1">
-                                    <input id="datasheet-design-variant-modern" class="segmented-control-input" type="radio" name="datasheet-design-variant" value="modern">
-                                    <span class="segmented-control-label" data-i18n="configurator.quickActions.designVariantModern">New</span>
-                                </label>
+                                <span id="datasheet-design-variant-modern-label" class="text-body-sm text-grey-primary" data-i18n="configurator.quickActions.designVariantModern">New</span>
+                                <div class="hidden" aria-hidden="true">
+                                    <input id="datasheet-design-variant-classic" type="radio" name="datasheet-design-variant" value="classic" checked tabindex="-1">
+                                    <input id="datasheet-design-variant-modern" type="radio" name="datasheet-design-variant" value="modern" tabindex="-1">
+                                </div>
                             </div>
                         </div>
 

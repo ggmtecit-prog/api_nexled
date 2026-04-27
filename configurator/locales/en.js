@@ -592,7 +592,6 @@ window.NexLedLocales.en = {
             modeShowcaseHint: "Generate one grouped showcase PDF from the selected scope and sections.",
             modeCustomHint: "Generate one custom datasheet from the current reference and approved overrides.",
             designVariant: "Datasheet Design",
-            designVariantHint: "Choose which layout to export. Product data stays the same.",
             designVariantAria: "Datasheet design variant",
             designVariantClassic: "Current",
             designVariantModern: "New",
