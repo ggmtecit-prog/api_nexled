@@ -1429,10 +1429,6 @@ function getCustomImageBrowserElements() {
     const grid = document.getElementById("custom-image-browser-grid");
     const empty = document.getElementById("custom-image-browser-empty");
     const emptyLabel = document.getElementById("custom-image-browser-empty-label");
-    const activeLabel = document.getElementById("custom-image-browser-active-label");
-    const preview = document.getElementById("custom-image-browser-preview");
-    const previewEmpty = document.getElementById("custom-image-browser-preview-empty");
-    const previewImage = document.getElementById("custom-image-browser-preview-image");
     const clearButton = document.getElementById("custom-image-browser-clear");
     const applyButton = document.getElementById("custom-image-browser-apply");
     const status = document.getElementById("custom-image-browser-status");
@@ -1446,10 +1442,6 @@ function getCustomImageBrowserElements() {
         || !(grid instanceof HTMLElement)
         || !(empty instanceof HTMLElement)
         || !(emptyLabel instanceof HTMLElement)
-        || !(activeLabel instanceof HTMLElement)
-        || !(preview instanceof HTMLElement)
-        || !(previewEmpty instanceof HTMLElement)
-        || !(previewImage instanceof HTMLImageElement)
         || !(clearButton instanceof HTMLButtonElement)
         || !(applyButton instanceof HTMLButtonElement)
         || !(status instanceof HTMLElement)
@@ -1466,10 +1458,6 @@ function getCustomImageBrowserElements() {
         grid,
         empty,
         emptyLabel,
-        activeLabel,
-        preview,
-        previewEmpty,
-        previewImage,
         clearButton,
         applyButton,
         status,
@@ -1559,6 +1547,7 @@ function bindCustomImageBrowserControls() {
         elements.clearButton.addEventListener("click", () => {
             customImageBrowserState.selectedAsset = null;
             customImageBrowserState.selectedAssetId = null;
+            renderCustomImageBrowserGrid();
             renderCustomImageBrowserPreview();
             setCustomImageBrowserStatus(
                 "configurator.custom.browserStatusIdle",
@@ -1899,7 +1888,7 @@ function renderCustomImageBrowserGrid() {
         });
 
         const preview = document.createElement("div");
-        preview.className = "relative flex w-full items-center justify-center overflow-hidden rounded-lg border border-grey-secondary bg-grey-tertiary";
+        preview.className = "relative flex w-full items-center justify-center overflow-visible rounded-lg";
         preview.style.aspectRatio = "1 / 1";
         preview.style.minHeight = "120px";
 
@@ -1909,13 +1898,17 @@ function renderCustomImageBrowserGrid() {
             const image = document.createElement("img");
             image.src = imageUrl;
             image.alt = asset.display_name || asset.filename || "Asset";
-            image.className = "block h-full w-full object-cover object-center";
+            image.className = "block h-full w-full rounded-lg border border-grey-secondary bg-grey-secondary object-cover object-center";
             image.loading = "lazy";
             preview.appendChild(image);
         } else {
-            const fallback = document.createElement("i");
-            fallback.className = "ri-image-line text-icon-xxl text-grey-primary";
-            fallback.setAttribute("aria-hidden", "true");
+            const fallback = document.createElement("div");
+            fallback.className = "flex h-full w-full items-center justify-center rounded-lg border border-grey-secondary bg-grey-secondary";
+
+            const icon = document.createElement("i");
+            icon.className = "ri-image-line text-icon-xxl text-grey-primary";
+            icon.setAttribute("aria-hidden", "true");
+            fallback.appendChild(icon);
             preview.appendChild(fallback);
         }
 
@@ -1929,7 +1922,7 @@ function renderCustomImageBrowserGrid() {
         path.textContent = folderPath;
 
         if (String(customImageBrowserState.selectedAssetId || "") === String(asset.id || "")) {
-            wrapper.classList.add("ring-2", "ring-green-primary");
+            preview.classList.add("ring-2", "ring-green-primary");
         }
 
         wrapper.append(preview, name);
@@ -1951,28 +1944,7 @@ function resolveCustomImageBrowserAssetImageUrl(asset) {
 }
 
 function renderCustomImageBrowserPreview() {
-    const elements = getCustomImageBrowserElements();
-    const activeField = getCustomAssetFieldById(customImageBrowserState.activeFieldId);
-
-    if (!elements || !activeField) {
-        return;
-    }
-
-    elements.activeLabel.textContent = getCustomAssetFieldLabel(activeField);
-
-    const imageUrl = resolveCustomImageBrowserAssetImageUrl(customImageBrowserState.selectedAsset);
-    const showImage = imageUrl !== "";
-
-    elements.previewEmpty.classList.toggle("hidden", showImage);
-    elements.previewImage.classList.toggle("hidden", !showImage);
-
-    if (showImage) {
-        elements.previewImage.src = imageUrl;
-        elements.previewImage.alt = customImageBrowserState.selectedAsset?.display_name || customImageBrowserState.selectedAsset?.filename || getCustomAssetFieldLabel(activeField);
-    } else {
-        elements.previewImage.removeAttribute("src");
-        elements.previewImage.alt = "";
-    }
+    return;
 }
 
 async function hydrateCustomImageBrowserAsset(assetId) {
@@ -1998,6 +1970,13 @@ async function hydrateCustomImageBrowserAsset(assetId) {
         customImageBrowserState.selectedAssetId = customImageBrowserState.selectedAsset?.id || null;
         renderCustomImageBrowserGrid();
         renderCustomImageBrowserPreview();
+        if (customImageBrowserState.selectedAssetId) {
+            setCustomImageBrowserStatus(
+                "configurator.custom.browserAssetSelected",
+                {},
+                "Asset selected."
+            );
+        }
     } catch (error) {
         if (requestToken !== customImageBrowserAssetRequestToken) {
             return;
