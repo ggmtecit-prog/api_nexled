@@ -42,6 +42,7 @@ let damToastTimer = 0;
 let damToastHideTimer = 0;
 
 document.addEventListener("DOMContentLoaded", () => {
+    ensureCreateFolderDeleteButtonMarkup();
     damElements = getDamElements();
 
     if (!damElements) {
@@ -54,6 +55,7 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 window.addEventListener(DAM_I18N_EVENT, () => {
+    syncCreateFolderDeleteButtonLabel();
     if (!damElements) {
         return;
     }
@@ -66,6 +68,42 @@ window.addEventListener(DAM_I18N_EVENT, () => {
     renderSelectedAsset();
     syncFolderActionButtons();
 });
+
+function ensureCreateFolderDeleteButtonMarkup() {
+    const modal = document.querySelector("[data-dam-create-folder-modal]");
+    const footer = modal?.querySelector(".modal-footer");
+
+    if (!footer || footer.querySelector("[data-dam-delete-folder]")) {
+        return;
+    }
+
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "btn btn-secondary btn-sm";
+    button.dataset.damDeleteFolder = "";
+    button.disabled = true;
+
+    const icon = document.createElement("i");
+    icon.className = "ri-delete-bin-line text-icon-sm";
+    icon.setAttribute("aria-hidden", "true");
+
+    const label = document.createElement("span");
+    label.dataset.damDeleteFolderLabel = "true";
+
+    button.append(icon, label);
+    footer.insertBefore(button, footer.firstElementChild || null);
+    syncCreateFolderDeleteButtonLabel();
+}
+
+function syncCreateFolderDeleteButtonLabel() {
+    const label = document.querySelector("[data-dam-delete-folder-label]");
+
+    if (!label) {
+        return;
+    }
+
+    label.textContent = t("dam.deleteFolder", "Delete Folder");
+}
 
 function getDamElements() {
     const fileGrid = document.getElementById("fileGrid");
