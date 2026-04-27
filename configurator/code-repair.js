@@ -109,7 +109,6 @@ const CODE_REPAIR_SECTION_LABEL_META = {
     characteristics: ["codeRepair.characteristicsTitle", "Technical characteristics"],
     dimensions: ["codeRepair.dimensionsTitle", "Dimensions"],
     database: ["codeRepair.databaseTitle", "Database Checks"],
-    blockers: ["codeRepair.blockTitle", "Current blockers"],
     sources: ["codeRepair.sourcesTitle", "Source Map"],
 };
 const CODE_REPAIR_SECTION_VISIBILITY_DEFAULTS = {
@@ -118,7 +117,6 @@ const CODE_REPAIR_SECTION_VISIBILITY_DEFAULTS = {
     characteristics: false,
     dimensions: false,
     database: false,
-    blockers: false,
     sources: false,
 };
 const codeRepairState = {
@@ -212,6 +210,7 @@ function getCodeRepairElements() {
     const detailsCard = document.getElementById("repair-details-card");
     const summaryGrid = document.getElementById("repair-summary-grid");
     const databaseGrid = document.getElementById("repair-database-grid");
+    const blockersSection = document.getElementById("repair-blockers-section");
     const blockersList = document.getElementById("repair-blockers-list");
     const sourceGrid = document.getElementById("repair-source-grid");
     const contextList = document.getElementById("repair-context-list");
@@ -234,6 +233,7 @@ function getCodeRepairElements() {
         || !detailsCard
         || !summaryGrid
         || !databaseGrid
+        || !blockersSection
         || !blockersList
         || !sourceGrid
         || !contextList
@@ -256,6 +256,7 @@ function getCodeRepairElements() {
         detailsCard,
         summaryGrid,
         databaseGrid,
+        blockersSection,
         blockersList,
         sourceGrid,
         contextList,
@@ -484,6 +485,8 @@ function renderCodeRepairSummary() {
     const familyValue = payload?.family?.code
         ? `${payload.family.code} - ${payload.family.name || payload.family.code}`
         : (payload?.family?.name || "...");
+    const blockers = Array.isArray(payload?.validation?.blockers) ? payload.validation.blockers : [];
+    const showBlockersEmptyHero = Boolean(payload) && blockers.length === 0;
 
     if (!payload) {
         codeRepairElements.summaryGrid.innerHTML = buildCodeRepairSummaryHeroMarkup({
@@ -491,6 +494,7 @@ function renderCodeRepairSummary() {
             family: familyValue,
             configuratorMarkup: buildCodeRepairNeutralBadge(t("codeRepair.statusUnavailable", {}, "Unavailable")),
             datasheetMarkup: buildCodeRepairNeutralBadge(t("codeRepair.statusUnavailable", {}, "Unavailable")),
+            gridSpanClass: "sm:col-span-2 xl:col-span-4",
         });
         return;
     }
@@ -512,7 +516,8 @@ function renderCodeRepairSummary() {
         family: familyValue,
         configuratorMarkup,
         datasheetMarkup,
-    });
+        gridSpanClass: showBlockersEmptyHero ? "sm:col-span-2 xl:col-span-2" : "sm:col-span-2 xl:col-span-4",
+    }) + (showBlockersEmptyHero ? buildCodeRepairBlockersEmptyHeroMarkup() : "");
 }
 
 function buildCodeRepairSummaryHeroMarkup({
@@ -520,12 +525,13 @@ function buildCodeRepairSummaryHeroMarkup({
     family = "...",
     configuratorMarkup = "",
     datasheetMarkup = "",
+    gridSpanClass = "sm:col-span-2 xl:col-span-4",
 } = {}) {
     const safeConfiguratorMarkup = configuratorMarkup || buildCodeRepairNeutralBadge(t("codeRepair.statusUnavailable", {}, "Unavailable"));
     const safeDatasheetMarkup = datasheetMarkup || buildCodeRepairNeutralBadge(t("codeRepair.statusUnavailable", {}, "Unavailable"));
 
     return `
-        <article class="panel border-0 bg-transparent p-20 sm:col-span-2 xl:col-span-4">
+        <article class="panel border-0 bg-transparent p-20 ${gridSpanClass}">
             <div class="flex flex-col gap-20">
                 <div class="flex flex-col gap-8">
                     <p class="text-h2 text-black break-all">${escapeHtml(reference)}</p>
@@ -544,6 +550,19 @@ function buildCodeRepairSummaryHeroMarkup({
                     </div>
                 </div>
             </div>
+        </article>
+    `;
+}
+
+function buildCodeRepairBlockersEmptyHeroMarkup() {
+    return `
+        <article class="panel border-0 bg-transparent p-20 flex items-center justify-center sm:col-span-2 xl:col-span-2">
+            ${buildCodeRepairEmptyStateMarkup({
+                title: t("codeRepair.blockNoneTitle", {}, "No blockers found"),
+                body: t("codeRepair.blockNoneBody", {}, "This reference is valid and ready for the datasheet in the current runtime."),
+                size: "md",
+                iconClass: "ri-checkbox-circle-line",
+            })}
         </article>
     `;
 }
@@ -726,6 +745,7 @@ function renderCodeRepairBlockers() {
     const payload = codeRepairState.data;
 
     if (!payload) {
+        codeRepairElements.blockersSection.hidden = true;
         renderCodeRepairEmptyState(codeRepairElements.blockersList, {
             title: t("codeRepair.blockTitle", {}, "Active blockers"),
             body: t("codeRepair.sourcesEmpty", {}, "Load a reference to inspect the current active sources, local checks, and DAM candidates."),
@@ -737,15 +757,12 @@ function renderCodeRepairBlockers() {
     const blockers = Array.isArray(payload?.validation?.blockers) ? payload.validation.blockers : [];
 
     if (blockers.length === 0) {
-        renderCodeRepairEmptyState(codeRepairElements.blockersList, {
-            title: t("codeRepair.blockNoneTitle", {}, "No blockers"),
-            body: t("codeRepair.blockNoneBody", {}, "This reference is configurator-valid and datasheet-ready in the current runtime."),
-            size: "md",
-            iconClass: "ri-checkbox-circle-line",
-        });
+        codeRepairElements.blockersSection.hidden = true;
+        codeRepairElements.blockersList.innerHTML = "";
         return;
     }
 
+    codeRepairElements.blockersSection.hidden = false;
     codeRepairElements.blockersList.innerHTML = blockers.map((blocker) => {
         const statusLabel = getCodeRepairStatusLabel(blocker.current_status || "missing");
         const sourceLabel = getCodeRepairSourceLabel(blocker.source_key || "");
