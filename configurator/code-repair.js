@@ -530,17 +530,17 @@ function buildCodeRepairSummaryHeroMarkup({
                 <div class="flex flex-col gap-8">
                     <p class="text-h2 text-black break-all">${escapeHtml(reference)}</p>
                 </div>
-                <div class="grid grid-cols-1 gap-20 md:grid-cols-[minmax(0,1.6fr)_minmax(0,0.8fr)_minmax(0,0.8fr)] md:items-start">
-                    <div class="flex flex-col gap-6 min-w-0">
-                        <p class="card-title break-words">${escapeHtml(family)}</p>
-                    </div>
-                    <div class="flex flex-col gap-8 min-w-0">
-                        <span class="text-title-sm text-black">${escapeHtml(t("codeRepair.summaryConfigurator", {}, "Configurator"))}</span>
-                        <div>${safeConfiguratorMarkup}</div>
-                    </div>
-                    <div class="flex flex-col gap-8 min-w-0">
-                        <span class="text-title-sm text-black">${escapeHtml(t("codeRepair.summaryDatasheet", {}, "Datasheet"))}</span>
-                        <div>${safeDatasheetMarkup}</div>
+                <div class="flex flex-col gap-20 min-w-0">
+                    <p class="card-title break-words">${escapeHtml(family)}</p>
+                    <div class="grid grid-cols-1 gap-16 sm:grid-cols-2 md:max-w-2xl">
+                        <div class="flex flex-col gap-8 min-w-0">
+                            <span class="text-title-sm text-black">${escapeHtml(t("codeRepair.summaryConfigurator", {}, "Configurator"))}</span>
+                            <div>${safeConfiguratorMarkup}</div>
+                        </div>
+                        <div class="flex flex-col gap-8 min-w-0">
+                            <span class="text-title-sm text-black">${escapeHtml(t("codeRepair.summaryDatasheet", {}, "Datasheet"))}</span>
+                            <div>${safeDatasheetMarkup}</div>
+                        </div>
                     </div>
                 </div>
             </div>
