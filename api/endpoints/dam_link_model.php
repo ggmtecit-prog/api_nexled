@@ -165,12 +165,15 @@ function damUploadAsset(): void {
     $duplicate = $duplicateResult ? mysqli_fetch_assoc($duplicateResult) : null;
     mysqli_stmt_close($duplicateStmt);
     if ($duplicate !== null) { closeDB($con); damRespondError(409, "invalid_metadata", "Asset with same filename already exists in folder.", ["id" => (int) $duplicate["id"]]); }
-    $uploadOutcome = cloudinaryUploadDetailed($file["tmp_name"], $publicId, $resourceType, [
+    $uploadOptions = [
         "asset_folder" => $folder["path"],
         "display_name" => $displayName,
-        "overwrite" => false,
-        "tags" => $tags,
-    ]);
+        "overwrite" => "false",
+    ];
+    if ($tags !== []) {
+        $uploadOptions["tags"] = implode(",", $tags);
+    }
+    $uploadOutcome = cloudinaryUploadDetailed($file["tmp_name"], $publicId, $resourceType, $uploadOptions);
     if (!($uploadOutcome["ok"] ?? false)) { closeDB($con); damRespondError(500, "cloudinary_upload_failed", (string) ($uploadOutcome["error"] ?? "Cloudinary upload failed."), ["http_code" => $uploadOutcome["http_code"] ?? null]); }
     $uploadResult = $uploadOutcome["data"] ?? null;
     $secureUrl = $uploadResult["secure_url"] ?? null;
