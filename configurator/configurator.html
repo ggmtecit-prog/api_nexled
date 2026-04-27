@@ -793,24 +793,6 @@
                         </div>
                     </div>
                     <div class="card-body p-24 pt-64">
-                        <div id="datasheet-design-variant-panel" class="flex flex-col gap-12 pt-24">
-                            <div class="flex flex-col gap-4">
-                                <span class="input-label ml-12" data-i18n="configurator.quickActions.designVariant">Datasheet Design</span>
-                            </div>
-                            <div class="flex items-center gap-12 px-12">
-                                <span id="datasheet-design-variant-classic-label" class="text-body-sm font-medium text-black" data-i18n="configurator.quickActions.designVariantClassic">Current</span>
-                                <label class="toggle toggle-md">
-                                    <input id="datasheet-design-variant-toggle" class="toggle-input" type="checkbox" role="switch" aria-label="Datasheet design variant" data-i18n-aria-label="configurator.quickActions.designVariantAria">
-                                    <span class="toggle-track"><span class="toggle-thumb"></span></span>
-                                </label>
-                                <span id="datasheet-design-variant-modern-label" class="text-body-sm text-grey-primary" data-i18n="configurator.quickActions.designVariantModern">New</span>
-                                <div class="hidden" aria-hidden="true">
-                                    <input id="datasheet-design-variant-classic" type="radio" name="datasheet-design-variant" value="classic" checked tabindex="-1">
-                                    <input id="datasheet-design-variant-modern" type="radio" name="datasheet-design-variant" value="modern" tabindex="-1">
-                                </div>
-                            </div>
-                        </div>
-
                         <div id="field-display-reference" class="flex flex-col gap-16 pt-24">
                             <label class="input-label ml-12" for="output-reference" data-i18n="configurator.quickActions.liveReference">Live Tecit Reference</label>
                             <div class="flex flex-col gap-8 w-full">
@@ -850,6 +832,24 @@
                                     </span>
                                 </button>
                             </div>
+                            </div>
+                        </div>
+
+                        <div id="datasheet-design-variant-panel" class="flex flex-col gap-12 pt-24">
+                            <div class="flex flex-col gap-4">
+                                <span class="input-label ml-12" data-i18n="configurator.quickActions.designVariant">Datasheet Design</span>
+                            </div>
+                            <div class="flex items-center gap-10 px-12">
+                                <span id="datasheet-design-variant-classic-label" class="text-body-xs font-medium text-black" data-i18n="configurator.quickActions.designVariantClassic">Current</span>
+                                <label class="toggle toggle-sm">
+                                    <input id="datasheet-design-variant-toggle" class="toggle-input" type="checkbox" role="switch" aria-label="Datasheet design variant" data-i18n-aria-label="configurator.quickActions.designVariantAria">
+                                    <span class="toggle-track"><span class="toggle-thumb"></span></span>
+                                </label>
+                                <span id="datasheet-design-variant-modern-label" class="text-body-xs text-grey-primary" data-i18n="configurator.quickActions.designVariantModern">New</span>
+                                <div class="hidden" aria-hidden="true">
+                                    <input id="datasheet-design-variant-classic" type="radio" name="datasheet-design-variant" value="classic" checked tabindex="-1">
+                                    <input id="datasheet-design-variant-modern" type="radio" name="datasheet-design-variant" value="modern" tabindex="-1">
+                                </div>
                             </div>
                         </div>
 
