@@ -302,6 +302,21 @@ Response:
 }
 ```
 
+### 4A. Delete Folder
+
+`DELETE /api/?endpoint=dam&action=delete-folder&id=<folder_id>`
+
+Purpose:
+
+- Delete one empty custom folder.
+
+Rules:
+
+- folder must exist
+- only `kind=custom`
+- folder must be empty (`folder_count=0` and `asset_count=0`)
+- system folders cannot be deleted in phase 1
+
 ### 5. Resolve Upload Target
 
 `POST /api/?endpoint=dam&action=resolve-target`
@@ -668,8 +683,9 @@ Implement first:
 2. `list`
 3. `asset`
 4. `create-folder`
-5. `upload`
-6. `delete asset`
+5. `delete-folder`
+6. `upload`
+7. `delete asset`
 
 Delay:
 

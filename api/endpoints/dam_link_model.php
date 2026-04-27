@@ -17,6 +17,7 @@ switch ($action) {
         damMethodNotAllowed(["GET", "DELETE"]);
         break;
     case "create-folder": damRequireMethod(["POST"]); damCreateFolder(); break;
+    case "delete-folder": damRequireMethod(["DELETE"]); damDeleteFolder(); break;
     case "sync-folders": damRequireMethod(["POST"]); damSyncFolders(); break;
     case "upload": damRequireMethod(["POST"]); damUploadAsset(); break;
     case "product-assets": damRequireMethod(["GET"]); damProductAssets(); break;
@@ -104,6 +105,34 @@ function damCreateFolder(): void {
     $folder = damInsertFolder($con, $parent["id"], $name, $parent["scope"], "custom", 0, 1, 1, damNextFolderSortOrder($con, $parent["id"]));
     closeDB($con);
     damRespondSuccess(["folder" => $folder], 201);
+}
+function damDeleteFolder(): void {
+    $folderId = damValidateFolderId($_GET["id"] ?? null);
+    if ($folderId === null) damRespondError(400, "invalid_folder", "Missing or invalid folder id.");
+    $con = connectDBDam();
+    $folder = damFetchFolderById($con, $folderId);
+    if ($folder === null) { closeDB($con); damRespondError(404, "folder_not_found", "Folder not found.", ["id" => $folderId]); }
+    if (($folder["kind"] ?? "") !== "custom") { closeDB($con); damRespondError(409, "invalid_folder", "Only custom folders can be deleted.", ["id" => $folderId]); }
+    if ((int) ($folder["folder_count"] ?? 0) > 0 || (int) ($folder["asset_count"] ?? 0) > 0) {
+        closeDB($con);
+        damRespondError(409, "invalid_folder", "Only empty folders can be deleted.", ["id" => $folderId, "folder_count" => (int) ($folder["folder_count"] ?? 0), "asset_count" => (int) ($folder["asset_count"] ?? 0)]);
+    }
+    $cloudinaryResult = cloudinaryDeleteFolderDetailed((string) ($folder["path"] ?? $folder["id"]));
+    if (!($cloudinaryResult["ok"] ?? false)) {
+        closeDB($con);
+        damRespondError(500, "cloudinary_delete_failed", (string) ($cloudinaryResult["error"] ?? "Cloudinary folder delete failed."), ["http_code" => $cloudinaryResult["http_code"] ?? null]);
+    }
+    damDeleteFolderRecord($con, $folder["id"]);
+    closeDB($con);
+    damRespondSuccess([
+        "deleted" => true,
+        "folder_id" => $folder["id"],
+        "parent_id" => $folder["parent_id"],
+        "cloudinary" => [
+            "deleted" => (bool) ($cloudinaryResult["deleted"] ?? false),
+            "already_missing" => (bool) ($cloudinaryResult["already_missing"] ?? false),
+        ],
+    ]);
 }
 function damSyncFolders(): void {
     $body = damGetJsonBody();

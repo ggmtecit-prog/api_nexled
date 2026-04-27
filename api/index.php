@@ -38,7 +38,7 @@ require_once "./lib/validate.php";
 // Route: /api/?endpoint=file-spectral&reference=...
 // Route: /api/?endpoint=health
 // Route: /api/?endpoint=svg-diagnostics&ref=...
-// Route: /api/?endpoint=dam&action=tree|list|asset|create-folder|sync-folders|upload|product-assets|link|unlink
+// Route: /api/?endpoint=dam&action=tree|list|asset|create-folder|delete-folder|sync-folders|upload|product-assets|link|unlink
 // Route: /api/?endpoint=code-explorer&family=11&page=1&page_size=100&search=&status=all
 // Route: /api/?endpoint=family-ready-products&family=01&page=1&page_size=100
 // Route: /api/?endpoint=family-ready-filters&family=01

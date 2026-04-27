@@ -308,10 +308,6 @@
                                     <i class="ri-upload-2-line text-icon-sm" aria-hidden="true"></i>
                                     <span data-i18n="dam.uploadAssets">Upload Assets</span>
                                 </button>
-                                <button type="button" class="btn btn-ghost btn-sm w-full justify-center" data-modal-target="damFolderPolicyModal">
-                                    <i class="ri-information-line text-icon-sm" aria-hidden="true"></i>
-                                    <span data-i18n="dam.folderPolicyButton">Folder Policy</span>
-                                </button>
                             </div>
                         </div>
                     </div>
@@ -454,6 +450,10 @@
             </div>
 
             <div class="modal-footer">
+                <button type="button" class="btn btn-secondary btn-sm" data-dam-delete-folder disabled>
+                    <i class="ri-delete-bin-line text-icon-sm" aria-hidden="true"></i>
+                    <span data-i18n="dam.deleteFolder">Delete Folder</span>
+                </button>
                 <button type="button" class="btn btn-secondary btn-sm" data-close-modal>
                     <span data-i18n="shared.actions.cancel">Cancel</span>
                 </button>
@@ -462,41 +462,6 @@
                     <span data-i18n="dam.createFolder">Create Folder</span>
                 </button>
             </div>
-        </div>
-    </div>
-
-    <div class="modal-overlay" id="damFolderPolicyModal" aria-hidden="true">
-        <div class="modal" role="dialog" aria-modal="true" aria-labelledby="damFolderPolicyTitle" aria-describedby="damFolderPolicyBody">
-            <div class="modal-header">
-                <div>
-                    <h2 id="damFolderPolicyTitle" class="modal-title" data-i18n="dam.folderPolicyTitle">Current DAM Folder Policy</h2>
-                </div>
-                <button type="button" class="btn btn-ghost btn-icon btn-xs" aria-label="Close folder policy" data-i18n-aria-label="dam.folderPolicyClose" data-close-modal>
-                    <i class="ri-close-line text-icon-md" aria-hidden="true"></i>
-                </button>
-            </div>
-
-            <div id="damFolderPolicyBody" class="modal-body custom-scrollbar">
-                <div class="flex flex-col gap-16">
-                    <p class="text-body-sm text-grey-primary" data-i18n="dam.folderPolicyIntro">The DAM folder structure is ready, but the PDF workflow still reads local assets.</p>
-
-                    <div class="flex flex-col gap-4">
-                        <span class="input-label" data-i18n="dam.folderPolicyKeepTitle">Active Cloud Folders Now</span>
-                        <p class="text-body-sm text-black" data-i18n="dam.folderPolicyKeepBody">Keep `nexled/datasheet` and `nexled/media` as the live DAM roots, with uploads routed into the existing child folders.</p>
-                    </div>
-
-                    <div class="flex flex-col gap-4">
-                        <span class="input-label" data-i18n="dam.folderPolicyLaterTitle">Deferred Until Later</span>
-                        <p class="text-body-sm text-black" data-i18n="dam.folderPolicyLaterBody">Do not switch the PDF workflow to DAM reads yet. Local datasheet assets still act as the fallback.</p>
-                    </div>
-
-                    <div class="flex flex-col gap-4">
-                        <span class="input-label" data-i18n="dam.folderPolicyLocalTitle">Local Asset Rule</span>
-                        <p class="text-body-sm text-black" data-i18n="dam.folderPolicyLocalBody">Do not move or delete the local PDF assets yet. They still support PDF generation.</p>
-                    </div>
-                </div>
-            </div>
-
         </div>
     </div>
 

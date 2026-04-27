@@ -83,6 +83,7 @@ function getDamElements() {
     const createFolderParentDropdown = document.querySelector("[data-dam-create-parent-dropdown]");
     const createFolderParentValue = document.querySelector("[data-dam-create-parent-value]");
     const createFolderParentMenu = document.querySelector("[data-dam-create-parent-menu]");
+    const deleteFolderButton = document.querySelector("[data-dam-delete-folder]");
     const createFolderButton = document.querySelector("[data-dam-submit-create-folder]");
     const folderActionStatus = document.querySelector("[data-dam-folder-action-status]");
     const uploadTrigger = document.querySelector("[data-dam-upload-trigger]");
@@ -114,7 +115,7 @@ function getDamElements() {
     const linkingPanel = document.querySelector("[data-dam-linking-panel]");
     const assetStatus = document.querySelector("[data-dam-asset-status]");
 
-    if (!fileGrid || !emptyState || !emptyStateLabel || !searchInput || !breadcrumb || !rootDropdown || !rootValue || !rootMenu || !refreshTreeButton || !openCreateFolderButton || !createFolderModal || !createFolderInput || !createFolderParentDropdown || !createFolderParentValue || !createFolderParentMenu || !createFolderButton || !folderActionStatus || !uploadTrigger || !uploadInput || !uploadStatus || !assetModal || !assetModalPanel || !assetModalTitle || !closeAssetModalButton || !assetPreview || !emptyAsset || !assetMetaList || !assetSize || !assetFormat || !assetFolder || !linkFamilyCodeInput || !linkProductCodeInput || !linkRoleSelect || !linkSortOrderInput || !linkSubmitButton || !linksList || !emptyLinks || !downloadAssetButton || !openAssetButton || !copyAssetUrlButton || !toggleLinkingButton || !toggleLinkingIcon || !toggleLinkingLabel || !linkingPanel || !assetStatus) {
+    if (!fileGrid || !emptyState || !emptyStateLabel || !searchInput || !breadcrumb || !rootDropdown || !rootValue || !rootMenu || !refreshTreeButton || !openCreateFolderButton || !createFolderModal || !createFolderInput || !createFolderParentDropdown || !createFolderParentValue || !createFolderParentMenu || !deleteFolderButton || !createFolderButton || !folderActionStatus || !uploadTrigger || !uploadInput || !uploadStatus || !assetModal || !assetModalPanel || !assetModalTitle || !closeAssetModalButton || !assetPreview || !emptyAsset || !assetMetaList || !assetSize || !assetFormat || !assetFolder || !linkFamilyCodeInput || !linkProductCodeInput || !linkRoleSelect || !linkSortOrderInput || !linkSubmitButton || !linksList || !emptyLinks || !downloadAssetButton || !openAssetButton || !copyAssetUrlButton || !toggleLinkingButton || !toggleLinkingIcon || !toggleLinkingLabel || !linkingPanel || !assetStatus) {
         return null;
     }
 
@@ -134,6 +135,7 @@ function getDamElements() {
         createFolderParentDropdown,
         createFolderParentValue,
         createFolderParentMenu,
+        deleteFolderButton,
         createFolderButton,
         folderActionStatus,
         uploadTrigger,
@@ -189,6 +191,7 @@ function bindDamEvents() {
     });
 
     damElements.createFolderButton.addEventListener("click", handleCreateFolder);
+    damElements.deleteFolderButton.addEventListener("click", handleDeleteFolder);
     damElements.createFolderInput.addEventListener("keydown", (event) => {
         if (event.key === "Enter") {
             event.preventDefault();
@@ -506,6 +509,7 @@ function renderCreateFolderParentDropdown() {
     if (creatableFolders.length === 0) {
         damElements.createFolderParentValue.textContent = t("dam.folderActionBlocked", "No folder destinations available.");
         damElements.createFolderParentDropdown.classList.remove("has-value");
+        syncDeleteFolderButton(null);
         return;
     }
 
@@ -543,6 +547,7 @@ function renderCreateFolderParentDropdown() {
     damElements.createFolderParentMenu.appendChild(fragment);
     damElements.createFolderParentValue.textContent = selectedParent?.path || t("dam.createFolderDestinationPlaceholder", "Select destination");
     damElements.createFolderParentDropdown.classList.add("has-value");
+    syncDeleteFolderButton(selectedParent);
 }
 
 function handleCreateFolderParentSelect(folder) {
@@ -553,7 +558,98 @@ function handleCreateFolderParentSelect(folder) {
     damState.createFolderParentId = folder.id;
     damElements.createFolderParentValue.textContent = folder.path || folder.name;
     syncCreateFolderParentSelection(folder.id);
+    syncDeleteFolderButton(folder);
     closeCreateFolderParentDropdown();
+}
+
+function canDeleteFolder(folder) {
+    return Boolean(
+        folder
+        && folder.kind === "custom"
+        && Number(folder.asset_count || 0) === 0
+        && Number(folder.folder_count || 0) === 0
+    );
+}
+
+function syncDeleteFolderButton(folder = null) {
+    if (!damElements?.deleteFolderButton) {
+        return;
+    }
+
+    const selectedFolder = folder || getCreatableFolders().find((item) => item.id === damState.createFolderParentId) || null;
+    const canDelete = canDeleteFolder(selectedFolder);
+    damElements.deleteFolderButton.disabled = !canDelete;
+
+    if (!selectedFolder) {
+        damElements.deleteFolderButton.title = t("dam.deleteFolderUnavailable", "Select a folder to delete.");
+        return;
+    }
+
+    if (canDelete) {
+        damElements.deleteFolderButton.removeAttribute("title");
+        return;
+    }
+
+    if (selectedFolder.kind !== "custom") {
+        damElements.deleteFolderButton.title = t("dam.deleteFolderCustomOnly", "Only custom folders can be deleted.");
+        return;
+    }
+
+    damElements.deleteFolderButton.title = t("dam.deleteFolderEmptyOnly", "Only empty folders can be deleted.");
+}
+
+async function handleDeleteFolder() {
+    const creatableFolders = getCreatableFolders();
+    const folderId = resolveCreateFolderParentId(creatableFolders);
+    const folder = creatableFolders.find((item) => item.id === folderId) || null;
+
+    if (!folder) {
+        setFolderActionStatus(t("dam.folderDestinationRequired", "Select folder destination."));
+        syncDeleteFolderButton(null);
+        return;
+    }
+
+    if (!canDeleteFolder(folder)) {
+        setFolderActionStatus(t("dam.deleteFolderBlocked", "Only empty custom folders can be deleted."));
+        syncDeleteFolderButton(folder);
+        return;
+    }
+
+    const confirmMessage = String(
+        t("dam.deleteFolderConfirm", "Delete folder {path}? This only works for empty custom folders.")
+    ).replace("{path}", folder.path || folder.name || "");
+    const confirmed = window.confirm(confirmMessage);
+
+    if (!confirmed) {
+        return;
+    }
+
+    const currentViewedId = damState.currentFolder?.id || damState.currentFolderId || "";
+    const deletedCurrentFolder = currentViewedId === folder.id;
+    const fallbackFolderId = deletedCurrentFolder ? (folder.parent_id || "") : currentViewedId;
+
+    setFolderActionStatus(t("dam.folderDeleting", "Deleting folder..."));
+
+    try {
+        await fetchDamDelete("delete-folder", {
+            id: folder.id,
+        });
+
+        damElements.createFolderInput.value = "";
+        setFolderActionStatus("");
+        await loadDamTree(!deletedCurrentFolder);
+
+        if (deletedCurrentFolder && fallbackFolderId) {
+            await loadDamFolder(fallbackFolderId);
+        }
+
+        closeCreateFolderModal(true);
+        showDamToast(t("dam.folderDeleted", "Folder deleted."), "success");
+    } catch (error) {
+        console.error(error);
+        setFolderActionStatus(getDamErrorMessage(error, t("dam.folderDeleteFailed", "Unable to delete folder.")));
+        syncDeleteFolderButton(folder);
+    }
 }
 
 function syncCreateFolderParentSelection(folderId) {
