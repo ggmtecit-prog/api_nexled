@@ -523,35 +523,84 @@ function buildCodeRepairSummaryCard(eyebrow, eyebrowClass, detailLabel, valueMar
     `;
 }
 
+function buildCodeRepairEmptyStateMarkup({
+    title = "",
+    body = "",
+    size = "sm",
+    iconClass = "",
+    extraClasses = "",
+} = {}) {
+    const outerClasses = ["empty-state", `empty-state-${size}`, "border-0", "bg-transparent", extraClasses]
+        .filter(Boolean)
+        .join(" ");
+    const iconMarkup = iconClass
+        ? `
+            <div class="empty-state-icon icon-box icon-box-empty-state">
+                <i class="${iconClass} text-icon-lg" aria-hidden="true"></i>
+            </div>
+        `
+        : "";
+    const titleMarkup = title
+        ? `<p class="empty-state-title">${escapeHtml(title)}</p>`
+        : "";
+    const bodyMarkup = body
+        ? `<p class="empty-state-text">${escapeHtml(body)}</p>`
+        : "";
+
+    return `
+        <div class="${outerClasses}">
+            ${iconMarkup}
+            <div class="empty-state-copy">
+                ${titleMarkup}
+                ${bodyMarkup}
+            </div>
+        </div>
+    `;
+}
+
+function renderCodeRepairEmptyState(target, options) {
+    target.innerHTML = buildCodeRepairEmptyStateMarkup(options);
+}
+
+function buildCodeRepairRowsMarkup(rows) {
+    return rows.map(([label, value]) => {
+        return buildCodeRepairContextRow(label, value);
+    }).join("");
+}
+
+function renderCodeRepairRows(target, rows, emptyMessage) {
+    if (!Array.isArray(rows) || rows.length === 0) {
+        renderCodeRepairEmptyState(target, {
+            body: emptyMessage,
+            size: "sm",
+        });
+        return;
+    }
+
+    target.innerHTML = buildCodeRepairRowsMarkup(rows);
+}
+
 function renderCodeRepairBlockers() {
     const payload = codeRepairState.data;
 
     if (!payload) {
-        codeRepairElements.blockersList.innerHTML = `
-            <div class="empty-state empty-state-md border-0 bg-transparent">
-                <div class="empty-state-copy">
-                    <p class="empty-state-title">${escapeHtml(t("codeRepair.blockTitle", {}, "Active blockers"))}</p>
-                    <p class="empty-state-text">${escapeHtml(t("codeRepair.sourcesEmpty", {}, "Load a reference to inspect the current active sources, local checks, and DAM candidates."))}</p>
-                </div>
-            </div>
-        `;
+        renderCodeRepairEmptyState(codeRepairElements.blockersList, {
+            title: t("codeRepair.blockTitle", {}, "Active blockers"),
+            body: t("codeRepair.sourcesEmpty", {}, "Load a reference to inspect the current active sources, local checks, and DAM candidates."),
+            size: "md",
+        });
         return;
     }
 
     const blockers = Array.isArray(payload?.validation?.blockers) ? payload.validation.blockers : [];
 
     if (blockers.length === 0) {
-        codeRepairElements.blockersList.innerHTML = `
-            <div class="empty-state empty-state-md border-0 bg-transparent">
-                <div class="empty-state-icon icon-box icon-box-empty-state">
-                    <i class="ri-checkbox-circle-line text-icon-lg" aria-hidden="true"></i>
-                </div>
-                <div class="empty-state-copy">
-                    <p class="empty-state-title">${escapeHtml(t("codeRepair.blockNoneTitle", {}, "No blockers"))}</p>
-                    <p class="empty-state-text">${escapeHtml(t("codeRepair.blockNoneBody", {}, "This reference is configurator-valid and datasheet-ready in the current runtime."))}</p>
-                </div>
-            </div>
-        `;
+        renderCodeRepairEmptyState(codeRepairElements.blockersList, {
+            title: t("codeRepair.blockNoneTitle", {}, "No blockers"),
+            body: t("codeRepair.blockNoneBody", {}, "This reference is configurator-valid and datasheet-ready in the current runtime."),
+            size: "md",
+            iconClass: "ri-checkbox-circle-line",
+        });
         return;
     }
 
@@ -584,14 +633,12 @@ function renderCodeRepairSources() {
     const payload = codeRepairState.data;
 
     if (!payload) {
-        codeRepairElements.sourceGrid.innerHTML = `
-            <div class="empty-state empty-state-md border-0 bg-transparent col-span-full">
-                <div class="empty-state-copy">
-                    <p class="empty-state-title">${escapeHtml(t("codeRepair.sourcesTitle", {}, "Source Map"))}</p>
-                    <p class="empty-state-text">${escapeHtml(t("codeRepair.sourcesEmpty", {}, "Load a reference to inspect the current active sources, local checks, and DAM candidates."))}</p>
-                </div>
-            </div>
-        `;
+        renderCodeRepairEmptyState(codeRepairElements.sourceGrid, {
+            title: t("codeRepair.sourcesTitle", {}, "Source Map"),
+            body: t("codeRepair.sourcesEmpty", {}, "Load a reference to inspect the current active sources, local checks, and DAM candidates."),
+            size: "md",
+            extraClasses: "col-span-full",
+        });
         return;
     }
 
@@ -763,14 +810,7 @@ function buildCodeRepairRecordCardMarkup(card) {
     const rowsMarkup = Array.isArray(card.rows) && card.rows.length > 0
         ? `
             <dl class="list list-spec list-md panel border-0 bg-transparent">
-                ${card.rows.map(([label, value]) => {
-                    return `
-                        <div class="list-item">
-                            <dt class="list-key">${escapeHtml(label)}</dt>
-                            <dd class="list-value break-all">${escapeHtml(value || t("codeRepair.statusUnavailable", {}, "Unavailable"))}</dd>
-                        </div>
-                    `;
-                }).join("")}
+                ${buildCodeRepairRowsMarkup(card.rows)}
             </dl>
         `
         : "";
@@ -1053,30 +1093,32 @@ function renderCodeRepairContext() {
     const payload = codeRepairState.data;
 
     if (!payload) {
-        codeRepairElements.contextList.innerHTML = `
-            <div class="empty-state empty-state-sm border-0 bg-transparent">
-                <div class="empty-state-copy">
-                    <p class="empty-state-text">${escapeHtml(t("codeRepair.sourcesEmpty", {}, "Load a reference to inspect the current active sources, local checks, and DAM candidates."))}</p>
-                </div>
-            </div>
-        `;
+        renderCodeRepairEmptyState(codeRepairElements.contextList, {
+            body: t("codeRepair.sourcesEmpty", {}, "Load a reference to inspect the current active sources, local checks, and DAM candidates."),
+            size: "sm",
+        });
         return;
     }
 
     const summary = payload.summary || {};
     const editable = payload.editable_fields || {};
+    const rows = [
+        [t("codeRepair.summaryReference", {}, "Reference"), summary.reference || payload.reference || ""],
+        [t("codeRepair.summaryIdentity", {}, "Identity"), summary.identity || ""],
+        [t("codeRepair.summaryFamily", {}, "Family"), payload.family?.name ? `${payload.family.code} - ${payload.family.name}` : payload.family?.code || ""],
+        [t("codeRepair.summaryProductType", {}, "Product type"), summary.product_type || ""],
+        ["Product ID", summary.product_id || ""],
+        ["LED ID", summary.led_id || ""],
+        [t("codeRepair.summaryTopBlocker", {}, "Top blocker"), getCodeRepairTopBlockerText(payload)],
+        ["Finish", editable.finish_name || summary.finish_name || ""],
+        ["Header text", editable.header_description_text || summary.header_description || ""],
+    ];
 
-    codeRepairElements.contextList.innerHTML = [
-        buildCodeRepairContextRow(t("codeRepair.summaryReference", {}, "Reference"), summary.reference || payload.reference || ""),
-        buildCodeRepairContextRow(t("codeRepair.summaryIdentity", {}, "Identity"), summary.identity || ""),
-        buildCodeRepairContextRow(t("codeRepair.summaryFamily", {}, "Family"), payload.family?.name ? `${payload.family.code} - ${payload.family.name}` : payload.family?.code || ""),
-        buildCodeRepairContextRow(t("codeRepair.summaryProductType", {}, "Product type"), summary.product_type || ""),
-        buildCodeRepairContextRow("Product ID", summary.product_id || ""),
-        buildCodeRepairContextRow("LED ID", summary.led_id || ""),
-        buildCodeRepairContextRow(t("codeRepair.summaryTopBlocker", {}, "Top blocker"), getCodeRepairTopBlockerText(payload)),
-        buildCodeRepairContextRow("Finish", editable.finish_name || summary.finish_name || ""),
-        buildCodeRepairContextRow("Header text", editable.header_description_text || summary.header_description || ""),
-    ].join("");
+    renderCodeRepairRows(
+        codeRepairElements.contextList,
+        rows,
+        t("codeRepair.sourcesEmpty", {}, "Load a reference to inspect the current active sources, local checks, and DAM candidates.")
+    );
 }
 
 function buildCodeRepairContextRow(label, value) {
@@ -1105,24 +1147,27 @@ function renderCodeRepairSegments() {
     ];
 
     if (!payload) {
-        codeRepairElements.segmentsList.innerHTML = `
-            <div class="empty-state empty-state-sm border-0 bg-transparent">
-                <div class="empty-state-copy">
-                    <p class="empty-state-text">${escapeHtml(t("codeRepair.sourcesEmpty", {}, "Load a reference to inspect the current active sources, local checks, and DAM candidates."))}</p>
-                </div>
-            </div>
-        `;
+        renderCodeRepairEmptyState(codeRepairElements.segmentsList, {
+            body: t("codeRepair.sourcesEmpty", {}, "Load a reference to inspect the current active sources, local checks, and DAM candidates."),
+            size: "sm",
+        });
         return;
     }
 
-    codeRepairElements.segmentsList.innerHTML = orderedSegments.map(([key, label]) => {
+    const rows = orderedSegments.map(([key, label]) => {
         const rawValue = String(segments?.[key] || "");
         const value = labels?.[key] && labels[key] !== rawValue
             ? `${rawValue} - ${labels[key]}`
             : rawValue;
 
-        return buildCodeRepairContextRow(label, value);
-    }).join("");
+        return [label, value];
+    });
+
+    renderCodeRepairRows(
+        codeRepairElements.segmentsList,
+        rows,
+        t("codeRepair.sourcesEmpty", {}, "Load a reference to inspect the current active sources, local checks, and DAM candidates.")
+    );
 }
 
 function renderCodeRepairCharacteristics() {
@@ -1142,23 +1187,11 @@ function renderCodeRepairDimensions() {
 }
 
 function renderCodeRepairDefinitionList(target, items, emptyMessage) {
-    if (!Array.isArray(items) || items.length === 0) {
-        target.innerHTML = `
-            <div class="empty-state empty-state-sm border-0 bg-transparent">
-                <div class="empty-state-copy">
-                    <p class="empty-state-text">${escapeHtml(emptyMessage)}</p>
-                </div>
-            </div>
-        `;
-        return;
-    }
+    const rows = Array.isArray(items)
+        ? items.map((item) => [String(item?.label || ""), String(item?.value || "")])
+        : [];
 
-    target.innerHTML = items.map((item) => {
-        return buildCodeRepairContextRow(
-            String(item?.label || ""),
-            String(item?.value || "")
-        );
-    }).join("");
+    renderCodeRepairRows(target, rows, emptyMessage);
 }
 
 function handleCodeRepairGridClick(event) {
