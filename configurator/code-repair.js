@@ -113,13 +113,13 @@ const CODE_REPAIR_SECTION_LABEL_META = {
     sources: ["codeRepair.sourcesTitle", "Source Map"],
 };
 const CODE_REPAIR_SECTION_VISIBILITY_DEFAULTS = {
-    context: true,
-    segments: true,
-    characteristics: true,
-    dimensions: true,
-    database: true,
-    blockers: true,
-    sources: true,
+    context: false,
+    segments: false,
+    characteristics: false,
+    dimensions: false,
+    database: false,
+    blockers: false,
+    sources: false,
 };
 const codeRepairState = {
     reference: "",
