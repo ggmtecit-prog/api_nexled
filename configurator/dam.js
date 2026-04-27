@@ -147,13 +147,14 @@ function getDamElements() {
     const downloadAssetButton = document.querySelector("[data-dam-download-asset]");
     const openAssetButton = document.querySelector("[data-dam-open-asset]");
     const copyAssetUrlButton = document.querySelector("[data-dam-copy-asset-url]");
+    const deleteAssetButton = document.querySelector("[data-dam-delete-asset]");
     const toggleLinkingButton = document.querySelector("[data-dam-toggle-linking]");
     const toggleLinkingIcon = document.querySelector("[data-dam-toggle-linking-icon]");
     const toggleLinkingLabel = document.querySelector("[data-dam-toggle-linking-label]");
     const linkingPanel = document.querySelector("[data-dam-linking-panel]");
     const assetStatus = document.querySelector("[data-dam-asset-status]");
 
-    if (!fileGrid || !emptyState || !emptyStateLabel || !searchInput || !breadcrumb || !rootDropdown || !rootValue || !rootMenu || !refreshTreeButton || !openCreateFolderButton || !createFolderModal || !createFolderInput || !createFolderParentDropdown || !createFolderParentValue || !createFolderParentMenu || !deleteFolderButton || !createFolderButton || !folderActionStatus || !uploadTrigger || !uploadInput || !uploadStatus || !assetModal || !assetModalPanel || !assetModalTitle || !closeAssetModalButton || !assetPreview || !emptyAsset || !assetMetaList || !assetSize || !assetFormat || !assetFolder || !linkFamilyCodeInput || !linkProductCodeInput || !linkRoleSelect || !linkSortOrderInput || !linkSubmitButton || !linksList || !emptyLinks || !downloadAssetButton || !openAssetButton || !copyAssetUrlButton || !toggleLinkingButton || !toggleLinkingIcon || !toggleLinkingLabel || !linkingPanel || !assetStatus) {
+    if (!fileGrid || !emptyState || !emptyStateLabel || !searchInput || !breadcrumb || !rootDropdown || !rootValue || !rootMenu || !refreshTreeButton || !openCreateFolderButton || !createFolderModal || !createFolderInput || !createFolderParentDropdown || !createFolderParentValue || !createFolderParentMenu || !deleteFolderButton || !createFolderButton || !folderActionStatus || !uploadTrigger || !uploadInput || !uploadStatus || !assetModal || !assetModalPanel || !assetModalTitle || !closeAssetModalButton || !assetPreview || !emptyAsset || !assetMetaList || !assetSize || !assetFormat || !assetFolder || !linkFamilyCodeInput || !linkProductCodeInput || !linkRoleSelect || !linkSortOrderInput || !linkSubmitButton || !linksList || !emptyLinks || !downloadAssetButton || !openAssetButton || !copyAssetUrlButton || !deleteAssetButton || !toggleLinkingButton || !toggleLinkingIcon || !toggleLinkingLabel || !linkingPanel || !assetStatus) {
         return null;
     }
 
@@ -199,6 +200,7 @@ function getDamElements() {
         downloadAssetButton,
         openAssetButton,
         copyAssetUrlButton,
+        deleteAssetButton,
         toggleLinkingButton,
         toggleLinkingIcon,
         toggleLinkingLabel,
@@ -284,6 +286,10 @@ function bindDamEvents() {
             setAssetStatus("");
             showDamToast(t("dam.copyAssetUrlFailed", "Unable to copy asset URL."), "error");
         }
+    });
+
+    damElements.deleteAssetButton.addEventListener("click", () => {
+        void handleDeleteSelectedAsset();
     });
 
     if (DAM_ASSET_MODAL_LINKING_ENABLED) {
@@ -1428,6 +1434,41 @@ async function handleDeleteAssetLink(linkId) {
     }
 }
 
+async function handleDeleteSelectedAsset() {
+    const asset = damState.selectedAsset;
+
+    if (!asset?.id || !damElements) {
+        return;
+    }
+
+    const assetName = asset.display_name || asset.filename || ("#" + String(asset.id));
+    const confirmMessage = String(
+        t("dam.deleteAssetConfirm", 'Delete asset "{name}"?')
+    ).replace("{name}", assetName);
+
+    if (!window.confirm(confirmMessage)) {
+        return;
+    }
+
+    const reloadFolderId = damState.currentFolderId || asset.folder_id || DAM_DEFAULT_FOLDER_ID;
+
+    damElements.deleteAssetButton.disabled = true;
+    setAssetStatus(t("dam.assetDeleting", "Deleting asset..."));
+
+    try {
+        await fetchDamDelete("asset", {
+            id: asset.id,
+        });
+        setAssetStatus("");
+        await loadDamFolder(reloadFolderId);
+        showDamToast(t("dam.assetDeleted", "Asset deleted."), "success");
+    } catch (error) {
+        console.error(error);
+        damElements.deleteAssetButton.disabled = false;
+        setAssetStatus(getDamErrorMessage(error, t("dam.assetDeleteFailed", "Unable to delete asset.")));
+    }
+}
+
 function renderSelectedAsset() {
     if (!damElements) {
         return;
@@ -1446,6 +1487,7 @@ function renderSelectedAsset() {
         damElements.downloadAssetButton.disabled = true;
         damElements.openAssetButton.disabled = true;
         damElements.copyAssetUrlButton.disabled = true;
+        damElements.deleteAssetButton.disabled = true;
         resetAssetLinkForm();
         renderSelectedAssetLinks();
         syncAssetLinkControls();
@@ -1487,6 +1529,7 @@ function renderSelectedAsset() {
     damElements.downloadAssetButton.disabled = !asset.secure_url;
     damElements.openAssetButton.disabled = !asset.secure_url;
     damElements.copyAssetUrlButton.disabled = !asset.secure_url;
+    damElements.deleteAssetButton.disabled = !asset.id;
     if (!DAM_ROLE_OPTIONS.includes(damElements.linkRoleSelect.value)) {
         damElements.linkRoleSelect.value = getDefaultAssetLinkRole(asset);
     }
