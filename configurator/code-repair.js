@@ -9,6 +9,17 @@ const CODE_REPAIR_API_BADGE_VARIANTS = {
     warning: "badge-warning",
     error: "badge-danger",
 };
+const CODE_REPAIR_TOAST_BASE_CLASS = "toast toast-sm";
+const CODE_REPAIR_TOAST_TITLE_MAX_LENGTH = 64;
+const CODE_REPAIR_TOAST_AUTOHIDE_DELAY = 4000;
+const CODE_REPAIR_TOAST_HIDE_DELAY = 320;
+const CODE_REPAIR_TOAST_VARIANTS = {
+    neutral: { className: "toast-info", iconClass: "ri-information-line", role: "status", autoHide: true, titleKey: "shared.toast.infoTitle", titleFallback: "Info" },
+    loading: { className: "toast-info", iconClass: "ri-information-line", role: "status", autoHide: false, titleKey: "shared.toast.loadingTitle", titleFallback: "Loading" },
+    success: { className: "toast-success", iconClass: "ri-checkbox-circle-line", role: "status", autoHide: true, titleKey: "shared.toast.successTitle", titleFallback: "Success" },
+    warning: { className: "toast-warning", iconClass: "ri-alert-line", role: "status", autoHide: false, titleKey: "shared.toast.warningTitle", titleFallback: "Warning" },
+    error: { className: "toast-danger", iconClass: "ri-close-circle-line", role: "alert", autoHide: true, titleKey: "shared.toast.errorTitle", titleFallback: "Error" },
+};
 const CODE_REPAIR_SOURCE_ORDER = [
     "luminos",
     "runtime",
@@ -18,13 +29,6 @@ const CODE_REPAIR_SOURCE_ORDER = [
     "lens_diagram",
     "finish_image",
 ];
-const CODE_REPAIR_STATUS_TEXT_CLASS = {
-    neutral: "text-grey-primary",
-    loading: "text-blue-700",
-    success: "text-green-700",
-    warning: "text-amber-700",
-    error: "text-red-700",
-};
 const CODE_REPAIR_SOURCE_META = {
     luminos: {
         kind: "record",
@@ -115,6 +119,10 @@ let codeRepairApiBadgeState = {
     fallback: "API unavailable",
 };
 let codeRepairElements = null;
+let codeRepairToastTimers = {
+    dismiss: null,
+    hide: null,
+};
 
 document.addEventListener("DOMContentLoaded", () => {
     initializeCodeRepairPage();
@@ -150,6 +158,7 @@ function initializeCodeRepairPage() {
     }
 
     bindCodeRepairEvents();
+    bindCodeRepairToastCloseButton();
     updateCodeRepairTitle();
     renderCodeRepairApiBadge();
     setCodeRepairRuntimeStatus(
@@ -158,7 +167,8 @@ function initializeCodeRepairPage() {
             {},
             "Enter a full Tecit reference to inspect blockers and sources."
         ),
-        "neutral"
+        "neutral",
+        { toast: false }
     );
     renderCodeRepairPage();
     void checkCodeRepairApiHealth();
@@ -1468,16 +1478,152 @@ function normalizeCodeRepairReference(value) {
         .toUpperCase();
 }
 
-function setCodeRepairRuntimeStatus(message, tone = "neutral") {
+function setCodeRepairRuntimeStatus(message, tone = "neutral", options = {}) {
+    const { toast = true } = options;
+
     codeRepairState.runtimeMessage = String(message || "");
     codeRepairState.runtimeTone = tone;
 
     if (!codeRepairElements?.runtimeMessage) {
+        if (toast) {
+            applyCodeRepairStatusToast(codeRepairState.runtimeMessage, tone);
+        }
+
         return;
     }
 
-    codeRepairElements.runtimeMessage.className = `text-body-sm min-h-16 ${CODE_REPAIR_STATUS_TEXT_CLASS[tone] || CODE_REPAIR_STATUS_TEXT_CLASS.neutral}`;
-    codeRepairElements.runtimeMessage.textContent = codeRepairState.runtimeMessage;
+    codeRepairElements.runtimeMessage.className = "hidden";
+    codeRepairElements.runtimeMessage.textContent = "";
+
+    if (toast) {
+        applyCodeRepairStatusToast(codeRepairState.runtimeMessage, tone);
+        return;
+    }
+
+    hideCodeRepairStatusToast(true);
+}
+
+function buildCodeRepairToastCopy(message, tone) {
+    const variant = CODE_REPAIR_TOAST_VARIANTS[tone] || CODE_REPAIR_TOAST_VARIANTS.neutral;
+    const normalizedMessage = typeof message === "string"
+        ? message.replace(/\s+/g, " ").trim()
+        : "";
+    const shouldUseBodyCopy = normalizedMessage.length > CODE_REPAIR_TOAST_TITLE_MAX_LENGTH
+        || normalizedMessage.includes(":")
+        || normalizedMessage.includes("\n");
+
+    if (!shouldUseBodyCopy) {
+        return {
+            title: normalizedMessage,
+            text: "",
+        };
+    }
+
+    return {
+        title: t(variant.titleKey, {}, variant.titleFallback),
+        text: normalizedMessage,
+    };
+}
+
+function applyCodeRepairStatusToast(message, tone = "neutral") {
+    const toast = document.getElementById("repair-status-message");
+    const title = document.getElementById("repair-status-message-title");
+    const text = document.getElementById("repair-status-message-text");
+    const icon = document.getElementById("repair-status-message-icon");
+    const variant = CODE_REPAIR_TOAST_VARIANTS[tone] || CODE_REPAIR_TOAST_VARIANTS.neutral;
+    const shouldHide = !message;
+
+    if (!toast || !title || !text || !icon) {
+        return;
+    }
+
+    const content = buildCodeRepairToastCopy(message, tone);
+    title.textContent = content.title;
+    title.hidden = content.title === "";
+    text.textContent = content.text;
+    text.hidden = content.text === "";
+    toast.className = CODE_REPAIR_TOAST_BASE_CLASS + " " + variant.className;
+    toast.setAttribute("role", variant.role);
+    icon.className = variant.iconClass + " text-icon-lg";
+
+    if (shouldHide) {
+        hideCodeRepairStatusToast(true);
+        return;
+    }
+
+    showCodeRepairStatusToast(variant.autoHide ? CODE_REPAIR_TOAST_AUTOHIDE_DELAY : 0);
+}
+
+function showCodeRepairStatusToast(dismissDelay = 0) {
+    const toast = document.getElementById("repair-status-message");
+
+    if (!toast) {
+        return;
+    }
+
+    clearCodeRepairStatusToastTimers();
+    toast.hidden = false;
+    toast.inert = false;
+    toast.setAttribute("aria-hidden", "false");
+
+    window.requestAnimationFrame(() => {
+        toast.classList.add("is-visible");
+    });
+
+    if (dismissDelay > 0) {
+        codeRepairToastTimers.dismiss = setTimeout(() => {
+            hideCodeRepairStatusToast();
+        }, dismissDelay);
+    }
+}
+
+function hideCodeRepairStatusToast(immediate = false) {
+    const toast = document.getElementById("repair-status-message");
+
+    if (!toast) {
+        return;
+    }
+
+    clearCodeRepairStatusToastTimers();
+    toast.classList.remove("is-visible");
+    toast.setAttribute("aria-hidden", "true");
+
+    if (immediate) {
+        toast.hidden = true;
+        toast.inert = true;
+        return;
+    }
+
+    codeRepairToastTimers.hide = setTimeout(() => {
+        toast.hidden = true;
+        toast.inert = true;
+        codeRepairToastTimers.hide = null;
+    }, CODE_REPAIR_TOAST_HIDE_DELAY);
+}
+
+function clearCodeRepairStatusToastTimers() {
+    if (codeRepairToastTimers.dismiss) {
+        clearTimeout(codeRepairToastTimers.dismiss);
+        codeRepairToastTimers.dismiss = null;
+    }
+
+    if (codeRepairToastTimers.hide) {
+        clearTimeout(codeRepairToastTimers.hide);
+        codeRepairToastTimers.hide = null;
+    }
+}
+
+function bindCodeRepairToastCloseButton() {
+    const closeButton = document.getElementById("repair-status-message-close");
+
+    if (!closeButton || closeButton.dataset.bound === "true") {
+        return;
+    }
+
+    closeButton.dataset.bound = "true";
+    closeButton.addEventListener("click", () => {
+        hideCodeRepairStatusToast();
+    });
 }
 
 function getCodeRepairLoadedMessage(payload) {
