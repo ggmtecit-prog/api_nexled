@@ -437,27 +437,27 @@ function renderCodeRepairSummary() {
     if (!payload) {
         codeRepairElements.summaryGrid.innerHTML = [
             buildCodeRepairSummaryCard(
-                t("codeRepair.summaryReference", {}, "Reference"),
+                "",
                 "code",
-                t("codeRepair.summaryReference", {}, "Reference"),
+                "",
                 escapeHtml(codeRepairState.reference || normalizeCodeRepairReference(codeRepairElements.referenceInput.value) || "...")
             ),
             buildCodeRepairSummaryCard(
-                t("codeRepair.summaryFamily", {}, "Family"),
                 "",
-                t("codeRepair.summaryFamily", {}, "Family"),
+                "",
+                "",
                 escapeHtml("...")
             ),
             buildCodeRepairSummaryCard(
                 t("codeRepair.summaryConfigurator", {}, "Configurator"),
                 "",
-                t("codeRepair.summaryConfigurator", {}, "Configurator"),
+                "",
                 buildCodeRepairNeutralBadge(t("codeRepair.statusUnavailable", {}, "Unavailable"))
             ),
             buildCodeRepairSummaryCard(
                 t("codeRepair.summaryDatasheet", {}, "Datasheet"),
                 "",
-                t("codeRepair.summaryDatasheet", {}, "Datasheet"),
+                "",
                 buildCodeRepairNeutralBadge(t("codeRepair.statusUnavailable", {}, "Unavailable"))
             ),
         ].join("");
@@ -468,7 +468,6 @@ function renderCodeRepairSummary() {
     const familyLabel = payload.family?.code
         ? `${payload.family.code} - ${payload.family.name || payload.family.code}`
         : (payload.family?.name || t("codeRepair.statusUnavailable", {}, "Unavailable"));
-    const topBlockerText = getCodeRepairTopBlockerText(payload);
     const configuratorMarkup = buildCodeRepairStatusBadge(
         summary.configurator_valid === true,
         t("codeRepair.statusValid", {}, "Valid"),
@@ -482,31 +481,28 @@ function renderCodeRepairSummary() {
 
     codeRepairElements.summaryGrid.innerHTML = [
         buildCodeRepairSummaryCard(
-            t("codeRepair.summaryReference", {}, "Reference"),
+            "",
             "code",
-            t("codeRepair.summaryReference", {}, "Reference"),
+            "",
             escapeHtml(summary.reference || payload.reference || "")
         ),
         buildCodeRepairSummaryCard(
-            t("codeRepair.summaryFamily", {}, "Family"),
             "",
-            t("codeRepair.summaryFamily", {}, "Family"),
+            "",
+            "",
             escapeHtml(familyLabel)
         ),
         buildCodeRepairSummaryCard(
             t("codeRepair.summaryConfigurator", {}, "Configurator"),
             "",
-            t("codeRepair.summaryConfigurator", {}, "Configurator"),
+            "",
             configuratorMarkup
         ),
         buildCodeRepairSummaryCard(
             t("codeRepair.summaryDatasheet", {}, "Datasheet"),
             "",
-            t("codeRepair.summaryTopBlocker", {}, "Top blocker"),
-            [
-                datasheetMarkup,
-                `<span class="text-body-sm text-grey-primary">${escapeHtml(topBlockerText)}</span>`,
-            ].join("<div class=\"h-4\"></div>")
+            "",
+            datasheetMarkup
         ),
     ].join("");
 }
@@ -515,12 +511,18 @@ function buildCodeRepairSummaryCard(eyebrow, eyebrowClass, detailLabel, valueMar
     const eyebrowClasses = eyebrowClass === "code"
         ? "text-label-md text-grey-primary"
         : "text-label-md text-grey-primary";
+    const eyebrowMarkup = eyebrow
+        ? `<span class="${eyebrowClasses}">${escapeHtml(eyebrow)}</span>`
+        : "";
+    const detailMarkup = detailLabel
+        ? `<span class="text-body-xs text-grey-primary">${escapeHtml(detailLabel)}</span>`
+        : "";
 
     return `
-        <article class="panel p-20 flex flex-col gap-10">
-            <span class="${eyebrowClasses}">${escapeHtml(eyebrow)}</span>
+        <article class="panel border-0 bg-transparent p-20 flex flex-col gap-10">
+            ${eyebrowMarkup}
             <div class="flex flex-col gap-6">
-                <span class="text-body-xs text-grey-primary">${escapeHtml(detailLabel)}</span>
+                ${detailMarkup}
                 <div class="text-title-sm break-all">${valueMarkup}</div>
             </div>
         </article>
