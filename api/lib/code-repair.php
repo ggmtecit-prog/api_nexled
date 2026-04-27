@@ -227,6 +227,14 @@ function buildCodeRepairResponse(string $reference, string $lang = CODE_EXPLORER
             "blockers" => $blockers,
             "runtime_supported" => $runtimeSupported,
         ],
+        "database_checks" => buildCodeRepairDatabaseChecks(
+            $row,
+            $identityData,
+            $productId,
+            $ledId,
+            $inspection,
+            $sourceMap
+        ),
         "source_map" => $sourceMap,
         "characteristics" => $inspection["characteristics"] ?? [],
         "dimensions" => $inspection["dimensions"] ?? [],
@@ -573,6 +581,96 @@ function buildCodeRepairBlockers(
             "current_status" => $sourceKey !== "" ? ($sourceMap[$sourceKey]["status"] ?? "") : "",
         ];
     }, $codes));
+}
+
+function buildCodeRepairDatabaseChecks(
+    array $row,
+    ?array $identityData,
+    ?string $productId,
+    string $ledId,
+    array $inspection,
+    array $sourceMap
+): array {
+    $identity = (string) ($row["identity"] ?? "");
+    $description = (string) ($row["description"] ?? "");
+    $resolvedProductId = is_string($productId) ? trim($productId) : "";
+    $resolvedLedId = trim($ledId);
+    $hasIdentity = $identityData !== null;
+    $hasProductContext = $hasIdentity && $resolvedProductId !== "";
+    $hasLedContext = $hasIdentity && $resolvedLedId !== "";
+    $headerText = (string) ($sourceMap["header"]["description_text"] ?? "");
+    $headerStatus = (string) ($sourceMap["header"]["status"] ?? "");
+    $characteristics = is_array($inspection["characteristics"] ?? null) ? $inspection["characteristics"] : [];
+    $dimensions = is_array($inspection["dimensions"] ?? null) ? $inspection["dimensions"] : [];
+    $ipRating = (string) ($inspection["summary"]["ip_rating"] ?? "");
+    $colorGraphLabel = (string) ($inspection["summary"]["color_graph_label"] ?? "");
+    $colorGraphStatus = (string) ($sourceMap["color_graph"]["status"] ?? "");
+
+    return [
+        [
+            "key" => "luminos_identity",
+            "source" => "luminos",
+            "status" => $hasIdentity ? "present" : "missing",
+            "blocking" => true,
+            "value" => $identity,
+        ],
+        [
+            "key" => "product_id",
+            "source" => "luminos",
+            "status" => !$hasIdentity ? "unavailable" : ($resolvedProductId !== "" ? "present" : "missing"),
+            "blocking" => true,
+            "value" => $resolvedProductId,
+        ],
+        [
+            "key" => "led_id",
+            "source" => "luminos",
+            "status" => !$hasIdentity ? "unavailable" : ($resolvedLedId !== "" ? "present" : "missing"),
+            "blocking" => true,
+            "value" => $resolvedLedId,
+        ],
+        [
+            "key" => "luminos_description",
+            "source" => "luminos",
+            "status" => !$hasIdentity ? "unavailable" : ($description !== "" ? "present" : "missing"),
+            "blocking" => false,
+            "value" => $description,
+        ],
+        [
+            "key" => "header_description",
+            "source" => "product_database",
+            "status" => $headerStatus === "unavailable" ? "unavailable" : ($headerText !== "" ? "present" : "missing"),
+            "blocking" => true,
+            "value" => $headerText,
+        ],
+        [
+            "key" => "characteristics",
+            "source" => "product_database",
+            "status" => !$hasProductContext ? "unavailable" : (count($characteristics) > 0 ? "present" : "missing"),
+            "blocking" => false,
+            "count" => count($characteristics),
+        ],
+        [
+            "key" => "dimensions",
+            "source" => "product_database",
+            "status" => !$hasProductContext ? "unavailable" : (count($dimensions) > 0 ? "present" : "missing"),
+            "blocking" => false,
+            "count" => count($dimensions),
+        ],
+        [
+            "key" => "ip_rating",
+            "source" => "product_database",
+            "status" => !$hasProductContext ? "unavailable" : ($ipRating !== "" ? "present" : "missing"),
+            "blocking" => false,
+            "value" => $ipRating,
+        ],
+        [
+            "key" => "color_graph_label",
+            "source" => "led_database",
+            "status" => $colorGraphStatus === "unavailable" || !$hasLedContext ? "unavailable" : ($colorGraphLabel !== "" ? "present" : "missing"),
+            "blocking" => false,
+            "value" => $colorGraphLabel,
+        ],
+    ];
 }
 
 function buildCodeRepairRuntimeConfig(string $reference, array $options, string $lang): array {
