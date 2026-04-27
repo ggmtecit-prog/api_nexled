@@ -492,23 +492,35 @@ function renderCodeRepairSummary() {
         codeRepairElements.summaryGrid.innerHTML = buildCodeRepairSummaryHeroMarkup({
             reference: referenceValue,
             family: familyValue,
-            configuratorMarkup: buildCodeRepairNeutralBadge(t("codeRepair.statusUnavailable", {}, "Unavailable")),
-            datasheetMarkup: buildCodeRepairNeutralBadge(t("codeRepair.statusUnavailable", {}, "Unavailable")),
+            configuratorMarkup: buildCodeRepairSummaryStatusBadge(
+                t("codeRepair.summaryConfigurator", {}, "Configurator"),
+                "neutral",
+                t("codeRepair.statusUnavailable", {}, "Unavailable")
+            ),
+            datasheetMarkup: buildCodeRepairSummaryStatusBadge(
+                t("codeRepair.summaryDatasheet", {}, "Datasheet"),
+                "neutral",
+                t("codeRepair.statusUnavailable", {}, "Unavailable")
+            ),
             gridSpanClass: "sm:col-span-2 xl:col-span-4",
         });
         return;
     }
 
     const summary = payload.summary || {};
-    const configuratorMarkup = buildCodeRepairStatusBadge(
-        summary.configurator_valid === true,
-        t("codeRepair.statusValid", {}, "Valid"),
-        t("codeRepair.statusInvalid", {}, "Invalid")
+    const configuratorMarkup = buildCodeRepairSummaryStatusBadge(
+        t("codeRepair.summaryConfigurator", {}, "Configurator"),
+        summary.configurator_valid === true ? "success" : "warning",
+        summary.configurator_valid === true
+            ? t("codeRepair.statusValid", {}, "Valid")
+            : t("codeRepair.statusInvalid", {}, "Invalid")
     );
-    const datasheetMarkup = buildCodeRepairStatusBadge(
-        summary.datasheet_ready === true,
-        t("codeRepair.statusReady", {}, "Ready"),
-        t("codeRepair.statusBlocked", {}, "Blocked")
+    const datasheetMarkup = buildCodeRepairSummaryStatusBadge(
+        t("codeRepair.summaryDatasheet", {}, "Datasheet"),
+        summary.datasheet_ready === true ? "success" : "warning",
+        summary.datasheet_ready === true
+            ? t("codeRepair.statusReady", {}, "Ready")
+            : t("codeRepair.statusBlocked", {}, "Blocked")
     );
 
     codeRepairElements.summaryGrid.innerHTML = buildCodeRepairSummaryHeroMarkup({
@@ -538,20 +550,23 @@ function buildCodeRepairSummaryHeroMarkup({
                 </div>
                 <div class="flex flex-col gap-20 min-w-0">
                     <p class="card-title break-words">${escapeHtml(family)}</p>
-                    <div class="grid grid-cols-1 gap-16 sm:grid-cols-2 md:max-w-2xl">
-                        <div class="flex flex-col gap-8 min-w-0">
-                            <span class="text-title-sm text-black">${escapeHtml(t("codeRepair.summaryConfigurator", {}, "Configurator"))}</span>
-                            <div>${safeConfiguratorMarkup}</div>
-                        </div>
-                        <div class="flex flex-col gap-8 min-w-0">
-                            <span class="text-title-sm text-black">${escapeHtml(t("codeRepair.summaryDatasheet", {}, "Datasheet"))}</span>
-                            <div>${safeDatasheetMarkup}</div>
-                        </div>
+                    <div class="flex flex-wrap items-center gap-12">
+                        <div>${safeConfiguratorMarkup}</div>
+                        <div>${safeDatasheetMarkup}</div>
                     </div>
                 </div>
             </div>
         </article>
     `;
+}
+
+function buildCodeRepairSummaryStatusBadge(label, tone, status) {
+    const toneClass = {
+        success: "badge-success",
+        warning: "badge-warning",
+        neutral: "badge-neutral",
+    }[tone] || "badge-neutral";
+    return `<span class="badge ${toneClass} badge-sm">${escapeHtml(label)} ${escapeHtml(status)}</span>`;
 }
 
 function buildCodeRepairBlockersEmptyHeroMarkup() {
