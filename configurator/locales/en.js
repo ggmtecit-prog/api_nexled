@@ -409,6 +409,8 @@ window.NexLedLocales.en = {
         revalidate: "Revalidate",
         backToExplorer: "Back to Explorer",
         openConfigurator: "Open in configurator",
+        emptyStateTitle: "No repair context loaded",
+        emptyStateBody: "Use the panel on the right to load a reference.",
         runtimeAwaitingReference: "Enter a full Tecit reference to load the repair context.",
         runtimeLoading: "Loading repair context...",
         runtimeLoadedReady: "Repair context loaded. Datasheet is ready.",

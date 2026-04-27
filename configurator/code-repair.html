@@ -227,7 +227,21 @@
 
             <section class="grid grid-cols-1 xl:grid-cols-12 gap-24 items-start">
                 <div class="xl:col-span-9 flex flex-col gap-24 min-w-0">
-                    <section class="card overflow-hidden">
+                    <section id="repair-empty-state-card" class="card overflow-hidden">
+                        <div class="card-body flex min-h-[36rem] items-center justify-center p-24">
+                            <div class="empty-state empty-state-lg w-full max-w-2xl border-0 bg-transparent" role="status" aria-live="polite">
+                                <span class="empty-state-icon icon-box icon-box-empty-state">
+                                    <i class="ri-inbox-archive-line text-icon-lg" aria-hidden="true"></i>
+                                </span>
+                                <div class="empty-state-copy">
+                                    <h3 class="empty-state-title" data-i18n="codeRepair.emptyStateTitle">No repair context loaded</h3>
+                                    <p class="empty-state-text" data-i18n="codeRepair.emptyStateBody">Use the panel on the right to load a reference.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
+                    <section id="repair-details-card" class="card overflow-hidden hidden">
                         <div class="card-body p-24 flex flex-col gap-24">
                             <div class="flex flex-col gap-20">
                                 <p id="repair-runtime-message" class="text-body-sm text-grey-primary min-h-16" data-i18n="codeRepair.runtimeAwaitingReference">Enter a full Tecit reference to load the repair context.</p>

@@ -179,6 +179,8 @@ function getCodeRepairElements() {
     const loadButton = document.getElementById("repair-load-button");
     const revalidateButton = document.getElementById("repair-revalidate-button");
     const runtimeMessage = document.getElementById("repair-runtime-message");
+    const emptyStateCard = document.getElementById("repair-empty-state-card");
+    const detailsCard = document.getElementById("repair-details-card");
     const summaryGrid = document.getElementById("repair-summary-grid");
     const blockersList = document.getElementById("repair-blockers-list");
     const sourceGrid = document.getElementById("repair-source-grid");
@@ -196,6 +198,8 @@ function getCodeRepairElements() {
         || !loadButton
         || !revalidateButton
         || !runtimeMessage
+        || !emptyStateCard
+        || !detailsCard
         || !summaryGrid
         || !blockersList
         || !sourceGrid
@@ -215,6 +219,8 @@ function getCodeRepairElements() {
         loadButton,
         revalidateButton,
         runtimeMessage,
+        emptyStateCard,
+        detailsCard,
         summaryGrid,
         blockersList,
         sourceGrid,
@@ -383,6 +389,10 @@ async function checkCodeRepairApiHealth() {
 }
 
 function renderCodeRepairPage() {
+    const hasData = Boolean(codeRepairState.data);
+
+    codeRepairElements.emptyStateCard.classList.toggle("hidden", hasData);
+    codeRepairElements.detailsCard.classList.toggle("hidden", !hasData);
     syncCodeRepairActionState();
     renderCodeRepairSummary();
     renderCodeRepairBlockers();

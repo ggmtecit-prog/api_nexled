@@ -430,6 +430,8 @@ window.NexLedLocales.pt = {
         revalidate: "Revalidar",
         backToExplorer: "Voltar ao Explorer",
         openConfigurator: "Abrir no configurador",
+        emptyStateTitle: "Nenhum contexto carregado",
+        emptyStateBody: "Use o painel da direita para carregar uma referencia.",
         runtimeAwaitingReference: "Introduza uma referência Tecit completa para carregar o contexto de reparação.",
         runtimeLoading: "A carregar contexto de repair...",
         runtimeLoadedReady: "Contexto carregado. A ficha tecnica esta pronta.",
@@ -930,3 +932,4 @@ window.NexLedLocales.pt = {
         },
     },
 };
+
