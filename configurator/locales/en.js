@@ -407,6 +407,7 @@ window.NexLedLocales.en = {
         referencePlaceholder: "11007502110010100",
         load: "Load Repair Context",
         revalidate: "Revalidate",
+        confirmRevalidate: "Revalidate this reference? This will run the repair checks again.",
         backToExplorer: "Back to Explorer",
         openConfigurator: "Open in configurator",
         emptyStateTitle: "No repair context loaded",

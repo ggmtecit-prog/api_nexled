@@ -428,6 +428,7 @@ window.NexLedLocales.pt = {
         referencePlaceholder: "11007502110010100",
         load: "Carregar contexto",
         revalidate: "Revalidar",
+        confirmRevalidate: "Revalidar esta referencia? Isto vai correr novamente as verificacoes de repair.",
         backToExplorer: "Voltar ao Explorer",
         openConfigurator: "Abrir no configurador",
         emptyStateTitle: "Nenhum contexto carregado",

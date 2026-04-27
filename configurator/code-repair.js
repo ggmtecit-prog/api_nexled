@@ -266,6 +266,18 @@ function bindCodeRepairEvents() {
             return;
         }
 
+        const confirmed = window.confirm(
+            t(
+                "codeRepair.confirmRevalidate",
+                { reference },
+                'Revalidate this reference? This will run the repair checks again.'
+            )
+        );
+
+        if (!confirmed) {
+            return;
+        }
+
         void loadCodeRepairContext(reference, {
             preserveDataOnError: true,
         });
