@@ -1436,7 +1436,6 @@ function getCustomImageBrowserElements() {
     const preview = document.getElementById("custom-image-browser-preview");
     const previewEmpty = document.getElementById("custom-image-browser-preview-empty");
     const previewImage = document.getElementById("custom-image-browser-preview-image");
-    const manual = document.getElementById("custom-image-browser-manual-id");
     const clearButton = document.getElementById("custom-image-browser-clear");
     const applyButton = document.getElementById("custom-image-browser-apply");
     const status = document.getElementById("custom-image-browser-status");
@@ -1454,7 +1453,6 @@ function getCustomImageBrowserElements() {
         || !(preview instanceof HTMLElement)
         || !(previewEmpty instanceof HTMLElement)
         || !(previewImage instanceof HTMLImageElement)
-        || !(manual instanceof HTMLInputElement)
         || !(clearButton instanceof HTMLButtonElement)
         || !(applyButton instanceof HTMLButtonElement)
         || !(status instanceof HTMLElement)
@@ -1475,7 +1473,6 @@ function getCustomImageBrowserElements() {
         preview,
         previewEmpty,
         previewImage,
-        manual,
         clearButton,
         applyButton,
         status,
@@ -1550,30 +1547,15 @@ function bindCustomImageBrowserControls() {
         elements.search.dataset.customBrowserBound = "true";
     }
 
-    if (elements.manual.dataset.customBrowserBound !== "true") {
-        elements.manual.addEventListener("input", () => {
-            const manualValue = String(elements.manual.value || "").trim();
-
-            if (!/^\d+$/.test(manualValue) || String(customImageBrowserState.selectedAsset?.id || "") !== manualValue) {
-                customImageBrowserState.selectedAsset = null;
-                customImageBrowserState.selectedAssetId = null;
-            }
-
-            renderCustomImageBrowserPreview();
-        });
-        elements.manual.dataset.customBrowserBound = "true";
-    }
-
     if (elements.clearButton.dataset.customBrowserBound !== "true") {
         elements.clearButton.addEventListener("click", () => {
-            elements.manual.value = "";
             customImageBrowserState.selectedAsset = null;
             customImageBrowserState.selectedAssetId = null;
             renderCustomImageBrowserPreview();
             setCustomImageBrowserStatus(
                 "configurator.custom.browserStatusIdle",
                 {},
-                "Browse the custom DAM folders or type an asset ID."
+                "Browse the custom DAM folders and choose an asset."
             );
         });
         elements.clearButton.dataset.customBrowserBound = "true";
@@ -1666,7 +1648,7 @@ async function openCustomImageBrowserForField(fieldId, trigger = null) {
     customImageBrowserState.selectedAsset = null;
     customImageBrowserState.selectedAssetId = null;
     elements.search.value = "";
-    elements.manual.value = getCustomAssetFieldValue(field.id);
+    const currentAssetId = getCustomAssetFieldValue(field.id);
 
     syncCustomImageBrowserHeader(field);
     renderCustomImageBrowserBreadcrumb();
@@ -1679,7 +1661,7 @@ async function openCustomImageBrowserForField(fieldId, trigger = null) {
     setCustomImageBrowserModalOpen(true);
 
     await loadCustomImageBrowserFolder(field.uploadFolderId);
-    await hydrateCustomImageBrowserAsset(elements.manual.value);
+    await hydrateCustomImageBrowserAsset(currentAssetId);
 }
 
 function syncCustomImageBrowserHeader(field) {
@@ -1694,7 +1676,7 @@ function syncCustomImageBrowserHeader(field) {
     elements.modalHint.textContent = t(
         "configurator.custom.browserModalHintSingle",
         { target: fieldLabel },
-        "Browse isolated DAM folders, search assets, or type an asset ID manually for " + fieldLabel + "."
+        "Browse isolated DAM folders and search all DAM assets for " + fieldLabel + "."
     );
 }
 
@@ -1735,7 +1717,7 @@ async function loadCustomImageBrowserFolder(folderId) {
             { query: customImageBrowserState.searchQuery },
             customImageBrowserState.searchScope === "global"
                 ? "Showing DAM search results for \"" + customImageBrowserState.searchQuery + "\"."
-                : "Browse the custom DAM folders or type an asset ID."
+                : "Browse the custom DAM folders and choose an asset."
         );
     } catch (error) {
         if (requestToken !== customImageBrowserFolderRequestToken) {
@@ -1896,14 +1878,8 @@ function renderCustomImageBrowserGrid() {
         wrapper.title = asset.display_name || asset.filename || "";
         wrapper.setAttribute("aria-pressed", String(String(customImageBrowserState.selectedAssetId || "") === String(asset.id || "")));
         wrapper.addEventListener("click", () => {
-            const elementsRef = getCustomImageBrowserElements();
-
             customImageBrowserState.selectedAsset = asset;
             customImageBrowserState.selectedAssetId = asset.id || null;
-
-            if (elementsRef) {
-                elementsRef.manual.value = String(asset.id || "");
-            }
 
             renderCustomImageBrowserGrid();
             renderCustomImageBrowserPreview();
@@ -2039,7 +2015,7 @@ function applyCustomImageBrowserSelection() {
         return;
     }
 
-    input.value = String(elements.manual.value || "").trim();
+    input.value = String(customImageBrowserState.selectedAssetId || "").trim();
     syncCustomAssetFieldSummaries();
     scheduleCustomPreview();
     setStatusKey(
@@ -5020,7 +4996,7 @@ function refreshLocalizedControls() {
         setCustomImageBrowserStatus(
             "configurator.custom.browserStatusIdle",
             {},
-            "Browse the custom DAM folders or type an asset ID."
+            "Browse the custom DAM folders and choose an asset."
         );
     }
     applyStatusState();

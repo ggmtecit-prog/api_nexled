@@ -888,7 +888,7 @@
             <div class="modal-header">
                 <div>
                     <h2 id="customImageBrowserTitle" class="modal-title" data-i18n="configurator.custom.browserModalTitle">Custom Image Browser</h2>
-                    <p id="custom-image-browser-modal-hint" class="text-body-sm text-grey-primary max-w-readable" data-i18n="configurator.custom.browserModalHint">Browse isolated DAM folders, search assets, or type an asset ID manually for the selected image slot.</p>
+                    <p id="custom-image-browser-modal-hint" class="text-body-sm text-grey-primary max-w-readable" data-i18n="configurator.custom.browserModalHint">Browse isolated DAM folders and search all DAM assets for the selected image slot.</p>
                 </div>
                 <button type="button" class="btn btn-ghost btn-icon btn-xs" aria-label="Close custom image browser" data-close-custom-image-browser>
                     <i class="ri-close-line text-icon-md" aria-hidden="true"></i>
@@ -908,8 +908,8 @@
                         <ol id="custom-image-browser-breadcrumb" class="breadcrumb"></ol>
                     </nav>
 
-                    <div class="grid grid-cols-1 xl:grid-cols-12 gap-24 items-start">
-                        <div class="xl:col-span-7 panel panel-sm flex min-h-[340px] flex-col gap-16">
+                    <div class="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_320px] gap-24 items-stretch">
+                        <div class="panel panel-sm flex min-h-[420px] flex-col gap-16">
                             <div id="custom-image-browser-grid" class="grid grid-cols-2 gap-16 sm:grid-cols-3"></div>
                             <div id="custom-image-browser-empty" class="hidden flex flex-1 items-center justify-center py-48">
                                 <div class="empty-state empty-state-md w-full max-w-xl border-0 bg-transparent" role="status" aria-live="polite">
@@ -923,13 +923,13 @@
                             </div>
                         </div>
 
-                        <aside class="xl:col-span-5 panel panel-sm flex flex-col gap-16">
+                        <aside class="panel panel-sm flex min-h-[420px] flex-col gap-20">
                             <div class="flex flex-col gap-4">
                                 <span id="custom-image-browser-active-label" class="text-label text-grey-primary">Header image</span>
-                                <p class="text-body-sm text-grey-primary max-w-readable" data-i18n="configurator.custom.browserSelectionHint">Select an asset from DAM or type an asset ID manually.</p>
+                                <p class="text-body-sm text-grey-primary max-w-readable" data-i18n="configurator.custom.browserSelectionHint">Select an asset from DAM for this image slot.</p>
                             </div>
 
-                            <div id="custom-image-browser-preview" class="flex min-h-[220px] items-center justify-center overflow-hidden rounded-16 border border-grey-secondary bg-grey-tertiary">
+                            <div id="custom-image-browser-preview" class="flex min-h-[280px] flex-1 items-center justify-center overflow-hidden rounded-16 border border-grey-secondary bg-grey-tertiary">
                                 <div id="custom-image-browser-preview-empty" class="flex flex-col items-center gap-12 px-16 py-24 text-center text-grey-primary">
                                     <i class="ri-image-line text-icon-xl" aria-hidden="true"></i>
                                     <span class="text-body-sm" data-i18n="configurator.custom.browserPreviewEmpty">Choose an asset to preview it here.</span>
@@ -937,11 +937,7 @@
                                 <img id="custom-image-browser-preview-image" class="hidden h-full w-full object-contain" alt="">
                             </div>
 
-                            <div class="grid grid-cols-1 gap-16">
-                                <div>
-                                    <label class="input-label ml-12" for="custom-image-browser-manual-id" data-i18n="configurator.custom.browserManualLabel">Asset ID</label>
-                                    <input type="text" id="custom-image-browser-manual-id" class="input input-sm" placeholder="123">
-                                </div>
+                            <div class="mt-auto flex flex-col gap-12 pt-4">
                                 <div class="flex items-center gap-12">
                                     <button type="button" id="custom-image-browser-clear" class="btn btn-secondary btn-sm">
                                         <span data-i18n="configurator.custom.browserClearButton">Clear</span>
@@ -950,7 +946,7 @@
                                         <span data-i18n="configurator.custom.browserApplyButton">Apply Image</span>
                                     </button>
                                 </div>
-                                <p id="custom-image-browser-status" class="text-body-sm text-grey-primary max-w-readable" data-i18n="configurator.custom.browserStatusIdle">Browse the custom DAM folders or type an asset ID.</p>
+                                <p id="custom-image-browser-status" class="text-body-sm text-grey-primary max-w-readable" data-i18n="configurator.custom.browserStatusIdle">Browse the custom DAM folders and choose an asset.</p>
                             </div>
                         </aside>
                     </div>
