@@ -823,6 +823,14 @@
                             </div>
                         </div>
 
+                        <section id="custom-main-field-overrides-panel" class="hidden flex flex-col gap-16 pt-24">
+                            <div class="divider"></div>
+                            <div class="flex flex-col gap-4 pt-8">
+                                <h3 class="card-title" data-i18n="configurator.custom.fieldOverridesTitle">Advanced Field Overrides</h3>
+                            </div>
+                            <div id="custom-main-field-overrides-editors" class="grid grid-cols-1 gap-24 pt-8"></div>
+                        </section>
+
                         <div id="datasheet-design-variant-panel" class="flex flex-col gap-8 pt-20">
                             <div class="flex flex-col gap-4">
                                 <span class="input-label ml-12" data-i18n="configurator.quickActions.designVariant">Datasheet Design</span>
@@ -884,59 +892,50 @@
             </div>
 
             <div id="customImageBrowserBody" class="modal-body custom-scrollbar flex-1 min-h-0 overflow-y-auto overflow-x-hidden">
-                <div class="flex flex-col gap-24">
-                    <div class="input-icon-wrapper">
+                <div class="relative">
+                    <div class="input-icon-wrapper absolute inset-x-0 top-0 z-sticky">
                         <span class="input-icon-area" aria-hidden="true">
                             <i class="ri-search-line text-icon-md"></i>
                         </span>
-                        <input type="text" id="custom-image-browser-search" class="input-icon-field" placeholder="Search current folder..." autocomplete="off" data-i18n-placeholder="configurator.custom.browserSearchPlaceholder">
+                        <input type="text" id="custom-image-browser-search" class="input-icon-field" placeholder="Search all DAM folders and assets..." autocomplete="off" data-i18n-placeholder="configurator.custom.browserSearchPlaceholder">
                     </div>
 
-                    <nav aria-label="Custom image DAM breadcrumb">
-                        <ol id="custom-image-browser-breadcrumb" class="breadcrumb"></ol>
-                    </nav>
+                    <div class="card overflow-hidden">
+                        <div class="card-body pt-64">
+                            <div class="flex flex-col gap-24">
+                                <nav aria-label="Custom image DAM breadcrumb" class="w-full px-32">
+                                    <ol id="custom-image-browser-breadcrumb" class="breadcrumb"></ol>
+                                </nav>
 
-                    <div class="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_320px] gap-24 items-stretch">
-                        <div class="panel panel-sm flex min-h-[420px] flex-col gap-16">
-                            <div id="custom-image-browser-grid" class="grid grid-cols-2 gap-16 sm:grid-cols-3"></div>
-                            <div id="custom-image-browser-empty" class="hidden flex flex-1 items-center justify-center py-48">
-                                <div class="empty-state empty-state-md w-full max-w-xl border-0 bg-transparent" role="status" aria-live="polite">
-                                    <span class="empty-state-icon icon-box icon-box-empty-state">
-                                        <i class="ri-folder-open-line text-icon-lg" aria-hidden="true"></i>
-                                    </span>
-                                    <div class="empty-state-copy">
-                                        <h3 id="custom-image-browser-empty-label" class="empty-state-title" data-i18n="configurator.custom.browserEmpty">No folders or assets found here.</h3>
+                                <div id="custom-image-browser-grid" class="grid grid-cols-2 gap-24 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 md:gap-32"></div>
+
+                                <div id="custom-image-browser-empty" class="hidden flex flex-1 items-center justify-center py-64">
+                                    <div class="empty-state empty-state-lg w-full max-w-2xl border-0 bg-transparent" role="status" aria-live="polite">
+                                        <span class="empty-state-icon icon-box icon-box-empty-state">
+                                            <i class="ri-folder-open-line text-icon-lg" aria-hidden="true"></i>
+                                        </span>
+                                        <div class="empty-state-copy">
+                                            <h3 id="custom-image-browser-empty-label" class="empty-state-title" data-i18n="configurator.custom.browserEmpty">No folders or assets found here.</h3>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="flex flex-col gap-16 border-t border-grey-secondary pt-24 md:flex-row md:items-end md:justify-between">
+                                    <div class="flex flex-col gap-4">
+                                        <p class="text-body-sm text-grey-primary max-w-readable" data-i18n="configurator.custom.browserSelectionHint">Select an asset from DAM for this image slot.</p>
+                                        <p id="custom-image-browser-status" class="text-body-sm text-grey-primary max-w-readable" data-i18n="configurator.custom.browserStatusIdle">Browse the custom DAM folders and choose an asset.</p>
+                                    </div>
+                                    <div class="flex items-center gap-12">
+                                        <button type="button" id="custom-image-browser-clear" class="btn btn-secondary btn-sm">
+                                            <span data-i18n="configurator.custom.browserClearButton">Clear</span>
+                                        </button>
+                                        <button type="button" id="custom-image-browser-apply" class="btn btn-primary btn-sm">
+                                            <span data-i18n="configurator.custom.browserApplyButton">Apply Image</span>
+                                        </button>
                                     </div>
                                 </div>
                             </div>
                         </div>
-
-                        <aside class="panel panel-sm flex min-h-[420px] flex-col gap-20">
-                            <div class="flex flex-col gap-4">
-                                <span id="custom-image-browser-active-label" class="text-label text-grey-primary">Header image</span>
-                                <p class="text-body-sm text-grey-primary max-w-readable" data-i18n="configurator.custom.browserSelectionHint">Select an asset from DAM for this image slot.</p>
-                            </div>
-
-                            <div id="custom-image-browser-preview" class="flex min-h-[280px] flex-1 items-center justify-center overflow-hidden rounded-16 border border-grey-secondary bg-grey-tertiary">
-                                <div id="custom-image-browser-preview-empty" class="flex flex-col items-center gap-12 px-16 py-24 text-center text-grey-primary">
-                                    <i class="ri-image-line text-icon-xl" aria-hidden="true"></i>
-                                    <span class="text-body-sm" data-i18n="configurator.custom.browserPreviewEmpty">Choose an asset to preview it here.</span>
-                                </div>
-                                <img id="custom-image-browser-preview-image" class="hidden h-full w-full object-contain" alt="">
-                            </div>
-
-                            <div class="mt-auto flex flex-col gap-12 pt-4">
-                                <div class="flex items-center gap-12">
-                                    <button type="button" id="custom-image-browser-clear" class="btn btn-secondary btn-sm">
-                                        <span data-i18n="configurator.custom.browserClearButton">Clear</span>
-                                    </button>
-                                    <button type="button" id="custom-image-browser-apply" class="btn btn-primary btn-sm">
-                                        <span data-i18n="configurator.custom.browserApplyButton">Apply Image</span>
-                                    </button>
-                                </div>
-                                <p id="custom-image-browser-status" class="text-body-sm text-grey-primary max-w-readable" data-i18n="configurator.custom.browserStatusIdle">Browse the custom DAM folders and choose an asset.</p>
-                            </div>
-                        </aside>
                     </div>
                 </div>
             </div>

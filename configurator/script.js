@@ -1429,10 +1429,6 @@ function getCustomImageBrowserElements() {
     const grid = document.getElementById("custom-image-browser-grid");
     const empty = document.getElementById("custom-image-browser-empty");
     const emptyLabel = document.getElementById("custom-image-browser-empty-label");
-    const activeLabel = document.getElementById("custom-image-browser-active-label");
-    const preview = document.getElementById("custom-image-browser-preview");
-    const previewEmpty = document.getElementById("custom-image-browser-preview-empty");
-    const previewImage = document.getElementById("custom-image-browser-preview-image");
     const clearButton = document.getElementById("custom-image-browser-clear");
     const applyButton = document.getElementById("custom-image-browser-apply");
     const status = document.getElementById("custom-image-browser-status");
@@ -1446,10 +1442,6 @@ function getCustomImageBrowserElements() {
         || !(grid instanceof HTMLElement)
         || !(empty instanceof HTMLElement)
         || !(emptyLabel instanceof HTMLElement)
-        || !(activeLabel instanceof HTMLElement)
-        || !(preview instanceof HTMLElement)
-        || !(previewEmpty instanceof HTMLElement)
-        || !(previewImage instanceof HTMLImageElement)
         || !(clearButton instanceof HTMLButtonElement)
         || !(applyButton instanceof HTMLButtonElement)
         || !(status instanceof HTMLElement)
@@ -1466,10 +1458,6 @@ function getCustomImageBrowserElements() {
         grid,
         empty,
         emptyLabel,
-        activeLabel,
-        preview,
-        previewEmpty,
-        previewImage,
         clearButton,
         applyButton,
         status,
@@ -1559,6 +1547,7 @@ function bindCustomImageBrowserControls() {
         elements.clearButton.addEventListener("click", () => {
             customImageBrowserState.selectedAsset = null;
             customImageBrowserState.selectedAssetId = null;
+            renderCustomImageBrowserGrid();
             renderCustomImageBrowserPreview();
             setCustomImageBrowserStatus(
                 "configurator.custom.browserStatusIdle",
@@ -1899,7 +1888,7 @@ function renderCustomImageBrowserGrid() {
         });
 
         const preview = document.createElement("div");
-        preview.className = "relative flex w-full items-center justify-center overflow-hidden rounded-lg border border-grey-secondary bg-grey-tertiary";
+        preview.className = "relative flex w-full items-center justify-center overflow-visible rounded-lg";
         preview.style.aspectRatio = "1 / 1";
         preview.style.minHeight = "120px";
 
@@ -1909,13 +1898,17 @@ function renderCustomImageBrowserGrid() {
             const image = document.createElement("img");
             image.src = imageUrl;
             image.alt = asset.display_name || asset.filename || "Asset";
-            image.className = "block h-full w-full object-cover object-center";
+            image.className = "block h-full w-full rounded-lg border border-grey-secondary bg-grey-secondary object-cover object-center";
             image.loading = "lazy";
             preview.appendChild(image);
         } else {
-            const fallback = document.createElement("i");
-            fallback.className = "ri-image-line text-icon-xxl text-grey-primary";
-            fallback.setAttribute("aria-hidden", "true");
+            const fallback = document.createElement("div");
+            fallback.className = "flex h-full w-full items-center justify-center rounded-lg border border-grey-secondary bg-grey-secondary";
+
+            const icon = document.createElement("i");
+            icon.className = "ri-image-line text-icon-xxl text-grey-primary";
+            icon.setAttribute("aria-hidden", "true");
+            fallback.appendChild(icon);
             preview.appendChild(fallback);
         }
 
@@ -1929,7 +1922,7 @@ function renderCustomImageBrowserGrid() {
         path.textContent = folderPath;
 
         if (String(customImageBrowserState.selectedAssetId || "") === String(asset.id || "")) {
-            wrapper.classList.add("ring-2", "ring-green-primary");
+            preview.classList.add("ring-2", "ring-green-primary");
         }
 
         wrapper.append(preview, name);
@@ -1951,28 +1944,7 @@ function resolveCustomImageBrowserAssetImageUrl(asset) {
 }
 
 function renderCustomImageBrowserPreview() {
-    const elements = getCustomImageBrowserElements();
-    const activeField = getCustomAssetFieldById(customImageBrowserState.activeFieldId);
-
-    if (!elements || !activeField) {
-        return;
-    }
-
-    elements.activeLabel.textContent = getCustomAssetFieldLabel(activeField);
-
-    const imageUrl = resolveCustomImageBrowserAssetImageUrl(customImageBrowserState.selectedAsset);
-    const showImage = imageUrl !== "";
-
-    elements.previewEmpty.classList.toggle("hidden", showImage);
-    elements.previewImage.classList.toggle("hidden", !showImage);
-
-    if (showImage) {
-        elements.previewImage.src = imageUrl;
-        elements.previewImage.alt = customImageBrowserState.selectedAsset?.display_name || customImageBrowserState.selectedAsset?.filename || getCustomAssetFieldLabel(activeField);
-    } else {
-        elements.previewImage.removeAttribute("src");
-        elements.previewImage.alt = "";
-    }
+    return;
 }
 
 async function hydrateCustomImageBrowserAsset(assetId) {
@@ -1998,6 +1970,13 @@ async function hydrateCustomImageBrowserAsset(assetId) {
         customImageBrowserState.selectedAssetId = customImageBrowserState.selectedAsset?.id || null;
         renderCustomImageBrowserGrid();
         renderCustomImageBrowserPreview();
+        if (customImageBrowserState.selectedAssetId) {
+            setCustomImageBrowserStatus(
+                "configurator.custom.browserAssetSelected",
+                {},
+                "Asset selected."
+            );
+        }
     } catch (error) {
         if (requestToken !== customImageBrowserAssetRequestToken) {
             return;
@@ -2249,12 +2228,68 @@ function getCustomFieldOverrideDefinition(key) {
     return CUSTOM_FIELD_OVERRIDE_DEFINITIONS.find((definition) => definition.key === key) || null;
 }
 
-function getCustomFieldOverrideToggleId(key) {
-    return "custom-field-override-toggle-" + key;
+function getCustomFieldOverrideToggleId(key, variant = "panel") {
+    return "custom-field-override-toggle-" + key + "-" + variant;
 }
 
-function getCustomFieldOverrideInputId(key) {
-    return "custom-field-override-input-" + key;
+function getCustomFieldOverrideInputId(key, variant = "panel") {
+    return "custom-field-override-input-" + key + "-" + variant;
+}
+
+function getCustomFieldOverrideToggles(key) {
+    return Array.from(document.querySelectorAll('[data-custom-field-override-toggle-key="' + key + '"]'))
+        .filter((element) => element instanceof HTMLInputElement);
+}
+
+function getCustomFieldOverrideInputs(key) {
+    return Array.from(document.querySelectorAll('[data-custom-field-override-input="true"][data-custom-field-key="' + key + '"]'))
+        .filter((element) => element instanceof HTMLInputElement || element instanceof HTMLTextAreaElement);
+}
+
+function syncCustomFieldOverrideUiForKey(key, checked) {
+    Array.from(document.querySelectorAll('[data-custom-field-override-input-wrap="' + key + '"]')).forEach((wrap) => {
+        if (!(wrap instanceof HTMLElement)) {
+            return;
+        }
+
+        wrap.classList.toggle("hidden", !checked);
+    });
+
+    getCustomFieldOverrideInputs(key).forEach((input) => {
+        input.disabled = !checked;
+    });
+}
+
+function syncCustomFieldOverrideCopies(key, checked, value, defaultValue, sourceInput = null) {
+    getCustomFieldOverrideToggles(key).forEach((toggle) => {
+        toggle.checked = checked;
+    });
+
+    getCustomFieldOverrideInputs(key).forEach((input) => {
+        input.dataset.defaultValue = defaultValue;
+
+        if (input !== sourceInput) {
+            input.value = value;
+        }
+    });
+
+    syncCustomFieldOverrideUiForKey(key, checked);
+}
+
+function getCustomFieldOverrideState(key) {
+    const inputs = getCustomFieldOverrideInputs(key);
+    const toggles = getCustomFieldOverrideToggles(key);
+    const primaryInput = inputs.find((input) => !input.disabled) || inputs[0] || null;
+
+    if (!(primaryInput instanceof HTMLInputElement || primaryInput instanceof HTMLTextAreaElement)) {
+        return null;
+    }
+
+    return {
+        checked: toggles.some((toggle) => toggle.checked),
+        value: primaryInput.value,
+        defaultValue: String(primaryInput.dataset.defaultValue || ""),
+    };
 }
 
 function buildLocalCustomFieldOverrideSnapshot() {
@@ -2351,24 +2386,18 @@ function syncCustomFieldOverrideVisibility() {
 function captureCurrentCustomFieldOverrideStates() {
     const states = {};
 
-    Array.from(document.querySelectorAll("[data-custom-field-override-input]")).forEach((element) => {
-        if (!(element instanceof HTMLInputElement || element instanceof HTMLTextAreaElement)) {
+    CUSTOM_FIELD_OVERRIDE_DEFINITIONS.forEach((field) => {
+        if (states[field.key]) {
             return;
         }
 
-        const key = String(element.dataset.customFieldKey || "").trim();
+        const state = getCustomFieldOverrideState(field.key);
 
-        if (!key) {
+        if (!state) {
             return;
         }
 
-        const toggle = document.getElementById(getCustomFieldOverrideToggleId(key));
-
-        states[key] = {
-            checked: toggle instanceof HTMLInputElement ? toggle.checked : false,
-            value: element.value,
-            defaultValue: String(element.dataset.defaultValue || ""),
-        };
+        states[field.key] = state;
     });
 
     return states;
@@ -2382,8 +2411,8 @@ function buildEffectiveCustomFieldOverrideSnapshot(snapshot = customFieldOverrid
 }
 
 function buildCustomFieldOverrideControl(field, defaultValue, previousState = null, variant = "panel") {
-    const toggleId = getCustomFieldOverrideToggleId(field.key);
-    const inputId = getCustomFieldOverrideInputId(field.key);
+    const toggleId = getCustomFieldOverrideToggleId(field.key, variant);
+    const inputId = getCustomFieldOverrideInputId(field.key, variant);
     const checked = previousState ? Boolean(previousState.checked) : false;
     const inputValue = previousState && checked ? previousState.value : defaultValue;
     const compact = variant === "inline";
@@ -2419,6 +2448,7 @@ function buildCustomFieldOverrideControl(field, defaultValue, previousState = nu
     toggleLabel.className = "flex items-center gap-8 shrink-0 text-body-xs text-grey-primary";
     toggleInput.type = "checkbox";
     toggleInput.id = toggleId;
+    toggleInput.dataset.customFieldOverrideToggleKey = field.key;
     toggleInput.className = "h-16 w-16 shrink-0";
     toggleInput.checked = checked;
     toggleText.textContent = t("configurator.custom.fieldOverrideToggle", {}, "Override");
@@ -2454,15 +2484,21 @@ function buildCustomFieldOverrideControl(field, defaultValue, previousState = nu
     };
 
     toggleInput.addEventListener("change", () => {
-        if (toggleInput.checked && String(input.value || "").trim() === "") {
-            input.value = defaultValue;
+        const resolvedValue = toggleInput.checked && String(input.value || "").trim() === ""
+            ? defaultValue
+            : input.value;
+
+        if (resolvedValue !== input.value) {
+            input.value = resolvedValue;
         }
 
         syncInputState();
+        syncCustomFieldOverrideCopies(field.key, toggleInput.checked, input.value, defaultValue, input);
         scheduleCustomPreview();
     });
 
     input.addEventListener("input", () => {
+        syncCustomFieldOverrideCopies(field.key, toggleInput.checked, input.value, defaultValue, input);
         scheduleCustomPreview();
     });
 
@@ -2518,6 +2554,56 @@ function renderCustomInlineFieldOverrideEditors(snapshot = customFieldOverrideSn
     });
 }
 
+function renderCustomMainFieldOverrideEditors(snapshot = customFieldOverrideSnapshot, preserveCurrentValues = true) {
+    const panel = document.getElementById("custom-main-field-overrides-panel");
+    const container = document.getElementById("custom-main-field-overrides-editors");
+
+    if (!panel || !container) {
+        return;
+    }
+
+    const enabled = isCustomMode() && isCustomAdvancedCopyEnabled();
+    const currentValues = preserveCurrentValues ? captureCurrentCustomFieldOverrideStates() : {};
+    const effectiveSnapshot = buildEffectiveCustomFieldOverrideSnapshot(snapshot);
+
+    setHidden(panel.id, !enabled);
+    container.innerHTML = "";
+
+    if (!enabled) {
+        return;
+    }
+
+    CUSTOM_FIELD_OVERRIDE_GROUPS.forEach((group) => {
+        const groupFields = group.fields.filter((field) => !field.containerId);
+
+        if (groupFields.length === 0) {
+            return;
+        }
+
+        const groupCard = document.createElement("div");
+        const groupHeader = document.createElement("div");
+        const groupTitle = document.createElement("span");
+        const groupBody = document.createElement("div");
+
+        groupCard.className = "flex flex-col gap-16";
+        groupHeader.className = "flex flex-col gap-4";
+        groupTitle.className = "text-label text-grey-primary ml-12";
+        groupTitle.textContent = t(group.titleKey, {}, group.fallback);
+        groupHeader.appendChild(groupTitle);
+
+        groupBody.className = "grid grid-cols-1 gap-16 pt-4";
+
+        groupFields.forEach((field) => {
+            const defaultValue = String(effectiveSnapshot[field.key] || "");
+            const wrapper = buildCustomFieldOverrideControl(field, defaultValue, currentValues[field.key] || null, "main");
+            groupBody.appendChild(wrapper);
+        });
+
+        groupCard.append(groupHeader, groupBody);
+        container.appendChild(groupCard);
+    });
+}
+
 function renderCustomFieldOverrideEditors(snapshot = customFieldOverrideSnapshot, preserveCurrentValues = true) {
     const panel = document.getElementById("custom-field-overrides-panel");
     const container = document.getElementById("custom-field-overrides-editors");
@@ -2536,6 +2622,7 @@ function renderCustomFieldOverrideEditors(snapshot = customFieldOverrideSnapshot
     const renderedPanelKeys = new Set();
 
     renderCustomInlineFieldOverrideEditors(snapshot, preserveCurrentValues);
+    renderCustomMainFieldOverrideEditors(snapshot, preserveCurrentValues);
 
     container.innerHTML = "";
 
@@ -2586,26 +2673,25 @@ function collectCustomFieldOverrides() {
 
     const overrides = {};
 
-    Array.from(document.querySelectorAll("[data-custom-field-override-input]")).forEach((element) => {
-        if (!(element instanceof HTMLInputElement || element instanceof HTMLTextAreaElement)) {
+    CUSTOM_FIELD_OVERRIDE_DEFINITIONS.forEach((field) => {
+        if (overrides[field.key]) {
             return;
         }
 
-        const key = String(element.dataset.customFieldKey || "").trim();
-        const defaultValue = String(element.dataset.defaultValue || "").trim();
-        const toggle = document.getElementById(getCustomFieldOverrideToggleId(key));
+        const state = getCustomFieldOverrideState(field.key);
 
-        if (!(toggle instanceof HTMLInputElement) || !toggle.checked) {
+        if (!state || !state.checked) {
             return;
         }
 
-        const value = String(element.value || "").trim();
+        const value = String(state.value || "").trim();
+        const defaultValue = String(state.defaultValue || "").trim();
 
-        if (key === "" || value === "" || value === defaultValue) {
+        if (value === "" || value === defaultValue) {
             return;
         }
 
-        overrides[key] = value;
+        overrides[field.key] = value;
     });
 
     return overrides;
