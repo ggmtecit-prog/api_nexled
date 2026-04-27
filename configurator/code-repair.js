@@ -209,6 +209,8 @@ function getCodeRepairElements() {
     const emptyStateCard = document.getElementById("repair-empty-state-card");
     const detailsCard = document.getElementById("repair-details-card");
     const summaryGrid = document.getElementById("repair-summary-grid");
+    const actionsSection = document.getElementById("repair-actions-section");
+    const actionsGrid = document.getElementById("repair-actions-grid");
     const databaseGrid = document.getElementById("repair-database-grid");
     const blockersSection = document.getElementById("repair-blockers-section");
     const blockersList = document.getElementById("repair-blockers-list");
@@ -232,6 +234,8 @@ function getCodeRepairElements() {
         || !emptyStateCard
         || !detailsCard
         || !summaryGrid
+        || !actionsSection
+        || !actionsGrid
         || !databaseGrid
         || !blockersSection
         || !blockersList
@@ -255,6 +259,8 @@ function getCodeRepairElements() {
         emptyStateCard,
         detailsCard,
         summaryGrid,
+        actionsSection,
+        actionsGrid,
         databaseGrid,
         blockersSection,
         blockersList,
@@ -321,6 +327,8 @@ function bindCodeRepairEvents() {
     });
 
     codeRepairElements.detailsCard.addEventListener("click", handleCodeRepairDetailsCardClick);
+    codeRepairElements.actionsGrid.addEventListener("click", handleCodeRepairGridClick);
+    codeRepairElements.actionsGrid.addEventListener("change", handleCodeRepairGridChange);
     codeRepairElements.sourceGrid.addEventListener("click", handleCodeRepairGridClick);
     codeRepairElements.sourceGrid.addEventListener("change", handleCodeRepairGridChange);
 }
@@ -463,6 +471,7 @@ function renderCodeRepairPage() {
     codeRepairElements.detailsCard.classList.toggle("hidden", !hasData);
     syncCodeRepairActionState();
     renderCodeRepairSummary();
+    renderCodeRepairActions();
     renderCodeRepairDatabaseChecks();
     renderCodeRepairBlockers();
     renderCodeRepairSources();
@@ -528,6 +537,49 @@ function renderCodeRepairSummary() {
         datasheetMarkup,
         gridSpanClass: "sm:col-span-2 xl:col-span-2",
     }) + buildCodeRepairBlockerStatusHeroMarkup(payload);
+}
+
+function renderCodeRepairActions() {
+    const payload = codeRepairState.data;
+
+    if (!payload) {
+        codeRepairElements.actionsSection.hidden = true;
+        codeRepairElements.actionsSection.classList.add("hidden");
+        codeRepairElements.actionsGrid.innerHTML = "";
+        return;
+    }
+
+    const summary = payload.summary || {};
+    const blockers = Array.isArray(payload?.validation?.blockers) ? payload.validation.blockers : [];
+    const hasBlockingState = summary.configurator_valid !== true || summary.datasheet_ready !== true || blockers.length > 0;
+
+    if (!hasBlockingState) {
+        codeRepairElements.actionsSection.hidden = true;
+        codeRepairElements.actionsSection.classList.add("hidden");
+        codeRepairElements.actionsGrid.innerHTML = "";
+        return;
+    }
+
+    codeRepairElements.actionsSection.hidden = false;
+    codeRepairElements.actionsSection.classList.remove("hidden");
+
+    const actionCards = getCodeRepairActionCards(payload);
+
+    if (actionCards.length === 0) {
+        renderCodeRepairEmptyState(codeRepairElements.actionsGrid, {
+            title: t("codeRepair.actionsEmptyTitle", {}, "No direct repair actions available"),
+            body: t("codeRepair.actionsEmptyBody", {}, "This code is blocked, but there is no asset repair action available here. Use the blocker details and database checks below."),
+            size: "md",
+            extraClasses: "col-span-full",
+        });
+        return;
+    }
+
+    codeRepairElements.actionsGrid.innerHTML = actionCards.map((card) => {
+        return buildCodeRepairAssetCardMarkup(card, {
+            emphasizeBlocker: true,
+        });
+    }).join("");
 }
 
 function buildCodeRepairSummaryHeroMarkup({
@@ -960,6 +1012,23 @@ function buildCodeRepairAssetCard(payload, sourceKey, source, blocker) {
     };
 }
 
+function getCodeRepairActionCards(payload) {
+    if (!payload) {
+        return [];
+    }
+
+    const blockerSourceKeys = new Set(
+        (Array.isArray(payload?.validation?.blockers) ? payload.validation.blockers : [])
+            .filter((blocker) => blocker?.repair_mode === "asset")
+            .map((blocker) => String(blocker?.source_key || "").trim())
+            .filter((sourceKey) => sourceKey !== "")
+    );
+
+    return buildCodeRepairCards(payload).filter((card) => {
+        return card?.kind === "asset" && blockerSourceKeys.has(String(card?.sourceKey || ""));
+    });
+}
+
 function buildCodeRepairLensCard(payload, lensSource, channelKey, blocker) {
     const meta = CODE_REPAIR_LENS_CARD_META[channelKey];
     const lookup = lensSource?.lookup?.[channelKey] || {};
@@ -1032,7 +1101,8 @@ function buildCodeRepairRecordCardMarkup(card) {
     `;
 }
 
-function buildCodeRepairAssetCardMarkup(card) {
+function buildCodeRepairAssetCardMarkup(card, options = {}) {
+    const emphasizeBlocker = options?.emphasizeBlocker === true;
     const bestAsset = getCodeRepairBestDamAsset(card);
     const activePath = String(card?.active?.path || "");
     const previewUrl = getCodeRepairPreviewUrl(card?.active);
@@ -1051,6 +1121,13 @@ function buildCodeRepairAssetCardMarkup(card) {
         ? `
             <div class="panel p-12 bg-amber-50 border-amber-200">
                 <p class="text-body-xs text-amber-800">${escapeHtml(t("codeRepair.sourceDamNote", {}, "DAM candidate exists, but the current active source still resolves elsewhere."))}</p>
+            </div>
+        `
+        : "";
+    const blockerNotice = emphasizeBlocker && card?.blocker
+        ? `
+            <div class="panel p-12 bg-amber-50 border-amber-200">
+                <p class="text-body-sm text-amber-800">${escapeHtml(card.blocker.summary || card.blocker.title || "")}</p>
             </div>
         `
         : "";
@@ -1166,7 +1243,7 @@ function buildCodeRepairAssetCardMarkup(card) {
         : "";
 
     return `
-        <article class="card overflow-hidden">
+        <article class="card overflow-hidden" data-repair-card-id="${escapeHtml(card.cardId)}">
             <div class="card-body p-24 flex flex-col gap-20">
                 <div class="flex flex-wrap items-start justify-between gap-12">
                     <div class="flex flex-col gap-6">
@@ -1175,6 +1252,8 @@ function buildCodeRepairAssetCardMarkup(card) {
                     </div>
                     ${buildCodeRepairStatusPill(getCodeRepairStatusLabel(card.status), card.status)}
                 </div>
+
+                ${blockerNotice}
 
                 <div class="grid gap-16 lg:grid-cols-[minmax(0,160px)_minmax(0,1fr)] items-start">
                     <div class="panel p-12 bg-grey-quaternary/30 min-h-160 flex items-center justify-center overflow-hidden">
@@ -1526,7 +1605,8 @@ function handleCodeRepairGridClick(event) {
     }
 
     if (trigger.dataset.repairUploadTrigger) {
-        const input = Array.from(codeRepairElements.sourceGrid.querySelectorAll("[data-repair-upload-input]"))
+        const cardRoot = trigger.closest("[data-repair-card-id]");
+        const input = Array.from((cardRoot || codeRepairElements.sourceGrid).querySelectorAll("[data-repair-upload-input]"))
             .find((field) => String(field.dataset.repairUploadInput || "") === String(trigger.dataset.repairUploadTrigger || ""));
         input?.click();
         return;
