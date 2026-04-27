@@ -29,6 +29,7 @@
         .dropdown-menu.custom-scrollbar,
         .language-selector-menu.custom-scrollbar {
             --scrollbar-thumb-inset: var(--space-2);
+            overflow-y: scroll;
         }
     </style>
 </head>
@@ -268,7 +269,7 @@
                                             <i class="ri-folder-open-line text-icon-lg" aria-hidden="true"></i>
                                         </span>
                                         <div class="empty-state-copy">
-                                            <h3 class="empty-state-title" data-dam-empty-state-label data-i18n="dam.emptyFolder">No assets in this folder</h3>
+                                            <h3 class="hidden empty-state-title" data-dam-empty-state-label></h3>
                                         </div>
                                     </div>
                                 </div>
@@ -286,7 +287,7 @@
                                 <div class="flex items-center gap-12">
                                     <div class="dropdown dropdown-sm w-full flex-1 has-value" data-dam-root-dropdown>
                                         <button type="button" class="dropdown-trigger" aria-haspopup="listbox" aria-expanded="false" aria-label="Select main folder" data-i18n-aria-label="dam.topFolderControl">
-                                            <span class="dropdown-value" data-dam-root-value data-i18n="dam.loadingFolders">Loading folders...</span>
+                                            <span class="dropdown-value" data-dam-root-value></span>
                                             <i class="ri-arrow-down-s-line dropdown-arrow" aria-hidden="true"></i>
                                         </button>
                                         <ul class="dropdown-menu custom-scrollbar" role="listbox" aria-label="Main DAM folders" data-i18n-aria-label="dam.topFolderOptions" data-dam-root-menu></ul>
@@ -408,7 +409,7 @@
 
                         <div class="flex flex-col gap-8">
                             <div class="flex flex-col gap-8" data-dam-links-list></div>
-                            <span class="text-body-sm text-grey-primary" data-dam-empty-links data-i18n="dam.noLinks">No asset links yet.</span>
+                            <span class="hidden text-body-sm text-grey-primary" data-dam-empty-links></span>
                         </div>
                     </div>
 

@@ -40,6 +40,11 @@ let searchTimer = 0;
 let damElements = null;
 let damToastTimer = 0;
 let damToastHideTimer = 0;
+const damStateToastKeys = {
+    root: "",
+    list: "",
+    links: "",
+};
 
 document.addEventListener("DOMContentLoaded", () => {
     ensureCreateFolderDeleteButtonMarkup();
@@ -912,11 +917,19 @@ function renderRootDropdown() {
     damElements.rootMenu.innerHTML = "";
 
     if (rootFolders.length === 0) {
-        damElements.rootValue.textContent = damState.treeErrorMessage || t("dam.loadingFolders", "Loading folders...");
+        damElements.rootValue.textContent = "";
         damElements.rootDropdown.classList.remove("has-value");
+
+        if (!damState.treeErrorMessage) {
+            syncDamStateToast("root", t("dam.loadingFolders", "Loading folders..."), "info", "loading");
+        } else {
+            clearDamStateToast("root");
+        }
+
         return;
     }
 
+    clearDamStateToast("root");
     const activeRoot = resolveActiveRootFolder();
     const fragment = document.createDocumentFragment();
 
@@ -974,14 +987,21 @@ function renderDamList() {
 
     damElements.fileGrid.innerHTML = "";
     const itemCount = damState.folders.length + damState.assets.length;
-    const emptyMessage = damState.folderErrorMessage || damState.treeErrorMessage || t("dam.emptyFolder", "This folder is empty");
-    damElements.emptyStateLabel.textContent = emptyMessage;
+    damElements.emptyStateLabel.textContent = "";
 
     if (itemCount === 0) {
         damElements.emptyState.classList.remove("hidden");
+
+        if (!damState.folderErrorMessage && !damState.treeErrorMessage) {
+            syncDamStateToast("list", t("dam.emptyFolder", "This folder is empty"), "info", damState.currentFolderId || "root");
+        } else {
+            clearDamStateToast("list");
+        }
+
         return;
     }
 
+    clearDamStateToast("list");
     damElements.emptyState.classList.add("hidden");
 
     const fragment = document.createDocumentFragment();
@@ -1248,6 +1268,8 @@ function openAssetDetailsModal(assetId, triggerElement = null) {
     }
 
     selectAssetById(assetId);
+    damState.selectedAssetLinksLoading = true;
+    renderSelectedAsset();
     damElements.assetModal._lastTrigger = triggerElement || document.activeElement || null;
     damElements.assetModal.inert = false;
     damElements.assetModal.classList.add("is-open");
@@ -1549,6 +1571,7 @@ function renderSelectedAssetLinks() {
     damElements.linksList.innerHTML = "";
 
     if (!DAM_ASSET_MODAL_LINKING_ENABLED) {
+        clearDamStateToast("links");
         if (
             damState.selectedAsset
             && !damState.selectedAssetLinksLoading
@@ -1584,23 +1607,27 @@ function renderSelectedAssetLinks() {
     }
 
     if (!damState.selectedAsset) {
-        damElements.emptyLinks.textContent = t("dam.noLinks", "No links yet.");
-        damElements.emptyLinks.hidden = false;
+        damElements.emptyLinks.textContent = "";
+        damElements.emptyLinks.hidden = true;
+        clearDamStateToast("links");
         return;
     }
 
     if (damState.selectedAssetLinksLoading) {
-        damElements.emptyLinks.textContent = t("dam.loadingLinks", "Loading links...");
-        damElements.emptyLinks.hidden = false;
+        damElements.emptyLinks.textContent = "";
+        damElements.emptyLinks.hidden = true;
+        syncDamStateToast("links", t("dam.loadingLinks", "Loading links..."), "info", String(damState.selectedAssetId || ""));
         return;
     }
 
     if (!Array.isArray(damState.selectedAssetLinks) || damState.selectedAssetLinks.length === 0) {
-        damElements.emptyLinks.textContent = t("dam.noLinks", "No links yet.");
-        damElements.emptyLinks.hidden = false;
+        damElements.emptyLinks.textContent = "";
+        damElements.emptyLinks.hidden = true;
+        syncDamStateToast("links", t("dam.noLinks", "No links yet."), "info", String(damState.selectedAssetId || ""));
         return;
     }
 
+    clearDamStateToast("links");
     damElements.emptyLinks.hidden = true;
     const fragment = document.createDocumentFragment();
 
@@ -1830,6 +1857,28 @@ function setAssetStatus(message, tone = "info") {
     if (String(message || "").trim() !== "") {
         showDamToast(message, tone);
     }
+}
+
+function syncDamStateToast(channel, message, tone = "info", identity = "") {
+    const text = String(message || "").trim();
+
+    if (text === "") {
+        clearDamStateToast(channel);
+        return;
+    }
+
+    const nextKey = [tone, identity, text].join("::");
+
+    if (damStateToastKeys[channel] === nextKey) {
+        return;
+    }
+
+    damStateToastKeys[channel] = nextKey;
+    showDamToast(text, tone);
+}
+
+function clearDamStateToast(channel) {
+    damStateToastKeys[channel] = "";
 }
 
 function hideDamToast(root, immediate = false) {
