@@ -136,8 +136,8 @@ const CUSTOM_FIELD_OVERRIDE_GROUPS = [
         titleKey: "configurator.custom.fieldGroupIdentity",
         fallback: "Displayed Product Data",
         fields: [
-            { key: "display_reference", labelKey: "configurator.quickActions.reference", fallback: "Reference", maxLength: 64, containerId: "field-display-reference" },
-            { key: "display_description", labelKey: "configurator.quickActions.description", fallback: "Description", maxLength: 160, containerId: "field-display-description" },
+            { key: "display_reference", labelKey: "configurator.quickActions.reference", fallback: "Reference", maxLength: 64, containerId: "custom-main-reference-override-slot" },
+            { key: "display_description", labelKey: "configurator.quickActions.description", fallback: "Description", maxLength: 160, containerId: "custom-main-description-override-slot" },
             { key: "display_size", labelKey: "configurator.fields.size", fallback: "Size", maxLength: 80, containerId: "field-size" },
             { key: "display_color", labelKey: "configurator.fields.color", fallback: "Color", maxLength: 120, containerId: "field-color" },
             { key: "display_cri", labelKey: "configurator.fields.cri", fallback: "CRI", maxLength: 80, containerId: "field-cri" },
@@ -2281,9 +2281,14 @@ function setCustomFieldOverrideSnapshot(snapshot, reference = "") {
 }
 
 function syncCustomFieldOverrideVisibility() {
+    const mainInlinePanel = document.getElementById("custom-main-inline-field-overrides-panel");
     const panel = document.getElementById("custom-field-overrides-panel");
     const message = document.getElementById("custom-field-overrides-message");
     const enabled = isCustomAdvancedCopyEnabled();
+
+    if (mainInlinePanel) {
+        setHidden(mainInlinePanel.id, !enabled);
+    }
 
     if (panel) {
         setHidden(panel.id, !enabled);
