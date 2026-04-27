@@ -192,6 +192,7 @@ function getCodeRepairElements() {
     const emptyStateCard = document.getElementById("repair-empty-state-card");
     const detailsCard = document.getElementById("repair-details-card");
     const summaryGrid = document.getElementById("repair-summary-grid");
+    const databaseGrid = document.getElementById("repair-database-grid");
     const blockersList = document.getElementById("repair-blockers-list");
     const sourceGrid = document.getElementById("repair-source-grid");
     const contextList = document.getElementById("repair-context-list");
@@ -211,6 +212,7 @@ function getCodeRepairElements() {
         || !emptyStateCard
         || !detailsCard
         || !summaryGrid
+        || !databaseGrid
         || !blockersList
         || !sourceGrid
         || !contextList
@@ -232,6 +234,7 @@ function getCodeRepairElements() {
         emptyStateCard,
         detailsCard,
         summaryGrid,
+        databaseGrid,
         blockersList,
         sourceGrid,
         contextList,
@@ -417,6 +420,7 @@ function renderCodeRepairPage() {
     codeRepairElements.detailsCard.classList.toggle("hidden", !hasData);
     syncCodeRepairActionState();
     renderCodeRepairSummary();
+    renderCodeRepairDatabaseChecks();
     renderCodeRepairBlockers();
     renderCodeRepairSources();
     renderCodeRepairContext();
@@ -523,6 +527,76 @@ function buildCodeRepairSummaryCard(eyebrow, eyebrowClass, detailLabel, valueMar
     `;
 }
 
+function renderCodeRepairDatabaseChecks() {
+    const payload = codeRepairState.data;
+
+    if (!payload) {
+        renderCodeRepairEmptyState(codeRepairElements.databaseGrid, {
+            title: t("codeRepair.databaseTitle", {}, "Database Checks"),
+            body: t("codeRepair.databaseEmpty", {}, "Load a reference to inspect what the databases returned for this code."),
+            size: "md",
+            extraClasses: "col-span-full",
+        });
+        return;
+    }
+
+    const checks = Array.isArray(payload?.database_checks) ? payload.database_checks : [];
+
+    if (checks.length === 0) {
+        renderCodeRepairEmptyState(codeRepairElements.databaseGrid, {
+            title: t("codeRepair.databaseTitle", {}, "Database Checks"),
+            body: t("codeRepair.databaseEmpty", {}, "Load a reference to inspect what the databases returned for this code."),
+            size: "md",
+            extraClasses: "col-span-full",
+        });
+        return;
+    }
+
+    codeRepairElements.databaseGrid.innerHTML = checks.map((check) => {
+        return buildCodeRepairDatabaseCheckCardMarkup(check);
+    }).join("");
+}
+
+function buildCodeRepairDatabaseCheckCardMarkup(check) {
+    const label = getCodeRepairDatabaseCheckLabel(String(check?.key || ""));
+    const sourceLabel = getCodeRepairDatabaseSourceLabel(String(check?.source || ""));
+    const status = String(check?.status || "");
+    const statusLabel = getCodeRepairStatusLabel(status);
+    const blocking = check?.blocking === true;
+    const impactLabel = blocking
+        ? t("codeRepair.databaseBlocksDatasheet", {}, "Blocks datasheet")
+        : t("codeRepair.databaseDiagnosticOnly", {}, "Diagnostic only");
+    const displayValue = formatCodeRepairDatabaseCheckValue(check);
+
+    return `
+        <article class="card overflow-hidden">
+            <div class="card-body p-24 flex flex-col gap-16">
+                <div class="flex flex-wrap items-start justify-between gap-12">
+                    <div class="flex flex-col gap-6">
+                        <span class="text-label-md text-grey-primary">${escapeHtml(t("codeRepair.databaseTitle", {}, "Database Checks"))}</span>
+                        <h3 class="card-title">${escapeHtml(label)}</h3>
+                    </div>
+                    ${buildCodeRepairStatusPill(statusLabel, status)}
+                </div>
+                <div class="flex flex-wrap gap-8">
+                    ${buildCodeRepairNeutralBadge(sourceLabel)}
+                    <span class="badge ${blocking ? "badge-warning" : "badge-neutral"} badge-sm">${escapeHtml(impactLabel)}</span>
+                </div>
+                <dl class="list list-spec list-md panel border-0 bg-transparent">
+                    <div class="list-item">
+                        <dt class="list-key">${escapeHtml(t("codeRepair.databaseSource", {}, "Source"))}</dt>
+                        <dd class="list-value break-all">${escapeHtml(sourceLabel)}</dd>
+                    </div>
+                    <div class="list-item">
+                        <dt class="list-key">${escapeHtml(t("codeRepair.databaseValue", {}, "Value"))}</dt>
+                        <dd class="list-value break-all">${escapeHtml(displayValue)}</dd>
+                    </div>
+                </dl>
+            </div>
+        </article>
+    `;
+}
+
 function buildCodeRepairEmptyStateMarkup({
     title = "",
     body = "",
@@ -566,6 +640,15 @@ function buildCodeRepairRowsMarkup(rows) {
     return rows.map(([label, value]) => {
         return buildCodeRepairContextRow(label, value);
     }).join("");
+}
+
+function buildCodeRepairMarkupRow(label, valueMarkup) {
+    return `
+        <div class="list-item">
+            <dt class="list-key">${escapeHtml(label)}</dt>
+            <dd class="list-value break-all">${valueMarkup}</dd>
+        </div>
+    `;
 }
 
 function renderCodeRepairRows(target, rows, emptyMessage) {
@@ -712,10 +795,8 @@ function buildCodeRepairRecordCard(payload, sourceKey, source, blocker) {
             blocker,
             rows: [
                 [t("codeRepair.summaryIdentity", {}, "Identity"), summary.identity || ""],
-                [t("codeRepair.summaryProductType", {}, "Product type"), summary.product_type || ""],
                 ["Product ID", summary.product_id || ""],
                 ["LED ID", summary.led_id || ""],
-                [t("codeRepair.summaryReference", {}, "Reference"), summary.reference || ""],
             ],
         };
     }
@@ -729,8 +810,6 @@ function buildCodeRepairRecordCard(payload, sourceKey, source, blocker) {
         blocker,
         rows: [
             [t("codeRepair.sourceRequired", {}, "Required"), source.required === false ? "No" : "Yes"],
-            ["Family", String(source.family_code || payload?.family?.code || payload?.segments?.family || "")],
-            [t("codeRepair.summaryProductType", {}, "Product type"), String(source.product_type || summary.product_type || "")],
             ["Supported", source.supported === true ? t("codeRepair.statusPresent", {}, "Present") : t("codeRepair.statusUnsupported", {}, "Unsupported")],
         ],
     };
@@ -803,10 +882,6 @@ function getCodeRepairAssetExtraRows(payload, sourceKey, source) {
 
 function buildCodeRepairRecordCardMarkup(card) {
     const statusLabel = getCodeRepairStatusLabel(card.status);
-    const blockerMarkup = card.blocker
-        ? `<p class="text-body-sm text-grey-primary">${escapeHtml(card.blocker.summary || "")}</p>`
-        : "";
-
     const rowsMarkup = Array.isArray(card.rows) && card.rows.length > 0
         ? `
             <dl class="list list-spec list-md panel border-0 bg-transparent">
@@ -825,7 +900,6 @@ function buildCodeRepairRecordCardMarkup(card) {
                     </div>
                     ${buildCodeRepairStatusPill(statusLabel, card.status)}
                 </div>
-                ${blockerMarkup}
                 ${rowsMarkup}
             </div>
         </article>
@@ -846,6 +920,7 @@ function buildCodeRepairAssetCardMarkup(card) {
     const isBusy = codeRepairState.loading || codeRepairState.mutating;
     const canUpload = card.required !== false;
     const canLink = bestAsset && card.linkMode === "linked" && target.requiresLink;
+    const candidateStems = Array.isArray(card.lookup?.candidates) ? card.lookup.candidates : [];
     const activeNotice = bestAsset && (card.status === "missing" || card.status === "placeholder")
         ? `
             <div class="panel p-12 bg-amber-50 border-amber-200">
@@ -905,6 +980,65 @@ function buildCodeRepairAssetCardMarkup(card) {
         }).join("")
         : "";
 
+    const primaryRows = [
+        [t("codeRepair.activeSourceType", {}, "Active source type"), activeSourceType],
+        [t("codeRepair.activePath", {}, "Active path"), activePath || t("codeRepair.statusUnavailable", {}, "Unavailable")],
+    ];
+    const diagnosticsRows = [
+        card.role
+            ? buildCodeRepairMarkupRow(
+                t("codeRepair.sourceRole", {}, "DAM role"),
+                escapeHtml(card.role || t("codeRepair.statusUnavailable", {}, "Unavailable"))
+            )
+            : "",
+        candidateStems.length > 0
+            ? buildCodeRepairMarkupRow(
+                t("codeRepair.sourceCandidates", {}, "Filename candidates"),
+                buildCodeRepairCandidateStemMarkup(candidateStems)
+            )
+            : "",
+        target.requiresLink
+            ? buildCodeRepairMarkupRow(
+                t("codeRepair.target", {}, "Link target"),
+                escapeHtml(target.label)
+            )
+            : "",
+    ].filter(Boolean).join("");
+    const detailsMarkup = diagnosticsRows !== "" || localChecks.length > 0 || topAssets.length > 0
+        ? `
+            <details class="panel p-16 bg-grey-quaternary/10">
+                <summary class="flex cursor-pointer list-none items-center justify-between gap-12">
+                    <span class="text-label-md text-grey-primary">${escapeHtml(t("codeRepair.moreDiagnostics", {}, "More diagnostics"))}</span>
+                    <i class="ri-arrow-down-s-line text-icon-sm text-grey-primary" aria-hidden="true"></i>
+                </summary>
+                <div class="flex flex-col gap-16 pt-16">
+                    ${diagnosticsRows !== ""
+                        ? `<dl class="list list-spec list-md panel border-0 bg-transparent">${diagnosticsRows}</dl>`
+                        : ""
+                    }
+                    ${localChecks.length > 0
+                        ? `
+                            <div class="flex flex-col gap-10">
+                                <span class="text-label-md text-grey-primary">${escapeHtml(t("codeRepair.sourceLocalChecks", {}, "Local checks"))}</span>
+                                ${buildCodeRepairLocalChecksMarkup(localChecks)}
+                            </div>
+                        `
+                        : ""
+                    }
+                    ${topAssets.length > 0
+                        ? `
+                            <div class="flex flex-col gap-10">
+                                <span class="text-label-md text-grey-primary">${escapeHtml(t("codeRepair.sourceDamCandidates", {}, "DAM candidates"))}</span>
+                                ${buildCodeRepairDamCandidatesMarkup(card, topAssets)}
+                            </div>
+                        `
+                        : ""
+                    }
+                </div>
+            </details>
+        `
+        : "";
+
     return `
         <article class="card overflow-hidden">
             <div class="card-body p-24 flex flex-col gap-20">
@@ -915,8 +1049,6 @@ function buildCodeRepairAssetCardMarkup(card) {
                     </div>
                     ${buildCodeRepairStatusPill(getCodeRepairStatusLabel(card.status), card.status)}
                 </div>
-
-                ${card.blocker ? `<p class="text-body-sm text-grey-primary">${escapeHtml(card.blocker.summary || "")}</p>` : ""}
 
                 <div class="grid gap-16 lg:grid-cols-[minmax(0,160px)_minmax(0,1fr)] items-start">
                     <div class="panel p-12 bg-grey-quaternary/30 min-h-160 flex items-center justify-center overflow-hidden">
@@ -931,45 +1063,14 @@ function buildCodeRepairAssetCardMarkup(card) {
 
                     <div class="flex flex-col gap-12 min-w-0">
                         <dl class="list list-spec list-md panel border-0 bg-transparent">
-                            <div class="list-item">
-                                <dt class="list-key">${escapeHtml(t("codeRepair.activeSourceType", {}, "Active source type"))}</dt>
-                                <dd class="list-value">${escapeHtml(activeSourceType)}</dd>
-                            </div>
-                            <div class="list-item">
-                                <dt class="list-key">${escapeHtml(t("codeRepair.activePath", {}, "Active path"))}</dt>
-                                <dd class="list-value break-all">${escapeHtml(activePath || t("codeRepair.statusUnavailable", {}, "Unavailable"))}</dd>
-                            </div>
-                            <div class="list-item">
-                                <dt class="list-key">${escapeHtml(t("codeRepair.sourceRole", {}, "DAM role"))}</dt>
-                                <dd class="list-value">${escapeHtml(card.role || t("codeRepair.statusUnavailable", {}, "Unavailable"))}</dd>
-                            </div>
-                            <div class="list-item">
-                                <dt class="list-key">${escapeHtml(t("codeRepair.sourceCandidates", {}, "Filename candidates"))}</dt>
-                                <dd class="list-value break-all">${buildCodeRepairCandidateStemMarkup(card.lookup?.candidates || [])}</dd>
-                            </div>
-                            ${target.requiresLink ? `
-                                <div class="list-item">
-                                    <dt class="list-key">${escapeHtml(t("codeRepair.target", {}, "Link target"))}</dt>
-                                    <dd class="list-value">${escapeHtml(target.label)}</dd>
-                                </div>
-                            ` : ""}
+                            ${buildCodeRepairRowsMarkup(primaryRows)}
                             ${extraRows}
                         </dl>
                         ${activeNotice}
                         ${actions ? `<div class="flex flex-wrap gap-12">${actions}</div>` : ""}
                     </div>
                 </div>
-
-                <div class="grid gap-16 xl:grid-cols-2">
-                    <div class="flex flex-col gap-10">
-                        <span class="text-label-md text-grey-primary">${escapeHtml(t("codeRepair.sourceLocalChecks", {}, "Local checks"))}</span>
-                        ${buildCodeRepairLocalChecksMarkup(localChecks)}
-                    </div>
-                    <div class="flex flex-col gap-10">
-                        <span class="text-label-md text-grey-primary">${escapeHtml(t("codeRepair.sourceDamCandidates", {}, "DAM candidates"))}</span>
-                        ${buildCodeRepairDamCandidatesMarkup(card, topAssets)}
-                    </div>
-                </div>
+                ${detailsMarkup}
             </div>
         </article>
     `;
@@ -1103,13 +1204,10 @@ function renderCodeRepairContext() {
     const summary = payload.summary || {};
     const editable = payload.editable_fields || {};
     const rows = [
-        [t("codeRepair.summaryReference", {}, "Reference"), summary.reference || payload.reference || ""],
         [t("codeRepair.summaryIdentity", {}, "Identity"), summary.identity || ""],
-        [t("codeRepair.summaryFamily", {}, "Family"), payload.family?.name ? `${payload.family.code} - ${payload.family.name}` : payload.family?.code || ""],
         [t("codeRepair.summaryProductType", {}, "Product type"), summary.product_type || ""],
         ["Product ID", summary.product_id || ""],
         ["LED ID", summary.led_id || ""],
-        [t("codeRepair.summaryTopBlocker", {}, "Top blocker"), getCodeRepairTopBlockerText(payload)],
         ["Finish", editable.finish_name || summary.finish_name || ""],
         ["Header text", editable.header_description_text || summary.header_description || ""],
     ];
@@ -1119,6 +1217,51 @@ function renderCodeRepairContext() {
         rows,
         t("codeRepair.sourcesEmpty", {}, "Load a reference to inspect the current active sources, local checks, and DAM candidates.")
     );
+}
+
+function getCodeRepairDatabaseCheckLabel(key) {
+    const map = {
+        luminos_identity: ["codeRepair.dbCheckLuminosIdentity", "Luminos identity record"],
+        product_id: ["codeRepair.dbCheckProductId", "Product ID"],
+        led_id: ["codeRepair.dbCheckLedId", "LED ID"],
+        luminos_description: ["codeRepair.dbCheckLuminosDescription", "Luminos description"],
+        header_description: ["codeRepair.dbCheckHeaderDescription", "Header description text"],
+        characteristics: ["codeRepair.dbCheckCharacteristics", "Technical characteristics"],
+        dimensions: ["codeRepair.dbCheckDimensions", "Dimensions"],
+        ip_rating: ["codeRepair.dbCheckIpRating", "IP rating"],
+        color_graph_label: ["codeRepair.dbCheckColorGraphLabel", "Color graph label"],
+    };
+    const entry = map[key] || ["", key];
+    return t(entry[0], {}, entry[1]);
+}
+
+function getCodeRepairDatabaseSourceLabel(source) {
+    const map = {
+        luminos: ["codeRepair.dbSourceLuminos", "Luminos"],
+        product_database: ["codeRepair.dbSourceProductDatabase", "Product database"],
+        led_database: ["codeRepair.dbSourceLedDatabase", "LED database"],
+    };
+    const entry = map[source] || ["", source];
+    return t(entry[0], {}, entry[1]);
+}
+
+function formatCodeRepairDatabaseCheckValue(check) {
+    const count = Number.parseInt(String(check?.count ?? ""), 10);
+    const value = String(check?.value || "").trim();
+
+    if (Number.isFinite(count) && count >= 0) {
+        if (count === 1) {
+            return t("codeRepair.databaseRowCountSingle", { count }, "1 row");
+        }
+
+        return t("codeRepair.databaseRowCountPlural", { count }, `${count} rows`);
+    }
+
+    if (value !== "") {
+        return value;
+    }
+
+    return getCodeRepairStatusLabel(String(check?.status || ""));
 }
 
 function buildCodeRepairContextRow(label, value) {

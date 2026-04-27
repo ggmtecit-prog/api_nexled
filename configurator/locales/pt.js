@@ -472,6 +472,7 @@ window.NexLedLocales.pt = {
         sourceRole: "Papel DAM",
         sourceLocalChecks: "Validacoes locais",
         sourceDamCandidates: "Candidatos DAM",
+        moreDiagnostics: "Mais diagnostico",
         sourceNoDamCandidates: "Ainda nao existem candidatos DAM avaliados para esta fonte.",
         sourceNoLocalChecks: "Nao existem validacoes locais.",
         sourceDamNote: "Existe candidato DAM, mas a fonte ativa atual continua a resolver noutro sitio.",
