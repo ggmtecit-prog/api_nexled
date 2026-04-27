@@ -3,6 +3,7 @@ const DAM_I18N_EVENT = "nexled:i18n-applied";
 const DAM_ROOT_FOLDER_ID = "nexled";
 const DAM_DEFAULT_FOLDER_ID = "nexled/datasheet";
 const DAM_ROLE_OPTIONS = ["packshot", "finish", "drawing", "diagram", "diagram-inv", "mounting", "connector", "temperature", "energy-label", "icon", "logo", "power-supply", "product-photo", "lifestyle", "datasheet-pdf", "eprel-label", "eprel-fiche", "brand-logo", "brand-asset", "hero", "banner", "category", "support-asset", "web-asset"];
+const DAM_ASSET_MODAL_LINKING_ENABLED = false;
 const DAM_GRID_THUMB_TRANSFORM = "c_fit,w_240,h_240,dpr_auto,f_auto,q_auto";
 const DAM_GRID_PDF_FETCH_TRANSFORM = "c_fit,w_240,h_240,f_auto,q_auto";
 const DAM_TOAST_BASE_CLASS = "toast toast-sm";
@@ -234,27 +235,29 @@ function bindDamEvents() {
         }
     });
 
-    damElements.toggleLinkingButton.addEventListener("click", () => {
-        if (!damState.selectedAsset?.id) {
-            return;
-        }
-
-        window.requestAnimationFrame(() => {
-            const isPressed = damElements.toggleLinkingButton.getAttribute("aria-pressed") === "true";
-            damState.assetLinkPanelHidden = !isPressed;
-            syncAssetLinkPanelVisibility({ syncPressed: false });
-        });
-    });
-
-    damElements.linkSubmitButton.addEventListener("click", handleCreateAssetLink);
-    [damElements.linkFamilyCodeInput, damElements.linkProductCodeInput, damElements.linkSortOrderInput].forEach((input) => {
-        input.addEventListener("keydown", (event) => {
-            if (event.key === "Enter") {
-                event.preventDefault();
-                handleCreateAssetLink();
+    if (DAM_ASSET_MODAL_LINKING_ENABLED) {
+        damElements.toggleLinkingButton.addEventListener("click", () => {
+            if (!damState.selectedAsset?.id) {
+                return;
             }
+
+            window.requestAnimationFrame(() => {
+                const isPressed = damElements.toggleLinkingButton.getAttribute("aria-pressed") === "true";
+                damState.assetLinkPanelHidden = !isPressed;
+                syncAssetLinkPanelVisibility({ syncPressed: false });
+            });
         });
-    });
+
+        damElements.linkSubmitButton.addEventListener("click", handleCreateAssetLink);
+        [damElements.linkFamilyCodeInput, damElements.linkProductCodeInput, damElements.linkSortOrderInput].forEach((input) => {
+            input.addEventListener("keydown", (event) => {
+                if (event.key === "Enter") {
+                    event.preventDefault();
+                    handleCreateAssetLink();
+                }
+            });
+        });
+    }
 
     document.addEventListener("keydown", (event) => {
         if (!isAssetModalOpen()) {
@@ -1345,6 +1348,11 @@ function renderSelectedAssetLinks() {
     damElements.assetMetaList.querySelectorAll("[data-dam-dynamic-link-row]").forEach((row) => row.remove());
     damElements.linksList.innerHTML = "";
 
+    if (!DAM_ASSET_MODAL_LINKING_ENABLED) {
+        damElements.emptyLinks.hidden = true;
+        return;
+    }
+
     if (!damState.selectedAsset) {
         damElements.emptyLinks.textContent = t("dam.noLinks", "No links yet.");
         damElements.emptyLinks.hidden = false;
@@ -1446,6 +1454,17 @@ function syncAssetLinkControls() {
         return;
     }
 
+    if (!DAM_ASSET_MODAL_LINKING_ENABLED) {
+        damElements.linkFamilyCodeInput.disabled = true;
+        damElements.linkProductCodeInput.disabled = true;
+        damElements.linkRoleSelect.disabled = true;
+        damElements.linkSortOrderInput.disabled = true;
+        damElements.linkSubmitButton.disabled = true;
+        damElements.toggleLinkingButton.disabled = true;
+        damElements.toggleLinkingButton.classList.add("hidden");
+        return;
+    }
+
     const hasAsset = Boolean(damState.selectedAsset?.id);
     const canLink = hasAsset && canShowAssetLinkingControls();
     const disabled = !canLink || damState.selectedAssetLinksLoading || damState.selectedAssetLinkActionBusy;
@@ -1461,6 +1480,14 @@ function syncAssetLinkControls() {
 
 function syncAssetLinkPanelVisibility(options = {}) {
     if (!damElements) {
+        return;
+    }
+
+    if (!DAM_ASSET_MODAL_LINKING_ENABLED) {
+        damElements.linkingPanel.classList.add("hidden");
+        damElements.toggleLinkingButton.classList.add("hidden");
+        damElements.toggleLinkingButton.setAttribute("aria-expanded", "false");
+        damElements.toggleLinkingButton.setAttribute("aria-pressed", "false");
         return;
     }
 
