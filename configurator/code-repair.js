@@ -103,6 +103,24 @@ const CODE_REPAIR_UPLOAD_FOLDERS = {
     logo: "nexled/datasheet/logos",
     "power-supply": "nexled/datasheet/power-supplies",
 };
+const CODE_REPAIR_SECTION_LABEL_META = {
+    context: ["codeRepair.contextTitle", "Repair Context"],
+    segments: ["codeRepair.segmentsTitle", "Decoded Segments"],
+    characteristics: ["codeRepair.characteristicsTitle", "Technical characteristics"],
+    dimensions: ["codeRepair.dimensionsTitle", "Dimensions"],
+    database: ["codeRepair.databaseTitle", "Database Checks"],
+    blockers: ["codeRepair.blockTitle", "Current blockers"],
+    sources: ["codeRepair.sourcesTitle", "Source Map"],
+};
+const CODE_REPAIR_SECTION_VISIBILITY_DEFAULTS = {
+    context: true,
+    segments: true,
+    characteristics: true,
+    dimensions: true,
+    database: true,
+    blockers: true,
+    sources: true,
+};
 const codeRepairState = {
     reference: "",
     data: null,
@@ -111,6 +129,7 @@ const codeRepairState = {
     loadedLanguage: "",
     runtimeTone: "neutral",
     runtimeMessage: "",
+    sectionVisibility: { ...CODE_REPAIR_SECTION_VISIBILITY_DEFAULTS },
 };
 let codeRepairHasSuccessfulApiContact = false;
 let codeRepairApiBadgeState = {
@@ -202,6 +221,8 @@ function getCodeRepairElements() {
     const openConfiguratorLink = document.getElementById("repair-open-configurator-link");
     const loadingOverlay = document.getElementById("repair-loading-overlay");
     const loadingCopy = document.getElementById("repair-loading-copy");
+    const sectionToggles = Array.from(document.querySelectorAll("[data-repair-section-toggle]"));
+    const sectionBodies = Array.from(document.querySelectorAll("[data-repair-section-body]"));
 
     if (
         !referenceForm
@@ -244,6 +265,8 @@ function getCodeRepairElements() {
         openConfiguratorLink,
         loadingOverlay,
         loadingCopy,
+        sectionToggles,
+        sectionBodies,
     };
 }
 
@@ -296,8 +319,27 @@ function bindCodeRepairEvents() {
         });
     });
 
+    codeRepairElements.detailsCard.addEventListener("click", handleCodeRepairDetailsCardClick);
     codeRepairElements.sourceGrid.addEventListener("click", handleCodeRepairGridClick);
     codeRepairElements.sourceGrid.addEventListener("change", handleCodeRepairGridChange);
+}
+
+function handleCodeRepairDetailsCardClick(event) {
+    const toggleButton = event.target.closest("[data-repair-section-toggle]");
+
+    if (!toggleButton) {
+        return;
+    }
+
+    const sectionKey = String(toggleButton.dataset.repairSectionToggle || "");
+
+    if (sectionKey === "") {
+        return;
+    }
+
+    const isVisible = codeRepairState.sectionVisibility[sectionKey] !== false;
+    codeRepairState.sectionVisibility[sectionKey] = !isVisible;
+    syncCodeRepairSectionVisibility();
 }
 
 function syncCodeRepairActionState() {
@@ -429,6 +471,7 @@ function renderCodeRepairPage() {
     renderCodeRepairDimensions();
     renderCodeRepairApiBadge();
     updateCodeRepairTitle();
+    syncCodeRepairSectionVisibility();
 }
 
 function renderCodeRepairSummary() {
@@ -636,6 +679,44 @@ function buildCodeRepairEmptyStateMarkup({
 
 function renderCodeRepairEmptyState(target, options) {
     target.innerHTML = buildCodeRepairEmptyStateMarkup(options);
+}
+
+function syncCodeRepairSectionVisibility() {
+    codeRepairElements.sectionBodies.forEach((body) => {
+        const sectionKey = String(body.dataset.repairSectionBody || "");
+        const isVisible = codeRepairState.sectionVisibility[sectionKey] !== false;
+
+        body.hidden = !isVisible;
+        body.classList.toggle("hidden", !isVisible);
+    });
+
+    codeRepairElements.sectionToggles.forEach((button) => {
+        const sectionKey = String(button.dataset.repairSectionToggle || "");
+        const isVisible = codeRepairState.sectionVisibility[sectionKey] !== false;
+        const sectionLabel = getCodeRepairSectionLabel(sectionKey);
+        const ariaLabel = isVisible
+            ? t("codeRepair.hideSectionAria", { section: sectionLabel }, "Hide {section}")
+            : t("codeRepair.showSectionAria", { section: sectionLabel }, "Show {section}");
+        const icon = button.querySelector("[data-repair-section-toggle-icon]");
+
+        button.setAttribute("aria-expanded", isVisible ? "true" : "false");
+        button.setAttribute("aria-label", ariaLabel);
+        button.setAttribute("title", ariaLabel);
+
+        if (icon) {
+            icon.className = (isVisible ? "ri-eye-line" : "ri-eye-off-line") + " text-icon-lg";
+        }
+    });
+}
+
+function getCodeRepairSectionLabel(sectionKey) {
+    const [labelKey, fallback] = CODE_REPAIR_SECTION_LABEL_META[sectionKey] || [null, sectionKey];
+
+    if (!labelKey) {
+        return sectionKey;
+    }
+
+    return t(labelKey, {}, fallback);
 }
 
 function buildCodeRepairRowsMarkup(rows) {

@@ -417,6 +417,8 @@ window.NexLedLocales.en = {
         runtimeLoadedReady: "Repair context loaded. Datasheet is ready.",
         runtimeLoadedBlocked: "Repair context loaded. Current blocker: {blocker}.",
         runtimeLoadFailed: "Unable to load repair context right now.",
+        showSectionAria: "Show {section}",
+        hideSectionAria: "Hide {section}",
         runtimeMutating: "Applying repair action...",
         runtimeMutationFailed: "Repair action failed.",
         summaryReference: "Reference",

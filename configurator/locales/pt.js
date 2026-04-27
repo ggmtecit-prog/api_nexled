@@ -438,6 +438,8 @@ window.NexLedLocales.pt = {
         runtimeLoadedReady: "Contexto carregado. A ficha tecnica esta pronta.",
         runtimeLoadedBlocked: "Contexto carregado. Bloqueio atual: {blocker}.",
         runtimeLoadFailed: "Nao foi possivel carregar o contexto de repair agora.",
+        showSectionAria: "Mostrar {section}",
+        hideSectionAria: "Ocultar {section}",
         runtimeMutating: "A aplicar acao de repair...",
         runtimeMutationFailed: "A acao de repair falhou.",
         summaryReference: "Referencia",
