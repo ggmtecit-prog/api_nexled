@@ -341,7 +341,7 @@
 
                                     <div class="flex flex-col gap-4 pt-24">
                                         <h3 class="card-title" data-i18n="configurator.custom.assetsTitle">Custom Images</h3>
-                                        <p class="text-body-sm text-grey-primary max-w-readable" data-i18n="configurator.custom.assetsHint">Use a DAM asset ID or upload a new image. Upload sends the file to DAM and fills the asset ID automatically.</p>
+                                        <p class="text-body-sm text-grey-primary max-w-readable" data-i18n="configurator.custom.assetsHint">Upload a new image or browse DAM. Uploaded files go to an isolated custom DAM area and never replace official product assets.</p>
                                     </div>
                                     <div class="flex flex-col gap-16 pt-8">
                                         <label class="toggle toggle-lg self-start">
@@ -350,7 +350,7 @@
                                             <span class="toggle-label" data-i18n="configurator.custom.imagesToggle">Use custom images</span>
                                         </label>
                                         <div id="custom-images-fields" class="hidden flex flex-col gap-32">
-                                            <div class="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_280px] gap-24 items-start">
+                                            <div class="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_auto] gap-24 items-start">
                                                 <div class="uploader uploader-image is-default" data-uploader>
                                                     <label class="uploader-label" for="custom-header-image-upload" data-i18n="configurator.custom.headerImageTitle">Header Image</label>
                                                     <div id="custom-header-image-upload-trigger" class="uploader-zone" data-uploader-zone role="button" tabindex="0" aria-describedby="custom-header-image-upload-status" style="border-radius: var(--panel-radius); overflow: hidden;">
@@ -361,20 +361,16 @@
                                                         <div class="uploader-text" data-uploader-text data-uploader-idle-text="Drag &amp; Drop images here" aria-live="polite" data-i18n="configurator.custom.uploadImageDropText">Drag &amp; Drop images here</div>
                                                         <div class="uploader-subtext" data-i18n="configurator.custom.uploadImageDropSubtext">or click to browse your computer</div>
                                                     </div>
-                                                    <p id="custom-header-image-upload-status" class="uploader-note text-grey-primary" data-i18n="configurator.custom.assetUploadHint">Upload sends the image to DAM and fills the asset ID automatically.</p>
+                                                    <p id="custom-header-image-upload-status" class="uploader-note text-grey-primary" data-i18n="configurator.custom.assetUploadHint">Upload sends the image to an isolated custom DAM area and applies it to this custom override.</p>
                                                 </div>
-                                                <div class="flex min-w-0 flex-col gap-12 xl:pt-28">
-                                                    <div class="flex min-w-0 flex-col gap-2">
-                                                        <span class="text-body-xs text-grey-primary" data-i18n="configurator.custom.headerImageAsset">Header Image Asset ID</span>
-                                                        <span id="custom-header-image-asset-summary" class="text-body-sm text-black truncate">No asset selected</span>
-                                                    </div>
+                                                <div class="flex min-w-0 flex-col gap-12 xl:pt-28 xl:items-end">
                                                     <button type="button" id="custom-header-image-browser-button" class="btn btn-secondary btn-sm self-start xl:self-end shrink-0">
                                                         <span data-i18n="configurator.custom.manageImagesButton">Browse DAM</span>
                                                     </button>
                                                 </div>
                                                 <input type="text" id="custom-header-image-asset" class="hidden" placeholder="asset_123" aria-hidden="true" tabindex="-1">
                                             </div>
-                                            <div class="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_280px] gap-24 items-start">
+                                            <div class="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_auto] gap-24 items-start">
                                                 <div class="uploader uploader-image is-default" data-uploader>
                                                     <label class="uploader-label" for="custom-drawing-image-upload" data-i18n="configurator.custom.drawingImageTitle">Drawing Image</label>
                                                     <div id="custom-drawing-image-upload-trigger" class="uploader-zone" data-uploader-zone role="button" tabindex="0" aria-describedby="custom-drawing-image-upload-status" style="border-radius: var(--panel-radius); overflow: hidden;">
@@ -385,20 +381,16 @@
                                                         <div class="uploader-text" data-uploader-text data-uploader-idle-text="Drag &amp; Drop images here" aria-live="polite" data-i18n="configurator.custom.uploadImageDropText">Drag &amp; Drop images here</div>
                                                         <div class="uploader-subtext" data-i18n="configurator.custom.uploadImageDropSubtext">or click to browse your computer</div>
                                                     </div>
-                                                    <p id="custom-drawing-image-upload-status" class="uploader-note text-grey-primary" data-i18n="configurator.custom.assetUploadHint">Upload sends the image to DAM and fills the asset ID automatically.</p>
+                                                    <p id="custom-drawing-image-upload-status" class="uploader-note text-grey-primary" data-i18n="configurator.custom.assetUploadHint">Upload sends the image to an isolated custom DAM area and applies it to this custom override.</p>
                                                 </div>
-                                                <div class="flex min-w-0 flex-col gap-12 xl:pt-28">
-                                                    <div class="flex min-w-0 flex-col gap-2">
-                                                        <span class="text-body-xs text-grey-primary" data-i18n="configurator.custom.drawingImageAsset">Drawing Image Asset ID</span>
-                                                        <span id="custom-drawing-image-asset-summary" class="text-body-sm text-black truncate">No asset selected</span>
-                                                    </div>
+                                                <div class="flex min-w-0 flex-col gap-12 xl:pt-28 xl:items-end">
                                                     <button type="button" id="custom-drawing-image-browser-button" class="btn btn-secondary btn-sm self-start xl:self-end shrink-0">
                                                         <span data-i18n="configurator.custom.manageImagesButton">Browse DAM</span>
                                                     </button>
                                                 </div>
                                                 <input type="text" id="custom-drawing-image-asset" class="hidden" placeholder="asset_456" aria-hidden="true" tabindex="-1">
                                             </div>
-                                            <div class="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_280px] gap-24 items-start">
+                                            <div class="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_auto] gap-24 items-start">
                                                 <div class="uploader uploader-image is-default" data-uploader>
                                                     <label class="uploader-label" for="custom-finish-image-upload" data-i18n="configurator.custom.finishImageTitle">Finish Image</label>
                                                     <div id="custom-finish-image-upload-trigger" class="uploader-zone" data-uploader-zone role="button" tabindex="0" aria-describedby="custom-finish-image-upload-status" style="border-radius: var(--panel-radius); overflow: hidden;">
@@ -409,13 +401,9 @@
                                                         <div class="uploader-text" data-uploader-text data-uploader-idle-text="Drag &amp; Drop images here" aria-live="polite" data-i18n="configurator.custom.uploadImageDropText">Drag &amp; Drop images here</div>
                                                         <div class="uploader-subtext" data-i18n="configurator.custom.uploadImageDropSubtext">or click to browse your computer</div>
                                                     </div>
-                                                    <p id="custom-finish-image-upload-status" class="uploader-note text-grey-primary" data-i18n="configurator.custom.assetUploadHint">Upload sends the image to DAM and fills the asset ID automatically.</p>
+                                                    <p id="custom-finish-image-upload-status" class="uploader-note text-grey-primary" data-i18n="configurator.custom.assetUploadHint">Upload sends the image to an isolated custom DAM area and applies it to this custom override.</p>
                                                 </div>
-                                                <div class="flex min-w-0 flex-col gap-12 xl:pt-28">
-                                                    <div class="flex min-w-0 flex-col gap-2">
-                                                        <span class="text-body-xs text-grey-primary" data-i18n="configurator.custom.finishImageAsset">Finish Image Asset ID</span>
-                                                        <span id="custom-finish-image-asset-summary" class="text-body-sm text-black truncate">No asset selected</span>
-                                                    </div>
+                                                <div class="flex min-w-0 flex-col gap-12 xl:pt-28 xl:items-end">
                                                     <button type="button" id="custom-finish-image-browser-button" class="btn btn-secondary btn-sm self-start xl:self-end shrink-0">
                                                         <span data-i18n="configurator.custom.manageImagesButton">Browse DAM</span>
                                                     </button>

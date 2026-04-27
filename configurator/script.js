@@ -72,7 +72,6 @@ const CUSTOM_ASSET_OVERRIDE_FIELDS = [
         uploadStatusId: "custom-header-image-upload-status",
         uploadFolderId: "nexled/media/custom-datasheet/packshots",
         uploadRole: "packshot",
-        summaryId: "custom-header-image-asset-summary",
         browserButtonId: "custom-header-image-browser-button",
         targetLabelKey: "configurator.custom.browserTargetHeader",
         targetFallback: "Header image",
@@ -85,7 +84,6 @@ const CUSTOM_ASSET_OVERRIDE_FIELDS = [
         uploadStatusId: "custom-drawing-image-upload-status",
         uploadFolderId: "nexled/media/custom-datasheet/drawings",
         uploadRole: "drawing",
-        summaryId: "custom-drawing-image-asset-summary",
         browserButtonId: "custom-drawing-image-browser-button",
         targetLabelKey: "configurator.custom.browserTargetDrawing",
         targetFallback: "Drawing image",
@@ -98,7 +96,6 @@ const CUSTOM_ASSET_OVERRIDE_FIELDS = [
         uploadStatusId: "custom-finish-image-upload-status",
         uploadFolderId: "nexled/media/custom-datasheet/finishes",
         uploadRole: "finish",
-        summaryId: "custom-finish-image-asset-summary",
         browserButtonId: "custom-finish-image-browser-button",
         targetLabelKey: "configurator.custom.browserTargetFinish",
         targetFallback: "Finish image",
@@ -1498,19 +1495,30 @@ function getCustomAssetFieldValue(fieldId) {
 
 function syncCustomAssetFieldSummaries() {
     CUSTOM_ASSET_OVERRIDE_FIELDS.forEach((field) => {
-        const summary = document.getElementById(field.summaryId);
+        const fileInput = document.getElementById(field.uploadInputId);
+        const uploader = fileInput instanceof HTMLInputElement ? fileInput.closest("[data-uploader]") : null;
+        const text = uploader instanceof HTMLElement ? uploader.querySelector("[data-uploader-text]") : null;
+        const icon = uploader instanceof HTMLElement ? uploader.querySelector(".uploader-icon i") : null;
+        const value = getCustomAssetFieldValue(field.id);
+        const hasValue = value !== "";
 
-        if (!(summary instanceof HTMLElement)) {
+        if (!(uploader instanceof HTMLElement)) {
             return;
         }
 
-        const value = getCustomAssetFieldValue(field.id);
-        const empty = value === "";
-        summary.textContent = empty
-            ? t("configurator.custom.browserNoAssetSelected", {}, "No asset selected")
-            : "#" + value;
-        summary.classList.toggle("text-grey-primary", empty);
-        summary.classList.toggle("text-black", !empty);
+        uploader.classList.toggle("has-files", hasValue);
+        uploader.classList.toggle("is-default", !hasValue);
+        uploader.classList.remove("is-error");
+
+        if (text instanceof HTMLElement) {
+            text.textContent = hasValue
+                ? t("configurator.custom.assetReadyText", {}, "Custom image ready")
+                : text.dataset.uploaderIdleText || text.textContent.trim();
+        }
+
+        if (icon instanceof HTMLElement) {
+            icon.className = icon.dataset.uploaderIdleIcon || "ri-image-add-line";
+        }
     });
 }
 
@@ -1885,8 +1893,8 @@ function renderCustomImageBrowserGrid() {
             renderCustomImageBrowserPreview();
             setCustomImageBrowserStatus(
                 "configurator.custom.browserAssetSelected",
-                { id: String(asset.id || "") },
-                "Selected asset #" + String(asset.id || "") + "."
+                {},
+                "Asset selected."
             );
         });
 
@@ -2674,7 +2682,7 @@ function resetCustomAssetUploadStatuses() {
         setCustomAssetUploadStatus(
             field,
             "configurator.custom.assetUploadHint",
-            "Upload sends the image to DAM and fills the asset ID automatically."
+            "Upload sends the image to an isolated custom DAM area and applies it to this custom override."
         );
         resetCustomAssetUploaderVisual(field);
     });
@@ -2759,7 +2767,7 @@ async function uploadCustomAssetOverride(field, file) {
         const assetId = String(asset?.id || "").trim();
 
         if (assetId === "") {
-            throw new Error("Image upload returned no DAM asset id.");
+            throw new Error("Image upload returned no image reference.");
         }
 
         targetInput.value = assetId;
@@ -2767,16 +2775,16 @@ async function uploadCustomAssetOverride(field, file) {
         setCustomAssetUploadStatus(
             field,
             "configurator.custom.assetUploadDone",
-            "Upload finished. Isolated custom DAM asset #{id} is now used only as a custom override field value.",
-            { id: assetId },
+            "Upload finished. Custom image is ready for this override.",
+            {},
             "success"
         );
         scheduleCustomPreview();
         setStatusKey(
             "configurator.custom.assetUploadDone",
             "success",
-            { id: assetId },
-            "Upload finished. Isolated custom DAM asset #" + assetId + " is ready for this custom override."
+            {},
+            "Upload finished. Custom image is ready for this custom override."
         );
     } catch (error) {
         const message = error && error.message ? error.message : "Image upload failed.";
@@ -2801,7 +2809,7 @@ async function uploadCustomAssetOverride(field, file) {
         }
 
         setCustomAssetUploadTriggerDisabled(trigger, false);
-        resetCustomAssetUploaderVisual(field);
+        syncCustomAssetFieldSummaries();
     }
 }
 
