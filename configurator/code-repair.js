@@ -476,41 +476,26 @@ function renderCodeRepairPage() {
 
 function renderCodeRepairSummary() {
     const payload = codeRepairState.data;
+    const referenceValue = payload?.summary?.reference
+        || payload?.reference
+        || codeRepairState.reference
+        || normalizeCodeRepairReference(codeRepairElements.referenceInput.value)
+        || "...";
+    const familyValue = payload?.family?.code
+        ? `${payload.family.code} - ${payload.family.name || payload.family.code}`
+        : (payload?.family?.name || "...");
 
     if (!payload) {
-        codeRepairElements.summaryGrid.innerHTML = [
-            buildCodeRepairSummaryCard(
-                "",
-                "code",
-                "",
-                escapeHtml(codeRepairState.reference || normalizeCodeRepairReference(codeRepairElements.referenceInput.value) || "...")
-            ),
-            buildCodeRepairSummaryCard(
-                "",
-                "",
-                "",
-                escapeHtml("...")
-            ),
-            buildCodeRepairSummaryCard(
-                t("codeRepair.summaryConfigurator", {}, "Configurator"),
-                "",
-                "",
-                buildCodeRepairNeutralBadge(t("codeRepair.statusUnavailable", {}, "Unavailable"))
-            ),
-            buildCodeRepairSummaryCard(
-                t("codeRepair.summaryDatasheet", {}, "Datasheet"),
-                "",
-                "",
-                buildCodeRepairNeutralBadge(t("codeRepair.statusUnavailable", {}, "Unavailable"))
-            ),
-        ].join("");
+        codeRepairElements.summaryGrid.innerHTML = buildCodeRepairSummaryHeroMarkup({
+            reference: referenceValue,
+            family: familyValue,
+            configuratorMarkup: buildCodeRepairNeutralBadge(t("codeRepair.statusUnavailable", {}, "Unavailable")),
+            datasheetMarkup: buildCodeRepairNeutralBadge(t("codeRepair.statusUnavailable", {}, "Unavailable")),
+        });
         return;
     }
 
     const summary = payload.summary || {};
-    const familyLabel = payload.family?.code
-        ? `${payload.family.code} - ${payload.family.name || payload.family.code}`
-        : (payload.family?.name || t("codeRepair.statusUnavailable", {}, "Unavailable"));
     const configuratorMarkup = buildCodeRepairStatusBadge(
         summary.configurator_valid === true,
         t("codeRepair.statusValid", {}, "Valid"),
@@ -522,51 +507,42 @@ function renderCodeRepairSummary() {
         t("codeRepair.statusBlocked", {}, "Blocked")
     );
 
-    codeRepairElements.summaryGrid.innerHTML = [
-        buildCodeRepairSummaryCard(
-            "",
-            "code",
-            "",
-            escapeHtml(summary.reference || payload.reference || "")
-        ),
-        buildCodeRepairSummaryCard(
-            "",
-            "",
-            "",
-            escapeHtml(familyLabel)
-        ),
-        buildCodeRepairSummaryCard(
-            t("codeRepair.summaryConfigurator", {}, "Configurator"),
-            "",
-            "",
-            configuratorMarkup
-        ),
-        buildCodeRepairSummaryCard(
-            t("codeRepair.summaryDatasheet", {}, "Datasheet"),
-            "",
-            "",
-            datasheetMarkup
-        ),
-    ].join("");
+    codeRepairElements.summaryGrid.innerHTML = buildCodeRepairSummaryHeroMarkup({
+        reference: referenceValue,
+        family: familyValue,
+        configuratorMarkup,
+        datasheetMarkup,
+    });
 }
 
-function buildCodeRepairSummaryCard(eyebrow, eyebrowClass, detailLabel, valueMarkup) {
-    const eyebrowClasses = eyebrowClass === "code"
-        ? "text-label-md text-grey-primary"
-        : "text-label-md text-grey-primary";
-    const eyebrowMarkup = eyebrow
-        ? `<span class="${eyebrowClasses}">${escapeHtml(eyebrow)}</span>`
-        : "";
-    const detailMarkup = detailLabel
-        ? `<span class="text-body-xs text-grey-primary">${escapeHtml(detailLabel)}</span>`
-        : "";
+function buildCodeRepairSummaryHeroMarkup({
+    reference = "...",
+    family = "...",
+    configuratorMarkup = "",
+    datasheetMarkup = "",
+} = {}) {
+    const safeConfiguratorMarkup = configuratorMarkup || buildCodeRepairNeutralBadge(t("codeRepair.statusUnavailable", {}, "Unavailable"));
+    const safeDatasheetMarkup = datasheetMarkup || buildCodeRepairNeutralBadge(t("codeRepair.statusUnavailable", {}, "Unavailable"));
 
     return `
-        <article class="panel border-0 bg-transparent p-20 flex flex-col gap-10">
-            ${eyebrowMarkup}
-            <div class="flex flex-col gap-6">
-                ${detailMarkup}
-                <div class="text-title-sm break-all">${valueMarkup}</div>
+        <article class="panel border-0 bg-transparent p-20 sm:col-span-2 xl:col-span-4">
+            <div class="flex flex-col gap-20">
+                <div class="flex flex-col gap-8">
+                    <p class="text-h2 text-black break-all">${escapeHtml(reference)}</p>
+                </div>
+                <div class="grid grid-cols-1 gap-20 md:grid-cols-[minmax(0,1.6fr)_minmax(0,0.8fr)_minmax(0,0.8fr)] md:items-start">
+                    <div class="flex flex-col gap-6 min-w-0">
+                        <p class="card-title break-words">${escapeHtml(family)}</p>
+                    </div>
+                    <div class="flex flex-col gap-8 min-w-0">
+                        <span class="text-title-sm text-black">${escapeHtml(t("codeRepair.summaryConfigurator", {}, "Configurator"))}</span>
+                        <div>${safeConfiguratorMarkup}</div>
+                    </div>
+                    <div class="flex flex-col gap-8 min-w-0">
+                        <span class="text-title-sm text-black">${escapeHtml(t("codeRepair.summaryDatasheet", {}, "Datasheet"))}</span>
+                        <div>${safeDatasheetMarkup}</div>
+                    </div>
+                </div>
             </div>
         </article>
     `;
