@@ -105,6 +105,7 @@ function getDamElements() {
     const linkSubmitButton = document.querySelector("[data-dam-submit-link]");
     const linksList = document.querySelector("[data-dam-links-list]");
     const emptyLinks = document.querySelector("[data-dam-empty-links]");
+    const downloadAssetButton = document.querySelector("[data-dam-download-asset]");
     const openAssetButton = document.querySelector("[data-dam-open-asset]");
     const copyAssetUrlButton = document.querySelector("[data-dam-copy-asset-url]");
     const toggleLinkingButton = document.querySelector("[data-dam-toggle-linking]");
@@ -113,7 +114,7 @@ function getDamElements() {
     const linkingPanel = document.querySelector("[data-dam-linking-panel]");
     const assetStatus = document.querySelector("[data-dam-asset-status]");
 
-    if (!fileGrid || !emptyState || !emptyStateLabel || !searchInput || !breadcrumb || !rootDropdown || !rootValue || !rootMenu || !refreshTreeButton || !openCreateFolderButton || !createFolderModal || !createFolderInput || !createFolderParentDropdown || !createFolderParentValue || !createFolderParentMenu || !createFolderButton || !folderActionStatus || !uploadTrigger || !uploadInput || !uploadStatus || !assetModal || !assetModalPanel || !assetModalTitle || !closeAssetModalButton || !assetPreview || !emptyAsset || !assetMetaList || !assetSize || !assetFormat || !assetFolder || !linkFamilyCodeInput || !linkProductCodeInput || !linkRoleSelect || !linkSortOrderInput || !linkSubmitButton || !linksList || !emptyLinks || !openAssetButton || !copyAssetUrlButton || !toggleLinkingButton || !toggleLinkingIcon || !toggleLinkingLabel || !linkingPanel || !assetStatus) {
+    if (!fileGrid || !emptyState || !emptyStateLabel || !searchInput || !breadcrumb || !rootDropdown || !rootValue || !rootMenu || !refreshTreeButton || !openCreateFolderButton || !createFolderModal || !createFolderInput || !createFolderParentDropdown || !createFolderParentValue || !createFolderParentMenu || !createFolderButton || !folderActionStatus || !uploadTrigger || !uploadInput || !uploadStatus || !assetModal || !assetModalPanel || !assetModalTitle || !closeAssetModalButton || !assetPreview || !emptyAsset || !assetMetaList || !assetSize || !assetFormat || !assetFolder || !linkFamilyCodeInput || !linkProductCodeInput || !linkRoleSelect || !linkSortOrderInput || !linkSubmitButton || !linksList || !emptyLinks || !downloadAssetButton || !openAssetButton || !copyAssetUrlButton || !toggleLinkingButton || !toggleLinkingIcon || !toggleLinkingLabel || !linkingPanel || !assetStatus) {
         return null;
     }
 
@@ -155,6 +156,7 @@ function getDamElements() {
         linkSubmitButton,
         linksList,
         emptyLinks,
+        downloadAssetButton,
         openAssetButton,
         copyAssetUrlButton,
         toggleLinkingButton,
@@ -211,6 +213,14 @@ function bindDamEvents() {
         if (event.target === damElements.assetModal) {
             closeAssetDetailsModal(true);
         }
+    });
+
+    damElements.downloadAssetButton.addEventListener("click", () => {
+        if (!damState.selectedAsset) {
+            return;
+        }
+
+        void handleAssetDownload(damState.selectedAsset);
     });
 
     damElements.openAssetButton.addEventListener("click", () => {
@@ -1289,6 +1299,7 @@ function renderSelectedAsset() {
         damElements.assetSize.textContent = "-";
         damElements.assetFormat.textContent = "-";
         damElements.assetFolder.textContent = "-";
+        damElements.downloadAssetButton.disabled = true;
         damElements.openAssetButton.disabled = true;
         damElements.copyAssetUrlButton.disabled = true;
         resetAssetLinkForm();
@@ -1329,6 +1340,7 @@ function renderSelectedAsset() {
     damElements.assetSize.textContent = formatBytes(asset.bytes) || "-";
     damElements.assetFormat.textContent = String(asset.format || "-").toUpperCase();
     damElements.assetFolder.textContent = asset.asset_folder || "-";
+    damElements.downloadAssetButton.disabled = !asset.secure_url;
     damElements.openAssetButton.disabled = !asset.secure_url;
     damElements.copyAssetUrlButton.disabled = !asset.secure_url;
     if (!DAM_ROLE_OPTIONS.includes(damElements.linkRoleSelect.value)) {
