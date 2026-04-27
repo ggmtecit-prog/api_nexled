@@ -221,10 +221,12 @@
 
     <div class="flex-1 min-w-0 flex flex-col lg:h-screen overflow-y-auto">
         <main class="flex-1 px-16 pt-32 pb-32 sm:px-20 sm:pt-40 sm:pb-40 md:px-24 md:pt-48 md:pb-48 lg:px-32 lg:pt-64 lg:pb-64 w-full">
-            <h2 class="text-h1 font-medium text-black pb-24 pt-24" data-i18n="codeRepair.heading">Code Repair</h2>
+            <header class="flex flex-col gap-12 pb-32" data-reveal="hero">
+                <h1 class="text-h1 font-medium text-black" data-i18n="codeRepair.heading">Code Repair</h1>
+            </header>
 
-            <div class="flex flex-col items-start gap-32 lg:grid lg:grid-cols-12 lg:gap-24">
-                <aside class="order-2 flex w-full flex-col gap-24 min-w-0 lg:col-span-3 lg:sticky lg:top-56">
+            <section class="grid grid-cols-1 xl:grid-cols-12 gap-24 items-start">
+                <aside class="xl:col-span-3 xl:col-start-10">
                     <section class="card overflow-hidden w-full">
                         <div class="card-body p-24 flex flex-col gap-20">
                             <form id="repair-reference-form" class="flex flex-col gap-14">
@@ -251,27 +253,23 @@
                     </section>
                 </aside>
 
-                <div class="order-1 relative w-full min-w-0 lg:col-span-9">
-                    <div class="flex flex-col gap-24 w-full">
-                        <div class="w-full">
-                            <section id="repair-empty-state-card" class="card overflow-hidden w-full">
-                                <div class="card-body flex min-h-[36rem] items-center justify-center p-24">
-                                    <div class="empty-state empty-state-lg w-full max-w-2xl border-0 bg-transparent" role="status" aria-live="polite">
-                                        <span class="empty-state-icon icon-box icon-box-empty-state">
-                                            <i class="ri-inbox-archive-line text-icon-lg" aria-hidden="true"></i>
-                                        </span>
-                                        <div class="empty-state-copy">
-                                            <h3 class="empty-state-title" data-i18n="codeRepair.emptyStateTitle">No repair context loaded</h3>
-                                            <p class="empty-state-text" data-i18n="codeRepair.emptyStateBody">Use the panel on the right to load a reference.</p>
-                                        </div>
-                                    </div>
+                <div class="xl:col-span-9 xl:row-start-1 flex flex-col gap-24">
+                    <section id="repair-empty-state-card" class="card overflow-hidden w-full">
+                        <div class="card-body flex min-h-[36rem] items-center justify-center p-24">
+                            <div class="empty-state empty-state-lg w-full max-w-2xl border-0 bg-transparent" role="status" aria-live="polite">
+                                <span class="empty-state-icon icon-box icon-box-empty-state">
+                                    <i class="ri-inbox-archive-line text-icon-lg" aria-hidden="true"></i>
+                                </span>
+                                <div class="empty-state-copy">
+                                    <h3 class="empty-state-title" data-i18n="codeRepair.emptyStateTitle">No repair context loaded</h3>
+                                    <p class="empty-state-text" data-i18n="codeRepair.emptyStateBody">Use the panel on the right to load a reference.</p>
                                 </div>
-                            </section>
+                            </div>
                         </div>
+                    </section>
 
-                        <div class="w-full">
-                            <section id="repair-details-card" class="card overflow-hidden hidden w-full">
-                                <div class="card-body p-24 flex flex-col gap-24">
+                    <section id="repair-details-card" class="card overflow-hidden hidden w-full">
+                        <div class="card-body p-24 flex flex-col gap-24">
                                     <div class="flex flex-col gap-20">
                                         <p id="repair-runtime-message" class="hidden" data-i18n="codeRepair.runtimeAwaitingReference">Enter a full Tecit reference to load the repair context.</p>
                                         <div class="grid gap-16 sm:grid-cols-2 xl:grid-cols-4" id="repair-summary-grid"></div>
@@ -364,12 +362,10 @@
                                         </div>
                                         <div id="repair-source-grid" class="grid gap-20 2xl:grid-cols-2" data-repair-section-body="sources"></div>
                                     </div>
-                                </div>
-                            </section>
                         </div>
-                    </div>
+                    </section>
                 </div>
-            </div>
+            </section>
         </main>
     </div>
 
