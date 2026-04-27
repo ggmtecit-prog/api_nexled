@@ -454,6 +454,7 @@ window.NexLedLocales.en = {
         sourcesEmpty: "Load a reference to inspect current sources, local checks, and DAM candidates.",
         contextTitle: "Repair Context",
         segmentsTitle: "Decoded Segments",
+        technicalTitle: "Technical details",
         characteristicsTitle: "Technical characteristics",
         characteristicsEmpty: "No technical characteristics returned.",
         dimensionsTitle: "Dimensions",
