@@ -450,7 +450,7 @@ async function handleCreateFolder() {
 
 function prepareCreateFolderModal() {
     const creatableFolders = getCreatableFolders();
-    damState.createFolderParentId = resolveCreateFolderParentId(creatableFolders);
+    damState.createFolderParentId = resolveCurrentCreateFolderParentId(creatableFolders);
     damElements.createFolderInput.value = "";
     setFolderActionStatus("");
     renderCreateFolderParentDropdown();
@@ -458,6 +458,16 @@ function prepareCreateFolderModal() {
 
 function getCreatableFolders() {
     return flattenFolderTree(damState.tree).filter((folder) => folder.can_create_children);
+}
+
+function resolveCurrentCreateFolderParentId(creatableFolders = getCreatableFolders()) {
+    const currentFolderId = damState.currentFolder?.id || damState.currentFolderId || "";
+
+    if (currentFolderId && creatableFolders.some((folder) => folder.id === currentFolderId)) {
+        return currentFolderId;
+    }
+
+    return resolveCreateFolderParentId(creatableFolders);
 }
 
 function resolveCreateFolderParentId(creatableFolders = getCreatableFolders()) {
