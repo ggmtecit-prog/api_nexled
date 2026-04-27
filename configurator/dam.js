@@ -1349,6 +1349,36 @@ function renderSelectedAssetLinks() {
     damElements.linksList.innerHTML = "";
 
     if (!DAM_ASSET_MODAL_LINKING_ENABLED) {
+        if (
+            damState.selectedAsset
+            && !damState.selectedAssetLinksLoading
+            && Array.isArray(damState.selectedAssetLinks)
+            && damState.selectedAssetLinks.length > 0
+        ) {
+            const linkedTargets = damState.selectedAssetLinks
+                .map((link) => buildAssetLinkTargetText(link))
+                .filter((value) => String(value || "").trim() !== "")
+                .join(", ");
+
+            if (linkedTargets !== "") {
+                const targetItem = document.createElement("div");
+                targetItem.className = "list-item";
+                targetItem.dataset.damDynamicLinkRow = "true";
+
+                const targetKey = document.createElement("span");
+                targetKey.className = "list-key";
+                targetKey.textContent = t("dam.linkTargetLabel", "Linked To");
+
+                const targetValue = document.createElement("span");
+                targetValue.className = "list-value break-all";
+                targetValue.textContent = linkedTargets;
+
+                targetItem.appendChild(targetKey);
+                targetItem.appendChild(targetValue);
+                damElements.assetMetaList.appendChild(targetItem);
+            }
+        }
+
         damElements.emptyLinks.hidden = true;
         return;
     }
