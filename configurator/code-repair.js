@@ -627,8 +627,11 @@ function buildCodeRepairBlockerStatusHeroMarkup(payload) {
             ${buildCodeRepairEmptyStateMarkup({
                 title: state.title,
                 body: state.body,
-                size: "md",
+                size: "sm",
+                variant: "compact",
+                tone: state.tone,
                 iconClass: state.iconClass,
+                extraClasses: "w-full max-w-2xl",
             })}
         </article>
     `;
@@ -640,6 +643,7 @@ function getCodeRepairBlockerStatusHeroState(payload) {
             title: t("codeRepair.blockHeroAwaitingTitle", {}, "Code state unavailable"),
             body: t("codeRepair.blockHeroAwaitingBody", {}, "Load a reference to inspect the current code state and blockers."),
             iconClass: "ri-information-line",
+            tone: "neutral",
         };
     }
 
@@ -651,6 +655,7 @@ function getCodeRepairBlockerStatusHeroState(payload) {
             title: t("codeRepair.blockHeroConfiguratorBlockedTitle", {}, "Configurator blocked"),
             body: t("codeRepair.blockHeroBlockedBody", { blocker: blockerText }, "Current blocker: {blocker}."),
             iconClass: "ri-alert-line",
+            tone: "warning",
         };
     }
 
@@ -659,6 +664,7 @@ function getCodeRepairBlockerStatusHeroState(payload) {
             title: t("codeRepair.blockHeroDatasheetBlockedTitle", {}, "Datasheet blocked"),
             body: t("codeRepair.blockHeroBlockedBody", { blocker: blockerText }, "Current blocker: {blocker}."),
             iconClass: "ri-alert-line",
+            tone: "warning",
         };
     }
 
@@ -666,6 +672,7 @@ function getCodeRepairBlockerStatusHeroState(payload) {
         title: t("codeRepair.blockNoneTitle", {}, "No blockers found"),
         body: t("codeRepair.blockNoneBody", {}, "This reference is valid and ready for the datasheet in the current runtime."),
         iconClass: "ri-checkbox-circle-line",
+        tone: "success",
     };
 }
 
@@ -743,15 +750,30 @@ function buildCodeRepairEmptyStateMarkup({
     title = "",
     body = "",
     size = "sm",
+    variant = "",
+    tone = "neutral",
     iconClass = "",
     extraClasses = "",
 } = {}) {
-    const outerClasses = ["empty-state", `empty-state-${size}`, "border-0", "bg-transparent", extraClasses]
+    const iconToneClass = {
+        success: "bg-green-primary/10 text-green-primary",
+        warning: "bg-yellow-primary/10 text-yellow-primary",
+        error: "bg-red-primary/10 text-red-primary",
+        danger: "bg-red-primary/10 text-red-primary",
+    }[tone] || "";
+    const outerClasses = [
+        "empty-state",
+        variant === "compact" ? "empty-state-compact" : "",
+        `empty-state-${size}`,
+        "border-0",
+        "bg-transparent",
+        extraClasses,
+    ]
         .filter(Boolean)
         .join(" ");
     const iconMarkup = iconClass
         ? `
-            <div class="empty-state-icon icon-box icon-box-empty-state">
+            <div class="empty-state-icon icon-box icon-box-empty-state ${iconToneClass}">
                 <i class="${iconClass} text-icon-lg" aria-hidden="true"></i>
             </div>
         `
