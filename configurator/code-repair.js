@@ -1277,11 +1277,12 @@ function buildCodeRepairRecordCardMarkup(card) {
 }
 
 function buildCodeRepairActionCardMarkup(card) {
-    const previewUrl = getCodeRepairPreviewUrl(card?.active);
+    const stagedUpload = getCodeRepairPendingUploadChange(card.cardId);
+    const stagedPreviewUrl = getCodeRepairPendingUploadPreviewUrl(stagedUpload);
+    const previewUrl = stagedPreviewUrl || getCodeRepairPreviewUrl(card?.active);
     const hasActivePreview = previewUrl !== "";
     const isBusy = codeRepairState.loading || codeRepairState.mutating;
     const canUpload = card.required !== false;
-    const stagedUpload = getCodeRepairPendingUploadChange(card.cardId);
     const uploadLabel = card.linkMode === "linked"
         ? t("codeRepair.uploadAndLink", {}, "Upload and link")
         : t("codeRepair.upload", {}, "Upload asset");
@@ -2025,6 +2026,7 @@ function stageCodeRepairUploadChange(card, file) {
         folderId,
         file,
         fileName: String(file?.name || ""),
+        previewUrl: createCodeRepairPendingUploadPreviewUrl(file),
         willLink: target.requiresLink,
         familyCode: target.familyCode || "",
         productCode: target.productCode || "",
@@ -2186,6 +2188,7 @@ function enqueueCodeRepairPendingChange(change) {
     });
 
     if (hasDuplicate) {
+        revokeCodeRepairPendingUploadPreviewUrl(nextChange);
         setCodeRepairRuntimeStatus(
             t("codeRepair.pendingDuplicate", {}, "This change is already staged."),
             "warning"
@@ -2204,7 +2207,18 @@ function enqueueCodeRepairPendingChange(change) {
 
 function removeCodeRepairPendingChange(changeId, options = {}) {
     const shouldRender = options?.render !== false;
-    codeRepairState.pendingChanges = codeRepairState.pendingChanges.filter((change) => change.id !== changeId);
+    const nextPendingChanges = [];
+
+    codeRepairState.pendingChanges.forEach((change) => {
+        if (change.id === changeId) {
+            revokeCodeRepairPendingUploadPreviewUrl(change);
+            return;
+        }
+
+        nextPendingChanges.push(change);
+    });
+
+    codeRepairState.pendingChanges = nextPendingChanges;
 
     if (shouldRender) {
         renderCodeRepairPage();
@@ -2213,6 +2227,9 @@ function removeCodeRepairPendingChange(changeId, options = {}) {
 
 function clearCodeRepairPendingChanges(options = {}) {
     const shouldRender = options?.render !== false;
+    codeRepairState.pendingChanges.forEach((change) => {
+        revokeCodeRepairPendingUploadPreviewUrl(change);
+    });
     codeRepairState.pendingChanges = [];
 
     if (shouldRender) {
@@ -2248,9 +2265,37 @@ function getCodeRepairPendingChangeSignature(change) {
 }
 
 function getCodeRepairPendingUploadChange(cardId) {
-    return codeRepairState.pendingChanges.find((change) => {
-        return change?.kind === "upload" && String(change.cardId || "") === String(cardId || "");
-    }) || null;
+    for (let index = codeRepairState.pendingChanges.length - 1; index >= 0; index -= 1) {
+        const change = codeRepairState.pendingChanges[index];
+
+        if (change?.kind === "upload" && String(change.cardId || "") === String(cardId || "")) {
+            return change;
+        }
+    }
+
+    return null;
+}
+
+function getCodeRepairPendingUploadPreviewUrl(change) {
+    return String(change?.previewUrl || "").trim();
+}
+
+function createCodeRepairPendingUploadPreviewUrl(file) {
+    if (typeof File === "undefined" || !(file instanceof File) || typeof URL === "undefined" || typeof URL.createObjectURL !== "function") {
+        return "";
+    }
+
+    return URL.createObjectURL(file);
+}
+
+function revokeCodeRepairPendingUploadPreviewUrl(change) {
+    const previewUrl = getCodeRepairPendingUploadPreviewUrl(change);
+
+    if (!previewUrl || !previewUrl.startsWith("blob:") || typeof URL === "undefined" || typeof URL.revokeObjectURL !== "function") {
+        return;
+    }
+
+    URL.revokeObjectURL(previewUrl);
 }
 
 function getCodeRepairPendingAssetLabel(card, assetId) {
