@@ -128,6 +128,8 @@ const codeRepairState = {
     runtimeTone: "neutral",
     runtimeMessage: "",
     sectionVisibility: { ...CODE_REPAIR_SECTION_VISIBILITY_DEFAULTS },
+    pendingChanges: [],
+    pendingChangeSeq: 0,
 };
 let codeRepairHasSuccessfulApiContact = false;
 let codeRepairApiBadgeState = {
@@ -210,6 +212,7 @@ function getCodeRepairElements() {
     const detailsCard = document.getElementById("repair-details-card");
     const summaryGrid = document.getElementById("repair-summary-grid");
     const actionsSection = document.getElementById("repair-actions-section");
+    const pendingPanel = document.getElementById("repair-pending-panel");
     const actionsGrid = document.getElementById("repair-actions-grid");
     const databaseGrid = document.getElementById("repair-database-grid");
     const sourceGrid = document.getElementById("repair-source-grid");
@@ -236,6 +239,7 @@ function getCodeRepairElements() {
         || !detailsCard
         || !summaryGrid
         || !actionsSection
+        || !pendingPanel
         || !actionsGrid
         || !databaseGrid
         || !sourceGrid
@@ -262,6 +266,7 @@ function getCodeRepairElements() {
         detailsCard,
         summaryGrid,
         actionsSection,
+        pendingPanel,
         actionsGrid,
         databaseGrid,
         sourceGrid,
@@ -298,6 +303,26 @@ function bindCodeRepairEvents() {
             return;
         }
 
+        if (
+            codeRepairState.pendingChanges.length > 0
+            && codeRepairState.reference !== ""
+            && reference !== codeRepairState.reference
+        ) {
+            const confirmed = window.confirm(
+                t(
+                    "codeRepair.pendingReferenceChangeConfirm",
+                    { reference },
+                    "Discard staged changes and load {reference}?"
+                )
+            );
+
+            if (!confirmed) {
+                return;
+            }
+
+            clearCodeRepairPendingChanges();
+        }
+
         void loadCodeRepairContext(reference);
     });
 
@@ -330,6 +355,7 @@ function bindCodeRepairEvents() {
     });
 
     codeRepairElements.detailsCard.addEventListener("click", handleCodeRepairDetailsCardClick);
+    codeRepairElements.actionsSection.addEventListener("click", handleCodeRepairActionsSectionClick);
     codeRepairElements.actionsGrid.addEventListener("click", handleCodeRepairGridClick);
     codeRepairElements.actionsGrid.addEventListener("change", handleCodeRepairGridChange);
     codeRepairElements.sourceGrid.addEventListener("click", handleCodeRepairGridClick);
@@ -352,6 +378,60 @@ function handleCodeRepairDetailsCardClick(event) {
     const isVisible = codeRepairState.sectionVisibility[sectionKey] !== false;
     codeRepairState.sectionVisibility[sectionKey] = !isVisible;
     syncCodeRepairSectionVisibility();
+}
+
+function handleCodeRepairActionsSectionClick(event) {
+    const applyButton = event.target.closest("[data-repair-apply-pending]");
+    const discardButton = event.target.closest("[data-repair-discard-pending]");
+    const removeButton = event.target.closest("[data-repair-remove-pending]");
+
+    if (applyButton) {
+        if (codeRepairState.pendingChanges.length === 0 || codeRepairState.loading || codeRepairState.mutating) {
+            return;
+        }
+
+        void applyCodeRepairPendingChanges();
+        return;
+    }
+
+    if (discardButton) {
+        if (codeRepairState.pendingChanges.length === 0 || codeRepairState.loading || codeRepairState.mutating) {
+            return;
+        }
+
+        const confirmed = window.confirm(
+            t(
+                "codeRepair.pendingDiscardConfirm",
+                {},
+                "Discard all staged changes?"
+            )
+        );
+
+        if (!confirmed) {
+            return;
+        }
+
+        clearCodeRepairPendingChanges();
+        setCodeRepairRuntimeStatus(
+            t("codeRepair.pendingDiscarded", {}, "Staged changes discarded."),
+            "neutral"
+        );
+        return;
+    }
+
+    if (removeButton) {
+        if (codeRepairState.loading || codeRepairState.mutating) {
+            return;
+        }
+
+        const changeId = Number.parseInt(String(removeButton.dataset.repairRemovePending || ""), 10);
+
+        if (!Number.isFinite(changeId) || changeId <= 0) {
+            return;
+        }
+
+        removeCodeRepairPendingChange(changeId);
+    }
 }
 
 function syncCodeRepairActionState() {
@@ -378,6 +458,7 @@ function syncCodeRepairActionState() {
 async function loadCodeRepairContext(reference, options = {}) {
     const normalizedReference = normalizeCodeRepairReference(reference);
     const preserveDataOnError = options.preserveDataOnError === true;
+    const previousReference = codeRepairState.reference;
 
     if (normalizedReference === "") {
         setCodeRepairRuntimeStatus(
@@ -413,6 +494,9 @@ async function loadCodeRepairContext(reference, options = {}) {
 
         codeRepairHasSuccessfulApiContact = true;
         codeRepairState.reference = String(payload?.reference || normalizedReference);
+        if (previousReference !== "" && previousReference !== codeRepairState.reference) {
+            clearCodeRepairPendingChanges({ render: false });
+        }
         codeRepairState.data = payload;
         codeRepairState.loadedLanguage = getCodeRepairLanguage();
         codeRepairElements.referenceInput.value = codeRepairState.reference;
@@ -543,10 +627,13 @@ function renderCodeRepairSummary() {
 
 function renderCodeRepairActions() {
     const payload = codeRepairState.data;
+    const hasPendingChanges = codeRepairState.pendingChanges.length > 0;
 
     if (!payload) {
         codeRepairElements.actionsSection.hidden = true;
         codeRepairElements.actionsSection.classList.add("hidden");
+        codeRepairElements.pendingPanel.innerHTML = "";
+        codeRepairElements.pendingPanel.classList.add("hidden");
         codeRepairElements.actionsGrid.innerHTML = "";
         return;
     }
@@ -555,26 +642,33 @@ function renderCodeRepairActions() {
     const blockers = Array.isArray(payload?.validation?.blockers) ? payload.validation.blockers : [];
     const hasBlockingState = summary.configurator_valid !== true || summary.datasheet_ready !== true || blockers.length > 0;
 
-    if (!hasBlockingState) {
+    if (!hasBlockingState && !hasPendingChanges) {
         codeRepairElements.actionsSection.hidden = true;
         codeRepairElements.actionsSection.classList.add("hidden");
+        codeRepairElements.pendingPanel.innerHTML = "";
+        codeRepairElements.pendingPanel.classList.add("hidden");
         codeRepairElements.actionsGrid.innerHTML = "";
         return;
     }
 
     codeRepairElements.actionsSection.hidden = false;
     codeRepairElements.actionsSection.classList.remove("hidden");
+    renderCodeRepairPendingPanel();
 
     const actionCards = getCodeRepairActionCards(payload);
     const topBlockerText = getCodeRepairTopBlockerText(payload);
 
     if (actionCards.length === 0) {
-        renderCodeRepairEmptyState(codeRepairElements.actionsGrid, {
-            title: t("codeRepair.actionsEmptyTitle", {}, "No direct repair actions available here"),
-            body: t("codeRepair.actionsEmptyBody", { blocker: topBlockerText }, "This code is blocked by {blocker}. Review the overview below."),
-            size: "md",
-            extraClasses: "col-span-full",
-        });
+        if (hasBlockingState) {
+            renderCodeRepairEmptyState(codeRepairElements.actionsGrid, {
+                title: t("codeRepair.actionsEmptyTitle", {}, "No direct repair actions available here"),
+                body: t("codeRepair.actionsEmptyBody", { blocker: topBlockerText }, "This code is blocked by {blocker}. Review the overview below."),
+                size: "md",
+                extraClasses: "col-span-full",
+            });
+        } else {
+            codeRepairElements.actionsGrid.innerHTML = "";
+        }
         return;
     }
 
@@ -583,6 +677,97 @@ function renderCodeRepairActions() {
             emphasizeBlocker: true,
         });
     }).join("");
+}
+
+function renderCodeRepairPendingPanel() {
+    const changes = codeRepairState.pendingChanges;
+    const isBusy = codeRepairState.loading || codeRepairState.mutating;
+
+    if (!Array.isArray(changes) || changes.length === 0) {
+        codeRepairElements.pendingPanel.innerHTML = "";
+        codeRepairElements.pendingPanel.classList.add("hidden");
+        return;
+    }
+
+    codeRepairElements.pendingPanel.classList.remove("hidden");
+    codeRepairElements.pendingPanel.innerHTML = buildCodeRepairPendingPanelMarkup(changes, {
+        disabled: isBusy,
+    });
+}
+
+function buildCodeRepairPendingPanelMarkup(changes, options = {}) {
+    const disabled = options?.disabled === true;
+    const summary = changes.length === 1
+        ? t("codeRepair.pendingSummarySingle", {}, "1 staged change ready to apply.")
+        : t("codeRepair.pendingSummaryPlural", { count: changes.length }, "{count} staged changes ready to apply.");
+
+    return `
+        <div class="panel p-16 bg-grey-quaternary/10 flex flex-col gap-16">
+            <div class="flex flex-col gap-12 lg:flex-row lg:items-center lg:justify-between">
+                <div class="flex flex-col gap-4">
+                    <p class="text-body-sm text-grey-primary">${escapeHtml(summary)}</p>
+                    <p class="text-body-xs text-grey-primary">${escapeHtml(t("codeRepair.pendingOrderHint", {}, "Changes apply in the order shown below."))}</p>
+                </div>
+                <div class="flex flex-wrap gap-12">
+                    <button
+                        type="button"
+                        class="btn btn-secondary btn-sm"
+                        data-repair-discard-pending
+                        ${disabled ? "disabled" : ""}
+                    >
+                        <i class="ri-delete-bin-line text-icon-sm" aria-hidden="true"></i>
+                        <span>${escapeHtml(t("codeRepair.pendingDiscard", {}, "Discard all"))}</span>
+                    </button>
+                    <button
+                        type="button"
+                        class="btn btn-primary btn-sm"
+                        data-repair-apply-pending
+                        ${disabled ? "disabled" : ""}
+                    >
+                        <i class="ri-check-line text-icon-sm" aria-hidden="true"></i>
+                        <span>${escapeHtml(t("codeRepair.pendingApply", {}, "Apply changes"))}</span>
+                    </button>
+                </div>
+            </div>
+            <div class="flex flex-col gap-10">
+                ${changes.map((change, index) => {
+                    return buildCodeRepairPendingChangeMarkup(change, index, {
+                        disabled,
+                    });
+                }).join("")}
+            </div>
+        </div>
+    `;
+}
+
+function buildCodeRepairPendingChangeMarkup(change, index, options = {}) {
+    const disabled = options?.disabled === true;
+    const title = getCodeRepairPendingChangeTitle(change);
+    const body = getCodeRepairPendingChangeBody(change);
+
+    return `
+        <article class="panel p-12 bg-white flex flex-col gap-10">
+            <div class="flex flex-wrap items-start justify-between gap-12">
+                <div class="flex flex-col gap-4 min-w-0">
+                    <div class="flex flex-wrap items-center gap-8">
+                        <span class="badge badge-neutral badge-sm">${escapeHtml("#" + String(index + 1))}</span>
+                        <span class="text-body-sm font-medium break-words">${escapeHtml(title)}</span>
+                    </div>
+                    <p class="text-body-xs text-grey-primary break-words">${escapeHtml(body)}</p>
+                </div>
+                <button
+                    type="button"
+                    class="btn btn-ghost btn-icon btn-xs shrink-0"
+                    data-repair-remove-pending="${escapeHtml(String(change.id || ""))}"
+                    aria-label="${escapeHtml(t("codeRepair.pendingRemove", {}, "Remove staged change"))}"
+                    title="${escapeHtml(t("codeRepair.pendingRemove", {}, "Remove staged change"))}"
+                    ${disabled ? "disabled" : ""}
+                >
+                    <i class="ri-close-line text-icon-md" aria-hidden="true"></i>
+                </button>
+            </div>
+        </article>
+    `;
 }
 
 function buildCodeRepairSummaryHeroMarkup({
@@ -1559,7 +1744,7 @@ function handleCodeRepairGridClick(event) {
             return;
         }
 
-        void runCodeRepairLinkMutation(card, bestAsset.id);
+        stageCodeRepairLinkChange(card, bestAsset.id);
         return;
     }
 
@@ -1571,34 +1756,20 @@ function handleCodeRepairGridClick(event) {
             return;
         }
 
-        void runCodeRepairLinkMutation(card, assetId);
+        stageCodeRepairLinkChange(card, assetId);
         return;
     }
 
     if (trigger.dataset.repairUnlink) {
+        const cardRoot = trigger.closest("[data-repair-card-id]");
+        const card = cardRoot ? getCodeRepairCardById(String(cardRoot.dataset.repairCardId || "")) : null;
         const linkId = Number.parseInt(String(trigger.dataset.repairUnlink || ""), 10);
 
-        if (!Number.isFinite(linkId) || linkId <= 0) {
+        if (!card || !Number.isFinite(linkId) || linkId <= 0) {
             return;
         }
 
-        const confirmed = window.confirm(
-            t(
-                "codeRepair.confirmUnlink",
-                {},
-                "Remove this DAM link? This can affect other references that rely on the same family or product target."
-            )
-        );
-
-        if (!confirmed) {
-            return;
-        }
-
-        void runCodeRepairMutation(async () => {
-            await codeRepairApiRequest(`/?endpoint=dam&action=unlink&id=${encodeURIComponent(String(linkId))}`, {
-                method: "DELETE",
-            });
-        });
+        stageCodeRepairUnlinkChange(card, linkId);
         return;
     }
 
@@ -1635,10 +1806,10 @@ function handleCodeRepairGridChange(event) {
         return;
     }
 
-    void runCodeRepairUploadMutation(card, file);
+    stageCodeRepairUploadChange(card, file);
 }
 
-async function runCodeRepairLinkMutation(card, assetId) {
+function stageCodeRepairLinkChange(card, assetId) {
     const target = getCodeRepairLinkTarget(card);
 
     if (!target.requiresLink) {
@@ -1657,21 +1828,29 @@ async function runCodeRepairLinkMutation(card, assetId) {
         return;
     }
 
-    await runCodeRepairMutation(async () => {
-        await codeRepairApiRequest("/?endpoint=dam&action=link", {
-            method: "POST",
-            json: {
-                asset_id: assetId,
-                role: card.role,
-                family_code: target.familyCode || undefined,
-                product_code: target.productCode || undefined,
-                sort_order: 0,
-            },
-        });
+    const assetLabel = getCodeRepairPendingAssetLabel(card, assetId);
+    enqueueCodeRepairPendingChange({
+        kind: "link",
+        cardId: card.cardId,
+        sourceLabel: card.label,
+        assetId,
+        assetLabel,
+        role: card.role,
+        familyCode: target.familyCode || "",
+        productCode: target.productCode || "",
     });
 }
 
-async function runCodeRepairUploadMutation(card, file) {
+function stageCodeRepairUnlinkChange(card, linkId) {
+    enqueueCodeRepairPendingChange({
+        kind: "unlink",
+        cardId: card.cardId,
+        sourceLabel: card.label,
+        linkId,
+    });
+}
+
+function stageCodeRepairUploadChange(card, file) {
     const folderId = getCodeRepairUploadFolder(card);
 
     if (!folderId) {
@@ -1682,68 +1861,143 @@ async function runCodeRepairUploadMutation(card, file) {
         return;
     }
 
-    await runCodeRepairMutation(async () => {
+    const target = getCodeRepairLinkTarget(card);
+    enqueueCodeRepairPendingChange({
+        kind: "upload",
+        cardId: card.cardId,
+        sourceLabel: card.label,
+        role: card.role,
+        folderId,
+        file,
+        fileName: String(file?.name || ""),
+        willLink: target.requiresLink,
+        familyCode: target.familyCode || "",
+        productCode: target.productCode || "",
+    });
+}
+
+async function applyCodeRepairPendingChanges() {
+    if (!codeRepairState.reference || codeRepairState.pendingChanges.length === 0) {
+        return;
+    }
+
+    const stagedChanges = [...codeRepairState.pendingChanges];
+    let failure = null;
+
+    codeRepairState.mutating = true;
+    syncCodeRepairActionState();
+    renderCodeRepairPage();
+    setCodeRepairLoadingOverlay(
+        true,
+        t("codeRepair.runtimeMutating", {}, "Applying repair action...")
+    );
+
+    try {
+        for (let index = 0; index < stagedChanges.length; index += 1) {
+            const change = stagedChanges[index];
+            setCodeRepairRuntimeStatus(
+                t(
+                    "codeRepair.pendingApplyingProgress",
+                    { current: index + 1, total: stagedChanges.length },
+                    "Applying staged changes ({current}/{total})..."
+                ),
+                "loading"
+            );
+
+            try {
+                await applyCodeRepairPendingChange(change);
+                removeCodeRepairPendingChange(change.id, { render: false });
+            } catch (error) {
+                failure = {
+                    change,
+                    error,
+                    current: index + 1,
+                    total: stagedChanges.length,
+                };
+                break;
+            }
+        }
+
+        await loadCodeRepairContext(codeRepairState.reference, {
+            preserveDataOnError: true,
+        });
+
+        if (failure) {
+            setCodeRepairRuntimeStatus(
+                getCodeRepairErrorMessage(
+                    failure.error,
+                    t(
+                        "codeRepair.pendingApplyFailed",
+                        { current: failure.current, total: failure.total },
+                        "Failed while applying staged changes ({current}/{total})."
+                    )
+                ),
+                "error"
+            );
+        }
+    } finally {
+        codeRepairState.mutating = false;
+        syncCodeRepairActionState();
+        setCodeRepairLoadingOverlay(false, "");
+        renderCodeRepairPage();
+    }
+}
+
+async function applyCodeRepairPendingChange(change) {
+    if (!change || typeof change !== "object") {
+        return;
+    }
+
+    if (change.kind === "link") {
+        await codeRepairApiRequest("/?endpoint=dam&action=link", {
+            method: "POST",
+            json: {
+                asset_id: change.assetId,
+                role: change.role,
+                family_code: change.familyCode || undefined,
+                product_code: change.productCode || undefined,
+                sort_order: 0,
+            },
+        });
+        return;
+    }
+
+    if (change.kind === "unlink") {
+        await codeRepairApiRequest(`/?endpoint=dam&action=unlink&id=${encodeURIComponent(String(change.linkId || ""))}`, {
+            method: "DELETE",
+        });
+        return;
+    }
+
+    if (change.kind === "upload") {
+        if (!change.file) {
+            throw new Error("staged_upload_missing_file");
+        }
+
         const formData = new FormData();
-        formData.append("folder_id", folderId);
-        formData.append("kind", card.role);
-        formData.append("file", file);
+        formData.append("folder_id", change.folderId);
+        formData.append("kind", change.role);
+        formData.append("file", change.file);
 
         const uploadResponse = await codeRepairApiRequest("/?endpoint=dam&action=upload", {
             method: "POST",
             body: formData,
         });
         const assetId = Number.parseInt(String(uploadResponse?.data?.asset?.id || ""), 10);
-        const target = getCodeRepairLinkTarget(card);
 
-        if (Number.isFinite(assetId) && assetId > 0 && target.requiresLink) {
+        if (Number.isFinite(assetId) && assetId > 0 && change.willLink) {
             await codeRepairApiRequest("/?endpoint=dam&action=link", {
                 method: "POST",
                 json: {
                     asset_id: assetId,
-                    role: card.role,
-                    family_code: target.familyCode || undefined,
-                    product_code: target.productCode || undefined,
+                    role: change.role,
+                    family_code: change.familyCode || undefined,
+                    product_code: change.productCode || undefined,
                     sort_order: 0,
                 },
             });
         }
-    });
-}
-
-async function runCodeRepairMutation(task) {
-    if (!codeRepairState.reference) {
         return;
-    }
-
-    codeRepairState.mutating = true;
-    syncCodeRepairActionState();
-    setCodeRepairLoadingOverlay(
-        true,
-        t("codeRepair.runtimeMutating", {}, "Applying repair action...")
-    );
-    setCodeRepairRuntimeStatus(
-        t("codeRepair.runtimeMutating", {}, "Applying repair action..."),
-        "loading"
-    );
-
-    try {
-        await task();
-        await loadCodeRepairContext(codeRepairState.reference, {
-            preserveDataOnError: true,
-        });
-    } catch (error) {
-        console.error(error);
-        setCodeRepairRuntimeStatus(
-            getCodeRepairErrorMessage(
-                error,
-                t("codeRepair.runtimeMutationFailed", {}, "Repair action failed.")
-            ),
-            "error"
-        );
-    } finally {
-        codeRepairState.mutating = false;
-        syncCodeRepairActionState();
-        setCodeRepairLoadingOverlay(false, "");
     }
 }
 
@@ -1760,6 +2014,149 @@ function getCodeRepairBestDamAsset(card) {
     return card.lookup.dam.matched_asset
         || (Array.isArray(card.lookup.dam.top_assets) ? card.lookup.dam.top_assets[0] : null)
         || null;
+}
+
+function enqueueCodeRepairPendingChange(change) {
+    if (!change || typeof change !== "object") {
+        return;
+    }
+
+    const nextChange = {
+        ...change,
+        id: codeRepairState.pendingChangeSeq + 1,
+    };
+    const signature = getCodeRepairPendingChangeSignature(nextChange);
+    const hasDuplicate = codeRepairState.pendingChanges.some((pendingChange) => {
+        return getCodeRepairPendingChangeSignature(pendingChange) === signature;
+    });
+
+    if (hasDuplicate) {
+        setCodeRepairRuntimeStatus(
+            t("codeRepair.pendingDuplicate", {}, "This change is already staged."),
+            "warning"
+        );
+        return;
+    }
+
+    codeRepairState.pendingChangeSeq = nextChange.id;
+    codeRepairState.pendingChanges = [...codeRepairState.pendingChanges, nextChange];
+    renderCodeRepairPage();
+    setCodeRepairRuntimeStatus(
+        t("codeRepair.pendingStaged", {}, "Change staged."),
+        "success"
+    );
+}
+
+function removeCodeRepairPendingChange(changeId, options = {}) {
+    const shouldRender = options?.render !== false;
+    codeRepairState.pendingChanges = codeRepairState.pendingChanges.filter((change) => change.id !== changeId);
+
+    if (shouldRender) {
+        renderCodeRepairPage();
+    }
+}
+
+function clearCodeRepairPendingChanges(options = {}) {
+    const shouldRender = options?.render !== false;
+    codeRepairState.pendingChanges = [];
+
+    if (shouldRender) {
+        renderCodeRepairPage();
+    }
+}
+
+function getCodeRepairPendingChangeSignature(change) {
+    if (!change || typeof change !== "object") {
+        return "";
+    }
+
+    if (change.kind === "link") {
+        return ["link", change.cardId, change.assetId].join("|");
+    }
+
+    if (change.kind === "unlink") {
+        return ["unlink", change.cardId, change.linkId].join("|");
+    }
+
+    if (change.kind === "upload") {
+        return [
+            "upload",
+            change.cardId,
+            change.fileName,
+            change.file?.size || "",
+            change.file?.lastModified || "",
+            change.willLink ? "link" : "upload",
+        ].join("|");
+    }
+
+    return JSON.stringify(change);
+}
+
+function getCodeRepairPendingAssetLabel(card, assetId) {
+    const matchedAsset = [
+        getCodeRepairBestDamAsset(card),
+        ...(Array.isArray(card?.lookup?.dam?.top_assets) ? card.lookup.dam.top_assets : []),
+    ].find((asset) => Number.parseInt(String(asset?.id || ""), 10) === Number.parseInt(String(assetId || ""), 10));
+
+    return String(
+        matchedAsset?.filename
+        || matchedAsset?.display_name
+        || ("#" + String(assetId || ""))
+    );
+}
+
+function getCodeRepairPendingChangeTitle(change) {
+    const sourceLabel = String(change?.sourceLabel || t("codeRepair.statusUnavailable", {}, "Unavailable"));
+
+    if (change?.kind === "link") {
+        return t("codeRepair.pendingLinkTitle", { source: sourceLabel }, "Link asset to {source}");
+    }
+
+    if (change?.kind === "unlink") {
+        return t("codeRepair.pendingUnlinkTitle", { source: sourceLabel }, "Remove link from {source}");
+    }
+
+    if (change?.kind === "upload") {
+        return change.willLink
+            ? t("codeRepair.pendingUploadLinkTitle", { source: sourceLabel }, "Upload and link asset for {source}")
+            : t("codeRepair.pendingUploadTitle", { source: sourceLabel }, "Upload asset for {source}");
+    }
+
+    return sourceLabel;
+}
+
+function getCodeRepairPendingChangeBody(change) {
+    if (change?.kind === "link") {
+        return t(
+            "codeRepair.pendingLinkBody",
+            { asset: change.assetLabel || ("#" + String(change.assetId || "")) },
+            "Selected asset: {asset}"
+        );
+    }
+
+    if (change?.kind === "unlink") {
+        return t(
+            "codeRepair.pendingUnlinkBody",
+            { linkId: String(change.linkId || "") },
+            "Queued unlink for DAM link #{linkId}."
+        );
+    }
+
+    if (change?.kind === "upload") {
+        return change.willLink
+            ? t(
+                "codeRepair.pendingUploadLinkBody",
+                { file: change.fileName || "" },
+                "Selected file: {file}. After upload, it will also be linked."
+            )
+            : t(
+                "codeRepair.pendingUploadBody",
+                { file: change.fileName || "" },
+                "Selected file: {file}."
+            );
+    }
+
+    return "";
 }
 
 function getCodeRepairUploadFolder(card) {
