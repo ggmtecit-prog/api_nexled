@@ -664,6 +664,7 @@ function renderCodeRepairActions() {
     codeRepairElements.actionsGrid.innerHTML = actionCards.map((card) => {
         return buildCodeRepairAssetCardMarkup(card, {
             emphasizeBlocker: true,
+            showDiagnostics: false,
         });
     }).join("");
 }
@@ -1259,20 +1260,21 @@ function buildCodeRepairRecordCardMarkup(card) {
 
 function buildCodeRepairAssetCardMarkup(card, options = {}) {
     const emphasizeBlocker = options?.emphasizeBlocker === true;
+    const showDiagnostics = options?.showDiagnostics !== false;
     const bestAsset = getCodeRepairBestDamAsset(card);
     const activePath = String(card?.active?.path || "");
     const previewUrl = getCodeRepairPreviewUrl(card?.active);
     const hasActivePreview = previewUrl !== "";
     const activeSourceType = getCodeRepairSourceTypeLabel(card?.active?.source_type || "");
     const target = getCodeRepairLinkTarget(card);
-    const localLookup = card?.lookup?.local || {};
-    const damLookup = card?.lookup?.dam || {};
-    const localChecks = Array.isArray(localLookup?.checks) ? localLookup.checks : [];
-    const topAssets = Array.isArray(damLookup?.top_assets) ? damLookup.top_assets : [];
+    const localLookup = showDiagnostics ? (card?.lookup?.local || {}) : {};
+    const damLookup = showDiagnostics ? (card?.lookup?.dam || {}) : {};
+    const localChecks = showDiagnostics && Array.isArray(localLookup?.checks) ? localLookup.checks : [];
+    const topAssets = showDiagnostics && Array.isArray(damLookup?.top_assets) ? damLookup.top_assets : [];
     const isBusy = codeRepairState.loading || codeRepairState.mutating;
     const canUpload = card.required !== false;
     const canLink = bestAsset && card.linkMode === "linked" && target.requiresLink;
-    const candidateStems = Array.isArray(card.lookup?.candidates) ? card.lookup.candidates : [];
+    const candidateStems = showDiagnostics && Array.isArray(card.lookup?.candidates) ? card.lookup.candidates : [];
     const activeNotice = bestAsset && (card.status === "missing" || card.status === "placeholder")
         ? `
             <div class="panel p-12 bg-amber-50 border-amber-200">
@@ -1343,27 +1345,29 @@ function buildCodeRepairAssetCardMarkup(card, options = {}) {
         [t("codeRepair.activeSourceType", {}, "Active source type"), activeSourceType],
         [t("codeRepair.activePath", {}, "Active path"), activePath || t("codeRepair.statusUnavailable", {}, "Unavailable")],
     ];
-    const diagnosticsRows = [
-        card.role
-            ? buildCodeRepairMarkupRow(
-                t("codeRepair.sourceRole", {}, "DAM role"),
-                escapeHtml(card.role || t("codeRepair.statusUnavailable", {}, "Unavailable"))
-            )
-            : "",
-        candidateStems.length > 0
-            ? buildCodeRepairMarkupRow(
-                t("codeRepair.sourceCandidates", {}, "Filename candidates"),
-                buildCodeRepairCandidateStemMarkup(candidateStems)
-            )
-            : "",
-        target.requiresLink
-            ? buildCodeRepairMarkupRow(
-                t("codeRepair.target", {}, "Link target"),
-                escapeHtml(target.label)
-            )
-            : "",
-    ].filter(Boolean).join("");
-    const detailsMarkup = diagnosticsRows !== "" || localChecks.length > 0 || topAssets.length > 0
+    const diagnosticsRows = showDiagnostics
+        ? [
+            card.role
+                ? buildCodeRepairMarkupRow(
+                    t("codeRepair.sourceRole", {}, "DAM role"),
+                    escapeHtml(card.role || t("codeRepair.statusUnavailable", {}, "Unavailable"))
+                )
+                : "",
+            candidateStems.length > 0
+                ? buildCodeRepairMarkupRow(
+                    t("codeRepair.sourceCandidates", {}, "Filename candidates"),
+                    buildCodeRepairCandidateStemMarkup(candidateStems)
+                )
+                : "",
+            target.requiresLink
+                ? buildCodeRepairMarkupRow(
+                    t("codeRepair.target", {}, "Link target"),
+                    escapeHtml(target.label)
+                )
+                : "",
+        ].filter(Boolean).join("")
+        : "";
+    const detailsMarkup = showDiagnostics && (diagnosticsRows !== "" || localChecks.length > 0 || topAssets.length > 0)
         ? `
             <details class="panel p-16 bg-grey-quaternary/10">
                 <summary class="flex cursor-pointer list-none items-center justify-between gap-12">
