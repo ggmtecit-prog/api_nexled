@@ -198,6 +198,7 @@ function getCodeRepairElements() {
     const referenceForm = document.getElementById("repair-reference-form");
     const referenceInput = document.getElementById("repair-reference-input");
     const loadButton = document.getElementById("repair-load-button");
+    const discardPendingButton = document.getElementById("repair-discard-pending-button");
     const revalidateButton = document.getElementById("repair-revalidate-button");
     const primaryActionIcon = revalidateButton?.querySelector("[data-repair-primary-action-icon]");
     const primaryActionLabel = revalidateButton?.querySelector("[data-repair-primary-action-label]");
@@ -206,8 +207,6 @@ function getCodeRepairElements() {
     const detailsCard = document.getElementById("repair-details-card");
     const summaryGrid = document.getElementById("repair-summary-grid");
     const actionsSection = document.getElementById("repair-actions-section");
-    const pendingCard = document.getElementById("repair-pending-card");
-    const pendingPanel = document.getElementById("repair-pending-panel");
     const actionsGrid = document.getElementById("repair-actions-grid");
     const databaseGrid = document.getElementById("repair-database-grid");
     const overviewList = document.getElementById("repair-overview-list");
@@ -227,6 +226,7 @@ function getCodeRepairElements() {
         !referenceForm
         || !referenceInput
         || !loadButton
+        || !discardPendingButton
         || !revalidateButton
         || !primaryActionIcon
         || !primaryActionLabel
@@ -235,8 +235,6 @@ function getCodeRepairElements() {
         || !detailsCard
         || !summaryGrid
         || !actionsSection
-        || !pendingCard
-        || !pendingPanel
         || !actionsGrid
         || !databaseGrid
         || !overviewList
@@ -256,6 +254,7 @@ function getCodeRepairElements() {
         referenceForm,
         referenceInput,
         loadButton,
+        discardPendingButton,
         revalidateButton,
         primaryActionIcon,
         primaryActionLabel,
@@ -264,8 +263,6 @@ function getCodeRepairElements() {
         detailsCard,
         summaryGrid,
         actionsSection,
-        pendingCard,
-        pendingPanel,
         actionsGrid,
         databaseGrid,
         overviewList,
@@ -328,6 +325,30 @@ function bindCodeRepairEvents() {
         syncCodeRepairActionState();
     });
 
+    codeRepairElements.discardPendingButton.addEventListener("click", () => {
+        if (codeRepairState.pendingChanges.length === 0 || codeRepairState.loading || codeRepairState.mutating) {
+            return;
+        }
+
+        const confirmed = window.confirm(
+            t(
+                "codeRepair.pendingDiscardConfirm",
+                {},
+                "Discard all staged changes?"
+            )
+        );
+
+        if (!confirmed) {
+            return;
+        }
+
+        clearCodeRepairPendingChanges();
+        setCodeRepairRuntimeStatus(
+            t("codeRepair.pendingDiscarded", {}, "Staged changes discarded."),
+            "neutral"
+        );
+    });
+
     codeRepairElements.revalidateButton.addEventListener("click", () => {
         const reference = codeRepairState.reference || normalizeCodeRepairReference(codeRepairElements.referenceInput.value);
 
@@ -362,7 +383,6 @@ function bindCodeRepairEvents() {
     });
 
     codeRepairElements.detailsCard.addEventListener("click", handleCodeRepairDetailsCardClick);
-    codeRepairElements.pendingCard.addEventListener("click", handleCodeRepairActionsSectionClick);
     codeRepairElements.actionsGrid.addEventListener("click", handleCodeRepairGridClick);
     codeRepairElements.actionsGrid.addEventListener("change", handleCodeRepairGridChange);
     codeRepairElements.actionsGrid.addEventListener("dragover", handleCodeRepairActionUploaderDragOver);
@@ -397,50 +417,6 @@ function handleCodeRepairDetailsCardClick(event) {
     syncCodeRepairSectionVisibility();
 }
 
-function handleCodeRepairActionsSectionClick(event) {
-    const discardButton = event.target.closest("[data-repair-discard-pending]");
-    const removeButton = event.target.closest("[data-repair-remove-pending]");
-
-    if (discardButton) {
-        if (codeRepairState.pendingChanges.length === 0 || codeRepairState.loading || codeRepairState.mutating) {
-            return;
-        }
-
-        const confirmed = window.confirm(
-            t(
-                "codeRepair.pendingDiscardConfirm",
-                {},
-                "Discard all staged changes?"
-            )
-        );
-
-        if (!confirmed) {
-            return;
-        }
-
-        clearCodeRepairPendingChanges();
-        setCodeRepairRuntimeStatus(
-            t("codeRepair.pendingDiscarded", {}, "Staged changes discarded."),
-            "neutral"
-        );
-        return;
-    }
-
-    if (removeButton) {
-        if (codeRepairState.loading || codeRepairState.mutating) {
-            return;
-        }
-
-        const changeId = Number.parseInt(String(removeButton.dataset.repairRemovePending || ""), 10);
-
-        if (!Number.isFinite(changeId) || changeId <= 0) {
-            return;
-        }
-
-        removeCodeRepairPendingChange(changeId);
-    }
-}
-
 function syncCodeRepairActionState() {
     const typedReference = normalizeCodeRepairReference(codeRepairElements.referenceInput.value);
     const activeReference = codeRepairState.reference || typedReference;
@@ -450,6 +426,9 @@ function syncCodeRepairActionState() {
     const canPrimaryAction = activeReference !== "" && !actionDisabled;
 
     codeRepairElements.loadButton.disabled = !canLoad;
+    codeRepairElements.discardPendingButton.hidden = !hasPendingChanges;
+    codeRepairElements.discardPendingButton.classList.toggle("hidden", !hasPendingChanges);
+    codeRepairElements.discardPendingButton.disabled = !hasPendingChanges || actionDisabled;
     codeRepairElements.revalidateButton.disabled = !canPrimaryAction;
     codeRepairElements.primaryActionIcon.className = `${hasPendingChanges ? "ri-check-line" : "ri-refresh-line"} text-icon-sm`;
     codeRepairElements.primaryActionLabel.dataset.i18n = hasPendingChanges ? "codeRepair.pendingApply" : "codeRepair.revalidate";
@@ -641,10 +620,6 @@ function renderCodeRepairActions() {
     if (!payload) {
         codeRepairElements.actionsSection.hidden = true;
         codeRepairElements.actionsSection.classList.add("hidden");
-        codeRepairElements.pendingPanel.innerHTML = "";
-        codeRepairElements.pendingPanel.classList.add("hidden");
-        codeRepairElements.pendingCard.hidden = true;
-        codeRepairElements.pendingCard.classList.add("hidden");
         codeRepairElements.actionsGrid.innerHTML = "";
         return;
     }
@@ -656,17 +631,12 @@ function renderCodeRepairActions() {
     if (!hasBlockingState && !hasPendingChanges) {
         codeRepairElements.actionsSection.hidden = true;
         codeRepairElements.actionsSection.classList.add("hidden");
-        codeRepairElements.pendingPanel.innerHTML = "";
-        codeRepairElements.pendingPanel.classList.add("hidden");
-        codeRepairElements.pendingCard.hidden = true;
-        codeRepairElements.pendingCard.classList.add("hidden");
         codeRepairElements.actionsGrid.innerHTML = "";
         return;
     }
 
     codeRepairElements.actionsSection.hidden = false;
     codeRepairElements.actionsSection.classList.remove("hidden");
-    renderCodeRepairPendingPanel();
 
     const actionCards = getCodeRepairActionCards(payload);
     const topBlockerText = getCodeRepairTopBlockerText(payload);
@@ -688,92 +658,6 @@ function renderCodeRepairActions() {
     codeRepairElements.actionsGrid.innerHTML = actionCards.map((card) => {
         return buildCodeRepairActionCardMarkup(card);
     }).join("");
-}
-
-function renderCodeRepairPendingPanel() {
-    const changes = codeRepairState.pendingChanges;
-    const isBusy = codeRepairState.loading || codeRepairState.mutating;
-
-    if (!Array.isArray(changes) || changes.length === 0) {
-        codeRepairElements.pendingPanel.innerHTML = "";
-        codeRepairElements.pendingPanel.classList.add("hidden");
-        codeRepairElements.pendingCard.hidden = true;
-        codeRepairElements.pendingCard.classList.add("hidden");
-        return;
-    }
-
-    codeRepairElements.pendingCard.hidden = false;
-    codeRepairElements.pendingCard.classList.remove("hidden");
-    codeRepairElements.pendingPanel.classList.remove("hidden");
-    codeRepairElements.pendingPanel.innerHTML = buildCodeRepairPendingPanelMarkup(changes, {
-        disabled: isBusy,
-    });
-}
-
-function buildCodeRepairPendingPanelMarkup(changes, options = {}) {
-    const disabled = options?.disabled === true;
-    const summary = changes.length === 1
-        ? t("codeRepair.pendingSummarySingle", {}, "1 staged change ready to apply.")
-        : t("codeRepair.pendingSummaryPlural", { count: changes.length }, "{count} staged changes ready to apply.");
-
-    return `
-        <div class="panel p-16 bg-grey-quaternary/10 flex flex-col gap-16">
-            <div class="flex flex-col gap-12 lg:flex-row lg:items-center lg:justify-between">
-                <div class="flex flex-col gap-4">
-                    <p class="text-body-sm text-grey-primary">${escapeHtml(summary)}</p>
-                    <p class="text-body-xs text-grey-primary">${escapeHtml(t("codeRepair.pendingOrderHint", {}, "Changes apply in the order shown below."))}</p>
-                </div>
-                <div class="flex flex-wrap gap-12">
-                    <button
-                        type="button"
-                        class="btn btn-secondary btn-sm"
-                        data-repair-discard-pending
-                        ${disabled ? "disabled" : ""}
-                    >
-                        <i class="ri-delete-bin-line text-icon-sm" aria-hidden="true"></i>
-                        <span>${escapeHtml(t("codeRepair.pendingDiscard", {}, "Discard all"))}</span>
-                    </button>
-                </div>
-            </div>
-            <div class="flex flex-col gap-10">
-                ${changes.map((change, index) => {
-                    return buildCodeRepairPendingChangeMarkup(change, index, {
-                        disabled,
-                    });
-                }).join("")}
-            </div>
-        </div>
-    `;
-}
-
-function buildCodeRepairPendingChangeMarkup(change, index, options = {}) {
-    const disabled = options?.disabled === true;
-    const title = getCodeRepairPendingChangeTitle(change);
-    const body = getCodeRepairPendingChangeBody(change);
-
-    return `
-        <article class="panel p-12 bg-white flex flex-col gap-10">
-            <div class="flex flex-wrap items-start justify-between gap-12">
-                <div class="flex flex-col gap-4 min-w-0">
-                    <div class="flex flex-wrap items-center gap-8">
-                        <span class="badge badge-neutral badge-sm">${escapeHtml("#" + String(index + 1))}</span>
-                        <span class="text-body-sm font-medium break-words">${escapeHtml(title)}</span>
-                    </div>
-                    <p class="text-body-xs text-grey-primary break-words">${escapeHtml(body)}</p>
-                </div>
-                <button
-                    type="button"
-                    class="btn btn-ghost btn-icon btn-xs shrink-0"
-                    data-repair-remove-pending="${escapeHtml(String(change.id || ""))}"
-                    aria-label="${escapeHtml(t("codeRepair.pendingRemove", {}, "Remove staged change"))}"
-                    title="${escapeHtml(t("codeRepair.pendingRemove", {}, "Remove staged change"))}"
-                    ${disabled ? "disabled" : ""}
-                >
-                    <i class="ri-close-line text-icon-md" aria-hidden="true"></i>
-                </button>
-            </div>
-        </article>
-    `;
 }
 
 function buildCodeRepairSummaryHeroMarkup({
@@ -1793,60 +1677,6 @@ function revokeCodeRepairPendingUploadPreviewUrl(change) {
     }
 
     URL.revokeObjectURL(previewUrl);
-}
-
-function getCodeRepairPendingChangeTitle(change) {
-    const sourceLabel = String(change?.sourceLabel || t("codeRepair.statusUnavailable", {}, "Unavailable"));
-
-    if (change?.kind === "link") {
-        return t("codeRepair.pendingLinkTitle", { source: sourceLabel }, "Link asset to {source}");
-    }
-
-    if (change?.kind === "unlink") {
-        return t("codeRepair.pendingUnlinkTitle", { source: sourceLabel }, "Remove link from {source}");
-    }
-
-    if (change?.kind === "upload") {
-        return change.willLink
-            ? t("codeRepair.pendingUploadLinkTitle", { source: sourceLabel }, "Upload and link asset for {source}")
-            : t("codeRepair.pendingUploadTitle", { source: sourceLabel }, "Upload asset for {source}");
-    }
-
-    return sourceLabel;
-}
-
-function getCodeRepairPendingChangeBody(change) {
-    if (change?.kind === "link") {
-        return t(
-            "codeRepair.pendingLinkBody",
-            { asset: change.assetLabel || ("#" + String(change.assetId || "")) },
-            "Selected asset: {asset}"
-        );
-    }
-
-    if (change?.kind === "unlink") {
-        return t(
-            "codeRepair.pendingUnlinkBody",
-            { linkId: String(change.linkId || "") },
-            "Queued unlink for DAM link #{linkId}."
-        );
-    }
-
-    if (change?.kind === "upload") {
-        return change.willLink
-            ? t(
-                "codeRepair.pendingUploadLinkBody",
-                { file: change.fileName || "" },
-                "Selected file: {file}. After upload, it will also be linked."
-            )
-            : t(
-                "codeRepair.pendingUploadBody",
-                { file: change.fileName || "" },
-                "Selected file: {file}."
-            );
-    }
-
-    return "";
 }
 
 function getCodeRepairUploadFolder(card) {
