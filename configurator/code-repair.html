@@ -333,7 +333,18 @@
                                                     <i class="ri-eye-line text-icon-lg" aria-hidden="true" data-repair-section-toggle-icon></i>
                                                 </button>
                                             </div>
-                                            <dl id="repair-dimensions-list" class="list list-spec list-md panel border-0 bg-transparent" data-repair-section-body="dimensions"></dl>
+                                            <div class="flex flex-col gap-16" data-repair-section-body="dimensions">
+                                                <div id="repair-dimensions-preview" class="panel p-16 bg-grey-quaternary/10 overflow-hidden">
+                                                    <div class="panel p-12 bg-grey-quaternary/30 min-h-200 flex items-center justify-center overflow-hidden">
+                                                        <img id="repair-dimensions-preview-image" src="" alt="Technical drawing preview" class="w-full h-full object-contain rounded-12 hidden">
+                                                        <div id="repair-dimensions-preview-empty" class="flex flex-col items-center gap-10 text-center text-grey-primary">
+                                                            <i class="ri-image-2-line text-icon-xl" aria-hidden="true"></i>
+                                                            <span class="text-body-xs" data-i18n="codeRepair.statusUnavailable">Unavailable</span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <dl id="repair-dimensions-list" class="list list-spec list-md panel border-0 bg-transparent"></dl>
+                                            </div>
                                         </div>
                                     </div>
 

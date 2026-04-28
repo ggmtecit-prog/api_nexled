@@ -218,6 +218,9 @@ function getCodeRepairElements() {
     const contextList = document.getElementById("repair-context-list");
     const segmentsList = document.getElementById("repair-segments-list");
     const characteristicsList = document.getElementById("repair-characteristics-list");
+    const dimensionsPreview = document.getElementById("repair-dimensions-preview");
+    const dimensionsPreviewImage = document.getElementById("repair-dimensions-preview-image");
+    const dimensionsPreviewEmpty = document.getElementById("repair-dimensions-preview-empty");
     const dimensionsList = document.getElementById("repair-dimensions-list");
     const openConfiguratorLink = document.getElementById("repair-open-configurator-link");
     const loadingOverlay = document.getElementById("repair-loading-overlay");
@@ -243,6 +246,9 @@ function getCodeRepairElements() {
         || !contextList
         || !segmentsList
         || !characteristicsList
+        || !dimensionsPreview
+        || !dimensionsPreviewImage
+        || !dimensionsPreviewEmpty
         || !dimensionsList
         || !loadingOverlay
         || !loadingCopy
@@ -268,6 +274,9 @@ function getCodeRepairElements() {
         contextList,
         segmentsList,
         characteristicsList,
+        dimensionsPreview,
+        dimensionsPreviewImage,
+        dimensionsPreviewEmpty,
         dimensionsList,
         openConfiguratorLink,
         loadingOverlay,
@@ -1549,11 +1558,31 @@ function renderCodeRepairCharacteristics() {
 }
 
 function renderCodeRepairDimensions() {
+    renderCodeRepairDrawingPreview();
     renderCodeRepairDefinitionList(
         codeRepairElements.dimensionsList,
         codeRepairState.data?.dimensions || [],
         t("codeRepair.dimensionsEmpty", {}, "No drawing dimensions returned.")
     );
+}
+
+function renderCodeRepairDrawingPreview() {
+    const drawingSource = codeRepairState.data?.source_map?.technical_drawing || null;
+    const previewUrl = getCodeRepairPreviewUrl(drawingSource?.active || {});
+    const hasPreview = previewUrl !== "";
+    const previewAlt = t("codeRepair.sourceDrawing", {}, "Technical drawing");
+
+    codeRepairElements.dimensionsPreview.classList.toggle("hidden", false);
+    codeRepairElements.dimensionsPreviewImage.classList.toggle("hidden", !hasPreview);
+    codeRepairElements.dimensionsPreviewEmpty.classList.toggle("hidden", hasPreview);
+    codeRepairElements.dimensionsPreviewImage.alt = previewAlt;
+
+    if (hasPreview) {
+        codeRepairElements.dimensionsPreviewImage.src = previewUrl;
+        return;
+    }
+
+    codeRepairElements.dimensionsPreviewImage.removeAttribute("src");
 }
 
 function renderCodeRepairDefinitionList(target, items, emptyMessage) {
