@@ -363,10 +363,28 @@
         </div>
     </div>
 
-    <script src="locales/en.js?v=20260417-code-repair"></script>
-    <script src="locales/pt.js?v=20260417-code-repair"></script>
+    <div class="modal-overlay" id="repair-dam-search-modal" aria-hidden="true" inert>
+        <div class="modal max-w-3xl" role="dialog" aria-modal="true" aria-labelledby="repairDamSearchTitle" tabindex="-1" id="repair-dam-search-panel">
+            <div class="modal-header">
+                <h2 id="repairDamSearchTitle" class="modal-title" data-i18n="codeRepair.damSearchTitle">Search in the DAM</h2>
+                <button
+                    type="button"
+                    class="btn btn-ghost btn-icon btn-xs"
+                    data-repair-close-dam-modal
+                    aria-label="Close DAM search"
+                    data-i18n-aria-label="codeRepair.damSearchCloseAria"
+                >
+                    <i class="ri-close-line text-icon-md" aria-hidden="true"></i>
+                </button>
+            </div>
+            <div class="modal-body min-h-[18rem]"></div>
+        </div>
+    </div>
+
+    <script src="locales/en.js?v=20260428-code-repair-actions"></script>
+    <script src="locales/pt.js?v=20260428-code-repair-actions"></script>
     <script src="i18n.js?v=20260414-code-explorer"></script>
     <script src="app-shell.js?v=20260414-code-explorer"></script>
-    <script src="code-repair.js?v=20260417-code-repair"></script>
+    <script src="code-repair.js?v=20260428-code-repair-actions"></script>
 </body>
 </html>

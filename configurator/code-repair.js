@@ -218,6 +218,9 @@ function getCodeRepairElements() {
     const openConfiguratorLink = document.getElementById("repair-open-configurator-link");
     const loadingOverlay = document.getElementById("repair-loading-overlay");
     const loadingCopy = document.getElementById("repair-loading-copy");
+    const damSearchModal = document.getElementById("repair-dam-search-modal");
+    const damSearchPanel = document.getElementById("repair-dam-search-panel");
+    const damSearchCloseButton = document.querySelector("[data-repair-close-dam-modal]");
     const sectionToggles = Array.from(document.querySelectorAll("[data-repair-section-toggle]"));
     const sectionBodies = Array.from(document.querySelectorAll("[data-repair-section-body]"));
 
@@ -242,6 +245,9 @@ function getCodeRepairElements() {
         || !dimensionsPreviewEmpty
         || !loadingOverlay
         || !loadingCopy
+        || !damSearchModal
+        || !damSearchPanel
+        || !damSearchCloseButton
     ) {
         return null;
     }
@@ -268,6 +274,9 @@ function getCodeRepairElements() {
         openConfiguratorLink,
         loadingOverlay,
         loadingCopy,
+        damSearchModal,
+        damSearchPanel,
+        damSearchCloseButton,
         sectionToggles,
         sectionBodies,
     };
@@ -346,8 +355,20 @@ function bindCodeRepairEvents() {
     codeRepairElements.pendingCard.addEventListener("click", handleCodeRepairActionsSectionClick);
     codeRepairElements.actionsGrid.addEventListener("click", handleCodeRepairGridClick);
     codeRepairElements.actionsGrid.addEventListener("change", handleCodeRepairGridChange);
+    codeRepairElements.actionsGrid.addEventListener("dragover", handleCodeRepairActionUploaderDragOver);
+    codeRepairElements.actionsGrid.addEventListener("dragleave", handleCodeRepairActionUploaderDragLeave);
+    codeRepairElements.actionsGrid.addEventListener("drop", handleCodeRepairActionUploaderDrop);
     codeRepairElements.sourceGrid.addEventListener("click", handleCodeRepairGridClick);
     codeRepairElements.sourceGrid.addEventListener("change", handleCodeRepairGridChange);
+    codeRepairElements.damSearchCloseButton.addEventListener("click", () => {
+        setCodeRepairDamSearchModalOpen(false);
+    });
+    codeRepairElements.damSearchModal.addEventListener("click", (event) => {
+        if (event.target === codeRepairElements.damSearchModal) {
+            setCodeRepairDamSearchModalOpen(false);
+        }
+    });
+    document.addEventListener("keydown", handleCodeRepairDocumentKeydown);
 }
 
 function handleCodeRepairDetailsCardClick(event) {
@@ -1256,40 +1277,21 @@ function buildCodeRepairRecordCardMarkup(card) {
 }
 
 function buildCodeRepairActionCardMarkup(card) {
-    const bestAsset = getCodeRepairBestDamAsset(card);
     const previewUrl = getCodeRepairPreviewUrl(card?.active);
     const hasActivePreview = previewUrl !== "";
-    const target = getCodeRepairLinkTarget(card);
     const isBusy = codeRepairState.loading || codeRepairState.mutating;
     const canUpload = card.required !== false;
-    const canLink = bestAsset && card.linkMode === "linked" && target.requiresLink;
-    const primaryActionMarkup = canUpload
-        ? `
-            <button
-                type="button"
-                class="btn btn-primary btn-sm"
-                data-repair-upload-trigger="${escapeHtml(card.cardId)}"
-                ${isBusy ? "disabled" : ""}
-            >
-                <i class="ri-upload-2-line text-icon-sm" aria-hidden="true"></i>
-                <span>${escapeHtml(card.linkMode === "linked"
-                    ? t("codeRepair.uploadAndLink", {}, "Upload and link")
-                    : t("codeRepair.upload", {}, "Upload asset")
-                )}</span>
-            </button>
-            <input type="file" class="hidden" data-repair-upload-input="${escapeHtml(card.cardId)}" ${isBusy ? "disabled" : ""}>
-        `
-        : (canLink ? `
-            <button
-                type="button"
-                class="btn btn-primary btn-sm"
-                data-repair-use-best="${escapeHtml(card.cardId)}"
-                ${isBusy ? "disabled" : ""}
-            >
-                <i class="ri-links-line text-icon-sm" aria-hidden="true"></i>
-                <span>${escapeHtml(t("codeRepair.useBest", {}, "Link best DAM candidate"))}</span>
-            </button>
-        ` : "");
+    const stagedUpload = getCodeRepairPendingUploadChange(card.cardId);
+    const uploadLabel = card.linkMode === "linked"
+        ? t("codeRepair.uploadAndLink", {}, "Upload and link")
+        : t("codeRepair.upload", {}, "Upload asset");
+    const uploaderTitle = stagedUpload
+        ? t("codeRepair.actionUploaderReadyText", {}, "File staged")
+        : uploadLabel;
+    const uploaderSubtext = stagedUpload?.fileName
+        || t("codeRepair.actionUploaderIdleSubtext", {}, "Drag and drop or click to browse");
+    const uploaderClasses = stagedUpload ? "has-files" : "is-default";
+    const uploaderIconClass = stagedUpload ? "ri-checkbox-circle-line" : "ri-upload-cloud-2-line";
 
     return `
         <article class="card overflow-hidden" data-repair-card-id="${escapeHtml(card.cardId)}">
@@ -1298,16 +1300,48 @@ function buildCodeRepairActionCardMarkup(card) {
                     <h3 class="card-title">${escapeHtml(card.label)}</h3>
                     ${buildCodeRepairStatusPill(getCodeRepairStatusLabel(card.status), card.status)}
                 </div>
-                <div class="panel p-12 bg-grey-quaternary/30 min-h-200 flex items-center justify-center overflow-hidden">
-                    ${hasActivePreview
-                        ? `<img src="${escapeHtml(previewUrl)}" alt="${escapeHtml(card.label)}" class="w-full h-full object-contain rounded-12">`
-                        : `<div class="flex flex-col items-center gap-10 text-center text-grey-primary">
-                                <i class="ri-image-2-line text-icon-xl" aria-hidden="true"></i>
-                                <span class="text-body-xs">${escapeHtml(t("codeRepair.statusUnavailable", {}, "Unavailable"))}</span>
-                           </div>`
-                    }
+                <div class="grid gap-20 lg:grid-cols-[minmax(0,18rem)_minmax(0,1fr)] items-start">
+                    <div class="flex flex-col gap-12">
+                        <div class="uploader uploader-image ${uploaderClasses}" data-uploader ${isBusy ? 'aria-disabled="true"' : ""}>
+                            <input
+                                type="file"
+                                class="uploader-input hidden"
+                                data-repair-upload-input="${escapeHtml(card.cardId)}"
+                                accept="image/*,.svg,.png,.jpg,.jpeg,.webp"
+                                ${!canUpload || isBusy ? "disabled" : ""}
+                            >
+                            <button
+                                type="button"
+                                class="uploader-zone w-full text-left"
+                                data-repair-upload-trigger="${escapeHtml(card.cardId)}"
+                                ${!canUpload || isBusy ? "disabled" : ""}
+                            >
+                                <div class="uploader-icon" aria-hidden="true">
+                                    <i class="${uploaderIconClass}"></i>
+                                </div>
+                                <div class="uploader-text" data-uploader-text aria-live="polite">${escapeHtml(uploaderTitle)}</div>
+                                <div class="uploader-subtext">${escapeHtml(uploaderSubtext)}</div>
+                            </button>
+                        </div>
+                        <button
+                            type="button"
+                            class="btn btn-secondary btn-sm w-full justify-center"
+                            data-repair-open-dam-modal="${escapeHtml(card.cardId)}"
+                            ${isBusy ? "disabled" : ""}
+                        >
+                            <span>${escapeHtml(t("codeRepair.damSearchButton", {}, "Search in the DAM"))}</span>
+                        </button>
+                    </div>
+                    <div class="panel p-12 bg-grey-quaternary/30 min-h-240 flex items-center justify-center overflow-hidden">
+                        ${hasActivePreview
+                            ? `<img src="${escapeHtml(previewUrl)}" alt="${escapeHtml(card.label)}" class="w-full h-full object-contain rounded-12">`
+                            : `<div class="flex flex-col items-center gap-10 text-center text-grey-primary">
+                                    <i class="ri-image-2-line text-icon-xl" aria-hidden="true"></i>
+                                    <span class="text-body-xs">${escapeHtml(t("codeRepair.statusUnavailable", {}, "Unavailable"))}</span>
+                               </div>`
+                        }
+                    </div>
                 </div>
-                ${primaryActionMarkup ? `<div class="flex flex-wrap gap-12">${primaryActionMarkup}</div>` : ""}
             </div>
         </article>
     `;
@@ -1742,7 +1776,7 @@ function buildCodeRepairDefinitionRows(items) {
 }
 
 function handleCodeRepairGridClick(event) {
-    const trigger = event.target.closest("[data-repair-use-best], [data-repair-link-asset], [data-repair-unlink], [data-repair-upload-trigger], [data-repair-open-url], [data-repair-copy-active]");
+    const trigger = event.target.closest("[data-repair-use-best], [data-repair-link-asset], [data-repair-unlink], [data-repair-upload-trigger], [data-repair-open-url], [data-repair-copy-active], [data-repair-open-dam-modal]");
 
     if (!trigger || codeRepairState.loading || codeRepairState.mutating) {
         return;
@@ -1791,9 +1825,17 @@ function handleCodeRepairGridClick(event) {
 
     if (trigger.dataset.repairUploadTrigger) {
         const cardRoot = trigger.closest("[data-repair-card-id]");
-        const input = Array.from((cardRoot || codeRepairElements.sourceGrid).querySelectorAll("[data-repair-upload-input]"))
-            .find((field) => String(field.dataset.repairUploadInput || "") === String(trigger.dataset.repairUploadTrigger || ""));
+        const input = getCodeRepairUploadInput(
+            cardRoot,
+            String(trigger.dataset.repairUploadTrigger || ""),
+            cardRoot ? codeRepairElements.actionsGrid : codeRepairElements.sourceGrid
+        );
         input?.click();
+        return;
+    }
+
+    if (trigger.dataset.repairOpenDamModal) {
+        setCodeRepairDamSearchModalOpen(true, trigger);
         return;
     }
 
@@ -1823,6 +1865,103 @@ function handleCodeRepairGridChange(event) {
     }
 
     stageCodeRepairUploadChange(card, file);
+}
+
+function handleCodeRepairActionUploaderDragOver(event) {
+    const trigger = event.target.closest("[data-repair-upload-trigger]");
+
+    if (!trigger || trigger.disabled) {
+        return;
+    }
+
+    event.preventDefault();
+    trigger.closest("[data-uploader]")?.classList.add("is-dragover");
+}
+
+function handleCodeRepairActionUploaderDragLeave(event) {
+    const trigger = event.target.closest("[data-repair-upload-trigger]");
+
+    if (!trigger) {
+        return;
+    }
+
+    const relatedTarget = event.relatedTarget instanceof Node ? event.relatedTarget : null;
+
+    if (relatedTarget && trigger.contains(relatedTarget)) {
+        return;
+    }
+
+    trigger.closest("[data-uploader]")?.classList.remove("is-dragover");
+}
+
+function handleCodeRepairActionUploaderDrop(event) {
+    const trigger = event.target.closest("[data-repair-upload-trigger]");
+
+    if (!trigger || trigger.disabled) {
+        return;
+    }
+
+    event.preventDefault();
+    trigger.closest("[data-uploader]")?.classList.remove("is-dragover");
+
+    const file = event.dataTransfer?.files?.[0] || null;
+    const card = getCodeRepairCardById(String(trigger.dataset.repairUploadTrigger || ""));
+
+    if (!card || !file) {
+        return;
+    }
+
+    stageCodeRepairUploadChange(card, file);
+}
+
+function handleCodeRepairDocumentKeydown(event) {
+    if (event.key === "Escape" && isCodeRepairDamSearchModalOpen()) {
+        event.preventDefault();
+        setCodeRepairDamSearchModalOpen(false);
+    }
+}
+
+function getCodeRepairUploadInput(cardRoot, cardId, fallbackRoot = null) {
+    const searchRoot = cardRoot || fallbackRoot || document;
+    return Array.from(searchRoot.querySelectorAll("[data-repair-upload-input]"))
+        .find((field) => String(field.dataset.repairUploadInput || "") === String(cardId || ""))
+        || null;
+}
+
+function isCodeRepairDamSearchModalOpen() {
+    return Boolean(codeRepairElements?.damSearchModal?.classList.contains("is-open"));
+}
+
+function setCodeRepairDamSearchModalOpen(isOpen, triggerElement = null) {
+    if (!codeRepairElements?.damSearchModal || !codeRepairElements?.damSearchPanel) {
+        return;
+    }
+
+    if (isOpen) {
+        codeRepairElements.damSearchModal._lastTrigger = triggerElement || document.activeElement || null;
+        codeRepairElements.damSearchModal.inert = false;
+        codeRepairElements.damSearchModal.classList.add("is-open");
+        codeRepairElements.damSearchModal.setAttribute("aria-hidden", "false");
+        syncCodeRepairModalBodyLock();
+        window.requestAnimationFrame(() => {
+            codeRepairElements.damSearchCloseButton?.focus({ preventScroll: true });
+        });
+        return;
+    }
+
+    const lastTrigger = codeRepairElements.damSearchModal._lastTrigger || null;
+    codeRepairElements.damSearchModal.classList.remove("is-open");
+    codeRepairElements.damSearchModal.setAttribute("aria-hidden", "true");
+    codeRepairElements.damSearchModal.inert = true;
+    syncCodeRepairModalBodyLock();
+
+    if (lastTrigger instanceof HTMLElement) {
+        lastTrigger.focus({ preventScroll: true });
+    }
+}
+
+function syncCodeRepairModalBodyLock() {
+    document.body.classList.toggle("modal-open", Boolean(document.querySelector(".modal-overlay.is-open")));
 }
 
 function stageCodeRepairLinkChange(card, assetId) {
@@ -2106,6 +2245,12 @@ function getCodeRepairPendingChangeSignature(change) {
     }
 
     return JSON.stringify(change);
+}
+
+function getCodeRepairPendingUploadChange(cardId) {
+    return codeRepairState.pendingChanges.find((change) => {
+        return change?.kind === "upload" && String(change.cardId || "") === String(cardId || "");
+    }) || null;
 }
 
 function getCodeRepairPendingAssetLabel(card, assetId) {
@@ -2673,6 +2818,7 @@ function setCodeRepairLoadingOverlay(isVisible, message) {
     codeRepairElements.loadingOverlay.classList.toggle("is-visible", isVisible);
     codeRepairElements.loadingOverlay.setAttribute("aria-hidden", isVisible ? "false" : "true");
     codeRepairElements.loadingOverlay.inert = !isVisible;
+    syncCodeRepairModalBodyLock();
 }
 
 function getCodeRepairErrorMessage(error, fallback) {
