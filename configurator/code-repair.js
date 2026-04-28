@@ -104,18 +104,12 @@ const CODE_REPAIR_UPLOAD_FOLDERS = {
     "power-supply": "nexled/datasheet/power-supplies",
 };
 const CODE_REPAIR_SECTION_LABEL_META = {
-    context: ["codeRepair.contextTitle", "Repair Context"],
-    segments: ["codeRepair.segmentsTitle", "Decoded Segments"],
-    characteristics: ["codeRepair.characteristicsTitle", "Technical characteristics"],
-    dimensions: ["codeRepair.dimensionsTitle", "Dimensions"],
+    overview: ["codeRepair.overviewHeading", "Description / overview"],
     database: ["codeRepair.databaseTitle", "Database Checks"],
     sources: ["codeRepair.sourcesTitle", "Source Map"],
 };
 const CODE_REPAIR_SECTION_VISIBILITY_DEFAULTS = {
-    context: false,
-    segments: false,
-    characteristics: false,
-    dimensions: false,
+    overview: false,
     database: false,
     sources: false,
 };
@@ -217,13 +211,10 @@ function getCodeRepairElements() {
     const actionsGrid = document.getElementById("repair-actions-grid");
     const databaseGrid = document.getElementById("repair-database-grid");
     const sourceGrid = document.getElementById("repair-source-grid");
-    const contextList = document.getElementById("repair-context-list");
-    const segmentsList = document.getElementById("repair-segments-list");
-    const characteristicsList = document.getElementById("repair-characteristics-list");
+    const overviewList = document.getElementById("repair-overview-list");
     const dimensionsPreview = document.getElementById("repair-dimensions-preview");
     const dimensionsPreviewImage = document.getElementById("repair-dimensions-preview-image");
     const dimensionsPreviewEmpty = document.getElementById("repair-dimensions-preview-empty");
-    const dimensionsList = document.getElementById("repair-dimensions-list");
     const openConfiguratorLink = document.getElementById("repair-open-configurator-link");
     const loadingOverlay = document.getElementById("repair-loading-overlay");
     const loadingCopy = document.getElementById("repair-loading-copy");
@@ -245,13 +236,10 @@ function getCodeRepairElements() {
         || !actionsGrid
         || !databaseGrid
         || !sourceGrid
-        || !contextList
-        || !segmentsList
-        || !characteristicsList
+        || !overviewList
         || !dimensionsPreview
         || !dimensionsPreviewImage
         || !dimensionsPreviewEmpty
-        || !dimensionsList
         || !loadingOverlay
         || !loadingCopy
     ) {
@@ -273,13 +261,10 @@ function getCodeRepairElements() {
         actionsGrid,
         databaseGrid,
         sourceGrid,
-        contextList,
-        segmentsList,
-        characteristicsList,
+        overviewList,
         dimensionsPreview,
         dimensionsPreviewImage,
         dimensionsPreviewEmpty,
-        dimensionsList,
         openConfiguratorLink,
         loadingOverlay,
         loadingCopy,
@@ -564,10 +549,7 @@ function renderCodeRepairPage() {
     renderCodeRepairActions();
     renderCodeRepairDatabaseChecks();
     renderCodeRepairSources();
-    renderCodeRepairContext();
-    renderCodeRepairSegments();
-    renderCodeRepairCharacteristics();
-    renderCodeRepairDimensions();
+    renderCodeRepairOverview();
     renderCodeRepairApiBadge();
     updateCodeRepairTitle();
     syncCodeRepairSectionVisibility();
@@ -1569,20 +1551,37 @@ function buildCodeRepairDamCandidatesMarkup(card, assets) {
     `;
 }
 
-function renderCodeRepairContext() {
+function renderCodeRepairOverview() {
     const payload = codeRepairState.data;
 
+    renderCodeRepairDrawingPreview();
+
     if (!payload) {
-        renderCodeRepairEmptyState(codeRepairElements.contextList, {
+        renderCodeRepairEmptyState(codeRepairElements.overviewList, {
             body: t("codeRepair.sourcesEmpty", {}, "Load a reference to inspect the current active sources, local checks, and DAM candidates."),
             size: "sm",
         });
         return;
     }
 
+    const rows = [
+        ...buildCodeRepairContextRows(payload),
+        ...buildCodeRepairSegmentRows(payload),
+        ...buildCodeRepairDefinitionRows(payload?.characteristics || []),
+        ...buildCodeRepairDefinitionRows(payload?.dimensions || []),
+    ];
+
+    renderCodeRepairRows(
+        codeRepairElements.overviewList,
+        rows,
+        t("codeRepair.sourcesEmpty", {}, "Load a reference to inspect the current active sources, local checks, and DAM candidates.")
+    );
+}
+
+function buildCodeRepairContextRows(payload) {
     const summary = payload.summary || {};
     const editable = payload.editable_fields || {};
-    const rows = [
+    return [
         [t("codeRepair.summaryIdentity", {}, "Identity"), summary.identity || ""],
         [t("codeRepair.summaryProductType", {}, "Product type"), summary.product_type || ""],
         ["Product ID", summary.product_id || ""],
@@ -1590,12 +1589,6 @@ function renderCodeRepairContext() {
         ["Finish", editable.finish_name || summary.finish_name || ""],
         ["Header text", editable.header_description_text || summary.header_description || ""],
     ];
-
-    renderCodeRepairRows(
-        codeRepairElements.contextList,
-        rows,
-        t("codeRepair.sourcesEmpty", {}, "Load a reference to inspect the current active sources, local checks, and DAM candidates.")
-    );
 }
 
 function getCodeRepairDatabaseCheckLabel(key) {
@@ -1652,8 +1645,7 @@ function buildCodeRepairContextRow(label, value) {
     `;
 }
 
-function renderCodeRepairSegments() {
-    const payload = codeRepairState.data;
+function buildCodeRepairSegmentRows(payload) {
     const segments = payload?.segments || {};
     const labels = payload?.segment_labels || {};
     const orderedSegments = [
@@ -1668,15 +1660,7 @@ function renderCodeRepairSegments() {
         ["option", t("codeExplorer.segmentOption", {}, "Option")],
     ];
 
-    if (!payload) {
-        renderCodeRepairEmptyState(codeRepairElements.segmentsList, {
-            body: t("codeRepair.sourcesEmpty", {}, "Load a reference to inspect the current active sources, local checks, and DAM candidates."),
-            size: "sm",
-        });
-        return;
-    }
-
-    const rows = orderedSegments.map(([key, label]) => {
+    return orderedSegments.map(([key, label]) => {
         const rawValue = String(segments?.[key] || "");
         const value = labels?.[key] && labels[key] !== rawValue
             ? `${rawValue} - ${labels[key]}`
@@ -1684,29 +1668,6 @@ function renderCodeRepairSegments() {
 
         return [label, value];
     });
-
-    renderCodeRepairRows(
-        codeRepairElements.segmentsList,
-        rows,
-        t("codeRepair.sourcesEmpty", {}, "Load a reference to inspect the current active sources, local checks, and DAM candidates.")
-    );
-}
-
-function renderCodeRepairCharacteristics() {
-    renderCodeRepairDefinitionList(
-        codeRepairElements.characteristicsList,
-        codeRepairState.data?.characteristics || [],
-        t("codeRepair.characteristicsEmpty", {}, "No technical characteristics returned.")
-    );
-}
-
-function renderCodeRepairDimensions() {
-    renderCodeRepairDrawingPreview();
-    renderCodeRepairDefinitionList(
-        codeRepairElements.dimensionsList,
-        codeRepairState.data?.dimensions || [],
-        t("codeRepair.dimensionsEmpty", {}, "No drawing dimensions returned.")
-    );
 }
 
 function renderCodeRepairDrawingPreview() {
@@ -1728,12 +1689,10 @@ function renderCodeRepairDrawingPreview() {
     codeRepairElements.dimensionsPreviewImage.removeAttribute("src");
 }
 
-function renderCodeRepairDefinitionList(target, items, emptyMessage) {
-    const rows = Array.isArray(items)
+function buildCodeRepairDefinitionRows(items) {
+    return Array.isArray(items)
         ? items.map((item) => [String(item?.label || ""), String(item?.value || "")])
         : [];
-
-    renderCodeRepairRows(target, rows, emptyMessage);
 }
 
 function handleCodeRepairGridClick(event) {
