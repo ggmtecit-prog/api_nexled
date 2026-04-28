@@ -199,6 +199,8 @@ function getCodeRepairElements() {
     const referenceInput = document.getElementById("repair-reference-input");
     const loadButton = document.getElementById("repair-load-button");
     const revalidateButton = document.getElementById("repair-revalidate-button");
+    const primaryActionIcon = revalidateButton?.querySelector("[data-repair-primary-action-icon]");
+    const primaryActionLabel = revalidateButton?.querySelector("[data-repair-primary-action-label]");
     const runtimeMessage = document.getElementById("repair-runtime-message");
     const emptyStateCard = document.getElementById("repair-empty-state-card");
     const detailsCard = document.getElementById("repair-details-card");
@@ -226,6 +228,8 @@ function getCodeRepairElements() {
         || !referenceInput
         || !loadButton
         || !revalidateButton
+        || !primaryActionIcon
+        || !primaryActionLabel
         || !runtimeMessage
         || !emptyStateCard
         || !detailsCard
@@ -253,6 +257,8 @@ function getCodeRepairElements() {
         referenceInput,
         loadButton,
         revalidateButton,
+        primaryActionIcon,
+        primaryActionLabel,
         runtimeMessage,
         emptyStateCard,
         detailsCard,
@@ -325,6 +331,15 @@ function bindCodeRepairEvents() {
     codeRepairElements.revalidateButton.addEventListener("click", () => {
         const reference = codeRepairState.reference || normalizeCodeRepairReference(codeRepairElements.referenceInput.value);
 
+        if (codeRepairState.pendingChanges.length > 0) {
+            if (codeRepairState.loading || codeRepairState.mutating) {
+                return;
+            }
+
+            void applyCodeRepairPendingChanges();
+            return;
+        }
+
         if (reference === "") {
             return;
         }
@@ -383,18 +398,8 @@ function handleCodeRepairDetailsCardClick(event) {
 }
 
 function handleCodeRepairActionsSectionClick(event) {
-    const applyButton = event.target.closest("[data-repair-apply-pending]");
     const discardButton = event.target.closest("[data-repair-discard-pending]");
     const removeButton = event.target.closest("[data-repair-remove-pending]");
-
-    if (applyButton) {
-        if (codeRepairState.pendingChanges.length === 0 || codeRepairState.loading || codeRepairState.mutating) {
-            return;
-        }
-
-        void applyCodeRepairPendingChanges();
-        return;
-    }
 
     if (discardButton) {
         if (codeRepairState.pendingChanges.length === 0 || codeRepairState.loading || codeRepairState.mutating) {
@@ -440,11 +445,17 @@ function syncCodeRepairActionState() {
     const typedReference = normalizeCodeRepairReference(codeRepairElements.referenceInput.value);
     const activeReference = codeRepairState.reference || typedReference;
     const actionDisabled = codeRepairState.loading || codeRepairState.mutating;
+    const hasPendingChanges = codeRepairState.pendingChanges.length > 0;
     const canLoad = typedReference !== "" && !actionDisabled;
-    const canRevalidate = activeReference !== "" && !actionDisabled;
+    const canPrimaryAction = activeReference !== "" && !actionDisabled;
 
     codeRepairElements.loadButton.disabled = !canLoad;
-    codeRepairElements.revalidateButton.disabled = !canRevalidate;
+    codeRepairElements.revalidateButton.disabled = !canPrimaryAction;
+    codeRepairElements.primaryActionIcon.className = `${hasPendingChanges ? "ri-check-line" : "ri-refresh-line"} text-icon-sm`;
+    codeRepairElements.primaryActionLabel.dataset.i18n = hasPendingChanges ? "codeRepair.pendingApply" : "codeRepair.revalidate";
+    codeRepairElements.primaryActionLabel.textContent = hasPendingChanges
+        ? t("codeRepair.pendingApply", {}, "Apply changes")
+        : t("codeRepair.revalidate", {}, "Revalidate");
 
     if (codeRepairElements.openConfiguratorLink) {
         if (activeReference !== "") {
@@ -721,15 +732,6 @@ function buildCodeRepairPendingPanelMarkup(changes, options = {}) {
                     >
                         <i class="ri-delete-bin-line text-icon-sm" aria-hidden="true"></i>
                         <span>${escapeHtml(t("codeRepair.pendingDiscard", {}, "Discard all"))}</span>
-                    </button>
-                    <button
-                        type="button"
-                        class="btn btn-primary btn-sm"
-                        data-repair-apply-pending
-                        ${disabled ? "disabled" : ""}
-                    >
-                        <i class="ri-check-line text-icon-sm" aria-hidden="true"></i>
-                        <span>${escapeHtml(t("codeRepair.pendingApply", {}, "Apply changes"))}</span>
                     </button>
                 </div>
             </div>
