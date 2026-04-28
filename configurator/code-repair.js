@@ -913,10 +913,7 @@ function buildCodeRepairDatabaseCheckCardMarkup(check) {
         <article class="card overflow-hidden">
             <div class="card-body p-24 flex flex-col gap-16">
                 <div class="flex flex-wrap items-start justify-between gap-12">
-                    <div class="flex flex-col gap-6">
-                        <span class="text-label-md text-grey-primary">${escapeHtml(t("codeRepair.databaseTitle", {}, "Database Checks"))}</span>
-                        <h3 class="card-title">${escapeHtml(label)}</h3>
-                    </div>
+                    <h3 class="card-title">${escapeHtml(label)}</h3>
                     ${buildCodeRepairStatusPill(statusLabel, status)}
                 </div>
                 <div class="flex flex-wrap gap-8">
