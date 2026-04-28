@@ -212,8 +212,6 @@ function getCodeRepairElements() {
     const actionsSection = document.getElementById("repair-actions-section");
     const actionsGrid = document.getElementById("repair-actions-grid");
     const databaseGrid = document.getElementById("repair-database-grid");
-    const blockersSection = document.getElementById("repair-blockers-section");
-    const blockersList = document.getElementById("repair-blockers-list");
     const sourceGrid = document.getElementById("repair-source-grid");
     const contextList = document.getElementById("repair-context-list");
     const segmentsList = document.getElementById("repair-segments-list");
@@ -240,8 +238,6 @@ function getCodeRepairElements() {
         || !actionsSection
         || !actionsGrid
         || !databaseGrid
-        || !blockersSection
-        || !blockersList
         || !sourceGrid
         || !contextList
         || !segmentsList
@@ -268,8 +264,6 @@ function getCodeRepairElements() {
         actionsSection,
         actionsGrid,
         databaseGrid,
-        blockersSection,
-        blockersList,
         sourceGrid,
         contextList,
         segmentsList,
@@ -482,7 +476,6 @@ function renderCodeRepairPage() {
     renderCodeRepairSummary();
     renderCodeRepairActions();
     renderCodeRepairDatabaseChecks();
-    renderCodeRepairBlockers();
     renderCodeRepairSources();
     renderCodeRepairContext();
     renderCodeRepairSegments();
@@ -573,11 +566,12 @@ function renderCodeRepairActions() {
     codeRepairElements.actionsSection.classList.remove("hidden");
 
     const actionCards = getCodeRepairActionCards(payload);
+    const topBlockerText = getCodeRepairTopBlockerText(payload);
 
     if (actionCards.length === 0) {
         renderCodeRepairEmptyState(codeRepairElements.actionsGrid, {
-            title: t("codeRepair.actionsEmptyTitle", {}, "No direct repair actions available"),
-            body: t("codeRepair.actionsEmptyBody", {}, "This code is blocked, but there is no asset repair action available here. Use the blocker details and database checks below."),
+            title: t("codeRepair.actionsEmptyTitle", {}, "No direct repair actions available here"),
+            body: t("codeRepair.actionsEmptyBody", { blocker: topBlockerText }, "This code is blocked by {blocker}. Review the overview below."),
             size: "md",
             extraClasses: "col-span-full",
         });
@@ -872,53 +866,6 @@ function renderCodeRepairRows(target, rows, emptyMessage) {
     }
 
     target.innerHTML = buildCodeRepairRowsMarkup(rows);
-}
-
-function renderCodeRepairBlockers() {
-    const payload = codeRepairState.data;
-
-    if (!payload) {
-        codeRepairElements.blockersSection.hidden = true;
-        renderCodeRepairEmptyState(codeRepairElements.blockersList, {
-            title: t("codeRepair.blockTitle", {}, "Active blockers"),
-            body: t("codeRepair.sourcesEmpty", {}, "Load a reference to inspect the current active sources, local checks, and DAM candidates."),
-            size: "md",
-        });
-        return;
-    }
-
-    const blockers = Array.isArray(payload?.validation?.blockers) ? payload.validation.blockers : [];
-
-    if (blockers.length === 0) {
-        codeRepairElements.blockersSection.hidden = true;
-        codeRepairElements.blockersList.innerHTML = "";
-        return;
-    }
-
-    codeRepairElements.blockersSection.hidden = false;
-    codeRepairElements.blockersList.innerHTML = blockers.map((blocker) => {
-        const statusLabel = getCodeRepairStatusLabel(blocker.current_status || "missing");
-        const sourceLabel = getCodeRepairSourceLabel(blocker.source_key || "");
-
-        return `
-            <article class="panel p-20 flex flex-col gap-12">
-                <div class="flex flex-wrap items-start justify-between gap-12">
-                    <div class="flex flex-col gap-6">
-                        <h3 class="text-title-sm">${escapeHtml(blocker.title || blocker.code || "")}</h3>
-                        <p class="text-body-sm text-grey-primary">${escapeHtml(blocker.summary || "")}</p>
-                    </div>
-                    ${buildCodeRepairStatusPill(statusLabel, blocker.current_status || "missing")}
-                </div>
-                <div class="flex flex-wrap gap-8">
-                    ${buildCodeRepairNeutralBadge(sourceLabel)}
-                    ${buildCodeRepairNeutralBadge(blocker.repair_mode === "asset"
-                        ? t("codeRepair.sourceDamCandidates", {}, "DAM candidates")
-                        : t("codeRepair.sourceStatus", {}, "Status")
-                    )}
-                </div>
-            </article>
-        `;
-    }).join("");
 }
 
 function renderCodeRepairSources() {
