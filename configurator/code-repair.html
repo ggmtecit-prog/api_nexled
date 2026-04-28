@@ -226,7 +226,7 @@
             </header>
 
             <section class="grid grid-cols-1 xl:grid-cols-12 gap-24 items-start">
-                <aside class="xl:col-span-3 xl:col-start-10" data-reveal="section">
+                <aside class="xl:col-span-3 xl:col-start-10 flex flex-col gap-24" data-reveal="section">
                     <section class="card overflow-hidden w-full">
                         <div class="card-body p-24 flex flex-col gap-20">
                             <form id="repair-reference-form" class="flex flex-col gap-14">
@@ -249,6 +249,12 @@
                                     </div>
                                 </div>
                             </form>
+                        </div>
+                    </section>
+
+                    <section id="repair-pending-card" class="card overflow-hidden hidden w-full">
+                        <div class="card-body p-24">
+                            <div id="repair-pending-panel"></div>
                         </div>
                     </section>
                 </aside>
@@ -277,7 +283,6 @@
 
                                     <div id="repair-actions-section" class="border-t border-grey-secondary pt-24 flex flex-col gap-16 hidden">
                                         <h2 class="text-title-lg" data-i18n="codeRepair.actionsHeading">Actions</h2>
-                                        <div id="repair-pending-panel" class="hidden"></div>
                                         <div id="repair-actions-grid" class="grid gap-20 2xl:grid-cols-2"></div>
                                     </div>
 

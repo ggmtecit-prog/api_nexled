@@ -212,6 +212,7 @@ function getCodeRepairElements() {
     const detailsCard = document.getElementById("repair-details-card");
     const summaryGrid = document.getElementById("repair-summary-grid");
     const actionsSection = document.getElementById("repair-actions-section");
+    const pendingCard = document.getElementById("repair-pending-card");
     const pendingPanel = document.getElementById("repair-pending-panel");
     const actionsGrid = document.getElementById("repair-actions-grid");
     const databaseGrid = document.getElementById("repair-database-grid");
@@ -239,6 +240,7 @@ function getCodeRepairElements() {
         || !detailsCard
         || !summaryGrid
         || !actionsSection
+        || !pendingCard
         || !pendingPanel
         || !actionsGrid
         || !databaseGrid
@@ -266,6 +268,7 @@ function getCodeRepairElements() {
         detailsCard,
         summaryGrid,
         actionsSection,
+        pendingCard,
         pendingPanel,
         actionsGrid,
         databaseGrid,
@@ -355,7 +358,7 @@ function bindCodeRepairEvents() {
     });
 
     codeRepairElements.detailsCard.addEventListener("click", handleCodeRepairDetailsCardClick);
-    codeRepairElements.actionsSection.addEventListener("click", handleCodeRepairActionsSectionClick);
+    codeRepairElements.pendingCard.addEventListener("click", handleCodeRepairActionsSectionClick);
     codeRepairElements.actionsGrid.addEventListener("click", handleCodeRepairGridClick);
     codeRepairElements.actionsGrid.addEventListener("change", handleCodeRepairGridChange);
     codeRepairElements.sourceGrid.addEventListener("click", handleCodeRepairGridClick);
@@ -634,6 +637,8 @@ function renderCodeRepairActions() {
         codeRepairElements.actionsSection.classList.add("hidden");
         codeRepairElements.pendingPanel.innerHTML = "";
         codeRepairElements.pendingPanel.classList.add("hidden");
+        codeRepairElements.pendingCard.hidden = true;
+        codeRepairElements.pendingCard.classList.add("hidden");
         codeRepairElements.actionsGrid.innerHTML = "";
         return;
     }
@@ -647,6 +652,8 @@ function renderCodeRepairActions() {
         codeRepairElements.actionsSection.classList.add("hidden");
         codeRepairElements.pendingPanel.innerHTML = "";
         codeRepairElements.pendingPanel.classList.add("hidden");
+        codeRepairElements.pendingCard.hidden = true;
+        codeRepairElements.pendingCard.classList.add("hidden");
         codeRepairElements.actionsGrid.innerHTML = "";
         return;
     }
@@ -686,9 +693,13 @@ function renderCodeRepairPendingPanel() {
     if (!Array.isArray(changes) || changes.length === 0) {
         codeRepairElements.pendingPanel.innerHTML = "";
         codeRepairElements.pendingPanel.classList.add("hidden");
+        codeRepairElements.pendingCard.hidden = true;
+        codeRepairElements.pendingCard.classList.add("hidden");
         return;
     }
 
+    codeRepairElements.pendingCard.hidden = false;
+    codeRepairElements.pendingCard.classList.remove("hidden");
     codeRepairElements.pendingPanel.classList.remove("hidden");
     codeRepairElements.pendingPanel.innerHTML = buildCodeRepairPendingPanelMarkup(changes, {
         disabled: isBusy,
