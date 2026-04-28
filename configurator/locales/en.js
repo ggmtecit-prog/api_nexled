@@ -459,7 +459,7 @@ window.NexLedLocales.en = {
         blockHeroAwaitingBody: "Load a reference to inspect the current code state and blockers.",
         blockHeroConfiguratorBlockedTitle: "Configurator blocked",
         blockHeroDatasheetBlockedTitle: "Datasheet blocked",
-        blockHeroBlockedBody: "Current blocker: {blocker}.",
+        blockHeroBlockedBody: "Blocking issues: {blockers}.",
         blockNoneTitle: "No blockers found",
         blockNoneBody: "This reference is valid and ready for the datasheet in the current runtime.",
         databaseTitle: "Database Checks",

@@ -480,7 +480,7 @@ window.NexLedLocales.pt = {
         blockHeroAwaitingBody: "Carregue uma referencia para ver o estado atual do codigo e os bloqueios.",
         blockHeroConfiguratorBlockedTitle: "Configurador bloqueado",
         blockHeroDatasheetBlockedTitle: "Ficha tecnica bloqueada",
-        blockHeroBlockedBody: "Bloqueio atual: {blocker}.",
+        blockHeroBlockedBody: "Bloqueios: {blockers}.",
         blockNoneTitle: "Sem bloqueios encontrados",
         blockNoneBody: "Esta referência é válida e está pronta para a ficha técnica no runtime atual.",
         databaseTitle: "Validacoes da base de dados",

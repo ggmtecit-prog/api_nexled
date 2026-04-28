@@ -726,12 +726,12 @@ function getCodeRepairBlockerStatusHeroState(payload) {
     }
 
     const summary = payload.summary || {};
-    const blockerText = getCodeRepairTopBlockerText(payload);
+    const blockerText = getCodeRepairBlockerListText(payload);
 
     if (summary.configurator_valid !== true) {
         return {
             title: t("codeRepair.blockHeroConfiguratorBlockedTitle", {}, "Configurator blocked"),
-            body: t("codeRepair.blockHeroBlockedBody", { blocker: blockerText }, "Current blocker: {blocker}."),
+            body: t("codeRepair.blockHeroBlockedBody", { blockers: blockerText }, "Blocking issues: {blockers}."),
             iconClass: "ri-alert-line",
             tone: "warning",
         };
@@ -740,7 +740,7 @@ function getCodeRepairBlockerStatusHeroState(payload) {
     if (summary.datasheet_ready !== true) {
         return {
             title: t("codeRepair.blockHeroDatasheetBlockedTitle", {}, "Datasheet blocked"),
-            body: t("codeRepair.blockHeroBlockedBody", { blocker: blockerText }, "Current blocker: {blocker}."),
+            body: t("codeRepair.blockHeroBlockedBody", { blockers: blockerText }, "Blocking issues: {blockers}."),
             iconClass: "ri-alert-line",
             tone: "warning",
         };
@@ -1951,18 +1951,50 @@ function getCodeRepairLoadedTone(payload) {
     return "error";
 }
 
-function getCodeRepairTopBlockerText(payload) {
+function getCodeRepairBlockerTexts(payload) {
     const blockers = Array.isArray(payload?.validation?.blockers) ? payload.validation.blockers : [];
-    const topBlocker = String(payload?.summary?.top_blocker || "");
+    const topBlocker = String(payload?.summary?.top_blocker || "").trim();
+    const texts = [];
 
-    if (blockers.length > 0) {
-        const explicitMatch = blockers.find((blocker) => String(blocker?.code || "") === topBlocker);
-        return String((explicitMatch || blockers[0])?.title || topBlocker || t("codeRepair.statusUnavailable", {}, "Unavailable"));
+    blockers.forEach((blocker) => {
+        const title = String(blocker?.title || "").trim();
+        const code = String(blocker?.code || "").trim();
+        const text = title || (code ? getCodeRepairFailureReasonText(code) : "");
+
+        if (text && !texts.includes(text)) {
+            texts.push(text);
+        }
+    });
+
+    if (topBlocker !== "") {
+        const topText = getCodeRepairFailureReasonText(topBlocker);
+
+        if (topText && !texts.includes(topText)) {
+            texts.unshift(topText);
+        }
     }
 
-    return topBlocker !== ""
-        ? getCodeRepairFailureReasonText(topBlocker)
-        : t("codeRepair.statusReady", {}, "Ready");
+    return texts;
+}
+
+function getCodeRepairBlockerListText(payload) {
+    const blockerTexts = getCodeRepairBlockerTexts(payload);
+
+    if (blockerTexts.length > 0) {
+        return blockerTexts.join("; ");
+    }
+
+    return t("codeRepair.statusUnavailable", {}, "Unavailable");
+}
+
+function getCodeRepairTopBlockerText(payload) {
+    const blockerTexts = getCodeRepairBlockerTexts(payload);
+
+    if (blockerTexts.length > 0) {
+        return blockerTexts[0];
+    }
+
+    return t("codeRepair.statusReady", {}, "Ready");
 }
 
 function getCodeRepairFailureReasonText(code) {
