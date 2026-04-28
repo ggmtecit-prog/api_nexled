@@ -486,6 +486,7 @@ window.NexLedLocales.pt = {
         databaseTitle: "Validacoes da base de dados",
         databaseHeading: "Diagnostico da base de dados",
         databaseEmpty: "Carregue uma referencia para ver o que as bases de dados devolveram para este codigo.",
+        overviewEmpty: "Carregue uma referencia para ver os detalhes do codigo e os dados devolvidos.",
         databaseSource: "Fonte",
         databaseValue: "Valor",
         databaseBlocksDatasheet: "Bloqueia ficha tecnica",

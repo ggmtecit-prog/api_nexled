@@ -106,12 +106,10 @@ const CODE_REPAIR_UPLOAD_FOLDERS = {
 const CODE_REPAIR_SECTION_LABEL_META = {
     overview: ["codeRepair.overviewHeading", "Description / overview"],
     database: ["codeRepair.databaseTitle", "Database Checks"],
-    sources: ["codeRepair.sourcesTitle", "Source Map"],
 };
 const CODE_REPAIR_SECTION_VISIBILITY_DEFAULTS = {
     overview: false,
     database: false,
-    sources: false,
 };
 const codeRepairState = {
     reference: "",
@@ -210,7 +208,6 @@ function getCodeRepairElements() {
     const pendingPanel = document.getElementById("repair-pending-panel");
     const actionsGrid = document.getElementById("repair-actions-grid");
     const databaseGrid = document.getElementById("repair-database-grid");
-    const sourceGrid = document.getElementById("repair-source-grid");
     const overviewList = document.getElementById("repair-overview-list");
     const dimensionsPreview = document.getElementById("repair-dimensions-preview");
     const dimensionsPreviewImage = document.getElementById("repair-dimensions-preview-image");
@@ -238,7 +235,6 @@ function getCodeRepairElements() {
         || !pendingPanel
         || !actionsGrid
         || !databaseGrid
-        || !sourceGrid
         || !overviewList
         || !dimensionsPreview
         || !dimensionsPreviewImage
@@ -266,7 +262,6 @@ function getCodeRepairElements() {
         pendingPanel,
         actionsGrid,
         databaseGrid,
-        sourceGrid,
         overviewList,
         dimensionsPreview,
         dimensionsPreviewImage,
@@ -358,8 +353,6 @@ function bindCodeRepairEvents() {
     codeRepairElements.actionsGrid.addEventListener("dragover", handleCodeRepairActionUploaderDragOver);
     codeRepairElements.actionsGrid.addEventListener("dragleave", handleCodeRepairActionUploaderDragLeave);
     codeRepairElements.actionsGrid.addEventListener("drop", handleCodeRepairActionUploaderDrop);
-    codeRepairElements.sourceGrid.addEventListener("click", handleCodeRepairGridClick);
-    codeRepairElements.sourceGrid.addEventListener("change", handleCodeRepairGridChange);
     codeRepairElements.damSearchCloseButton.addEventListener("click", () => {
         setCodeRepairDamSearchModalOpen(false);
     });
@@ -569,7 +562,6 @@ function renderCodeRepairPage() {
     renderCodeRepairSummary();
     renderCodeRepairActions();
     renderCodeRepairDatabaseChecks();
-    renderCodeRepairSources();
     renderCodeRepairOverview();
     renderCodeRepairApiBadge();
     updateCodeRepairTitle();
@@ -1044,15 +1036,6 @@ function buildCodeRepairRowsMarkup(rows) {
     }).join("");
 }
 
-function buildCodeRepairMarkupRow(label, valueMarkup) {
-    return `
-        <div class="list-item">
-            <dt class="list-key">${escapeHtml(label)}</dt>
-            <dd class="list-value break-all">${valueMarkup}</dd>
-        </div>
-    `;
-}
-
 function renderCodeRepairRows(target, rows, emptyMessage) {
     if (!Array.isArray(rows) || rows.length === 0) {
         renderCodeRepairEmptyState(target, {
@@ -1063,28 +1046,6 @@ function renderCodeRepairRows(target, rows, emptyMessage) {
     }
 
     target.innerHTML = buildCodeRepairRowsMarkup(rows);
-}
-
-function renderCodeRepairSources() {
-    const payload = codeRepairState.data;
-
-    if (!payload) {
-        renderCodeRepairEmptyState(codeRepairElements.sourceGrid, {
-            title: t("codeRepair.sourcesTitle", {}, "Source Map"),
-            body: t("codeRepair.sourcesEmpty", {}, "Load a reference to inspect the current active sources, local checks, and DAM candidates."),
-            size: "md",
-            extraClasses: "col-span-full",
-        });
-        return;
-    }
-
-    const cards = buildCodeRepairCards(payload);
-
-    codeRepairElements.sourceGrid.innerHTML = cards.map((card) => {
-        return card.kind === "record"
-            ? buildCodeRepairRecordCardMarkup(card)
-            : buildCodeRepairAssetCardMarkup(card);
-    }).join("");
 }
 
 function buildCodeRepairCards(payload) {
@@ -1124,48 +1085,12 @@ function buildCodeRepairCards(payload) {
             return;
         }
 
-        if (meta.kind === "record") {
-            cards.push(buildCodeRepairRecordCard(payload, sourceKey, source, blockersBySource.get(sourceKey) || null));
-            return;
+        if (meta.kind !== "record") {
+            cards.push(buildCodeRepairAssetCard(payload, sourceKey, source, blockersBySource.get(sourceKey) || null));
         }
-
-        cards.push(buildCodeRepairAssetCard(payload, sourceKey, source, blockersBySource.get(sourceKey) || null));
     });
 
     return cards;
-}
-
-function buildCodeRepairRecordCard(payload, sourceKey, source, blocker) {
-    const summary = payload?.summary || {};
-
-    if (sourceKey === "luminos") {
-        return {
-            cardId: sourceKey,
-            sourceKey,
-            kind: "record",
-            label: getCodeRepairSourceLabel(sourceKey),
-            status: source.status || "missing",
-            blocker,
-            rows: [
-                [t("codeRepair.summaryIdentity", {}, "Identity"), summary.identity || ""],
-                ["Product ID", summary.product_id || ""],
-                ["LED ID", summary.led_id || ""],
-            ],
-        };
-    }
-
-    return {
-        cardId: sourceKey,
-        sourceKey,
-        kind: "record",
-        label: getCodeRepairSourceLabel(sourceKey),
-        status: source.status || (source.supported === true ? "present" : "unsupported"),
-        blocker,
-        rows: [
-            [t("codeRepair.sourceRequired", {}, "Required"), source.required === false ? "No" : "Yes"],
-            ["Supported", source.supported === true ? t("codeRepair.statusPresent", {}, "Present") : t("codeRepair.statusUnsupported", {}, "Unsupported")],
-        ],
-    };
 }
 
 function buildCodeRepairAssetCard(payload, sourceKey, source, blocker) {
@@ -1183,7 +1108,6 @@ function buildCodeRepairAssetCard(payload, sourceKey, source, blocker) {
         required: source?.required !== false,
         active: source?.active || {},
         lookup: source?.lookup || {},
-        extraRows: getCodeRepairAssetExtraRows(payload, sourceKey, source),
     };
 }
 
@@ -1223,57 +1147,7 @@ function buildCodeRepairLensCard(payload, lensSource, channelKey, blocker) {
         required: lensSource?.required !== false,
         active,
         lookup,
-        extraRows: [],
     };
-}
-
-function getCodeRepairAssetExtraRows(payload, sourceKey, source) {
-    if (sourceKey === "header") {
-        return [
-            ["Image", source?.checks?.image_present === true ? t("codeRepair.statusPresent", {}, "Present") : t("codeRepair.statusMissing", {}, "Missing")],
-            ["Description", source?.checks?.description_present === true ? t("codeRepair.statusPresent", {}, "Present") : t("codeRepair.statusMissing", {}, "Missing")],
-        ];
-    }
-
-    if (sourceKey === "color_graph") {
-        return [
-            ["Label", String(source?.label || payload?.summary?.color_graph_label || "")],
-        ];
-    }
-
-    if (sourceKey === "finish_image") {
-        return [
-            ["Finish", String(source?.finish_name || payload?.summary?.finish_name || "")],
-        ];
-    }
-
-    return [];
-}
-
-function buildCodeRepairRecordCardMarkup(card) {
-    const statusLabel = getCodeRepairStatusLabel(card.status);
-    const rowsMarkup = Array.isArray(card.rows) && card.rows.length > 0
-        ? `
-            <dl class="list list-spec list-md panel border-0 bg-transparent">
-                ${buildCodeRepairRowsMarkup(card.rows)}
-            </dl>
-        `
-        : "";
-
-    return `
-        <article class="card overflow-hidden">
-            <div class="card-body p-24 flex flex-col gap-16">
-                <div class="flex flex-wrap items-start justify-between gap-12">
-                    <div class="flex flex-col gap-6">
-                        <span class="text-label-md text-grey-primary">${escapeHtml(t("codeRepair.sourceStatus", {}, "Status"))}</span>
-                        <h3 class="card-title">${escapeHtml(card.label)}</h3>
-                    </div>
-                    ${buildCodeRepairStatusPill(statusLabel, card.status)}
-                </div>
-                ${rowsMarkup}
-            </div>
-        </article>
-    `;
 }
 
 function buildCodeRepairActionCardMarkup(card) {
@@ -1348,290 +1222,6 @@ function buildCodeRepairActionCardMarkup(card) {
     `;
 }
 
-function buildCodeRepairAssetCardMarkup(card) {
-    const bestAsset = getCodeRepairBestDamAsset(card);
-    const activePath = String(card?.active?.path || "");
-    const previewUrl = getCodeRepairPreviewUrl(card?.active);
-    const hasActivePreview = previewUrl !== "";
-    const activeSourceType = getCodeRepairSourceTypeLabel(card?.active?.source_type || "");
-    const target = getCodeRepairLinkTarget(card);
-    const localLookup = card?.lookup?.local || {};
-    const damLookup = card?.lookup?.dam || {};
-    const localChecks = Array.isArray(localLookup?.checks) ? localLookup.checks : [];
-    const topAssets = Array.isArray(damLookup?.top_assets) ? damLookup.top_assets : [];
-    const isBusy = codeRepairState.loading || codeRepairState.mutating;
-    const canUpload = card.required !== false;
-    const canLink = bestAsset && card.linkMode === "linked" && target.requiresLink;
-    const candidateStems = Array.isArray(card.lookup?.candidates) ? card.lookup.candidates : [];
-    const activeNotice = bestAsset && (card.status === "missing" || card.status === "placeholder")
-        ? `
-            <div class="panel p-12 bg-amber-50 border-amber-200">
-                <p class="text-body-xs text-amber-800">${escapeHtml(t("codeRepair.sourceDamNote", {}, "DAM candidate exists, but the current active source still resolves elsewhere."))}</p>
-            </div>
-        `
-        : "";
-
-    const actions = [
-        canLink ? `
-            <button
-                type="button"
-                class="btn btn-secondary btn-sm"
-                data-repair-use-best="${escapeHtml(card.cardId)}"
-                ${isBusy ? "disabled" : ""}
-            >
-                <i class="ri-links-line text-icon-sm" aria-hidden="true"></i>
-                <span>${escapeHtml(t("codeRepair.useBest", {}, "Link best DAM candidate"))}</span>
-            </button>
-        ` : "",
-        canUpload ? `
-            <button
-                type="button"
-                class="btn btn-primary btn-sm"
-                data-repair-upload-trigger="${escapeHtml(card.cardId)}"
-                ${isBusy ? "disabled" : ""}
-            >
-                <i class="ri-upload-2-line text-icon-sm" aria-hidden="true"></i>
-                <span>${escapeHtml(card.linkMode === "linked"
-                    ? t("codeRepair.uploadAndLink", {}, "Upload and link")
-                    : t("codeRepair.upload", {}, "Upload asset")
-                )}</span>
-            </button>
-            <input type="file" class="hidden" data-repair-upload-input="${escapeHtml(card.cardId)}" ${isBusy ? "disabled" : ""}>
-        ` : "",
-        activePath !== "" ? `
-            <button
-                type="button"
-                class="btn btn-secondary btn-sm"
-                data-repair-copy-active="${escapeHtml(activePath)}"
-                ${isBusy ? "disabled" : ""}
-            >
-                <i class="ri-file-copy-line text-icon-sm" aria-hidden="true"></i>
-                <span>${escapeHtml(t("codeRepair.copyPath", {}, "Copy path"))}</span>
-            </button>
-        ` : "",
-    ].filter(Boolean).join("");
-
-    const extraRows = Array.isArray(card.extraRows) && card.extraRows.length > 0
-        ? card.extraRows.map(([label, value]) => {
-            return `
-                <div class="list-item">
-                    <dt class="list-key">${escapeHtml(label)}</dt>
-                    <dd class="list-value break-all">${escapeHtml(value || t("codeRepair.statusUnavailable", {}, "Unavailable"))}</dd>
-                </div>
-            `;
-        }).join("")
-        : "";
-
-    const primaryRows = [
-        [t("codeRepair.activeSourceType", {}, "Active source type"), activeSourceType],
-        [t("codeRepair.activePath", {}, "Active path"), activePath || t("codeRepair.statusUnavailable", {}, "Unavailable")],
-    ];
-    const diagnosticsRows = [
-        card.role
-            ? buildCodeRepairMarkupRow(
-                t("codeRepair.sourceRole", {}, "DAM role"),
-                escapeHtml(card.role || t("codeRepair.statusUnavailable", {}, "Unavailable"))
-            )
-            : "",
-        candidateStems.length > 0
-            ? buildCodeRepairMarkupRow(
-                t("codeRepair.sourceCandidates", {}, "Filename candidates"),
-                buildCodeRepairCandidateStemMarkup(candidateStems)
-            )
-            : "",
-        target.requiresLink
-            ? buildCodeRepairMarkupRow(
-                t("codeRepair.target", {}, "Link target"),
-                escapeHtml(target.label)
-            )
-            : "",
-    ].filter(Boolean).join("");
-    const detailsMarkup = diagnosticsRows !== "" || localChecks.length > 0 || topAssets.length > 0
-        ? `
-            <details class="panel p-16 bg-grey-quaternary/10">
-                <summary class="flex cursor-pointer list-none items-center justify-between gap-12">
-                    <span class="text-label-md text-grey-primary">${escapeHtml(t("codeRepair.moreDiagnostics", {}, "More diagnostics"))}</span>
-                    <i class="ri-arrow-down-s-line text-icon-sm text-grey-primary" aria-hidden="true"></i>
-                </summary>
-                <div class="flex flex-col gap-16 pt-16">
-                    ${diagnosticsRows !== ""
-                        ? `<dl class="list list-spec list-md panel border-0 bg-transparent">${diagnosticsRows}</dl>`
-                        : ""
-                    }
-                    ${localChecks.length > 0
-                        ? `
-                            <div class="flex flex-col gap-10">
-                                <span class="text-label-md text-grey-primary">${escapeHtml(t("codeRepair.sourceLocalChecks", {}, "Local checks"))}</span>
-                                ${buildCodeRepairLocalChecksMarkup(localChecks)}
-                            </div>
-                        `
-                        : ""
-                    }
-                    ${topAssets.length > 0
-                        ? `
-                            <div class="flex flex-col gap-10">
-                                <span class="text-label-md text-grey-primary">${escapeHtml(t("codeRepair.sourceDamCandidates", {}, "DAM candidates"))}</span>
-                                ${buildCodeRepairDamCandidatesMarkup(card, topAssets)}
-                            </div>
-                        `
-                        : ""
-                    }
-                </div>
-            </details>
-        `
-        : "";
-
-    return `
-        <article class="card overflow-hidden" data-repair-card-id="${escapeHtml(card.cardId)}">
-            <div class="card-body p-24 flex flex-col gap-20">
-                <div class="flex flex-wrap items-start justify-between gap-12">
-                    <div class="flex flex-col gap-6">
-                        <span class="text-label-md text-grey-primary">${escapeHtml(t("codeRepair.sourceStatus", {}, "Status"))}</span>
-                        <h3 class="card-title">${escapeHtml(card.label)}</h3>
-                    </div>
-                    ${buildCodeRepairStatusPill(getCodeRepairStatusLabel(card.status), card.status)}
-                </div>
-
-                <div class="grid gap-16 lg:grid-cols-[minmax(0,160px)_minmax(0,1fr)] items-start">
-                    <div class="panel p-12 bg-grey-quaternary/30 min-h-160 flex items-center justify-center overflow-hidden">
-                        ${hasActivePreview
-                            ? `<img src="${escapeHtml(previewUrl)}" alt="${escapeHtml(card.label)}" class="w-full h-full object-contain rounded-12">`
-                            : `<div class="flex flex-col items-center gap-10 text-center text-grey-primary">
-                                    <i class="ri-image-2-line text-icon-xl" aria-hidden="true"></i>
-                                    <span class="text-body-xs">${escapeHtml(t("codeRepair.statusUnavailable", {}, "Unavailable"))}</span>
-                               </div>`
-                        }
-                    </div>
-
-                    <div class="flex flex-col gap-12 min-w-0">
-                        <dl class="list list-spec list-md panel border-0 bg-transparent">
-                            ${buildCodeRepairRowsMarkup(primaryRows)}
-                            ${extraRows}
-                        </dl>
-                        ${activeNotice}
-                        ${actions ? `<div class="flex flex-wrap gap-12">${actions}</div>` : ""}
-                    </div>
-                </div>
-                ${detailsMarkup}
-            </div>
-        </article>
-    `;
-}
-
-function buildCodeRepairLocalChecksMarkup(checks) {
-    if (!Array.isArray(checks) || checks.length === 0) {
-        return `<p class="text-body-sm text-grey-primary">${escapeHtml(t("codeRepair.sourceNoLocalChecks", {}, "No local checks available."))}</p>`;
-    }
-
-    const trimmedChecks = checks.slice(0, 5);
-    const remaining = Math.max(checks.length - trimmedChecks.length, 0);
-
-    return `
-        <div class="flex flex-col gap-8">
-            ${trimmedChecks.map((check) => {
-                const foundPath = String(check?.found_path || "");
-                const toneClass = foundPath !== "" ? "text-green-700" : "text-grey-primary";
-                const iconClass = foundPath !== "" ? "ri-checkbox-circle-line" : "ri-close-circle-line";
-
-                return `
-                    <div class="panel p-12 bg-grey-quaternary/20 flex items-start gap-10">
-                        <i class="${iconClass} text-icon-sm ${toneClass}" aria-hidden="true"></i>
-                        <div class="flex flex-col gap-4 min-w-0">
-                            <span class="text-body-sm break-all"><code>${escapeHtml(check?.candidate || "")}</code></span>
-                            <span class="text-body-xs ${toneClass} break-all">${escapeHtml(foundPath || check?.base_path || "")}</span>
-                        </div>
-                    </div>
-                `;
-            }).join("")}
-            ${remaining > 0 ? `<span class="text-body-xs text-grey-primary">+${remaining}</span>` : ""}
-        </div>
-    `;
-}
-
-function buildCodeRepairDamCandidatesMarkup(card, assets) {
-    if (!Array.isArray(assets) || assets.length === 0) {
-        return `<p class="text-body-sm text-grey-primary">${escapeHtml(t("codeRepair.sourceNoDamCandidates", {}, "No DAM candidates scored for this source yet."))}</p>`;
-    }
-
-    const isBusy = codeRepairState.loading || codeRepairState.mutating;
-    const target = getCodeRepairLinkTarget(card);
-    const trimmedAssets = assets.slice(0, 4);
-    const remaining = Math.max(assets.length - trimmedAssets.length, 0);
-
-    return `
-        <div class="flex flex-col gap-10">
-            ${trimmedAssets.map((asset) => {
-                const previewUrl = getCodeRepairPreviewUrl(asset);
-                const linkLabel = buildCodeRepairLinkTargetLabel(asset?.link_family_code, asset?.link_product_code);
-                const canLink = card.linkMode === "linked" && target.requiresLink;
-
-                return `
-                    <div class="panel p-12 bg-grey-quaternary/20 flex flex-col gap-10">
-                        <div class="flex items-start gap-12">
-                            <div class="w-56 h-56 rounded-12 overflow-hidden bg-white border border-grey-quaternary shrink-0 flex items-center justify-center">
-                                ${previewUrl !== ""
-                                    ? `<img src="${escapeHtml(previewUrl)}" alt="${escapeHtml(asset?.filename || asset?.display_name || "")}" class="w-full h-full object-contain">`
-                                    : `<i class="ri-image-line text-icon-md text-grey-primary" aria-hidden="true"></i>`
-                                }
-                            </div>
-                            <div class="flex flex-col gap-6 min-w-0 flex-1">
-                                <div class="flex flex-wrap items-center gap-8">
-                                    <span class="text-body-sm font-medium break-all">${escapeHtml(asset?.filename || asset?.display_name || "")}</span>
-                                    ${buildCodeRepairNeutralBadge(t("codeRepair.score", {}, "Score") + ": " + String(asset?.score ?? 0))}
-                                </div>
-                                <span class="text-body-xs text-grey-primary break-all">${escapeHtml(asset?.folder_id || "")}</span>
-                                ${linkLabel !== ""
-                                    ? `<span class="text-body-xs text-grey-primary">${escapeHtml(linkLabel)}</span>`
-                                    : ""
-                                }
-                                ${Array.isArray(asset?.match_reasons) && asset.match_reasons.length > 0
-                                    ? `<span class="text-body-xs text-grey-primary">${escapeHtml(formatCodeRepairMatchReasons(asset.match_reasons))}</span>`
-                                    : ""
-                                }
-                            </div>
-                        </div>
-                        <div class="flex flex-wrap gap-10">
-                            <button
-                                type="button"
-                                class="btn btn-secondary btn-sm"
-                                data-repair-open-url="${escapeHtml(asset?.secure_url || "")}"
-                                ${!asset?.secure_url || isBusy ? "disabled" : ""}
-                            >
-                                <i class="ri-external-link-line text-icon-sm" aria-hidden="true"></i>
-                                <span>${escapeHtml(t("codeRepair.preview", {}, "Preview"))}</span>
-                            </button>
-                            ${canLink ? `
-                                <button
-                                    type="button"
-                                    class="btn btn-secondary btn-sm"
-                                    data-repair-link-asset="${escapeHtml(card.cardId)}"
-                                    data-asset-id="${escapeHtml(String(asset?.id || ""))}"
-                                    ${isBusy ? "disabled" : ""}
-                                >
-                                    <i class="ri-links-line text-icon-sm" aria-hidden="true"></i>
-                                    <span>${escapeHtml(t("codeRepair.useAsset", {}, "Link this asset"))}</span>
-                                </button>
-                            ` : ""}
-                            ${asset?.link_id ? `
-                                <button
-                                    type="button"
-                                    class="btn btn-secondary btn-sm"
-                                    data-repair-unlink="${escapeHtml(String(asset.link_id))}"
-                                    ${isBusy ? "disabled" : ""}
-                                >
-                                    <i class="ri-link-unlink-m text-icon-sm" aria-hidden="true"></i>
-                                    <span>${escapeHtml(t("codeRepair.unlink", {}, "Unlink"))}</span>
-                                </button>
-                            ` : ""}
-                        </div>
-                    </div>
-                `;
-            }).join("")}
-            ${remaining > 0 ? `<span class="text-body-xs text-grey-primary">+${remaining}</span>` : ""}
-        </div>
-    `;
-}
-
 function renderCodeRepairOverview() {
     const payload = codeRepairState.data;
 
@@ -1639,7 +1229,7 @@ function renderCodeRepairOverview() {
 
     if (!payload) {
         renderCodeRepairEmptyState(codeRepairElements.overviewList, {
-            body: t("codeRepair.sourcesEmpty", {}, "Load a reference to inspect the current active sources, local checks, and DAM candidates."),
+            body: t("codeRepair.overviewEmpty", {}, "Load a reference to inspect the code details and returned data."),
             size: "sm",
         });
         return;
@@ -1655,7 +1245,7 @@ function renderCodeRepairOverview() {
     renderCodeRepairRows(
         codeRepairElements.overviewList,
         rows,
-        t("codeRepair.sourcesEmpty", {}, "Load a reference to inspect the current active sources, local checks, and DAM candidates.")
+        t("codeRepair.overviewEmpty", {}, "Load a reference to inspect the code details and returned data.")
     );
 }
 
@@ -1777,50 +1367,9 @@ function buildCodeRepairDefinitionRows(items) {
 }
 
 function handleCodeRepairGridClick(event) {
-    const trigger = event.target.closest("[data-repair-use-best], [data-repair-link-asset], [data-repair-unlink], [data-repair-upload-trigger], [data-repair-open-url], [data-repair-copy-active], [data-repair-open-dam-modal]");
+    const trigger = event.target.closest("[data-repair-upload-trigger], [data-repair-open-dam-modal]");
 
     if (!trigger || codeRepairState.loading || codeRepairState.mutating) {
-        return;
-    }
-
-    if (trigger.dataset.repairUseBest) {
-        const card = getCodeRepairCardById(trigger.dataset.repairUseBest);
-        const bestAsset = getCodeRepairBestDamAsset(card);
-
-        if (!card || !bestAsset?.id) {
-            setCodeRepairRuntimeStatus(
-                t("codeRepair.sourceNoDamCandidates", {}, "No DAM candidates scored for this source yet."),
-                "warning"
-            );
-            return;
-        }
-
-        stageCodeRepairLinkChange(card, bestAsset.id);
-        return;
-    }
-
-    if (trigger.dataset.repairLinkAsset) {
-        const card = getCodeRepairCardById(trigger.dataset.repairLinkAsset);
-        const assetId = Number.parseInt(String(trigger.dataset.assetId || ""), 10);
-
-        if (!card || !Number.isFinite(assetId) || assetId <= 0) {
-            return;
-        }
-
-        stageCodeRepairLinkChange(card, assetId);
-        return;
-    }
-
-    if (trigger.dataset.repairUnlink) {
-        const cardRoot = trigger.closest("[data-repair-card-id]");
-        const card = cardRoot ? getCodeRepairCardById(String(cardRoot.dataset.repairCardId || "")) : null;
-        const linkId = Number.parseInt(String(trigger.dataset.repairUnlink || ""), 10);
-
-        if (!card || !Number.isFinite(linkId) || linkId <= 0) {
-            return;
-        }
-
-        stageCodeRepairUnlinkChange(card, linkId);
         return;
     }
 
@@ -1829,7 +1378,7 @@ function handleCodeRepairGridClick(event) {
         const input = getCodeRepairUploadInput(
             cardRoot,
             String(trigger.dataset.repairUploadTrigger || ""),
-            cardRoot ? codeRepairElements.actionsGrid : codeRepairElements.sourceGrid
+            codeRepairElements.actionsGrid
         );
         input?.click();
         return;
@@ -1837,16 +1386,6 @@ function handleCodeRepairGridClick(event) {
 
     if (trigger.dataset.repairOpenDamModal) {
         setCodeRepairDamSearchModalOpen(true, trigger);
-        return;
-    }
-
-    if (trigger.dataset.repairOpenUrl) {
-        window.open(trigger.dataset.repairOpenUrl, "_blank", "noopener");
-        return;
-    }
-
-    if (trigger.dataset.repairCopyActive) {
-        void copyCodeRepairText(trigger.dataset.repairCopyActive);
     }
 }
 
@@ -1963,47 +1502,6 @@ function setCodeRepairDamSearchModalOpen(isOpen, triggerElement = null) {
 
 function syncCodeRepairModalBodyLock() {
     document.body.classList.toggle("modal-open", Boolean(document.querySelector(".modal-overlay.is-open")));
-}
-
-function stageCodeRepairLinkChange(card, assetId) {
-    const target = getCodeRepairLinkTarget(card);
-
-    if (!target.requiresLink) {
-        setCodeRepairRuntimeStatus(
-            t("codeRepair.linkNotNeeded", {}, "This source reads shared DAM assets and does not need a product link."),
-            "warning"
-        );
-        return;
-    }
-
-    if (!target.familyCode && !target.productCode) {
-        setCodeRepairRuntimeStatus(
-            t("codeRepair.linkFailed", {}, "Unable to link asset."),
-            "error"
-        );
-        return;
-    }
-
-    const assetLabel = getCodeRepairPendingAssetLabel(card, assetId);
-    enqueueCodeRepairPendingChange({
-        kind: "link",
-        cardId: card.cardId,
-        sourceLabel: card.label,
-        assetId,
-        assetLabel,
-        role: card.role,
-        familyCode: target.familyCode || "",
-        productCode: target.productCode || "",
-    });
-}
-
-function stageCodeRepairUnlinkChange(card, linkId) {
-    enqueueCodeRepairPendingChange({
-        kind: "unlink",
-        cardId: card.cardId,
-        sourceLabel: card.label,
-        linkId,
-    });
 }
 
 function stageCodeRepairUploadChange(card, file) {
@@ -2296,19 +1794,6 @@ function revokeCodeRepairPendingUploadPreviewUrl(change) {
     }
 
     URL.revokeObjectURL(previewUrl);
-}
-
-function getCodeRepairPendingAssetLabel(card, assetId) {
-    const matchedAsset = [
-        getCodeRepairBestDamAsset(card),
-        ...(Array.isArray(card?.lookup?.dam?.top_assets) ? card.lookup.dam.top_assets : []),
-    ].find((asset) => Number.parseInt(String(asset?.id || ""), 10) === Number.parseInt(String(assetId || ""), 10));
-
-    return String(
-        matchedAsset?.filename
-        || matchedAsset?.display_name
-        || ("#" + String(assetId || ""))
-    );
 }
 
 function getCodeRepairPendingChangeTitle(change) {
@@ -2698,30 +2183,6 @@ function getCodeRepairStatusLabel(status) {
 
     const entry = map[key] || ["codeRepair.statusUnavailable", "Unavailable"];
     return t(entry[0], {}, entry[1]);
-}
-
-function getCodeRepairSourceTypeLabel(sourceType) {
-    const normalized = String(sourceType || "").trim();
-
-    if (normalized === "") {
-        return t("codeRepair.statusUnavailable", {}, "Unavailable");
-    }
-
-    return normalized
-        .split(/[_-]+/g)
-        .filter(Boolean)
-        .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
-        .join(" ");
-}
-
-function buildCodeRepairCandidateStemMarkup(candidates) {
-    if (!Array.isArray(candidates) || candidates.length === 0) {
-        return escapeHtml(t("codeRepair.statusUnavailable", {}, "Unavailable"));
-    }
-
-    return candidates
-        .map((candidate) => `<code>${escapeHtml(candidate)}</code>`)
-        .join(", ");
 }
 
 function buildCodeRepairStatusPill(label, status) {

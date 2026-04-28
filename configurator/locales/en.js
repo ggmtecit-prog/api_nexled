@@ -465,6 +465,7 @@ window.NexLedLocales.en = {
         databaseTitle: "Database Checks",
         databaseHeading: "Database diagnosis",
         databaseEmpty: "Load a reference to inspect what the databases returned for this code.",
+        overviewEmpty: "Load a reference to inspect the code details and returned data.",
         databaseSource: "Source",
         databaseValue: "Value",
         databaseBlocksDatasheet: "Blocks datasheet",
