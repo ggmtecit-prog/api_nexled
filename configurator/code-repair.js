@@ -662,10 +662,7 @@ function renderCodeRepairActions() {
     }
 
     codeRepairElements.actionsGrid.innerHTML = actionCards.map((card) => {
-        return buildCodeRepairAssetCardMarkup(card, {
-            emphasizeBlocker: true,
-            showDiagnostics: false,
-        });
+        return buildCodeRepairActionCardMarkup(card);
     }).join("");
 }
 
@@ -1258,34 +1255,83 @@ function buildCodeRepairRecordCardMarkup(card) {
     `;
 }
 
-function buildCodeRepairAssetCardMarkup(card, options = {}) {
-    const emphasizeBlocker = options?.emphasizeBlocker === true;
-    const showDiagnostics = options?.showDiagnostics !== false;
+function buildCodeRepairActionCardMarkup(card) {
+    const bestAsset = getCodeRepairBestDamAsset(card);
+    const previewUrl = getCodeRepairPreviewUrl(card?.active);
+    const hasActivePreview = previewUrl !== "";
+    const target = getCodeRepairLinkTarget(card);
+    const isBusy = codeRepairState.loading || codeRepairState.mutating;
+    const canUpload = card.required !== false;
+    const canLink = bestAsset && card.linkMode === "linked" && target.requiresLink;
+    const primaryActionMarkup = canUpload
+        ? `
+            <button
+                type="button"
+                class="btn btn-primary btn-sm"
+                data-repair-upload-trigger="${escapeHtml(card.cardId)}"
+                ${isBusy ? "disabled" : ""}
+            >
+                <i class="ri-upload-2-line text-icon-sm" aria-hidden="true"></i>
+                <span>${escapeHtml(card.linkMode === "linked"
+                    ? t("codeRepair.uploadAndLink", {}, "Upload and link")
+                    : t("codeRepair.upload", {}, "Upload asset")
+                )}</span>
+            </button>
+            <input type="file" class="hidden" data-repair-upload-input="${escapeHtml(card.cardId)}" ${isBusy ? "disabled" : ""}>
+        `
+        : (canLink ? `
+            <button
+                type="button"
+                class="btn btn-primary btn-sm"
+                data-repair-use-best="${escapeHtml(card.cardId)}"
+                ${isBusy ? "disabled" : ""}
+            >
+                <i class="ri-links-line text-icon-sm" aria-hidden="true"></i>
+                <span>${escapeHtml(t("codeRepair.useBest", {}, "Link best DAM candidate"))}</span>
+            </button>
+        ` : "");
+
+    return `
+        <article class="card overflow-hidden" data-repair-card-id="${escapeHtml(card.cardId)}">
+            <div class="card-body p-24 flex flex-col gap-16">
+                <div class="flex flex-wrap items-start justify-between gap-12">
+                    <h3 class="card-title">${escapeHtml(card.label)}</h3>
+                    ${buildCodeRepairStatusPill(getCodeRepairStatusLabel(card.status), card.status)}
+                </div>
+                <div class="panel p-12 bg-grey-quaternary/30 min-h-200 flex items-center justify-center overflow-hidden">
+                    ${hasActivePreview
+                        ? `<img src="${escapeHtml(previewUrl)}" alt="${escapeHtml(card.label)}" class="w-full h-full object-contain rounded-12">`
+                        : `<div class="flex flex-col items-center gap-10 text-center text-grey-primary">
+                                <i class="ri-image-2-line text-icon-xl" aria-hidden="true"></i>
+                                <span class="text-body-xs">${escapeHtml(t("codeRepair.statusUnavailable", {}, "Unavailable"))}</span>
+                           </div>`
+                    }
+                </div>
+                ${primaryActionMarkup ? `<div class="flex flex-wrap gap-12">${primaryActionMarkup}</div>` : ""}
+            </div>
+        </article>
+    `;
+}
+
+function buildCodeRepairAssetCardMarkup(card) {
     const bestAsset = getCodeRepairBestDamAsset(card);
     const activePath = String(card?.active?.path || "");
     const previewUrl = getCodeRepairPreviewUrl(card?.active);
     const hasActivePreview = previewUrl !== "";
     const activeSourceType = getCodeRepairSourceTypeLabel(card?.active?.source_type || "");
     const target = getCodeRepairLinkTarget(card);
-    const localLookup = showDiagnostics ? (card?.lookup?.local || {}) : {};
-    const damLookup = showDiagnostics ? (card?.lookup?.dam || {}) : {};
-    const localChecks = showDiagnostics && Array.isArray(localLookup?.checks) ? localLookup.checks : [];
-    const topAssets = showDiagnostics && Array.isArray(damLookup?.top_assets) ? damLookup.top_assets : [];
+    const localLookup = card?.lookup?.local || {};
+    const damLookup = card?.lookup?.dam || {};
+    const localChecks = Array.isArray(localLookup?.checks) ? localLookup.checks : [];
+    const topAssets = Array.isArray(damLookup?.top_assets) ? damLookup.top_assets : [];
     const isBusy = codeRepairState.loading || codeRepairState.mutating;
     const canUpload = card.required !== false;
     const canLink = bestAsset && card.linkMode === "linked" && target.requiresLink;
-    const candidateStems = showDiagnostics && Array.isArray(card.lookup?.candidates) ? card.lookup.candidates : [];
+    const candidateStems = Array.isArray(card.lookup?.candidates) ? card.lookup.candidates : [];
     const activeNotice = bestAsset && (card.status === "missing" || card.status === "placeholder")
         ? `
             <div class="panel p-12 bg-amber-50 border-amber-200">
                 <p class="text-body-xs text-amber-800">${escapeHtml(t("codeRepair.sourceDamNote", {}, "DAM candidate exists, but the current active source still resolves elsewhere."))}</p>
-            </div>
-        `
-        : "";
-    const blockerNotice = emphasizeBlocker && card?.blocker
-        ? `
-            <div class="panel p-12 bg-amber-50 border-amber-200">
-                <p class="text-body-sm text-amber-800">${escapeHtml(card.blocker.summary || card.blocker.title || "")}</p>
             </div>
         `
         : "";
@@ -1345,29 +1391,27 @@ function buildCodeRepairAssetCardMarkup(card, options = {}) {
         [t("codeRepair.activeSourceType", {}, "Active source type"), activeSourceType],
         [t("codeRepair.activePath", {}, "Active path"), activePath || t("codeRepair.statusUnavailable", {}, "Unavailable")],
     ];
-    const diagnosticsRows = showDiagnostics
-        ? [
-            card.role
-                ? buildCodeRepairMarkupRow(
-                    t("codeRepair.sourceRole", {}, "DAM role"),
-                    escapeHtml(card.role || t("codeRepair.statusUnavailable", {}, "Unavailable"))
-                )
-                : "",
-            candidateStems.length > 0
-                ? buildCodeRepairMarkupRow(
-                    t("codeRepair.sourceCandidates", {}, "Filename candidates"),
-                    buildCodeRepairCandidateStemMarkup(candidateStems)
-                )
-                : "",
-            target.requiresLink
-                ? buildCodeRepairMarkupRow(
-                    t("codeRepair.target", {}, "Link target"),
-                    escapeHtml(target.label)
-                )
-                : "",
-        ].filter(Boolean).join("")
-        : "";
-    const detailsMarkup = showDiagnostics && (diagnosticsRows !== "" || localChecks.length > 0 || topAssets.length > 0)
+    const diagnosticsRows = [
+        card.role
+            ? buildCodeRepairMarkupRow(
+                t("codeRepair.sourceRole", {}, "DAM role"),
+                escapeHtml(card.role || t("codeRepair.statusUnavailable", {}, "Unavailable"))
+            )
+            : "",
+        candidateStems.length > 0
+            ? buildCodeRepairMarkupRow(
+                t("codeRepair.sourceCandidates", {}, "Filename candidates"),
+                buildCodeRepairCandidateStemMarkup(candidateStems)
+            )
+            : "",
+        target.requiresLink
+            ? buildCodeRepairMarkupRow(
+                t("codeRepair.target", {}, "Link target"),
+                escapeHtml(target.label)
+            )
+            : "",
+    ].filter(Boolean).join("");
+    const detailsMarkup = diagnosticsRows !== "" || localChecks.length > 0 || topAssets.length > 0
         ? `
             <details class="panel p-16 bg-grey-quaternary/10">
                 <summary class="flex cursor-pointer list-none items-center justify-between gap-12">
@@ -1412,8 +1456,6 @@ function buildCodeRepairAssetCardMarkup(card, options = {}) {
                     </div>
                     ${buildCodeRepairStatusPill(getCodeRepairStatusLabel(card.status), card.status)}
                 </div>
-
-                ${blockerNotice}
 
                 <div class="grid gap-16 lg:grid-cols-[minmax(0,160px)_minmax(0,1fr)] items-start">
                     <div class="panel p-12 bg-grey-quaternary/30 min-h-160 flex items-center justify-center overflow-hidden">
