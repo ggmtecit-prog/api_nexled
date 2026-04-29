@@ -583,7 +583,7 @@ function renderCodeRepairSummary() {
                 "neutral",
                 t("codeRepair.statusUnavailable", {}, "Unavailable")
             ),
-            gridSpanClass: "col-span-full",
+            gridSpanClass: "sm:col-span-2 xl:col-span-2",
         }) + buildCodeRepairBlockerStatusHeroMarkup(null);
         return;
     }
@@ -609,7 +609,7 @@ function renderCodeRepairSummary() {
         family: familyValue,
         configuratorMarkup,
         datasheetMarkup,
-        gridSpanClass: "col-span-full",
+        gridSpanClass: "sm:col-span-2 xl:col-span-2",
     }) + buildCodeRepairBlockerStatusHeroMarkup(payload);
 }
 
@@ -697,7 +697,7 @@ function buildCodeRepairBlockerStatusHeroMarkup(payload) {
     const state = getCodeRepairBlockerStatusHeroState(payload);
 
     return `
-        <article class="col-span-full flex items-center justify-center text-center">
+        <article class="sm:col-span-2 xl:col-span-1 flex items-center justify-center text-center">
             ${buildCodeRepairEmptyStateMarkup({
                 title: state.title,
                 body: state.body,
