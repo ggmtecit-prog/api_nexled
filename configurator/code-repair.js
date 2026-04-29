@@ -789,10 +789,6 @@ function buildCodeRepairDatabaseCheckCardMarkup(check) {
     const sourceLabel = getCodeRepairDatabaseSourceLabel(String(check?.source || ""));
     const status = String(check?.status || "");
     const statusLabel = getCodeRepairStatusLabel(status);
-    const blocking = check?.blocking === true;
-    const impactLabel = blocking
-        ? t("codeRepair.databaseBlocksDatasheet", {}, "Blocks datasheet")
-        : t("codeRepair.databaseDiagnosticOnly", {}, "Diagnostic only");
     const displayValue = formatCodeRepairDatabaseCheckValue(check);
 
     return `
@@ -801,10 +797,6 @@ function buildCodeRepairDatabaseCheckCardMarkup(check) {
                 <div class="flex flex-wrap items-start justify-between gap-12">
                     <h3 class="card-title">${escapeHtml(label)}</h3>
                     ${buildCodeRepairStatusPill(statusLabel, status)}
-                </div>
-                <div class="flex flex-wrap gap-8">
-                    ${buildCodeRepairNeutralBadge(sourceLabel)}
-                    <span class="badge ${blocking ? "badge-warning" : "badge-neutral"} badge-sm">${escapeHtml(impactLabel)}</span>
                 </div>
                 <dl class="list list-spec list-md panel border-0 bg-transparent">
                     <div class="list-item">

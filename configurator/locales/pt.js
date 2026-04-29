@@ -489,8 +489,6 @@ window.NexLedLocales.pt = {
         overviewEmpty: "Carregue uma referencia para ver os detalhes do codigo e os dados devolvidos.",
         databaseSource: "Fonte",
         databaseValue: "Valor",
-        databaseBlocksDatasheet: "Bloqueia ficha tecnica",
-        databaseDiagnosticOnly: "Apenas diagnostico",
         databaseRowCountSingle: "1 linha",
         databaseRowCountPlural: "{count} linhas",
         dbCheckLuminosIdentity: "Registo de identidade Luminos",

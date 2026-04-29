@@ -468,8 +468,6 @@ window.NexLedLocales.en = {
         overviewEmpty: "Load a reference to inspect the code details and returned data.",
         databaseSource: "Source",
         databaseValue: "Value",
-        databaseBlocksDatasheet: "Blocks datasheet",
-        databaseDiagnosticOnly: "Diagnostic only",
         databaseRowCountSingle: "1 row",
         databaseRowCountPlural: "{count} rows",
         dbCheckLuminosIdentity: "Luminos identity record",
