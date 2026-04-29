@@ -779,14 +779,55 @@ function renderCodeRepairDatabaseChecks() {
         return;
     }
 
-    codeRepairElements.databaseGrid.innerHTML = checks.map((check) => {
-        return buildCodeRepairDatabaseCheckCardMarkup(check);
+    const checksBySource = checks.reduce((groups, check) => {
+        const sourceKey = String(check?.source || "").trim() || "unknown";
+
+        if (!groups[sourceKey]) {
+            groups[sourceKey] = [];
+        }
+
+        groups[sourceKey].push(check);
+        return groups;
+    }, {});
+
+    const sourceKeys = Object.keys(checksBySource).sort((left, right) => {
+        const sourceOrderDiff = getCodeRepairDatabaseSourceSortValue(left) - getCodeRepairDatabaseSourceSortValue(right);
+
+        if (sourceOrderDiff !== 0) {
+            return sourceOrderDiff;
+        }
+
+        return getCodeRepairDatabaseSourceLabel(left).localeCompare(getCodeRepairDatabaseSourceLabel(right));
+    });
+
+    codeRepairElements.databaseGrid.innerHTML = sourceKeys.map((sourceKey) => {
+        const sourceLabel = getCodeRepairDatabaseSourceLabel(sourceKey);
+        const sortedChecks = checksBySource[sourceKey]
+            .slice()
+            .sort((left, right) => {
+                const statusRankDiff = getCodeRepairDatabaseCheckSortValue(left) - getCodeRepairDatabaseCheckSortValue(right);
+
+                if (statusRankDiff !== 0) {
+                    return statusRankDiff;
+                }
+
+                return getCodeRepairDatabaseCheckLabel(String(left?.key || ""))
+                    .localeCompare(getCodeRepairDatabaseCheckLabel(String(right?.key || "")));
+            });
+
+        return `
+            <section class="col-span-full flex flex-col gap-16">
+                <h3 class="text-title-md">${escapeHtml(sourceLabel)}</h3>
+                <div class="grid gap-20 xl:grid-cols-2">
+                    ${sortedChecks.map((check) => buildCodeRepairDatabaseCheckCardMarkup(check)).join("")}
+                </div>
+            </section>
+        `;
     }).join("");
 }
 
 function buildCodeRepairDatabaseCheckCardMarkup(check) {
     const label = getCodeRepairDatabaseCheckLabel(String(check?.key || ""));
-    const sourceLabel = getCodeRepairDatabaseSourceLabel(String(check?.source || ""));
     const status = String(check?.status || "");
     const statusLabel = getCodeRepairStatusLabel(status);
     const displayValue = formatCodeRepairDatabaseCheckValue(check);
@@ -802,10 +843,6 @@ function buildCodeRepairDatabaseCheckCardMarkup(check) {
                     <div class="list-item">
                         <dt class="list-key">${escapeHtml(t("codeRepair.databaseValue", {}, "Value"))}</dt>
                         <dd class="list-value break-all">${escapeHtml(displayValue)}</dd>
-                    </div>
-                    <div class="list-item">
-                        <dt class="list-key">${escapeHtml(t("codeRepair.databaseSource", {}, "Source"))}</dt>
-                        <dd class="list-value break-all">${escapeHtml(sourceLabel)}</dd>
                     </div>
                 </dl>
             </div>
@@ -1154,6 +1191,10 @@ function getCodeRepairDatabaseCheckLabel(key) {
 }
 
 function getCodeRepairDatabaseSourceLabel(source) {
+    if (String(source || "").trim() === "" || String(source || "").trim() === "unknown") {
+        return t("codeRepair.statusUnavailable", {}, "Unavailable");
+    }
+
     const map = {
         luminos: ["codeRepair.dbSourceLuminos", "Luminos"],
         product_database: ["codeRepair.dbSourceProductDatabase", "Product database"],
@@ -1161,6 +1202,38 @@ function getCodeRepairDatabaseSourceLabel(source) {
     };
     const entry = map[source] || ["", source];
     return t(entry[0], {}, entry[1]);
+}
+
+function getCodeRepairDatabaseSourceSortValue(source) {
+    switch (String(source || "").trim()) {
+        case "luminos":
+            return 0;
+        case "product_database":
+            return 1;
+        case "led_database":
+            return 2;
+        default:
+            return 9;
+    }
+}
+
+function getCodeRepairDatabaseCheckSortValue(check) {
+    const status = String(check?.status || "").trim();
+    const blocking = check?.blocking === true;
+
+    if (blocking && status !== "present" && status !== "not_required") {
+        return 0;
+    }
+
+    if (status !== "present" && status !== "not_required") {
+        return 1;
+    }
+
+    if (blocking) {
+        return 2;
+    }
+
+    return 3;
 }
 
 function formatCodeRepairDatabaseCheckValue(check) {
