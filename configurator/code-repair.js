@@ -671,7 +671,7 @@ function buildCodeRepairSummaryHeroMarkup({
     const safeDatasheetMarkup = datasheetMarkup || buildCodeRepairNeutralBadge(t("codeRepair.statusUnavailable", {}, "Unavailable"));
 
     return `
-        <article class="${gridSpanClass} flex flex-col gap-20 min-w-0 items-center text-center justify-self-center w-full max-w-3xl">
+        <article class="${gridSpanClass} flex flex-col gap-20 min-w-0 items-center text-center justify-self-center self-center w-full max-w-3xl">
             <p class="text-h1 text-black break-all">${escapeHtml(reference)}</p>
             <div class="flex flex-col gap-16 min-w-0 items-center">
                 <p class="text-title-lg text-black break-words">${escapeHtml(family)}</p>
