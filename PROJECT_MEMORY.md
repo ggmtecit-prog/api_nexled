@@ -180,24 +180,24 @@ But they are not automatically stronger than old runtime + DB truth.
 
 Relevant family/mask docs:
 
-- [api/BARRAS_CODE_MASK_MATRIX.md](api/BARRAS_CODE_MASK_MATRIX.md)
-- [api/BARRAS_FAMILY_11.md](api/BARRAS_FAMILY_11.md)
-- [api/BARRAS_FAMILY_11_SUBLINES.md](api/BARRAS_FAMILY_11_SUBLINES.md)
-- [api/BARRAS_FAMILY_32.md](api/BARRAS_FAMILY_32.md)
-- [api/BARRAS_CODE_LOGIC_FINDINGS.md](api/BARRAS_CODE_LOGIC_FINDINGS.md)
-- [api/SHELF_CODE_MASK_MATRIX.md](api/SHELF_CODE_MASK_MATRIX.md)
-- [api/SHELF_FAMILY_49.md](api/SHELF_FAMILY_49.md)
-- [api/DOWNLIGHTS_CODE_MASK_MATRIX.md](api/DOWNLIGHTS_CODE_MASK_MATRIX.md)
-- [api/DOWNLIGHTS_FAMILY_29.md](api/DOWNLIGHTS_FAMILY_29.md)
-- [api/DOWNLIGHTS_FAMILY_30.md](api/DOWNLIGHTS_FAMILY_30.md)
-- [api/TUBULARES_CODE_MASK_MATRIX.md](api/TUBULARES_CODE_MASK_MATRIX.md)
-- [api/TUBULARES_FAMILY_01.md](api/TUBULARES_FAMILY_01.md)
-- [api/TUBULARES_FAMILY_05.md](api/TUBULARES_FAMILY_05.md)
-- [api/T8_FAMILY_ONBOARDING_PLAN.md](api/T8_FAMILY_ONBOARDING_PLAN.md)
-- [api/T8_ASSET_INVENTORY.md](api/T8_ASSET_INVENTORY.md)
+- [api/BARRAS_CODE_MASK_MATRIX.md](api/docs/families/BARRAS_CODE_MASK_MATRIX.md)
+- [api/BARRAS_FAMILY_11.md](api/docs/families/BARRAS_FAMILY_11.md)
+- [api/BARRAS_FAMILY_11_SUBLINES.md](api/docs/families/BARRAS_FAMILY_11_SUBLINES.md)
+- [api/BARRAS_FAMILY_32.md](api/docs/families/BARRAS_FAMILY_32.md)
+- [api/BARRAS_CODE_LOGIC_FINDINGS.md](api/docs/families/BARRAS_CODE_LOGIC_FINDINGS.md)
+- [api/SHELF_CODE_MASK_MATRIX.md](api/docs/families/SHELF_CODE_MASK_MATRIX.md)
+- [api/SHELF_FAMILY_49.md](api/docs/families/SHELF_FAMILY_49.md)
+- [api/DOWNLIGHTS_CODE_MASK_MATRIX.md](api/docs/families/DOWNLIGHTS_CODE_MASK_MATRIX.md)
+- [api/DOWNLIGHTS_FAMILY_29.md](api/docs/families/DOWNLIGHTS_FAMILY_29.md)
+- [api/DOWNLIGHTS_FAMILY_30.md](api/docs/families/DOWNLIGHTS_FAMILY_30.md)
+- [api/TUBULARES_CODE_MASK_MATRIX.md](api/docs/families/TUBULARES_CODE_MASK_MATRIX.md)
+- [api/TUBULARES_FAMILY_01.md](api/docs/families/TUBULARES_FAMILY_01.md)
+- [api/TUBULARES_FAMILY_05.md](api/docs/families/TUBULARES_FAMILY_05.md)
+- [api/T8_FAMILY_ONBOARDING_PLAN.md](api/docs/families/T8_FAMILY_ONBOARDING_PLAN.md)
+- [api/T8_ASSET_INVENTORY.md](api/docs/families/T8_ASSET_INVENTORY.md)
 - [api/PRODUCT_ONBOARDING_MEMORY.md](api/PRODUCT_ONBOARDING_MEMORY.md)
-- [api/EPREL_SHARED_LOGIC.md](api/EPREL_SHARED_LOGIC.md)
-- [api/EPREL_FAMILY_FILTER_PLAN.md](api/EPREL_FAMILY_FILTER_PLAN.md)
+- [api/EPREL_SHARED_LOGIC.md](api/docs/eprel/EPREL_SHARED_LOGIC.md)
+- [api/EPREL_FAMILY_FILTER_PLAN.md](api/docs/eprel/EPREL_FAMILY_FILTER_PLAN.md)
 
 ### Current Family Runtime Snapshot
 
@@ -306,8 +306,8 @@ So the big parity gap is not only visual. It is architectural:
 
 Relevant parity docs:
 
-- [api/OFFICIAL_DATASHEET_LAYOUT_SPEC.md](api/OFFICIAL_DATASHEET_LAYOUT_SPEC.md)
-- [api/NEXT_STEPS_DATASHEET_PARITY.md](api/NEXT_STEPS_DATASHEET_PARITY.md)
+- [api/OFFICIAL_DATASHEET_LAYOUT_SPEC.md](api/docs/specs/OFFICIAL_DATASHEET_LAYOUT_SPEC.md)
+- [api/NEXT_STEPS_DATASHEET_PARITY.md](api/docs/specs/NEXT_STEPS_DATASHEET_PARITY.md)
 
 ## Major Work Already Done
 
@@ -469,7 +469,7 @@ Relevant parity docs:
   - only explicitly confirmed mappings may be saved
   - no fuzzy matching or guessed persistence on API side
 - current contract doc:
-  - [api/EPREL_CODE_MAPPINGS_API.md](api/EPREL_CODE_MAPPINGS_API.md)
+  - [api/EPREL_CODE_MAPPINGS_API.md](api/docs/eprel/EPREL_CODE_MAPPINGS_API.md)
 ### 6. DAM Future Work
 
 - Phase 1 cutover is done locally:
@@ -642,79 +642,79 @@ Best immediate engineering path remains:
 
 Primary roadmap doc:
 
-- [api/NEXT_STEPS_DATASHEET_PARITY.md](api/NEXT_STEPS_DATASHEET_PARITY.md)
+- [api/NEXT_STEPS_DATASHEET_PARITY.md](api/docs/specs/NEXT_STEPS_DATASHEET_PARITY.md)
 
 ## Important Files to Read First
 
 For a new AI session, start here:
 
 1. `PROJECT_MEMORY.md`
-2. [api/NEXT_STEPS_DATASHEET_PARITY.md](api/NEXT_STEPS_DATASHEET_PARITY.md)
-3. [api/OFFICIAL_DATASHEET_LAYOUT_SPEC.md](api/OFFICIAL_DATASHEET_LAYOUT_SPEC.md)
-4. [api/EPREL_SHARED_LOGIC.md](api/EPREL_SHARED_LOGIC.md) for EPREL/import work
+2. [api/NEXT_STEPS_DATASHEET_PARITY.md](api/docs/specs/NEXT_STEPS_DATASHEET_PARITY.md)
+3. [api/OFFICIAL_DATASHEET_LAYOUT_SPEC.md](api/docs/specs/OFFICIAL_DATASHEET_LAYOUT_SPEC.md)
+4. [api/EPREL_SHARED_LOGIC.md](api/docs/eprel/EPREL_SHARED_LOGIC.md) for EPREL/import work
 5. the family doc relevant to the current task
 6. then the narrow implementation files for that subsystem
 
 Best family docs to start with for current Barra work:
 
-- [api/BARRAS_FAMILY_11.md](api/BARRAS_FAMILY_11.md)
-- [api/BARRAS_FAMILY_11_SUBLINES.md](api/BARRAS_FAMILY_11_SUBLINES.md)
-- [api/BARRAS_FAMILY_32.md](api/BARRAS_FAMILY_32.md)
+- [api/BARRAS_FAMILY_11.md](api/docs/families/BARRAS_FAMILY_11.md)
+- [api/BARRAS_FAMILY_11_SUBLINES.md](api/docs/families/BARRAS_FAMILY_11_SUBLINES.md)
+- [api/BARRAS_FAMILY_32.md](api/docs/families/BARRAS_FAMILY_32.md)
 
 Best non-Barra docs to start with for current expansion work:
 
-- [api/SHELF_FAMILY_49.md](api/SHELF_FAMILY_49.md)
-- [api/DOWNLIGHTS_FAMILY_29.md](api/DOWNLIGHTS_FAMILY_29.md)
-- [api/DOWNLIGHTS_FAMILY_30.md](api/DOWNLIGHTS_FAMILY_30.md)
-- [api/TUBULARES_FAMILY_01.md](api/TUBULARES_FAMILY_01.md)
-- [api/TUBULARES_FAMILY_05.md](api/TUBULARES_FAMILY_05.md)
+- [api/SHELF_FAMILY_49.md](api/docs/families/SHELF_FAMILY_49.md)
+- [api/DOWNLIGHTS_FAMILY_29.md](api/docs/families/DOWNLIGHTS_FAMILY_29.md)
+- [api/DOWNLIGHTS_FAMILY_30.md](api/docs/families/DOWNLIGHTS_FAMILY_30.md)
+- [api/TUBULARES_FAMILY_01.md](api/docs/families/TUBULARES_FAMILY_01.md)
+- [api/TUBULARES_FAMILY_05.md](api/docs/families/TUBULARES_FAMILY_05.md)
 
 ## Doc Map
 
 ### Canonical Context
 
 - `PROJECT_MEMORY.md`
-- [api/EPREL_SHARED_LOGIC.md](api/EPREL_SHARED_LOGIC.md)
-- [api/EPREL_FAMILY_FILTER_PLAN.md](api/EPREL_FAMILY_FILTER_PLAN.md)
+- [api/EPREL_SHARED_LOGIC.md](api/docs/eprel/EPREL_SHARED_LOGIC.md)
+- [api/EPREL_FAMILY_FILTER_PLAN.md](api/docs/eprel/EPREL_FAMILY_FILTER_PLAN.md)
 
 ### Active Planning / Active Current-State Docs
 
-- [api/NEXT_STEPS_DATASHEET_PARITY.md](api/NEXT_STEPS_DATASHEET_PARITY.md)
-- [api/OFFICIAL_DATASHEET_LAYOUT_SPEC.md](api/OFFICIAL_DATASHEET_LAYOUT_SPEC.md)
+- [api/NEXT_STEPS_DATASHEET_PARITY.md](api/docs/specs/NEXT_STEPS_DATASHEET_PARITY.md)
+- [api/OFFICIAL_DATASHEET_LAYOUT_SPEC.md](api/docs/specs/OFFICIAL_DATASHEET_LAYOUT_SPEC.md)
 - [api/CODE_VALIDITY_EXPLORER_PLAN.md](api/CODE_VALIDITY_EXPLORER_PLAN.md)
-- [EPREL_NEXT_AI_PROMPT.md](EPREL_NEXT_AI_PROMPT.md)
-- [DAM_CUTOVER_CHECKLIST.md](DAM_CUTOVER_CHECKLIST.md)
-- [DAM_IMPLEMENTATION_GUIDE.md](DAM_IMPLEMENTATION_GUIDE.md)
-- [DAM_ROADMAP.md](DAM_ROADMAP.md)
-- [api/DAM_API_CONTRACT.md](api/DAM_API_CONTRACT.md)
+- [EPREL_NEXT_AI_PROMPT.md](docs/eprel/EPREL_NEXT_AI_PROMPT.md)
+- [DAM_CUTOVER_CHECKLIST.md](docs/history/DAM_CUTOVER_CHECKLIST.md)
+- [DAM_IMPLEMENTATION_GUIDE.md](docs/history/DAM_IMPLEMENTATION_GUIDE.md)
+- [DAM_ROADMAP.md](docs/history/DAM_ROADMAP.md)
+- [api/DAM_API_CONTRACT.md](api/docs/history/DAM_API_CONTRACT.md)
   - legacy DAM contract before link-model cutover
-- [api/DAM_FOLDER_STRUCTURE.md](api/DAM_FOLDER_STRUCTURE.md)
+- [api/DAM_FOLDER_STRUCTURE.md](api/docs/specs/DAM_FOLDER_STRUCTURE.md)
   - legacy DAM folder/model spec before link-model cutover
 
 ### Family Logic Research
 
-- [api/BARRAS_CODE_MASK_MATRIX.md](api/BARRAS_CODE_MASK_MATRIX.md)
-- [api/BARRAS_CODE_LOGIC_FINDINGS.md](api/BARRAS_CODE_LOGIC_FINDINGS.md)
-- [api/BARRAS_FAMILY_11.md](api/BARRAS_FAMILY_11.md)
-- [api/BARRAS_FAMILY_11_SUBLINES.md](api/BARRAS_FAMILY_11_SUBLINES.md)
-- [api/BARRAS_FAMILY_32.md](api/BARRAS_FAMILY_32.md)
-- [api/BARRAS_FAMILY_31.md](api/BARRAS_FAMILY_31.md)
-- [api/BARRAS_FAMILY_40.md](api/BARRAS_FAMILY_40.md)
-- [api/BARRAS_FAMILY_55.md](api/BARRAS_FAMILY_55.md)
-- [api/BARRAS_FAMILY_58.md](api/BARRAS_FAMILY_58.md)
-- [api/BARRAS_FAMILY_60.md](api/BARRAS_FAMILY_60.md)
-- [api/SHELF_CODE_LOGIC_FINDINGS.md](api/SHELF_CODE_LOGIC_FINDINGS.md)
-- [api/SHELF_CODE_MASK_MATRIX.md](api/SHELF_CODE_MASK_MATRIX.md)
-- [api/SHELF_FAMILY_49.md](api/SHELF_FAMILY_49.md)
-- [api/DOWNLIGHTS_CODE_LOGIC_FINDINGS.md](api/DOWNLIGHTS_CODE_LOGIC_FINDINGS.md)
-- [api/DOWNLIGHTS_CODE_MASK_MATRIX.md](api/DOWNLIGHTS_CODE_MASK_MATRIX.md)
-- [api/DOWNLIGHTS_FAMILY_29.md](api/DOWNLIGHTS_FAMILY_29.md)
-- [api/DOWNLIGHTS_FAMILY_30.md](api/DOWNLIGHTS_FAMILY_30.md)
-- [api/TUBULARES_CODE_LOGIC_FINDINGS.md](api/TUBULARES_CODE_LOGIC_FINDINGS.md)
-- [api/TUBULARES_CODE_MASK_MATRIX.md](api/TUBULARES_CODE_MASK_MATRIX.md)
-- [api/TUBULARES_FAMILY_01.md](api/TUBULARES_FAMILY_01.md)
-- [api/TUBULARES_FAMILY_05.md](api/TUBULARES_FAMILY_05.md)
-- [api/ACESSORIOS_LOGIC_FINDINGS.md](api/ACESSORIOS_LOGIC_FINDINGS.md)
+- [api/BARRAS_CODE_MASK_MATRIX.md](api/docs/families/BARRAS_CODE_MASK_MATRIX.md)
+- [api/BARRAS_CODE_LOGIC_FINDINGS.md](api/docs/families/BARRAS_CODE_LOGIC_FINDINGS.md)
+- [api/BARRAS_FAMILY_11.md](api/docs/families/BARRAS_FAMILY_11.md)
+- [api/BARRAS_FAMILY_11_SUBLINES.md](api/docs/families/BARRAS_FAMILY_11_SUBLINES.md)
+- [api/BARRAS_FAMILY_32.md](api/docs/families/BARRAS_FAMILY_32.md)
+- [api/BARRAS_FAMILY_31.md](api/docs/families/BARRAS_FAMILY_31.md)
+- [api/BARRAS_FAMILY_40.md](api/docs/families/BARRAS_FAMILY_40.md)
+- [api/BARRAS_FAMILY_55.md](api/docs/families/BARRAS_FAMILY_55.md)
+- [api/BARRAS_FAMILY_58.md](api/docs/families/BARRAS_FAMILY_58.md)
+- [api/BARRAS_FAMILY_60.md](api/docs/families/BARRAS_FAMILY_60.md)
+- [api/SHELF_CODE_LOGIC_FINDINGS.md](api/docs/families/SHELF_CODE_LOGIC_FINDINGS.md)
+- [api/SHELF_CODE_MASK_MATRIX.md](api/docs/families/SHELF_CODE_MASK_MATRIX.md)
+- [api/SHELF_FAMILY_49.md](api/docs/families/SHELF_FAMILY_49.md)
+- [api/DOWNLIGHTS_CODE_LOGIC_FINDINGS.md](api/docs/families/DOWNLIGHTS_CODE_LOGIC_FINDINGS.md)
+- [api/DOWNLIGHTS_CODE_MASK_MATRIX.md](api/docs/families/DOWNLIGHTS_CODE_MASK_MATRIX.md)
+- [api/DOWNLIGHTS_FAMILY_29.md](api/docs/families/DOWNLIGHTS_FAMILY_29.md)
+- [api/DOWNLIGHTS_FAMILY_30.md](api/docs/families/DOWNLIGHTS_FAMILY_30.md)
+- [api/TUBULARES_CODE_LOGIC_FINDINGS.md](api/docs/families/TUBULARES_CODE_LOGIC_FINDINGS.md)
+- [api/TUBULARES_CODE_MASK_MATRIX.md](api/docs/families/TUBULARES_CODE_MASK_MATRIX.md)
+- [api/TUBULARES_FAMILY_01.md](api/docs/families/TUBULARES_FAMILY_01.md)
+- [api/TUBULARES_FAMILY_05.md](api/docs/families/TUBULARES_FAMILY_05.md)
+- [api/ACESSORIOS_LOGIC_FINDINGS.md](api/docs/families/ACESSORIOS_LOGIC_FINDINGS.md)
 
 ### Historical / Partial / Outdated Baselines
 
