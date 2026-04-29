@@ -671,11 +671,11 @@ function buildCodeRepairSummaryHeroMarkup({
     const safeDatasheetMarkup = datasheetMarkup || buildCodeRepairNeutralBadge(t("codeRepair.statusUnavailable", {}, "Unavailable"));
 
     return `
-        <article class="${gridSpanClass} flex flex-col gap-16 min-w-0">
-            <p class="text-h2 text-black break-all">${escapeHtml(reference)}</p>
-            <div class="flex flex-col gap-12 min-w-0">
+        <article class="${gridSpanClass} flex flex-col gap-20 min-w-0 items-center text-center justify-self-center w-full max-w-3xl">
+            <p class="text-h1 text-black break-all">${escapeHtml(reference)}</p>
+            <div class="flex flex-col gap-16 min-w-0 items-center">
                 <p class="text-title-lg text-black break-words">${escapeHtml(family)}</p>
-                <div class="flex flex-wrap items-center gap-8">
+                <div class="flex flex-wrap items-center justify-center gap-10">
                     <div>${safeConfiguratorMarkup}</div>
                     <div>${safeDatasheetMarkup}</div>
                 </div>
@@ -690,22 +690,22 @@ function buildCodeRepairSummaryStatusBadge(label, tone, status) {
         warning: "badge-warning",
         neutral: "badge-neutral",
     }[tone] || "badge-neutral";
-    return `<span class="badge ${toneClass} badge-sm">${escapeHtml(label)} ${escapeHtml(status)}</span>`;
+    return `<span class="badge ${toneClass} badge-md">${escapeHtml(label)} ${escapeHtml(status)}</span>`;
 }
 
 function buildCodeRepairBlockerStatusHeroMarkup(payload) {
     const state = getCodeRepairBlockerStatusHeroState(payload);
 
     return `
-        <article class="sm:col-span-2 xl:col-span-1 flex items-center xl:justify-end">
+        <article class="sm:col-span-2 xl:col-span-1 flex items-center justify-center text-center">
             ${buildCodeRepairEmptyStateMarkup({
                 title: state.title,
                 body: state.body,
-                size: "sm",
+                size: "md",
                 variant: "compact",
                 tone: state.tone,
                 iconClass: state.iconClass,
-                extraClasses: "w-full",
+                extraClasses: "w-full max-w-md mx-auto",
             })}
         </article>
     `;
