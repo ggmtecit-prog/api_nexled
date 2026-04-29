@@ -1476,15 +1476,16 @@ function stageCodeRepairUploadChange(card, file) {
     }
 
     const target = getCodeRepairLinkTarget(card);
+    const uploadFile = buildCodeRepairUploadFile(card, file);
     enqueueCodeRepairPendingChange({
         kind: "upload",
         cardId: card.cardId,
         sourceLabel: card.label,
         role: card.role,
         folderId,
-        file,
-        fileName: String(file?.name || ""),
-        previewUrl: createCodeRepairPendingUploadPreviewUrl(file),
+        file: uploadFile,
+        fileName: String(uploadFile?.name || file?.name || ""),
+        previewUrl: createCodeRepairPendingUploadPreviewUrl(uploadFile || file),
         willLink: target.requiresLink,
         familyCode: target.familyCode || "",
         productCode: target.productCode || "",
@@ -1783,6 +1784,15 @@ function getCodeRepairLinkTarget(card) {
         || ""
     ).trim();
     let productCode = String(getCodeRepairBestDamAsset(card)?.link_product_code || "").trim();
+    const summaryProductId = String(
+        codeRepairState.data?.summary?.product_id
+        || codeRepairState.data?.source_map?.luminos?.active?.product_id
+        || ""
+    ).trim();
+
+    if (!productCode && summaryProductId) {
+        productCode = sanitizeCodeRepairProductCode(summaryProductId);
+    }
 
     if (!productCode && (card.cardId === "technical_drawing" || card.cardId.startsWith("lens_diagram."))) {
         const candidate = (Array.isArray(card?.lookup?.candidates) ? card.lookup.candidates : [])
@@ -1843,6 +1853,50 @@ function sanitizeCodeRepairProductCode(value) {
         .trim()
         .replace(/[^a-zA-Z0-9_-]/g, "")
         .slice(0, 64);
+}
+
+function buildCodeRepairUploadFile(card, file) {
+    if (typeof File === "undefined" || !(file instanceof File)) {
+        return file;
+    }
+
+    const resolverFileName = getCodeRepairResolverFileName(card, file);
+
+    if (!resolverFileName || resolverFileName === file.name) {
+        return file;
+    }
+
+    try {
+        return new File([file], resolverFileName, {
+            type: file.type,
+            lastModified: file.lastModified,
+        });
+    } catch (error) {
+        console.warn("Failed to rename Code Repair upload file for DAM resolver.", error);
+        return file;
+    }
+}
+
+function getCodeRepairResolverFileName(card, file) {
+    const extensionMatch = String(file?.name || "").match(/(\.[a-z0-9]+)$/i);
+    const extension = extensionMatch ? extensionMatch[1].toLowerCase() : "";
+    const candidate = (Array.isArray(card?.lookup?.candidates) ? card.lookup.candidates : [])
+        .map((value) => String(value || "").trim())
+        .find((value) => value !== "");
+
+    if (!candidate || !extension) {
+        return String(file?.name || "");
+    }
+
+    const safeStem = String(candidate)
+        .replace(/[^a-zA-Z0-9._-]+/g, "_")
+        .replace(/^_+|_+$/g, "");
+
+    if (!safeStem) {
+        return String(file?.name || "");
+    }
+
+    return `${safeStem}${extension}`;
 }
 
 function normalizeCodeRepairReference(value) {
