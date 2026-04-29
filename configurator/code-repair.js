@@ -671,17 +671,13 @@ function buildCodeRepairSummaryHeroMarkup({
     const safeDatasheetMarkup = datasheetMarkup || buildCodeRepairNeutralBadge(t("codeRepair.statusUnavailable", {}, "Unavailable"));
 
     return `
-        <article class="panel border-0 bg-transparent p-20 ${gridSpanClass}">
-            <div class="flex flex-col gap-20">
-                <div class="flex flex-col gap-8">
-                    <p class="text-h2 text-black break-all">${escapeHtml(reference)}</p>
-                </div>
-                <div class="flex flex-col gap-20 min-w-0">
-                    <p class="card-title break-words">${escapeHtml(family)}</p>
-                    <div class="flex flex-wrap items-center gap-12">
-                        <div>${safeConfiguratorMarkup}</div>
-                        <div>${safeDatasheetMarkup}</div>
-                    </div>
+        <article class="${gridSpanClass} flex flex-col gap-16 min-w-0">
+            <p class="text-h2 text-black break-all">${escapeHtml(reference)}</p>
+            <div class="flex flex-col gap-12 min-w-0">
+                <p class="text-title-lg text-black break-words">${escapeHtml(family)}</p>
+                <div class="flex flex-wrap items-center gap-8">
+                    <div>${safeConfiguratorMarkup}</div>
+                    <div>${safeDatasheetMarkup}</div>
                 </div>
             </div>
         </article>
@@ -701,7 +697,7 @@ function buildCodeRepairBlockerStatusHeroMarkup(payload) {
     const state = getCodeRepairBlockerStatusHeroState(payload);
 
     return `
-        <article class="panel border-0 bg-transparent p-20 flex items-center justify-center sm:col-span-2 xl:col-span-2">
+        <article class="sm:col-span-2 xl:col-span-1 flex items-center xl:justify-end">
             ${buildCodeRepairEmptyStateMarkup({
                 title: state.title,
                 body: state.body,
@@ -709,7 +705,7 @@ function buildCodeRepairBlockerStatusHeroMarkup(payload) {
                 variant: "compact",
                 tone: state.tone,
                 iconClass: state.iconClass,
-                extraClasses: "w-full max-w-2xl",
+                extraClasses: "w-full",
             })}
         </article>
     `;
@@ -817,8 +813,8 @@ function renderCodeRepairDatabaseChecks() {
 
         return `
             <section class="col-span-full flex flex-col gap-16">
-                <h3 class="text-title-md">${escapeHtml(sourceLabel)}</h3>
-                <div class="grid gap-20 xl:grid-cols-2">
+                <h3 class="card-title">${escapeHtml(sourceLabel)}</h3>
+                <div class="grid gap-24 xl:grid-cols-2">
                     ${sortedChecks.map((check) => buildCodeRepairDatabaseCheckCardMarkup(check)).join("")}
                 </div>
             </section>
@@ -1099,7 +1095,7 @@ function buildCodeRepairActionCardMarkup(card) {
                     <h3 class="card-title">${escapeHtml(card.label)}</h3>
                     ${buildCodeRepairStatusPill(getCodeRepairStatusLabel(card.status), card.status)}
                 </div>
-                <div class="grid gap-20 lg:grid-cols-[minmax(0,18rem)_minmax(0,1fr)] items-start">
+                <div class="grid gap-24 lg:grid-cols-[minmax(0,18rem)_minmax(0,1fr)] items-start">
                     <div class="flex flex-col gap-12">
                         <div class="uploader uploader-image ${uploaderClasses}" data-uploader ${isBusy ? 'aria-disabled="true"' : ""}>
                             <input

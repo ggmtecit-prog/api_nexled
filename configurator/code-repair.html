@@ -221,43 +221,10 @@
 
     <div class="flex-1 min-w-0 flex flex-col lg:h-screen overflow-y-auto">
         <main class="flex-1 px-16 pt-32 pb-32 sm:px-20 sm:pt-40 sm:pb-40 md:px-24 md:pt-48 md:pb-48 lg:px-32 lg:pt-64 lg:pb-64 w-full">
-            <header class="flex flex-col gap-12 pb-32" data-reveal="hero">
-                <h1 class="text-h1 font-medium text-black" data-i18n="codeRepair.heading">Code Repair</h1>
-            </header>
+            <h2 class="text-h1 font-medium text-black pb-24 pt-24" data-reveal="hero" data-i18n="codeRepair.heading">Code Repair</h2>
 
-            <section class="grid grid-cols-1 xl:grid-cols-12 gap-24 items-start">
-                <aside class="xl:col-span-3 xl:col-start-10 flex flex-col gap-24" data-reveal="section">
-                    <section class="card overflow-hidden w-full">
-                        <div class="card-body p-24 flex flex-col gap-20">
-                            <form id="repair-reference-form" class="flex flex-col gap-14">
-                                <div class="flex flex-col gap-8">
-                                    <label class="input-label ml-12" for="repair-reference-input" data-i18n="codeRepair.referenceLabel">Reference</label>
-                                    <div class="flex flex-col gap-12">
-                                        <input id="repair-reference-input" type="text" class="input input-sm w-full" placeholder="11007502110010100" data-i18n-placeholder="codeRepair.referencePlaceholder" autocomplete="off">
-                                        <button id="repair-load-button" type="submit" class="btn btn-secondary btn-sm w-full justify-center">
-                                            <i class="ri-search-line text-icon-sm" aria-hidden="true"></i>
-                                            <span data-i18n="codeRepair.load">Load Repair Context</span>
-                                        </button>
-                                        <button id="repair-discard-pending-button" type="button" class="btn btn-secondary btn-sm w-full justify-center hidden" hidden>
-                                            <i class="ri-delete-bin-line text-icon-sm" aria-hidden="true"></i>
-                                            <span data-i18n="codeRepair.pendingDiscard">Discard all</span>
-                                        </button>
-                                        <button id="repair-revalidate-button" type="button" class="btn btn-primary btn-sm w-full justify-center" disabled>
-                                            <i class="ri-refresh-line text-icon-sm" aria-hidden="true" data-repair-primary-action-icon></i>
-                                            <span data-i18n="codeRepair.revalidate" data-repair-primary-action-label>Revalidate</span>
-                                        </button>
-                                        <a id="repair-open-configurator-link" href="#" class="btn btn-secondary btn-sm w-full justify-center" aria-disabled="true">
-                                            <i class="ri-external-link-line text-icon-sm" aria-hidden="true"></i>
-                                            <span data-i18n="codeRepair.openConfigurator">Open in configurator</span>
-                                        </a>
-                                    </div>
-                                </div>
-                            </form>
-                        </div>
-                    </section>
-                </aside>
-
-                <div class="xl:col-span-9 xl:row-start-1 flex flex-col gap-24" data-reveal="section">
+            <div class="flex flex-col items-start gap-32 lg:grid lg:grid-cols-12 lg:gap-24">
+                <div class="relative w-full min-w-0 lg:col-span-9" data-reveal="section">
                     <section id="repair-empty-state-card" class="card overflow-hidden w-full">
                         <div class="card-body flex min-h-[36rem] items-center justify-center p-24">
                             <div class="empty-state empty-state-lg w-full max-w-2xl border-0 bg-transparent" role="status" aria-live="polite">
@@ -273,51 +240,88 @@
                     </section>
 
                     <section id="repair-details-card" class="card overflow-hidden hidden w-full">
-                        <div class="card-body p-24 flex flex-col gap-24">
-                                    <div class="flex flex-col gap-20">
-                                        <p id="repair-runtime-message" class="hidden" data-i18n="codeRepair.runtimeAwaitingReference">Enter a full Tecit reference to load the repair context.</p>
-                                        <div class="grid gap-16 sm:grid-cols-2 xl:grid-cols-4" id="repair-summary-grid"></div>
+                        <div class="card-body">
+                            <div class="flex flex-col gap-40 pt-24 pb-24 px-8 md:px-12 xl:px-16">
+                                <div class="flex flex-col gap-16 px-4 md:px-6">
+                                    <p id="repair-runtime-message" class="hidden" data-i18n="codeRepair.runtimeAwaitingReference">Enter a full Tecit reference to load the repair context.</p>
+                                    <div class="grid gap-16 sm:grid-cols-2 xl:grid-cols-3 items-start" id="repair-summary-grid"></div>
+                                </div>
+
+                                <section id="repair-actions-section" class="flex flex-col gap-16 px-4 md:px-6 hidden">
+                                    <div class="divider"></div>
+                                    <div class="flex items-start justify-between gap-12 pt-24">
+                                        <h2 class="card-title" data-i18n="codeRepair.actionsHeading">Actions</h2>
+                                    </div>
+                                    <div id="repair-actions-grid" class="grid gap-x-24 gap-y-24 2xl:grid-cols-2 items-start pt-8"></div>
+                                </section>
+
+                                <section class="flex flex-col gap-16 px-4 md:px-6">
+                                    <div class="divider"></div>
+                                    <div class="flex items-start justify-between gap-12 pt-24">
+                                        <h2 class="card-title" data-i18n="codeRepair.overviewHeading">Description / overview</h2>
+                                        <button type="button" class="btn btn-secondary btn-icon btn-xs shrink-0" data-repair-section-toggle="overview" aria-controls="repair-overview-list" aria-expanded="true" aria-label="Hide Description / overview">
+                                            <i class="ri-eye-line text-icon-lg" aria-hidden="true" data-repair-section-toggle-icon></i>
+                                        </button>
                                     </div>
 
-                                    <div id="repair-actions-section" class="border-t border-grey-secondary pt-24 flex flex-col gap-16 hidden">
-                                        <h2 class="text-title-lg" data-i18n="codeRepair.actionsHeading">Actions</h2>
-                                        <div id="repair-actions-grid" class="grid gap-20 2xl:grid-cols-2"></div>
-                                    </div>
-
-                                    <div class="border-t border-grey-secondary pt-24 flex flex-col gap-24">
-                                        <div class="flex items-start justify-between gap-12">
-                                            <h2 class="text-title-lg" data-i18n="codeRepair.overviewHeading">Description / overview</h2>
-                                            <button type="button" class="btn btn-secondary btn-icon btn-xs shrink-0" data-repair-section-toggle="overview" aria-controls="repair-overview-list" aria-expanded="true" aria-label="Hide Description / overview">
-                                                <i class="ri-eye-line text-icon-lg" aria-hidden="true" data-repair-section-toggle-icon></i>
-                                            </button>
-                                        </div>
-
-                                        <div class="flex flex-col gap-16 min-w-0" data-repair-section-body="overview">
-                                            <dl id="repair-overview-list" class="list list-spec list-md panel border-0 bg-transparent"></dl>
-                                            <div id="repair-dimensions-preview" class="panel p-16 bg-grey-quaternary/10 overflow-hidden">
-                                                <div class="panel p-12 bg-grey-quaternary/30 min-h-200 flex items-center justify-center overflow-hidden">
-                                                    <img id="repair-dimensions-preview-image" src="" alt="Technical drawing preview" class="w-full h-full object-contain rounded-12 hidden">
-                                                    <div id="repair-dimensions-preview-empty" class="flex flex-col items-center gap-10 text-center text-grey-primary">
-                                                        <i class="ri-image-2-line text-icon-xl" aria-hidden="true"></i>
-                                                        <span class="text-body-xs" data-i18n="codeRepair.statusUnavailable">Unavailable</span>
-                                                    </div>
+                                    <div class="grid gap-x-24 gap-y-24 pt-8 xl:grid-cols-[minmax(0,1fr)_320px] items-start min-w-0" data-repair-section-body="overview">
+                                        <dl id="repair-overview-list" class="list list-spec list-md panel border-0 bg-transparent"></dl>
+                                        <div id="repair-dimensions-preview" class="panel p-16 bg-grey-quaternary/10 overflow-hidden">
+                                            <div class="panel p-12 bg-grey-quaternary/30 min-h-200 flex items-center justify-center overflow-hidden">
+                                                <img id="repair-dimensions-preview-image" src="" alt="Technical drawing preview" class="w-full h-full object-contain rounded-12 hidden">
+                                                <div id="repair-dimensions-preview-empty" class="flex flex-col items-center gap-10 text-center text-grey-primary">
+                                                    <i class="ri-image-2-line text-icon-xl" aria-hidden="true"></i>
+                                                    <span class="text-body-xs" data-i18n="codeRepair.statusUnavailable">Unavailable</span>
                                                 </div>
                                             </div>
                                         </div>
-
-                                        <div class="flex items-start justify-between gap-12">
-                                            <h2 class="text-title-lg" data-i18n="codeRepair.databaseHeading">Database diagnosis</h2>
-                                            <button type="button" class="btn btn-secondary btn-icon btn-xs shrink-0" data-repair-section-toggle="database" aria-controls="repair-database-grid" aria-expanded="true" aria-label="Hide Database Checks">
-                                                <i class="ri-eye-line text-icon-lg" aria-hidden="true" data-repair-section-toggle-icon></i>
-                                            </button>
-                                        </div>
-                                        <div id="repair-database-grid" class="grid gap-20 xl:grid-cols-2" data-repair-section-body="database"></div>
-
                                     </div>
+                                </section>
+
+                                <section class="flex flex-col gap-16 px-4 md:px-6">
+                                    <div class="divider"></div>
+                                    <div class="flex items-start justify-between gap-12 pt-24">
+                                        <h2 class="card-title" data-i18n="codeRepair.databaseHeading">Database diagnosis</h2>
+                                        <button type="button" class="btn btn-secondary btn-icon btn-xs shrink-0" data-repair-section-toggle="database" aria-controls="repair-database-grid" aria-expanded="true" aria-label="Hide Database Checks">
+                                            <i class="ri-eye-line text-icon-lg" aria-hidden="true" data-repair-section-toggle-icon></i>
+                                        </button>
+                                    </div>
+                                    <div id="repair-database-grid" class="grid gap-x-24 gap-y-24 xl:grid-cols-2 items-start pt-8" data-repair-section-body="database"></div>
+                                </section>
+                            </div>
                         </div>
                     </section>
                 </div>
-            </section>
+
+                <aside class="card overflow-hidden relative w-full lg:col-span-3 lg:sticky lg:top-56" data-reveal="section">
+                    <div class="card-body p-24">
+                        <form id="repair-reference-form" class="flex flex-col gap-16">
+                            <div class="flex flex-col gap-16">
+                                <label class="input-label ml-12" for="repair-reference-input" data-i18n="codeRepair.referenceLabel">Reference</label>
+                                <div class="flex flex-col gap-12">
+                                    <input id="repair-reference-input" type="text" class="input input-sm w-full" placeholder="11007502110010100" data-i18n-placeholder="codeRepair.referencePlaceholder" autocomplete="off">
+                                    <button id="repair-load-button" type="submit" class="btn btn-secondary btn-sm w-full justify-center">
+                                        <i class="ri-search-line text-icon-sm" aria-hidden="true"></i>
+                                        <span data-i18n="codeRepair.load">Load Repair Context</span>
+                                    </button>
+                                    <button id="repair-discard-pending-button" type="button" class="btn btn-secondary btn-sm w-full justify-center hidden" hidden>
+                                        <i class="ri-delete-bin-line text-icon-sm" aria-hidden="true"></i>
+                                        <span data-i18n="codeRepair.pendingDiscard">Discard all</span>
+                                    </button>
+                                    <button id="repair-revalidate-button" type="button" class="btn btn-primary btn-sm w-full justify-center" disabled>
+                                        <i class="ri-refresh-line text-icon-sm" aria-hidden="true" data-repair-primary-action-icon></i>
+                                        <span data-i18n="codeRepair.revalidate" data-repair-primary-action-label>Revalidate</span>
+                                    </button>
+                                    <a id="repair-open-configurator-link" href="#" class="btn btn-secondary btn-sm w-full justify-center" aria-disabled="true">
+                                        <i class="ri-external-link-line text-icon-sm" aria-hidden="true"></i>
+                                        <span data-i18n="codeRepair.openConfigurator">Open in configurator</span>
+                                    </a>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                </aside>
+            </div>
         </main>
     </div>
 
