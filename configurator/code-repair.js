@@ -800,12 +800,12 @@ function buildCodeRepairDatabaseCheckCardMarkup(check) {
                 </div>
                 <dl class="list list-spec list-md panel border-0 bg-transparent">
                     <div class="list-item">
-                        <dt class="list-key">${escapeHtml(t("codeRepair.databaseSource", {}, "Source"))}</dt>
-                        <dd class="list-value break-all">${escapeHtml(sourceLabel)}</dd>
-                    </div>
-                    <div class="list-item">
                         <dt class="list-key">${escapeHtml(t("codeRepair.databaseValue", {}, "Value"))}</dt>
                         <dd class="list-value break-all">${escapeHtml(displayValue)}</dd>
+                    </div>
+                    <div class="list-item">
+                        <dt class="list-key">${escapeHtml(t("codeRepair.databaseSource", {}, "Source"))}</dt>
+                        <dd class="list-value break-all">${escapeHtml(sourceLabel)}</dd>
                     </div>
                 </dl>
             </div>
