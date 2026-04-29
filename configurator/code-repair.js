@@ -835,18 +835,30 @@ function buildCodeRepairDatabaseCheckCardMarkup(check) {
     return `
         <article class="card overflow-hidden">
             <div class="card-body p-24 flex flex-col gap-16">
-                <div class="flex flex-wrap items-start justify-between gap-12">
-                    <h3 class="card-title">${escapeHtml(label)}</h3>
-                    ${buildCodeRepairStatusPill(statusLabel, status)}
+                <div class="card-header items-start">
+                    ${buildCodeRepairDatabaseStatusIcon(status, statusLabel)}
+                    <h3 class="card-title break-words">${escapeHtml(label)}</h3>
                 </div>
-                <dl class="list list-spec list-md panel border-0 bg-transparent">
-                    <div class="list-item">
-                        <dt class="list-key">${escapeHtml(t("codeRepair.databaseValue", {}, "Value"))}</dt>
-                        <dd class="list-value break-all">${escapeHtml(displayValue)}</dd>
-                    </div>
-                </dl>
+                <div class="flex flex-col gap-8">
+                    <p class="text-label">${escapeHtml(t("codeRepair.databaseValue", {}, "Value"))}</p>
+                    <p class="card-text break-words">${escapeHtml(displayValue)}</p>
+                </div>
             </div>
         </article>
+    `;
+}
+
+function buildCodeRepairDatabaseStatusIcon(status, label) {
+    const key = String(status || "").trim();
+    const isOkay = key === "present" || key === "not_required";
+    const iconClass = isOkay ? "ri-checkbox-circle-line" : "ri-close-circle-line";
+    const toneClasses = isOkay ? "" : "bg-red-primary text-white";
+    const iconClasses = ["card-icon", toneClasses].filter(Boolean).join(" ");
+
+    return `
+        <div class="${iconClasses}" role="img" aria-label="${escapeHtml(label)}" title="${escapeHtml(label)}">
+            <i class="${iconClass} text-icon-lg" aria-hidden="true"></i>
+        </div>
     `;
 }
 
