@@ -111,7 +111,8 @@ const CODE_REPAIR_SECTION_VISIBILITY_DEFAULTS = {
     overview: false,
     database: false,
 };
-const CODE_REPAIR_DATABASE_TABLE_COLUMNS = "minmax(0, 1.4fr) minmax(0, 1.1fr) minmax(0, 0.7fr) minmax(0, 1.8fr)";
+const CODE_REPAIR_DATABASE_TABLE_COLUMN_WIDTHS = ["28%", "22%", "14%", "36%"];
+const CODE_REPAIR_DATABASE_TABLE_COLUMNS = CODE_REPAIR_DATABASE_TABLE_COLUMN_WIDTHS.join(" ");
 const codeRepairState = {
     reference: "",
     data: null,
@@ -811,12 +812,9 @@ function renderCodeRepairDatabaseChecks() {
                     ${buildCodeRepairDatabaseHeadingMarkup(3, "value", t("codeRepair.databaseValue", {}, "Value"))}
                 </div>
                 <div class="data-table-wrap custom-scrollbar rounded-xl overflow-hidden" style="clip-path: inset(0 round var(--radius-xl));">
-                    <table class="data-table-table rounded-xl overflow-hidden" aria-label="${escapeHtml(t("codeRepair.databaseHeading", {}, "Database diagnosis"))}">
+                    <table class="data-table-table rounded-xl overflow-hidden" style="table-layout: fixed;" aria-label="${escapeHtml(t("codeRepair.databaseHeading", {}, "Database diagnosis"))}">
                         <colgroup>
-                            <col>
-                            <col>
-                            <col>
-                            <col>
+                            ${CODE_REPAIR_DATABASE_TABLE_COLUMN_WIDTHS.map((width) => `<col style="width: ${width};">`).join("")}
                         </colgroup>
                         <thead class="sr-only">
                             <tr>
