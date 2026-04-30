@@ -1090,7 +1090,7 @@ function buildCodeRepairActionCardMarkup(card, showDivider = false) {
         <article class="flex flex-col gap-20 py-24" data-repair-card-id="${escapeHtml(card.cardId)}">
             ${showDivider ? '<div class="divider"></div>' : ""}
             <div class="flex flex-col gap-16">
-                <h3 class="text-h2 text-black break-words">${escapeHtml(actionTitle)}</h3>
+                <h3 class="text-h3 text-black break-words">${escapeHtml(actionTitle)}</h3>
                 <div class="grid gap-24 lg:gap-40 xl:gap-48 lg:px-40 xl:px-48 lg:grid-cols-[minmax(0,20rem)_minmax(0,22rem)] lg:justify-center items-start">
                     <div class="flex flex-col gap-8">
                         <div class="panel p-12 bg-grey-quaternary/30 w-full aspect-square flex items-center justify-center overflow-hidden">
