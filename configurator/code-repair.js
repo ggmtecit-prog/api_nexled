@@ -775,87 +775,87 @@ function renderCodeRepairDatabaseChecks() {
         return;
     }
 
-    const checksBySource = checks.reduce((groups, check) => {
-        const sourceKey = String(check?.source || "").trim() || "unknown";
-
-        if (!groups[sourceKey]) {
-            groups[sourceKey] = [];
-        }
-
-        groups[sourceKey].push(check);
-        return groups;
-    }, {});
-
-    const sourceKeys = Object.keys(checksBySource).sort((left, right) => {
-        const sourceOrderDiff = getCodeRepairDatabaseSourceSortValue(left) - getCodeRepairDatabaseSourceSortValue(right);
+    const sortedChecks = checks.slice().sort((left, right) => {
+        const leftSource = String(left?.source || "").trim() || "unknown";
+        const rightSource = String(right?.source || "").trim() || "unknown";
+        const sourceOrderDiff = getCodeRepairDatabaseSourceSortValue(leftSource) - getCodeRepairDatabaseSourceSortValue(rightSource);
 
         if (sourceOrderDiff !== 0) {
             return sourceOrderDiff;
         }
 
-        return getCodeRepairDatabaseSourceLabel(left).localeCompare(getCodeRepairDatabaseSourceLabel(right));
+        const sourceLabelDiff = getCodeRepairDatabaseSourceLabel(leftSource).localeCompare(getCodeRepairDatabaseSourceLabel(rightSource));
+
+        if (sourceLabelDiff !== 0) {
+            return sourceLabelDiff;
+        }
+
+        const statusRankDiff = getCodeRepairDatabaseCheckSortValue(left) - getCodeRepairDatabaseCheckSortValue(right);
+
+        if (statusRankDiff !== 0) {
+            return statusRankDiff;
+        }
+
+        return getCodeRepairDatabaseCheckLabel(String(left?.key || ""))
+            .localeCompare(getCodeRepairDatabaseCheckLabel(String(right?.key || "")));
     });
 
-    codeRepairElements.databaseGrid.innerHTML = sourceKeys.map((sourceKey) => {
-        const sourceLabel = getCodeRepairDatabaseSourceLabel(sourceKey);
-        const sortedChecks = checksBySource[sourceKey]
-            .slice()
-            .sort((left, right) => {
-                const statusRankDiff = getCodeRepairDatabaseCheckSortValue(left) - getCodeRepairDatabaseCheckSortValue(right);
-
-                if (statusRankDiff !== 0) {
-                    return statusRankDiff;
-                }
-
-                return getCodeRepairDatabaseCheckLabel(String(left?.key || ""))
-                    .localeCompare(getCodeRepairDatabaseCheckLabel(String(right?.key || "")));
-            });
-
-        return `
-            <section class="col-span-full flex flex-col gap-16">
-                <h3 class="card-title">${escapeHtml(sourceLabel)}</h3>
-                <div class="grid gap-24 xl:grid-cols-2">
-                    ${sortedChecks.map((check) => buildCodeRepairDatabaseCheckCardMarkup(check)).join("")}
+    codeRepairElements.databaseGrid.innerHTML = `
+        <section class="col-span-full">
+            <div class="data-table data-table-md w-full" data-table>
+                <div class="data-table-wrap custom-scrollbar">
+                    <table class="data-table-table min-w-[48rem]" aria-label="${escapeHtml(t("codeRepair.databaseHeading", {}, "Database diagnosis"))}">
+                        <thead class="data-table-head">
+                            <tr class="data-table-row">
+                                <th class="data-table-heading" scope="col">${escapeHtml(t("codeRepair.databaseSource", {}, "Source"))}</th>
+                                <th class="data-table-heading" scope="col">${escapeHtml(t("codeRepair.databaseCheck", {}, "Check"))}</th>
+                                <th class="data-table-heading" scope="col">${escapeHtml(t("codeRepair.sourceStatus", {}, "Status"))}</th>
+                                <th class="data-table-heading" scope="col">${escapeHtml(t("codeRepair.databaseValue", {}, "Value"))}</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${sortedChecks.map((check) => buildCodeRepairDatabaseCheckRowMarkup(check)).join("")}
+                        </tbody>
+                    </table>
                 </div>
-            </section>
-        `;
-    }).join("");
+            </div>
+        </section>
+    `;
 }
 
-function buildCodeRepairDatabaseCheckCardMarkup(check) {
+function buildCodeRepairDatabaseCheckRowMarkup(check) {
+    const source = String(check?.source || "").trim() || "unknown";
+    const sourceLabel = getCodeRepairDatabaseSourceLabel(source);
     const label = getCodeRepairDatabaseCheckLabel(String(check?.key || ""));
     const status = String(check?.status || "");
     const statusLabel = getCodeRepairStatusLabel(status);
     const displayValue = formatCodeRepairDatabaseCheckValue(check);
 
     return `
-        <article class="card overflow-hidden">
-            <div class="card-body p-24 flex flex-col gap-16">
-                <div class="card-header items-start">
-                    ${buildCodeRepairDatabaseStatusIcon(status, statusLabel)}
-                    <h3 class="card-title break-words">${escapeHtml(label)}</h3>
-                </div>
-                <div class="flex flex-col gap-8">
-                    <p class="text-label">${escapeHtml(t("codeRepair.databaseValue", {}, "Value"))}</p>
-                    <p class="card-text break-words">${escapeHtml(displayValue)}</p>
-                </div>
-            </div>
-        </article>
+        <tr class="data-table-row">
+            <td class="data-table-cell" data-sort-value="${escapeHtml(sourceLabel)}">
+                <p class="text-body-sm break-words">${escapeHtml(sourceLabel)}</p>
+            </td>
+            <td class="data-table-cell" data-sort-value="${escapeHtml(label)}">
+                <p class="text-body-sm break-words">${escapeHtml(label)}</p>
+            </td>
+            <td class="data-table-cell" data-sort-value="${escapeHtml(statusLabel)}">
+                ${buildCodeRepairDatabaseStatusBadge(status, statusLabel)}
+            </td>
+            <td class="data-table-cell" data-sort-value="${escapeHtml(displayValue)}">
+                <p class="text-body-sm break-words">${escapeHtml(displayValue)}</p>
+            </td>
+        </tr>
     `;
 }
 
-function buildCodeRepairDatabaseStatusIcon(status, label) {
+function buildCodeRepairDatabaseStatusBadge(status, label) {
     const key = String(status || "").trim();
-    const isOkay = key === "present" || key === "not_required";
-    const iconClass = isOkay ? "ri-checkbox-circle-line" : "ri-close-circle-line";
-    const toneClasses = isOkay ? "" : "bg-red-primary text-white";
-    const iconClasses = ["card-icon", toneClasses].filter(Boolean).join(" ");
+    const toneClass = key === "present"
+        ? "badge-success"
+        : (key === "not_required" ? "badge-neutral" : "badge-warning");
 
-    return `
-        <div class="${iconClasses}" role="img" aria-label="${escapeHtml(label)}" title="${escapeHtml(label)}">
-            <i class="${iconClass} text-icon-lg" aria-hidden="true"></i>
-        </div>
-    `;
+    return `<span class="badge ${toneClass} badge-sm">${escapeHtml(label)}</span>`;
 }
 
 function buildCodeRepairEmptyStateMarkup({

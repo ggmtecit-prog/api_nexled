@@ -531,6 +531,8 @@ window.NexLedLocales.pt = {
         sourceDamNote: "Existe candidato DAM, mas a fonte ativa atual continua a resolver noutro sitio.",
         activePath: "Caminho ativo",
         activeSourceType: "Tipo de fonte ativa",
+        databaseSource: "Fonte",
+        databaseCheck: "Validacao",
         actionTitleAdd: "Adicionar {asset}",
         actionTitleUpdate: "Atualizar {asset}",
         actionTitleReplace: "Substituir {asset}",

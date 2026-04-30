@@ -510,6 +510,8 @@ window.NexLedLocales.en = {
         sourceDamNote: "DAM candidate exists, but the current active source still resolves elsewhere.",
         activePath: "Active path",
         activeSourceType: "Active source type",
+        databaseSource: "Source",
+        databaseCheck: "Check",
         actionTitleAdd: "Add {asset}",
         actionTitleUpdate: "Update {asset}",
         actionTitleReplace: "Replace {asset}",
