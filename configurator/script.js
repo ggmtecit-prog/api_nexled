@@ -5102,7 +5102,7 @@ async function loadFamilies() {
 
     const [healthResult, familiesResult] = await Promise.allSettled([
         fetchApiHealth(),
-        apiFetch("/?endpoint=families"),
+        apiCacheRemember("families", 3600, () => apiFetch("/?endpoint=families")),
     ]);
 
     try {
@@ -5207,7 +5207,7 @@ async function handleFamilyChange() {
 }
 
 async function loadOptions(familyCode) {
-    const data = await apiFetch("/?endpoint=options&family=" + encodeURIComponent(familyCode));
+    const data = await apiCacheRemember("options:" + familyCode, 3600, () => apiFetch("/?endpoint=options&family=" + encodeURIComponent(familyCode)));
 
     fillSelect("select-size", data.tamanho, false);
     fillSelect("select-color", data.cor, true);

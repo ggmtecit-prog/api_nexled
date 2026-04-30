@@ -1,5 +1,37 @@
 const APP_SHELL_LANGUAGE_KEY = "nexled-app-language";
 const APP_SHELL_LANGUAGE_EVENT = "nexled:app-language-change";
+
+// Bump API_CACHE_VERSION to invalidate every cached entry on next load.
+const API_CACHE_VERSION = "v1";
+const API_CACHE_PREFIX = "nx-api-cache:" + API_CACHE_VERSION + ":";
+
+function apiCacheGet(key) {
+    try {
+        const raw = window.localStorage.getItem(API_CACHE_PREFIX + key);
+        if (!raw) return null;
+        const d = JSON.parse(raw);
+        if (!d || typeof d.exp !== "number" || d.exp < Date.now()) {
+            window.localStorage.removeItem(API_CACHE_PREFIX + key);
+            return null;
+        }
+        return d.val;
+    } catch (e) { return null; }
+}
+
+function apiCacheSet(key, val, ttlSeconds) {
+    try {
+        window.localStorage.setItem(API_CACHE_PREFIX + key, JSON.stringify({ exp: Date.now() + ttlSeconds * 1000, val }));
+    } catch (e) { /* quota or private mode — silent fall-through */ }
+}
+
+async function apiCacheRemember(key, ttlSeconds, fetcher) {
+    const cached = apiCacheGet(key);
+    if (cached !== null && cached !== undefined) return cached;
+    const fresh = await fetcher();
+    if (fresh !== null && fresh !== undefined) apiCacheSet(key, fresh, ttlSeconds);
+    return fresh;
+}
+
 const APP_SHELL_LANGUAGES = {
     en: {
         app: "en",

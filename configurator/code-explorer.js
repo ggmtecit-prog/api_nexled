@@ -319,7 +319,7 @@ async function loadExplorerFamilyOptions(family, resetSelection = false) {
     }
 
     if (!explorerState.familyOptionsByFamily[family]) {
-        const payload = await apiFetch("/?endpoint=options&family=" + encodeURIComponent(family));
+        const payload = await apiCacheRemember("options:" + family, 3600, () => apiFetch("/?endpoint=options&family=" + encodeURIComponent(family)));
         explorerState.familyOptionsByFamily[family] = normalizeExplorerFamilyOptions(payload);
     }
 
@@ -2287,7 +2287,7 @@ async function loadFamilies() {
     setPageStatus("codeExplorer.runtime.loadingFamilies", "loading", "Loading families...");
 
     try {
-        const families = await apiFetch("/?endpoint=families");
+        const families = await apiCacheRemember("families", 3600, () => apiFetch("/?endpoint=families"));
         explorerState.families = Array.isArray(families) ? families : [];
         populateFamilies();
         setPageStatus(
