@@ -802,15 +802,43 @@ function renderCodeRepairDatabaseChecks() {
 
     codeRepairElements.databaseGrid.innerHTML = `
         <section class="col-span-full">
-            <div class="data-table data-table-md w-full" data-table>
+            <div class="data-table data-table-md data-table-floating-head w-full" data-table style="--data-table-head-columns: minmax(0, 1.1fr) minmax(0, 1.4fr) minmax(0, 0.7fr) minmax(0, 1.8fr);">
+                <div class="data-table-head-floating">
+                    <div class="data-table-heading" role="columnheader" data-table-column="0">
+                        <div class="data-table-heading-content">
+                            <span class="data-table-heading-label">${escapeHtml(t("codeRepair.databaseSource", {}, "Source"))}</span>
+                        </div>
+                    </div>
+                    <div class="data-table-heading" role="columnheader" data-table-column="1">
+                        <div class="data-table-heading-content">
+                            <span class="data-table-heading-label">${escapeHtml(t("codeRepair.databaseCheck", {}, "Check"))}</span>
+                        </div>
+                    </div>
+                    <div class="data-table-heading" role="columnheader" data-table-column="2">
+                        <div class="data-table-heading-content">
+                            <span class="data-table-heading-label">${escapeHtml(t("codeRepair.sourceStatus", {}, "Status"))}</span>
+                        </div>
+                    </div>
+                    <div class="data-table-heading" role="columnheader" data-table-column="3">
+                        <div class="data-table-heading-content">
+                            <span class="data-table-heading-label">${escapeHtml(t("codeRepair.databaseValue", {}, "Value"))}</span>
+                        </div>
+                    </div>
+                </div>
                 <div class="data-table-wrap custom-scrollbar">
-                    <table class="data-table-table min-w-[48rem]" aria-label="${escapeHtml(t("codeRepair.databaseHeading", {}, "Database diagnosis"))}">
-                        <thead class="data-table-head">
-                            <tr class="data-table-row">
-                                <th class="data-table-heading" scope="col">${escapeHtml(t("codeRepair.databaseSource", {}, "Source"))}</th>
-                                <th class="data-table-heading" scope="col">${escapeHtml(t("codeRepair.databaseCheck", {}, "Check"))}</th>
-                                <th class="data-table-heading" scope="col">${escapeHtml(t("codeRepair.sourceStatus", {}, "Status"))}</th>
-                                <th class="data-table-heading" scope="col">${escapeHtml(t("codeRepair.databaseValue", {}, "Value"))}</th>
+                    <table class="data-table-table" aria-label="${escapeHtml(t("codeRepair.databaseHeading", {}, "Database diagnosis"))}">
+                        <colgroup>
+                            <col>
+                            <col>
+                            <col>
+                            <col>
+                        </colgroup>
+                        <thead class="sr-only">
+                            <tr>
+                                <th scope="col">${escapeHtml(t("codeRepair.databaseSource", {}, "Source"))}</th>
+                                <th scope="col">${escapeHtml(t("codeRepair.databaseCheck", {}, "Check"))}</th>
+                                <th scope="col">${escapeHtml(t("codeRepair.sourceStatus", {}, "Status"))}</th>
+                                <th scope="col">${escapeHtml(t("codeRepair.databaseValue", {}, "Value"))}</th>
                             </tr>
                         </thead>
                         <tbody>
