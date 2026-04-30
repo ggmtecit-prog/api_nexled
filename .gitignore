@@ -38,5 +38,9 @@ DAM_UPLOAD_SUPPORT_IMAGES/
 # Scratch / editor temp
 .codex-temp/
 
-# SQL backups
-*.sql
+# SQL backups (not schema files)
+dam_backup*.sql
+*.backup.sql
+
+# Scratch test data
+tmp_showcase_body.json
