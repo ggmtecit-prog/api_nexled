@@ -1095,7 +1095,16 @@ function buildCodeRepairActionCardMarkup(card) {
                     <h3 class="card-title">${escapeHtml(card.label)}</h3>
                     ${buildCodeRepairStatusPill(getCodeRepairStatusLabel(card.status), card.status)}
                 </div>
-                <div class="grid gap-24 lg:grid-cols-[minmax(0,18rem)_minmax(0,1fr)] items-start">
+                <div class="grid gap-24 lg:grid-cols-[minmax(0,1fr)_minmax(0,18rem)] items-start">
+                    <div class="panel p-12 bg-grey-quaternary/30 min-h-240 flex items-center justify-center overflow-hidden">
+                        ${hasActivePreview
+                            ? `<img src="${escapeHtml(previewUrl)}" alt="${escapeHtml(card.label)}" class="w-full h-full object-contain rounded-12">`
+                            : `<div class="flex flex-col items-center gap-10 text-center text-grey-primary">
+                                    <i class="ri-image-2-line text-icon-xl" aria-hidden="true"></i>
+                                    <span class="text-body-xs">${escapeHtml(t("codeRepair.statusUnavailable", {}, "Unavailable"))}</span>
+                               </div>`
+                        }
+                    </div>
                     <div class="flex flex-col gap-12">
                         <div class="uploader uploader-image ${uploaderClasses}" data-uploader ${isBusy ? 'aria-disabled="true"' : ""}>
                             <input
@@ -1126,15 +1135,6 @@ function buildCodeRepairActionCardMarkup(card) {
                         >
                             <span>${escapeHtml(t("codeRepair.damSearchButton", {}, "Search in the DAM"))}</span>
                         </button>
-                    </div>
-                    <div class="panel p-12 bg-grey-quaternary/30 min-h-240 flex items-center justify-center overflow-hidden">
-                        ${hasActivePreview
-                            ? `<img src="${escapeHtml(previewUrl)}" alt="${escapeHtml(card.label)}" class="w-full h-full object-contain rounded-12">`
-                            : `<div class="flex flex-col items-center gap-10 text-center text-grey-primary">
-                                    <i class="ri-image-2-line text-icon-xl" aria-hidden="true"></i>
-                                    <span class="text-body-xs">${escapeHtml(t("codeRepair.statusUnavailable", {}, "Unavailable"))}</span>
-                               </div>`
-                        }
                     </div>
                 </div>
             </div>
