@@ -1096,7 +1096,7 @@ function buildCodeRepairActionCardMarkup(card, showDivider = false) {
                     <h3 class="card-title">${escapeHtml(card.label)}</h3>
                     ${buildCodeRepairStatusPill(getCodeRepairStatusLabel(card.status), card.status)}
                 </div>
-                <div class="grid gap-24 lg:gap-40 lg:px-24 xl:px-32 lg:grid-cols-[minmax(0,20rem)_minmax(0,36rem)] lg:justify-between items-start">
+                <div class="grid gap-24 lg:gap-40 lg:px-24 xl:px-24 lg:grid-cols-[minmax(0,20rem)_minmax(0,22rem)] lg:justify-between items-start">
                     <div class="panel p-12 bg-grey-quaternary/30 w-full aspect-square flex items-center justify-center overflow-hidden">
                         ${hasActivePreview
                             ? `<img src="${escapeHtml(previewUrl)}" alt="${escapeHtml(card.label)}" class="w-full h-full object-contain rounded-12">`
