@@ -1088,9 +1088,9 @@ function buildCodeRepairActionCardMarkup(card, showDivider = false) {
 
     return `
         <article class="flex flex-col gap-20 py-24" data-repair-card-id="${escapeHtml(card.cardId)}">
-            ${showDivider ? '<div class="divider"></div>' : ""}
+            ${showDivider ? '<div class="divider lg:mx-40 xl:mx-48 lg:w-auto"></div>' : ""}
             <div class="flex flex-col gap-16">
-                <h3 class="text-h3 text-black break-words">${escapeHtml(actionTitle)}</h3>
+                <h3 class="text-h3 text-black break-words lg:pl-40 xl:pl-48">${escapeHtml(actionTitle)}</h3>
                 <div class="grid gap-24 lg:gap-40 xl:gap-48 lg:px-40 xl:px-48 lg:grid-cols-[minmax(0,20rem)_minmax(0,22rem)] lg:justify-center items-start">
                     <div class="flex flex-col gap-8">
                         <div class="panel p-12 bg-grey-quaternary/30 w-full aspect-square flex items-center justify-center overflow-hidden">
@@ -1105,7 +1105,7 @@ function buildCodeRepairActionCardMarkup(card, showDivider = false) {
                     </div>
                     <div class="flex flex-col gap-8">
                         <div class="flex flex-col gap-16 lg:min-h-[20rem] lg:justify-between">
-                            <div class="uploader uploader-image ${uploaderClasses}" data-uploader ${isBusy ? 'aria-disabled="true"' : ""}>
+                            <div class="uploader uploader-image ${uploaderClasses} lg:flex-1" data-uploader ${isBusy ? 'aria-disabled="true"' : ""}>
                                 <input
                                     type="file"
                                     class="uploader-input hidden"
@@ -1115,7 +1115,7 @@ function buildCodeRepairActionCardMarkup(card, showDivider = false) {
                                 >
                                 <button
                                     type="button"
-                                    class="uploader-zone w-full text-left"
+                                    class="uploader-zone w-full text-left lg:h-full"
                                     data-uploader-zone
                                     data-repair-upload-trigger="${escapeHtml(card.cardId)}"
                                     ${!canUpload || isBusy ? "disabled" : ""}
