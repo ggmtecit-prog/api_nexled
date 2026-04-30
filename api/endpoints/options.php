@@ -3,6 +3,8 @@
 // GET /api/?endpoint=options&family=11
 // Returns all dropdown options for a product family
 
+require_once dirname(__FILE__) . "/../lib/cache.php";
+
 $family = validateFamily($_GET["family"] ?? null);
 
 if ($family === 0) {
@@ -11,75 +13,61 @@ if ($family === 0) {
     exit();
 }
 
-$con = connectDBReferencias();
+header("Cache-Control: public, max-age=3600");
 
-// Sizes
-$tamanhos = [];
-$q = mysqli_query($con, "SELECT Tamanhos.tamanho FROM Tamanhos, Familias WHERE Tamanhos.familia = Familias.tamanhos AND Familias.codigo = $family ORDER BY tamanho");
-while ($row = mysqli_fetch_assoc($q)) {
-    $tamanhos[] = $row["tamanho"];
-}
+$payload = cacheRemember("options:" . $family, 3600, function () use ($family) {
+    $con = connectDBReferencias();
 
-// Colors
-$cores = [];
-$q = mysqli_query($con, "SELECT Cor.cor, Cor.codigo FROM Cor, Familias WHERE Cor.familia = Familias.cor AND Familias.codigo = $family ORDER BY Cor.codigo");
-while ($row = mysqli_fetch_assoc($q)) {
-    $cores[] = [$row["cor"], $row["codigo"]];
-}
+    $tamanhos = [];
+    $q = mysqli_query($con, "SELECT Tamanhos.tamanho FROM Tamanhos, Familias WHERE Tamanhos.familia = Familias.tamanhos AND Familias.codigo = $family ORDER BY tamanho");
+    while ($row = mysqli_fetch_assoc($q)) { $tamanhos[] = $row["tamanho"]; }
 
-// CRI
-$cri = [];
-$q = mysqli_query($con, "SELECT cri, codigo FROM CRI ORDER BY codigo");
-while ($row = mysqli_fetch_assoc($q)) {
-    $cri[] = [$row["cri"], $row["codigo"]];
-}
+    $cores = [];
+    $q = mysqli_query($con, "SELECT Cor.cor, Cor.codigo FROM Cor, Familias WHERE Cor.familia = Familias.cor AND Familias.codigo = $family ORDER BY Cor.codigo");
+    while ($row = mysqli_fetch_assoc($q)) { $cores[] = [$row["cor"], $row["codigo"]]; }
 
-// Series
-$series = [];
-$q = mysqli_query($con, "SELECT Series.series, Series.codigo FROM Series, Familias WHERE Series.familia = Familias.series AND Familias.codigo = $family ORDER BY codigo");
-while ($row = mysqli_fetch_assoc($q)) {
-    $series[] = [$row["series"], $row["codigo"]];
-}
+    $cri = [];
+    $q = mysqli_query($con, "SELECT cri, codigo FROM CRI ORDER BY codigo");
+    while ($row = mysqli_fetch_assoc($q)) { $cri[] = [$row["cri"], $row["codigo"]]; }
 
-// Lenses
-$lentes = [];
-$q = mysqli_query($con, "SELECT Acrilico.acrilico, Acrilico.codigo, Acrilico.desc FROM Acrilico, Familias WHERE Acrilico.familia = Familias.acrilico AND Familias.codigo = $family ORDER BY codigo");
-while ($row = mysqli_fetch_assoc($q)) {
-    $row["desc"] = str_replace(["&deg;", "&deg"], "°", $row["desc"]);
-    $lentes[] = [$row["acrilico"], $row["codigo"], $row["desc"]];
-}
+    $series = [];
+    $q = mysqli_query($con, "SELECT Series.series, Series.codigo FROM Series, Familias WHERE Series.familia = Familias.series AND Familias.codigo = $family ORDER BY codigo");
+    while ($row = mysqli_fetch_assoc($q)) { $series[] = [$row["series"], $row["codigo"]]; }
 
-// Finishes
-$acabamentos = [];
-$q = mysqli_query($con, "SELECT Acabamento.acabamento, Acabamento.codigo, Acabamento.desc FROM Acabamento, Familias WHERE Acabamento.familia = Familias.acabamento AND Familias.codigo = $family ORDER BY codigo");
-while ($row = mysqli_fetch_assoc($q)) {
-    $acabamentos[] = [$row["acabamento"], $row["codigo"], $row["desc"]];
-}
+    $lentes = [];
+    $q = mysqli_query($con, "SELECT Acrilico.acrilico, Acrilico.codigo, Acrilico.desc FROM Acrilico, Familias WHERE Acrilico.familia = Familias.acrilico AND Familias.codigo = $family ORDER BY codigo");
+    while ($row = mysqli_fetch_assoc($q)) {
+        $row["desc"] = str_replace(["&deg;", "&deg"], "°", $row["desc"]);
+        $lentes[] = [$row["acrilico"], $row["codigo"], $row["desc"]];
+    }
 
-// Caps
-$caps = [];
-$q = mysqli_query($con, "SELECT Cap.cap, Cap.codigo, Cap.desc FROM Cap, Familias WHERE Cap.familia = Familias.cap AND Familias.codigo = $family ORDER BY codigo");
-while ($row = mysqli_fetch_assoc($q)) {
-    $row["desc"] = str_replace("&acirc;", "â", $row["desc"]);
-    $caps[] = [$row["cap"], $row["codigo"], $row["desc"]];
-}
+    $acabamentos = [];
+    $q = mysqli_query($con, "SELECT Acabamento.acabamento, Acabamento.codigo, Acabamento.desc FROM Acabamento, Familias WHERE Acabamento.familia = Familias.acabamento AND Familias.codigo = $family ORDER BY codigo");
+    while ($row = mysqli_fetch_assoc($q)) { $acabamentos[] = [$row["acabamento"], $row["codigo"], $row["desc"]]; }
 
-// Options
-$opcoes = [];
-$q = mysqli_query($con, "SELECT Opcao.opcao, Opcao.codigo, Opcao.desc FROM Opcao, Familias WHERE Opcao.familia = Familias.opcao AND Familias.codigo = $family ORDER BY codigo");
-while ($row = mysqli_fetch_assoc($q)) {
-    $opcoes[] = [$row["opcao"], $row["codigo"], $row["desc"]];
-}
+    $caps = [];
+    $q = mysqli_query($con, "SELECT Cap.cap, Cap.codigo, Cap.desc FROM Cap, Familias WHERE Cap.familia = Familias.cap AND Familias.codigo = $family ORDER BY codigo");
+    while ($row = mysqli_fetch_assoc($q)) {
+        $row["desc"] = str_replace("&acirc;", "â", $row["desc"]);
+        $caps[] = [$row["cap"], $row["codigo"], $row["desc"]];
+    }
 
-closeDB($con);
+    $opcoes = [];
+    $q = mysqli_query($con, "SELECT Opcao.opcao, Opcao.codigo, Opcao.desc FROM Opcao, Familias WHERE Opcao.familia = Familias.opcao AND Familias.codigo = $family ORDER BY codigo");
+    while ($row = mysqli_fetch_assoc($q)) { $opcoes[] = [$row["opcao"], $row["codigo"], $row["desc"]]; }
 
-echo json_encode([
-    "tamanho"    => $tamanhos,
-    "cor"        => $cores,
-    "cri"        => $cri,
-    "serie"      => $series,
-    "lente"      => $lentes,
-    "acabamento" => $acabamentos,
-    "cap"        => $caps,
-    "opcao"      => $opcoes
-]);
+    closeDB($con);
+
+    return [
+        "tamanho"    => $tamanhos,
+        "cor"        => $cores,
+        "cri"        => $cri,
+        "serie"      => $series,
+        "lente"      => $lentes,
+        "acabamento" => $acabamentos,
+        "cap"        => $caps,
+        "opcao"      => $opcoes
+    ];
+});
+
+echo json_encode($payload);
