@@ -1096,8 +1096,8 @@ function buildCodeRepairActionCardMarkup(card, showDivider = false) {
                     <h3 class="card-title">${escapeHtml(card.label)}</h3>
                     ${buildCodeRepairStatusPill(getCodeRepairStatusLabel(card.status), card.status)}
                 </div>
-                <div class="grid gap-24 lg:px-24 xl:px-32 lg:grid-cols-[minmax(0,32rem)_minmax(0,24rem)] lg:justify-between items-start">
-                    <div class="panel p-12 bg-grey-quaternary/30 w-full aspect-[4/3] flex items-center justify-center overflow-hidden">
+                <div class="grid gap-24 lg:px-24 xl:px-32 lg:grid-cols-[minmax(0,20rem)_minmax(0,36rem)] lg:justify-between items-start">
+                    <div class="panel p-12 bg-grey-quaternary/30 w-full aspect-square flex items-center justify-center overflow-hidden">
                         ${hasActivePreview
                             ? `<img src="${escapeHtml(previewUrl)}" alt="${escapeHtml(card.label)}" class="w-full h-full object-contain rounded-12">`
                             : `<div class="flex flex-col items-center gap-10 text-center text-grey-primary">
@@ -1107,7 +1107,7 @@ function buildCodeRepairActionCardMarkup(card, showDivider = false) {
                         }
                     </div>
                     <div class="flex flex-col gap-12">
-                        <div class="grid gap-12 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end">
+                        <div class="grid gap-12 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center">
                             <div class="uploader uploader-image ${uploaderClasses}" data-uploader ${isBusy ? 'aria-disabled="true"' : ""}>
                                 <input
                                     type="file"
@@ -1131,7 +1131,7 @@ function buildCodeRepairActionCardMarkup(card, showDivider = false) {
                             </div>
                             <button
                                 type="button"
-                                class="btn btn-secondary btn-sm w-full sm:w-auto justify-center shrink-0"
+                                class="btn btn-secondary btn-sm w-full sm:w-auto justify-center shrink-0 self-stretch sm:self-center"
                                 data-repair-open-dam-modal="${escapeHtml(card.cardId)}"
                                 ${isBusy ? "disabled" : ""}
                             >
