@@ -1178,8 +1178,8 @@ function buildCodeRepairActionCardMarkup(card, showDivider = false) {
                     </div>`
         : "";
     const gridColumnsClass = hasActivePreview
-        ? "lg:grid-cols-[minmax(0,20rem)_minmax(0,22rem)]"
-        : "lg:grid-cols-[minmax(0,22rem)]";
+        ? "lg:grid-cols-[minmax(0,20rem)_minmax(0,40rem)]"
+        : "lg:grid-cols-[minmax(0,40rem)]";
     const uploaderColumnClass = hasActivePreview
         ? "flex flex-col gap-8 lg:border-l lg:border-grey-tertiary lg:pl-24 xl:pl-32"
         : "flex flex-col gap-8";
@@ -1192,7 +1192,7 @@ function buildCodeRepairActionCardMarkup(card, showDivider = false) {
                 <div class="grid gap-24 lg:gap-40 xl:gap-48 lg:px-40 xl:px-48 ${gridColumnsClass} lg:justify-center items-start">
                     ${previewColumnMarkup}
                     <div class="${uploaderColumnClass}">
-                        <div class="flex flex-col lg:min-h-[24rem]">
+                        <div class="grid gap-16 lg:grid-cols-[minmax(0,22rem)_minmax(10rem,16rem)] lg:items-stretch">
                             <div class="uploader uploader-image ${uploaderClasses} lg:flex-1" data-uploader ${isBusy ? 'aria-disabled="true"' : ""}>
                                 <input
                                     type="file"
@@ -1217,7 +1217,7 @@ function buildCodeRepairActionCardMarkup(card, showDivider = false) {
                             </div>
                             <button
                                 type="button"
-                                class="btn btn-secondary btn-sm w-full justify-center"
+                                class="btn btn-secondary btn-sm w-full justify-center lg:!h-full"
                                 data-repair-open-dam-modal="${escapeHtml(card.cardId)}"
                                 ${isBusy ? "disabled" : ""}
                             >
