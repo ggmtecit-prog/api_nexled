@@ -655,8 +655,8 @@ function renderCodeRepairActions() {
         return;
     }
 
-    codeRepairElements.actionsGrid.innerHTML = actionCards.map((card) => {
-        return buildCodeRepairActionCardMarkup(card);
+    codeRepairElements.actionsGrid.innerHTML = actionCards.map((card, index) => {
+        return buildCodeRepairActionCardMarkup(card, index > 0);
     }).join("");
 }
 
@@ -1070,7 +1070,7 @@ function buildCodeRepairLensCard(payload, lensSource, channelKey, blocker) {
     };
 }
 
-function buildCodeRepairActionCardMarkup(card) {
+function buildCodeRepairActionCardMarkup(card, showDivider = false) {
     const stagedUpload = getCodeRepairPendingUploadChange(card.cardId);
     const stagedPreviewUrl = getCodeRepairPendingUploadPreviewUrl(stagedUpload);
     const previewUrl = stagedPreviewUrl || getCodeRepairPreviewUrl(card?.active);
@@ -1089,8 +1089,9 @@ function buildCodeRepairActionCardMarkup(card) {
     const uploaderIconClass = stagedUpload ? "ri-checkbox-circle-line" : "ri-upload-cloud-2-line";
 
     return `
-        <article class="card overflow-hidden" data-repair-card-id="${escapeHtml(card.cardId)}">
-            <div class="card-body p-24 flex flex-col gap-16">
+        <article class="flex flex-col gap-16 py-20" data-repair-card-id="${escapeHtml(card.cardId)}">
+            ${showDivider ? '<div class="divider"></div>' : ""}
+            <div class="flex flex-col gap-16">
                 <div class="flex flex-wrap items-start justify-between gap-12">
                     <h3 class="card-title">${escapeHtml(card.label)}</h3>
                     ${buildCodeRepairStatusPill(getCodeRepairStatusLabel(card.status), card.status)}
