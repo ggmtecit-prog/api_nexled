@@ -111,6 +111,7 @@ const CODE_REPAIR_SECTION_VISIBILITY_DEFAULTS = {
     overview: false,
     database: false,
 };
+const CODE_REPAIR_DATABASE_TABLE_COLUMNS = "minmax(0, 1.4fr) minmax(0, 1.1fr) minmax(0, 0.7fr) minmax(0, 1.8fr)";
 const codeRepairState = {
     reference: "",
     data: null,
@@ -802,31 +803,15 @@ function renderCodeRepairDatabaseChecks() {
 
     codeRepairElements.databaseGrid.innerHTML = `
         <section class="col-span-full">
-            <div class="data-table data-table-md data-table-floating-head w-full" data-table style="--data-table-head-columns: minmax(0, 1.4fr) minmax(0, 1.1fr) minmax(0, 0.7fr) minmax(0, 1.8fr); border-radius: var(--panel-radius); overflow: hidden;">
+            <div class="data-table data-table-md data-table-floating-head w-full" data-table data-repair-database-table style="--data-table-head-columns: ${CODE_REPAIR_DATABASE_TABLE_COLUMNS};">
                 <div class="data-table-head-floating">
-                    <div class="data-table-heading" role="columnheader" data-table-column="0">
-                        <div class="data-table-heading-content">
-                            <span class="data-table-heading-label">${escapeHtml(t("codeRepair.databaseCheck", {}, "Check"))}</span>
-                        </div>
-                    </div>
-                    <div class="data-table-heading" role="columnheader" data-table-column="1">
-                        <div class="data-table-heading-content">
-                            <span class="data-table-heading-label">${escapeHtml(t("codeRepair.databaseSource", {}, "Source"))}</span>
-                        </div>
-                    </div>
-                    <div class="data-table-heading" role="columnheader" data-table-column="2">
-                        <div class="data-table-heading-content">
-                            <span class="data-table-heading-label">${escapeHtml(t("codeRepair.sourceStatus", {}, "Status"))}</span>
-                        </div>
-                    </div>
-                    <div class="data-table-heading" role="columnheader" data-table-column="3">
-                        <div class="data-table-heading-content">
-                            <span class="data-table-heading-label">${escapeHtml(t("codeRepair.databaseValue", {}, "Value"))}</span>
-                        </div>
-                    </div>
+                    ${buildCodeRepairDatabaseHeadingMarkup(0, "check", t("codeRepair.databaseCheck", {}, "Check"))}
+                    ${buildCodeRepairDatabaseHeadingMarkup(1, "source", t("codeRepair.databaseSource", {}, "Source"))}
+                    ${buildCodeRepairDatabaseHeadingMarkup(2, "status", t("codeRepair.sourceStatus", {}, "Status"))}
+                    ${buildCodeRepairDatabaseHeadingMarkup(3, "value", t("codeRepair.databaseValue", {}, "Value"))}
                 </div>
-                <div class="data-table-wrap custom-scrollbar">
-                    <table class="data-table-table" aria-label="${escapeHtml(t("codeRepair.databaseHeading", {}, "Database diagnosis"))}">
+                <div class="data-table-wrap custom-scrollbar rounded-xl overflow-hidden" style="clip-path: inset(0 round var(--radius-xl));">
+                    <table class="data-table-table rounded-xl overflow-hidden" aria-label="${escapeHtml(t("codeRepair.databaseHeading", {}, "Database diagnosis"))}">
                         <colgroup>
                             <col>
                             <col>
@@ -849,6 +834,79 @@ function renderCodeRepairDatabaseChecks() {
             </div>
         </section>
     `;
+
+    bindCodeRepairDatabaseTable();
+}
+
+function buildCodeRepairDatabaseHeadingMarkup(columnIndex, sortKey, label) {
+    const safeLabel = escapeHtml(label);
+
+    return `
+        <div class="data-table-heading" role="columnheader" aria-sort="none" data-table-column="${columnIndex}">
+            <div class="data-table-heading-content">
+                <span class="data-table-heading-label">${safeLabel}</span>
+                <button type="button" class="data-table-sort btn btn-ghost btn-icon btn-xs" data-table-sort="${escapeHtml(sortKey)}" aria-label="${escapeHtml(t("codeRepair.databaseSortAria", { column: label }, `Sort by ${label}`))}">
+                    <i class="ri-arrow-up-down-line text-icon-md" aria-hidden="true"></i>
+                </button>
+            </div>
+        </div>
+    `;
+}
+
+function bindCodeRepairDatabaseTable() {
+    const tableRoot = codeRepairElements.databaseGrid.querySelector("[data-repair-database-table]");
+    const table = tableRoot?.querySelector(".data-table-table");
+    const body = table?.tBodies?.[0];
+    const headings = Array.from(tableRoot?.querySelectorAll(".data-table-heading") || []);
+    const sortButtons = Array.from(tableRoot?.querySelectorAll("[data-table-sort]") || []);
+
+    if (!tableRoot || !body) {
+        return;
+    }
+
+    const syncColumns = () => {
+        const firstRow = body.rows[0];
+
+        if (!firstRow) {
+            tableRoot.style.setProperty("--data-table-head-columns", CODE_REPAIR_DATABASE_TABLE_COLUMNS);
+            return;
+        }
+
+        const widths = Array.from(firstRow.cells)
+            .map((cell) => Math.ceil(cell.getBoundingClientRect().width))
+            .filter((width) => width > 0);
+
+        tableRoot.style.setProperty(
+            "--data-table-head-columns",
+            widths.length === firstRow.cells.length ? widths.map((width) => `${width}px`).join(" ") : CODE_REPAIR_DATABASE_TABLE_COLUMNS
+        );
+    };
+
+    sortButtons.forEach((button) => {
+        button.addEventListener("click", () => {
+            const heading = button.closest(".data-table-heading");
+            const columnIndex = Number.parseInt(String(heading?.dataset.tableColumn || "0"), 10);
+            const direction = heading?.getAttribute("aria-sort") === "ascending" ? "descending" : "ascending";
+            const rows = Array.from(body.rows);
+
+            rows.sort((firstRow, secondRow) => {
+                const firstValue = getCodeRepairDatabaseTableCellValue(firstRow, columnIndex);
+                const secondValue = getCodeRepairDatabaseTableCellValue(secondRow, columnIndex);
+                const result = firstValue.localeCompare(secondValue, undefined, { numeric: true, sensitivity: "base" });
+                return direction === "ascending" ? result : result * -1;
+            });
+            rows.forEach((row) => body.appendChild(row));
+            headings.forEach((currentHeading) => currentHeading.setAttribute("aria-sort", currentHeading === heading ? direction : "none"));
+            window.requestAnimationFrame(syncColumns);
+        });
+    });
+
+    window.requestAnimationFrame(syncColumns);
+}
+
+function getCodeRepairDatabaseTableCellValue(row, columnIndex) {
+    const cell = row.cells[columnIndex];
+    return (cell?.dataset.sortValue || cell?.textContent || "").replace(/\s+/g, " ").trim();
 }
 
 function buildCodeRepairDatabaseCheckRowMarkup(check) {
@@ -883,7 +941,7 @@ function buildCodeRepairDatabaseStatusBadge(status, label) {
         ? "badge-success"
         : (key === "not_required" ? "badge-neutral" : "badge-warning");
 
-    return `<span class="badge ${toneClass} badge-sm">${escapeHtml(label)}</span>`;
+    return `<span class="badge ${toneClass} badge-md">${escapeHtml(label)}</span>`;
 }
 
 function buildCodeRepairEmptyStateMarkup({
