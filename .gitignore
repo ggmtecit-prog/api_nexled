@@ -26,3 +26,17 @@ composer.lock
 
 # Logs
 *.log
+
+# Generated output (regeneratable)
+output/
+tmp/
+
+# Local asset staging (binaries, not for git)
+new_data_img/
+DAM_UPLOAD_SUPPORT_IMAGES/
+
+# Scratch / editor temp
+.codex-temp/
+
+# SQL backups
+*.sql
