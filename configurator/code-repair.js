@@ -1078,10 +1078,6 @@ function buildCodeRepairActionCardMarkup(card, showDivider = false) {
     const actionTitle = getCodeRepairActionTitle(card);
     const isBusy = codeRepairState.loading || codeRepairState.mutating;
     const canUpload = card.required !== false;
-    const uploadLabel = card.linkMode === "linked"
-        ? t("codeRepair.uploadAndLink", {}, "Upload and link")
-        : t("codeRepair.upload", {}, "Upload asset");
-    const previewLabel = t("codeRepair.preview", {}, "Preview asset");
     const uploaderTitle = stagedUpload
         ? t("codeRepair.actionUploaderReadyText", {}, "File staged")
         : t("codeRepair.actionUploaderIdleText", {}, "Drop image here");
@@ -1094,10 +1090,9 @@ function buildCodeRepairActionCardMarkup(card, showDivider = false) {
         <article class="flex flex-col gap-20 py-24" data-repair-card-id="${escapeHtml(card.cardId)}">
             ${showDivider ? '<div class="divider"></div>' : ""}
             <div class="flex flex-col gap-16">
-                <h3 class="text-title-lg text-black break-words">${escapeHtml(actionTitle)}</h3>
+                <h3 class="text-h2 text-black break-words">${escapeHtml(actionTitle)}</h3>
                 <div class="grid gap-24 lg:gap-40 xl:gap-48 lg:px-40 xl:px-48 lg:grid-cols-[minmax(0,20rem)_minmax(0,22rem)] lg:justify-center items-start">
                     <div class="flex flex-col gap-8">
-                        <p class="uploader-label">${escapeHtml(previewLabel)}</p>
                         <div class="panel p-12 bg-grey-quaternary/30 w-full aspect-square flex items-center justify-center overflow-hidden">
                             ${hasActivePreview
                                 ? `<img src="${escapeHtml(previewUrl)}" alt="${escapeHtml(card.label)}" class="w-full h-full object-contain rounded-12">`
@@ -1109,7 +1104,6 @@ function buildCodeRepairActionCardMarkup(card, showDivider = false) {
                         </div>
                     </div>
                     <div class="flex flex-col gap-8">
-                        <p class="uploader-label">${escapeHtml(uploadLabel)}</p>
                         <div class="flex flex-col gap-16 lg:min-h-[20rem] lg:justify-between">
                             <div class="uploader uploader-image ${uploaderClasses}" data-uploader ${isBusy ? 'aria-disabled="true"' : ""}>
                                 <input
