@@ -1075,6 +1075,7 @@ function buildCodeRepairActionCardMarkup(card, showDivider = false) {
     const stagedPreviewUrl = getCodeRepairPendingUploadPreviewUrl(stagedUpload);
     const previewUrl = stagedPreviewUrl || getCodeRepairPreviewUrl(card?.active);
     const hasActivePreview = previewUrl !== "";
+    const actionTitle = getCodeRepairActionTitle(card);
     const isBusy = codeRepairState.loading || codeRepairState.mutating;
     const canUpload = card.required !== false;
     const uploadLabel = card.linkMode === "linked"
@@ -1092,10 +1093,7 @@ function buildCodeRepairActionCardMarkup(card, showDivider = false) {
         <article class="flex flex-col gap-16 py-20" data-repair-card-id="${escapeHtml(card.cardId)}">
             ${showDivider ? '<div class="divider"></div>' : ""}
             <div class="flex flex-col gap-16">
-                <div class="flex flex-wrap items-start justify-between gap-12">
-                    <h3 class="card-title">${escapeHtml(card.label)}</h3>
-                    ${buildCodeRepairStatusPill(getCodeRepairStatusLabel(card.status), card.status)}
-                </div>
+                <h3 class="card-title">${escapeHtml(actionTitle)}</h3>
                 <div class="grid gap-24 lg:gap-40 lg:px-24 xl:px-24 lg:grid-cols-[minmax(0,20rem)_minmax(0,22rem)] lg:justify-between items-start">
                     <div class="panel p-12 bg-grey-quaternary/30 w-full aspect-square flex items-center justify-center overflow-hidden">
                         ${hasActivePreview
@@ -2174,9 +2172,21 @@ function getCodeRepairStatusLabel(status) {
     return t(entry[0], {}, entry[1]);
 }
 
-function buildCodeRepairStatusPill(label, status) {
-    const toneClass = getCodeRepairStatusToneClass(status);
-    return `<span class="badge ${toneClass} badge-sm">${escapeHtml(label)}</span>`;
+function getCodeRepairActionTitle(card) {
+    const asset = String(card?.label || "").trim() || t("codeRepair.statusUnavailable", {}, "Unavailable");
+
+    switch (String(card?.status || "").trim()) {
+        case "present":
+            return t("codeRepair.actionTitleUpdate", { asset }, "Update {asset}");
+        case "placeholder":
+        case "unsupported":
+            return t("codeRepair.actionTitleReplace", { asset }, "Replace {asset}");
+        case "missing":
+        case "unavailable":
+            return t("codeRepair.actionTitleAdd", { asset }, "Add {asset}");
+        default:
+            return t("codeRepair.actionTitleReview", { asset }, "Review {asset}");
+    }
 }
 
 function buildCodeRepairStatusBadge(isPositive, positiveLabel, negativeLabel) {
@@ -2185,21 +2195,6 @@ function buildCodeRepairStatusBadge(isPositive, positiveLabel, negativeLabel) {
 
 function buildCodeRepairNeutralBadge(label) {
     return `<span class="badge badge-neutral badge-sm">${escapeHtml(label)}</span>`;
-}
-
-function getCodeRepairStatusToneClass(status) {
-    switch (String(status || "").trim()) {
-        case "present":
-            return "badge-success";
-        case "not_required":
-            return "badge-neutral";
-        case "missing":
-        case "placeholder":
-        case "unsupported":
-            return "badge-warning";
-        default:
-            return "badge-neutral";
-    }
 }
 
 function formatCodeRepairMatchReasons(reasons) {
