@@ -1169,25 +1169,29 @@ function buildCodeRepairActionCardMarkup(card, showDivider = false) {
         || t("codeRepair.actionUploaderIdleSubtext", {}, "Drag and drop or click to browse");
     const uploaderClasses = stagedUpload ? "has-files" : "is-default";
     const uploaderIconClass = stagedUpload ? "ri-checkbox-circle-line" : "ri-upload-cloud-2-line";
+    const previewColumnMarkup = hasActivePreview
+        ? `
+                    <div class="flex flex-col gap-8">
+                        <div class="text-style-media-frame w-full aspect-square flex items-center justify-center">
+                            <img src="${escapeHtml(previewUrl)}" alt="${escapeHtml(card.label)}" class="text-style-media-image h-full aspect-square">
+                        </div>
+                    </div>`
+        : "";
+    const gridColumnsClass = hasActivePreview
+        ? "lg:grid-cols-[minmax(0,20rem)_minmax(0,22rem)]"
+        : "lg:grid-cols-[minmax(0,22rem)]";
+    const uploaderColumnClass = hasActivePreview
+        ? "flex flex-col gap-8 lg:border-l lg:border-grey-tertiary lg:pl-24 xl:pl-32"
+        : "flex flex-col gap-8";
 
     return `
         <article class="flex flex-col gap-20 py-24" data-repair-card-id="${escapeHtml(card.cardId)}">
             ${showDivider ? '<div class="divider lg:mx-40 xl:mx-48 lg:w-auto"></div>' : ""}
             <div class="flex flex-col gap-16">
                 <h3 class="text-h3 text-black break-words lg:pl-40 xl:pl-48">${escapeHtml(actionTitle)}</h3>
-                <div class="grid gap-24 lg:gap-40 xl:gap-48 lg:px-40 xl:px-48 lg:grid-cols-[minmax(0,20rem)_minmax(0,22rem)] lg:justify-center items-start">
-                    <div class="flex flex-col gap-8">
-                        <div class="text-style-media-frame w-full aspect-square flex items-center justify-center">
-                            ${hasActivePreview
-                                ? `<img src="${escapeHtml(previewUrl)}" alt="${escapeHtml(card.label)}" class="text-style-media-image h-full aspect-square">`
-                                : `<div class="w-full h-full rounded-12 bg-grey-quaternary/30 shadow-btn-default flex flex-col items-center justify-center gap-10 text-center text-grey-primary">
-                                        <i class="ri-image-2-line text-icon-xl" aria-hidden="true"></i>
-                                        <span class="text-label">${escapeHtml(t("codeRepair.statusUnavailable", {}, "Unavailable"))}</span>
-                                   </div>`
-                            }
-                        </div>
-                    </div>
-                    <div class="flex flex-col gap-8 lg:border-l lg:border-grey-tertiary lg:pl-24 xl:pl-32">
+                <div class="grid gap-24 lg:gap-40 xl:gap-48 lg:px-40 xl:px-48 ${gridColumnsClass} lg:justify-center items-start">
+                    ${previewColumnMarkup}
+                    <div class="${uploaderColumnClass}">
                         <div class="flex flex-col lg:min-h-[24rem]">
                             <div class="uploader uploader-image ${uploaderClasses} lg:flex-1" data-uploader ${isBusy ? 'aria-disabled="true"' : ""}>
                                 <input
