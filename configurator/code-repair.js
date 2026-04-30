@@ -1095,7 +1095,7 @@ function buildCodeRepairActionCardMarkup(card, showDivider = false) {
             ${showDivider ? '<div class="divider"></div>' : ""}
             <div class="flex flex-col gap-16">
                 <h3 class="text-title-lg text-black break-words">${escapeHtml(actionTitle)}</h3>
-                <div class="grid gap-24 lg:gap-24 lg:px-40 xl:px-48 lg:grid-cols-[minmax(0,20rem)_minmax(0,22rem)] lg:justify-center items-start">
+                <div class="grid gap-24 lg:gap-40 xl:gap-48 lg:px-40 xl:px-48 lg:grid-cols-[minmax(0,20rem)_minmax(0,22rem)] lg:justify-center items-start">
                     <div class="flex flex-col gap-8">
                         <p class="uploader-label">${escapeHtml(previewLabel)}</p>
                         <div class="panel p-12 bg-grey-quaternary/30 w-full aspect-square flex items-center justify-center overflow-hidden">
@@ -1108,38 +1108,40 @@ function buildCodeRepairActionCardMarkup(card, showDivider = false) {
                             }
                         </div>
                     </div>
-                    <div class="flex flex-col gap-12">
+                    <div class="flex flex-col gap-8">
                         <p class="uploader-label">${escapeHtml(uploadLabel)}</p>
-                        <div class="uploader uploader-image ${uploaderClasses}" data-uploader ${isBusy ? 'aria-disabled="true"' : ""}>
-                            <input
-                                type="file"
-                                class="uploader-input hidden"
-                                data-repair-upload-input="${escapeHtml(card.cardId)}"
-                                accept="image/*,.svg,.png,.jpg,.jpeg,.webp"
-                                ${!canUpload || isBusy ? "disabled" : ""}
-                            >
+                        <div class="flex flex-col gap-16 lg:min-h-[20rem] lg:justify-between">
+                            <div class="uploader uploader-image ${uploaderClasses}" data-uploader ${isBusy ? 'aria-disabled="true"' : ""}>
+                                <input
+                                    type="file"
+                                    class="uploader-input hidden"
+                                    data-repair-upload-input="${escapeHtml(card.cardId)}"
+                                    accept="image/*,.svg,.png,.jpg,.jpeg,.webp"
+                                    ${!canUpload || isBusy ? "disabled" : ""}
+                                >
+                                <button
+                                    type="button"
+                                    class="uploader-zone w-full text-left"
+                                    data-uploader-zone
+                                    data-repair-upload-trigger="${escapeHtml(card.cardId)}"
+                                    ${!canUpload || isBusy ? "disabled" : ""}
+                                >
+                                    <div class="uploader-icon" aria-hidden="true">
+                                        <i class="${uploaderIconClass}"></i>
+                                    </div>
+                                    <div class="uploader-text" data-uploader-text aria-live="polite">${escapeHtml(uploaderTitle)}</div>
+                                    <div class="uploader-subtext">${escapeHtml(uploaderSubtext)}</div>
+                                </button>
+                            </div>
                             <button
                                 type="button"
-                                class="uploader-zone w-full text-left"
-                                data-uploader-zone
-                                data-repair-upload-trigger="${escapeHtml(card.cardId)}"
-                                ${!canUpload || isBusy ? "disabled" : ""}
+                                class="btn btn-secondary btn-sm w-full justify-center"
+                                data-repair-open-dam-modal="${escapeHtml(card.cardId)}"
+                                ${isBusy ? "disabled" : ""}
                             >
-                                <div class="uploader-icon" aria-hidden="true">
-                                    <i class="${uploaderIconClass}"></i>
-                                </div>
-                                <div class="uploader-text" data-uploader-text aria-live="polite">${escapeHtml(uploaderTitle)}</div>
-                                <div class="uploader-subtext">${escapeHtml(uploaderSubtext)}</div>
+                                <span>${escapeHtml(t("codeRepair.damSearchButton", {}, "Search in the DAM"))}</span>
                             </button>
                         </div>
-                        <button
-                            type="button"
-                            class="btn btn-secondary btn-sm w-full justify-center"
-                            data-repair-open-dam-modal="${escapeHtml(card.cardId)}"
-                            ${isBusy ? "disabled" : ""}
-                        >
-                            <span>${escapeHtml(t("codeRepair.damSearchButton", {}, "Search in the DAM"))}</span>
-                        </button>
                     </div>
                 </div>
             </div>
