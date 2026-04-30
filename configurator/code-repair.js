@@ -1081,30 +1081,35 @@ function buildCodeRepairActionCardMarkup(card, showDivider = false) {
     const uploadLabel = card.linkMode === "linked"
         ? t("codeRepair.uploadAndLink", {}, "Upload and link")
         : t("codeRepair.upload", {}, "Upload asset");
+    const previewLabel = t("codeRepair.preview", {}, "Preview asset");
     const uploaderTitle = stagedUpload
         ? t("codeRepair.actionUploaderReadyText", {}, "File staged")
-        : uploadLabel;
+        : t("codeRepair.actionUploaderIdleText", {}, "Drop image here");
     const uploaderSubtext = stagedUpload?.fileName
         || t("codeRepair.actionUploaderIdleSubtext", {}, "Drag and drop or click to browse");
     const uploaderClasses = stagedUpload ? "has-files" : "is-default";
     const uploaderIconClass = stagedUpload ? "ri-checkbox-circle-line" : "ri-upload-cloud-2-line";
 
     return `
-        <article class="flex flex-col gap-16 py-20" data-repair-card-id="${escapeHtml(card.cardId)}">
+        <article class="flex flex-col gap-20 py-24" data-repair-card-id="${escapeHtml(card.cardId)}">
             ${showDivider ? '<div class="divider"></div>' : ""}
             <div class="flex flex-col gap-16">
-                <h3 class="card-title">${escapeHtml(actionTitle)}</h3>
-                <div class="grid gap-24 lg:gap-40 lg:px-24 xl:px-24 lg:grid-cols-[minmax(0,20rem)_minmax(0,22rem)] lg:justify-between items-start">
-                    <div class="panel p-12 bg-grey-quaternary/30 w-full aspect-square flex items-center justify-center overflow-hidden">
-                        ${hasActivePreview
-                            ? `<img src="${escapeHtml(previewUrl)}" alt="${escapeHtml(card.label)}" class="w-full h-full object-contain rounded-12">`
-                            : `<div class="flex flex-col items-center gap-10 text-center text-grey-primary">
-                                    <i class="ri-image-2-line text-icon-xl" aria-hidden="true"></i>
-                                    <span class="text-body-xs">${escapeHtml(t("codeRepair.statusUnavailable", {}, "Unavailable"))}</span>
-                               </div>`
-                        }
+                <h3 class="text-title-lg text-black break-words">${escapeHtml(actionTitle)}</h3>
+                <div class="grid gap-24 lg:gap-24 lg:px-40 xl:px-48 lg:grid-cols-[minmax(0,20rem)_minmax(0,22rem)] lg:justify-center items-start">
+                    <div class="flex flex-col gap-8">
+                        <p class="uploader-label">${escapeHtml(previewLabel)}</p>
+                        <div class="panel p-12 bg-grey-quaternary/30 w-full aspect-square flex items-center justify-center overflow-hidden">
+                            ${hasActivePreview
+                                ? `<img src="${escapeHtml(previewUrl)}" alt="${escapeHtml(card.label)}" class="w-full h-full object-contain rounded-12">`
+                                : `<div class="flex flex-col items-center gap-10 text-center text-grey-primary">
+                                        <i class="ri-image-2-line text-icon-xl" aria-hidden="true"></i>
+                                        <span class="text-label">${escapeHtml(t("codeRepair.statusUnavailable", {}, "Unavailable"))}</span>
+                                   </div>`
+                            }
+                        </div>
                     </div>
                     <div class="flex flex-col gap-12">
+                        <p class="uploader-label">${escapeHtml(uploadLabel)}</p>
                         <div class="uploader uploader-image ${uploaderClasses}" data-uploader ${isBusy ? 'aria-disabled="true"' : ""}>
                             <input
                                 type="file"
@@ -1116,6 +1121,7 @@ function buildCodeRepairActionCardMarkup(card, showDivider = false) {
                             <button
                                 type="button"
                                 class="uploader-zone w-full text-left"
+                                data-uploader-zone
                                 data-repair-upload-trigger="${escapeHtml(card.cardId)}"
                                 ${!canUpload || isBusy ? "disabled" : ""}
                             >

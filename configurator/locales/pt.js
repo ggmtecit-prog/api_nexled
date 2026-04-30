@@ -536,6 +536,7 @@ window.NexLedLocales.pt = {
         actionTitleReplace: "Substituir {asset}",
         actionTitleReview: "Rever {asset}",
         actionUploaderReadyText: "Ficheiro em fila",
+        actionUploaderIdleText: "Largue imagem aqui",
         actionUploaderIdleSubtext: "Arraste e largue ou clique para procurar",
         upload: "Carregar ativo",
         uploadAndLink: "Carregar e ligar",

@@ -515,6 +515,7 @@ window.NexLedLocales.en = {
         actionTitleReplace: "Replace {asset}",
         actionTitleReview: "Review {asset}",
         actionUploaderReadyText: "File staged",
+        actionUploaderIdleText: "Drop image here",
         actionUploaderIdleSubtext: "Drag and drop or click to browse",
         upload: "Upload asset",
         uploadAndLink: "Upload and link",
