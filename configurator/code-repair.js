@@ -1177,10 +1177,10 @@ function buildCodeRepairActionCardMarkup(card, showDivider = false) {
                 <h3 class="text-h3 text-black break-words lg:pl-40 xl:pl-48">${escapeHtml(actionTitle)}</h3>
                 <div class="grid gap-24 lg:gap-40 xl:gap-48 lg:px-40 xl:px-48 lg:grid-cols-[minmax(0,20rem)_minmax(0,22rem)] lg:justify-center items-start">
                     <div class="flex flex-col gap-8">
-                        <div class="panel p-12 bg-grey-quaternary/30 w-full aspect-square flex items-center justify-center overflow-hidden">
+                        <div class="text-style-media-frame w-full aspect-square flex items-center justify-center">
                             ${hasActivePreview
-                                ? `<img src="${escapeHtml(previewUrl)}" alt="${escapeHtml(card.label)}" class="w-full h-full object-contain rounded-12">`
-                                : `<div class="flex flex-col items-center gap-10 text-center text-grey-primary">
+                                ? `<img src="${escapeHtml(previewUrl)}" alt="${escapeHtml(card.label)}" class="text-style-media-image h-full aspect-square">`
+                                : `<div class="w-full h-full rounded-12 bg-grey-quaternary/30 shadow-btn-default flex flex-col items-center justify-center gap-10 text-center text-grey-primary">
                                         <i class="ri-image-2-line text-icon-xl" aria-hidden="true"></i>
                                         <span class="text-label">${escapeHtml(t("codeRepair.statusUnavailable", {}, "Unavailable"))}</span>
                                    </div>`
