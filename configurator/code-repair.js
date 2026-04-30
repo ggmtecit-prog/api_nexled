@@ -1096,8 +1096,8 @@ function buildCodeRepairActionCardMarkup(card, showDivider = false) {
                     <h3 class="card-title">${escapeHtml(card.label)}</h3>
                     ${buildCodeRepairStatusPill(getCodeRepairStatusLabel(card.status), card.status)}
                 </div>
-                <div class="grid gap-24 lg:grid-cols-[minmax(0,1fr)_minmax(0,18rem)] items-start">
-                    <div class="panel p-12 bg-grey-quaternary/30 min-h-240 flex items-center justify-center overflow-hidden">
+                <div class="grid gap-24 lg:px-24 xl:px-32 lg:grid-cols-[minmax(0,32rem)_minmax(0,24rem)] lg:justify-between items-start">
+                    <div class="panel p-12 bg-grey-quaternary/30 w-full aspect-[4/3] flex items-center justify-center overflow-hidden">
                         ${hasActivePreview
                             ? `<img src="${escapeHtml(previewUrl)}" alt="${escapeHtml(card.label)}" class="w-full h-full object-contain rounded-12">`
                             : `<div class="flex flex-col items-center gap-10 text-center text-grey-primary">
@@ -1107,35 +1107,37 @@ function buildCodeRepairActionCardMarkup(card, showDivider = false) {
                         }
                     </div>
                     <div class="flex flex-col gap-12">
-                        <div class="uploader uploader-image ${uploaderClasses}" data-uploader ${isBusy ? 'aria-disabled="true"' : ""}>
-                            <input
-                                type="file"
-                                class="uploader-input hidden"
-                                data-repair-upload-input="${escapeHtml(card.cardId)}"
-                                accept="image/*,.svg,.png,.jpg,.jpeg,.webp"
-                                ${!canUpload || isBusy ? "disabled" : ""}
-                            >
+                        <div class="grid gap-12 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end">
+                            <div class="uploader uploader-image ${uploaderClasses}" data-uploader ${isBusy ? 'aria-disabled="true"' : ""}>
+                                <input
+                                    type="file"
+                                    class="uploader-input hidden"
+                                    data-repair-upload-input="${escapeHtml(card.cardId)}"
+                                    accept="image/*,.svg,.png,.jpg,.jpeg,.webp"
+                                    ${!canUpload || isBusy ? "disabled" : ""}
+                                >
+                                <button
+                                    type="button"
+                                    class="uploader-zone w-full text-left"
+                                    data-repair-upload-trigger="${escapeHtml(card.cardId)}"
+                                    ${!canUpload || isBusy ? "disabled" : ""}
+                                >
+                                    <div class="uploader-icon" aria-hidden="true">
+                                        <i class="${uploaderIconClass}"></i>
+                                    </div>
+                                    <div class="uploader-text" data-uploader-text aria-live="polite">${escapeHtml(uploaderTitle)}</div>
+                                    <div class="uploader-subtext">${escapeHtml(uploaderSubtext)}</div>
+                                </button>
+                            </div>
                             <button
                                 type="button"
-                                class="uploader-zone w-full text-left"
-                                data-repair-upload-trigger="${escapeHtml(card.cardId)}"
-                                ${!canUpload || isBusy ? "disabled" : ""}
+                                class="btn btn-secondary btn-sm w-full sm:w-auto justify-center shrink-0"
+                                data-repair-open-dam-modal="${escapeHtml(card.cardId)}"
+                                ${isBusy ? "disabled" : ""}
                             >
-                                <div class="uploader-icon" aria-hidden="true">
-                                    <i class="${uploaderIconClass}"></i>
-                                </div>
-                                <div class="uploader-text" data-uploader-text aria-live="polite">${escapeHtml(uploaderTitle)}</div>
-                                <div class="uploader-subtext">${escapeHtml(uploaderSubtext)}</div>
+                                <span>${escapeHtml(t("codeRepair.damSearchButton", {}, "Search in the DAM"))}</span>
                             </button>
                         </div>
-                        <button
-                            type="button"
-                            class="btn btn-secondary btn-sm w-full justify-center"
-                            data-repair-open-dam-modal="${escapeHtml(card.cardId)}"
-                            ${isBusy ? "disabled" : ""}
-                        >
-                            <span>${escapeHtml(t("codeRepair.damSearchButton", {}, "Search in the DAM"))}</span>
-                        </button>
                     </div>
                 </div>
             </div>
