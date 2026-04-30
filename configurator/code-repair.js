@@ -1104,7 +1104,7 @@ function buildCodeRepairActionCardMarkup(card, showDivider = false) {
                         </div>
                     </div>
                     <div class="flex flex-col gap-8 lg:border-l lg:border-grey-tertiary lg:pl-24 xl:pl-32">
-                        <div class="flex flex-col gap-16 lg:min-h-[20rem] lg:justify-between">
+                        <div class="flex flex-col lg:min-h-[24rem]">
                             <div class="uploader uploader-image ${uploaderClasses} lg:flex-1" data-uploader ${isBusy ? 'aria-disabled="true"' : ""}>
                                 <input
                                     type="file"
