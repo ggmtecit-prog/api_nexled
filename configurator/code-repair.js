@@ -111,6 +111,15 @@ const CODE_REPAIR_SECTION_VISIBILITY_DEFAULTS = {
     overview: false,
     database: false,
 };
+const CODE_REPAIR_OVERVIEW_GROUPS = [
+    { key: "identity", labelKey: "codeRepair.overviewGroupIdentity", fallback: "Identity", sourceKey: "header" },
+    { key: "segments", labelKey: "codeRepair.overviewGroupSegments", fallback: "Segments" },
+    { key: "characteristics", labelKey: "codeRepair.characteristicsTitle", fallback: "Technical characteristics" },
+    { key: "dimensions", labelKey: "codeRepair.dimensionsTitle", fallback: "Dimensions", sourceKey: "technical_drawing" },
+    { key: "color_graph", labelKey: "codeRepair.overviewGroupColorGraph", fallback: "Color graph", sourceKey: "color_graph" },
+    { key: "lens_diagram", labelKey: "codeRepair.overviewGroupLensDiagram", fallback: "Lens diagram", sourceKey: "lens_diagram", multiImage: true },
+    { key: "finish", labelKey: "codeRepair.overviewGroupFinish", fallback: "Finish", sourceKey: "finish_image" },
+];
 const CODE_REPAIR_DATABASE_TABLE_COLUMN_WIDTHS = ["28%", "22%", "14%", "36%"];
 const CODE_REPAIR_DATABASE_TABLE_COLUMNS = CODE_REPAIR_DATABASE_TABLE_COLUMN_WIDTHS.join(" ");
 const codeRepairState = {
@@ -211,10 +220,7 @@ function getCodeRepairElements() {
     const actionsSection = document.getElementById("repair-actions-section");
     const actionsGrid = document.getElementById("repair-actions-grid");
     const databaseGrid = document.getElementById("repair-database-grid");
-    const overviewList = document.getElementById("repair-overview-list");
-    const dimensionsPreview = document.getElementById("repair-dimensions-preview");
-    const dimensionsPreviewImage = document.getElementById("repair-dimensions-preview-image");
-    const dimensionsPreviewEmpty = document.getElementById("repair-dimensions-preview-empty");
+    const overviewGroups = document.getElementById("repair-overview-groups");
     const openConfiguratorLink = document.getElementById("repair-open-configurator-link");
     const loadingOverlay = document.getElementById("repair-loading-overlay");
     const loadingCopy = document.getElementById("repair-loading-copy");
@@ -239,10 +245,7 @@ function getCodeRepairElements() {
         || !actionsSection
         || !actionsGrid
         || !databaseGrid
-        || !overviewList
-        || !dimensionsPreview
-        || !dimensionsPreviewImage
-        || !dimensionsPreviewEmpty
+        || !overviewGroups
         || !loadingOverlay
         || !loadingCopy
         || !damSearchModal
@@ -267,10 +270,7 @@ function getCodeRepairElements() {
         actionsSection,
         actionsGrid,
         databaseGrid,
-        overviewList,
-        dimensionsPreview,
-        dimensionsPreviewImage,
-        dimensionsPreviewEmpty,
+        overviewGroups,
         openConfiguratorLink,
         loadingOverlay,
         loadingCopy,
@@ -1034,24 +1034,6 @@ function getCodeRepairSectionLabel(sectionKey) {
     return t(labelKey, {}, fallback);
 }
 
-function buildCodeRepairRowsMarkup(rows) {
-    return rows.map(([label, value]) => {
-        return buildCodeRepairContextRow(label, value);
-    }).join("");
-}
-
-function renderCodeRepairRows(target, rows, emptyMessage) {
-    if (!Array.isArray(rows) || rows.length === 0) {
-        renderCodeRepairEmptyState(target, {
-            body: emptyMessage,
-            size: "sm",
-        });
-        return;
-    }
-
-    target.innerHTML = buildCodeRepairRowsMarkup(rows);
-}
-
 function buildCodeRepairCards(payload) {
     const sourceMap = payload?.source_map || {};
     const blockersBySource = new Map();
@@ -1234,28 +1216,141 @@ function buildCodeRepairActionCardMarkup(card, showDivider = false) {
 function renderCodeRepairOverview() {
     const payload = codeRepairState.data;
 
-    renderCodeRepairDrawingPreview();
-
     if (!payload) {
-        renderCodeRepairEmptyState(codeRepairElements.overviewList, {
+        codeRepairElements.overviewGroups.innerHTML = buildCodeRepairEmptyStateMarkup({
             body: t("codeRepair.overviewEmpty", {}, "Load a reference to inspect the code details and returned data."),
             size: "sm",
         });
         return;
     }
 
-    const rows = [
-        ...buildCodeRepairContextRows(payload),
-        ...buildCodeRepairSegmentRows(payload),
-        ...buildCodeRepairDefinitionRows(payload?.characteristics || []),
-        ...buildCodeRepairDefinitionRows(payload?.dimensions || []),
-    ];
+    codeRepairElements.overviewGroups.innerHTML = CODE_REPAIR_OVERVIEW_GROUPS
+        .map((group) => buildCodeRepairOverviewGroupMarkup(group, payload))
+        .join("");
+}
 
-    renderCodeRepairRows(
-        codeRepairElements.overviewList,
-        rows,
-        t("codeRepair.overviewEmpty", {}, "Load a reference to inspect the code details and returned data.")
+function buildCodeRepairOverviewGroupMarkup(group, payload) {
+    const rows = getCodeRepairOverviewGroupRows(group.key, payload);
+
+    if (rows.length === 0 && group.key !== "segments") {
+        return "";
+    }
+
+    const label = t(group.labelKey, {}, group.fallback);
+    const imageMarkup = buildCodeRepairOverviewGroupImageMarkup(group, payload);
+    const hasImage = imageMarkup !== "";
+    const gridClass = hasImage
+        ? "grid gap-x-24 gap-y-8 xl:grid-cols-[minmax(0,1fr)_280px] items-start"
+        : "";
+
+    return `
+        <div class="flex flex-col gap-8" data-repair-overview-group="${group.key}">
+            <h3 class="text-body-lg font-medium text-black">${escapeHtml(label)}</h3>
+            <div class="${gridClass}">
+                <dl class="list list-spec list-md panel border-0 bg-transparent">${rows.map(([label, value]) => buildCodeRepairContextRow(label, value)).join("")}</dl>
+                ${imageMarkup}
+            </div>
+        </div>
+    `;
+}
+
+function buildCodeRepairOverviewGroupImageMarkup(group, payload) {
+    if (!group.sourceKey || !payload?.source_map) {
+        return "";
+    }
+
+    const sourceMap = payload.source_map || {};
+
+    if (group.multiImage && group.sourceKey === "lens_diagram") {
+        const lensSource = sourceMap.lens_diagram;
+        if (!lensSource) {
+            return "";
+        }
+
+        const diagramUrl = getCodeRepairPreviewUrl(lensSource?.active?.diagram || lensSource?.active);
+        const illuminanceUrl = getCodeRepairPreviewUrl(lensSource?.active?.illuminance);
+        const diagramAlt = t("codeRepair.sourceLensDiagram", {}, "Lens diagram");
+        const illuminanceAlt = t("codeRepair.sourceLensIlluminance", {}, "Illuminance diagram");
+        const statusBadge = buildCodeRepairDatabaseStatusBadge(
+            String(lensSource?.status || "missing"),
+            getCodeRepairStatusLabel(String(lensSource?.status || "missing"))
+        );
+
+        return `
+            <div class="panel p-16 bg-grey-quaternary/10 overflow-hidden">
+                <div class="flex flex-col gap-8">
+                    <div class="panel p-12 bg-grey-quaternary/30 min-h-120 flex items-center justify-center overflow-hidden">
+                        ${diagramUrl
+                            ? `<img src="${escapeHtml(diagramUrl)}" alt="${escapeHtml(diagramAlt)}" class="w-full h-full object-contain rounded-12">`
+                            : `<div class="flex flex-col items-center gap-10 text-center text-grey-primary"><i class="ri-image-2-line text-icon-xl" aria-hidden="true"></i><span class="text-body-xs">${escapeHtml(t("codeRepair.statusUnavailable", {}, "Unavailable"))}</span></div>`
+                        }
+                    </div>
+                    ${illuminanceUrl ? `
+                    <div class="panel p-12 bg-grey-quaternary/30 min-h-120 flex items-center justify-center overflow-hidden">
+                        <img src="${escapeHtml(illuminanceUrl)}" alt="${escapeHtml(illuminanceAlt)}" class="w-full h-full object-contain rounded-12">
+                    </div>` : ""}
+                </div>
+                <div class="pt-8 text-center">${statusBadge}</div>
+            </div>
+        `;
+    }
+
+    const source = sourceMap[group.sourceKey];
+    if (!source) {
+        return "";
+    }
+
+    const previewUrl = getCodeRepairPreviewUrl(source?.active);
+    const alt = t(CODE_REPAIR_SOURCE_META[group.sourceKey]?.labelKey || "codeRepair.statusUnavailable", {}, group.sourceKey);
+    const statusBadge = buildCodeRepairDatabaseStatusBadge(
+        String(source?.status || "missing"),
+        getCodeRepairStatusLabel(String(source?.status || "missing"))
     );
+
+    return `
+        <div class="panel p-16 bg-grey-quaternary/10 overflow-hidden">
+            <div class="panel p-12 bg-grey-quaternary/30 min-h-200 flex items-center justify-center overflow-hidden">
+                ${previewUrl
+                    ? `<img src="${escapeHtml(previewUrl)}" alt="${escapeHtml(alt)}" class="w-full h-full object-contain rounded-12">`
+                    : `<div class="flex flex-col items-center gap-10 text-center text-grey-primary"><i class="ri-image-2-line text-icon-xl" aria-hidden="true"></i><span class="text-body-xs">${escapeHtml(t("codeRepair.statusUnavailable", {}, "Unavailable"))}</span></div>`
+                }
+            </div>
+            <div class="pt-8 text-center">${statusBadge}</div>
+        </div>
+    `;
+}
+
+function getCodeRepairOverviewGroupRows(groupKey, payload) {
+    switch (groupKey) {
+        case "identity":
+            return buildCodeRepairContextRows(payload);
+        case "segments":
+            return buildCodeRepairSegmentRows(payload);
+        case "characteristics":
+            return buildCodeRepairDefinitionRows(payload?.characteristics || []);
+        case "dimensions":
+            return buildCodeRepairDefinitionRows(payload?.dimensions || []);
+        case "color_graph": {
+            const source = payload?.source_map?.color_graph;
+            const label = source?.lookup?.color_graph_label || source?.active?.color_graph_label || "";
+            return [[t("codeRepair.sourceStatus", {}, "Status"), getCodeRepairStatusLabel(String(source?.status || "missing"))], ...label ? [[t("codeRepair.dbCheckColorGraphLabel", {}, "Color graph label"), label]] : []];
+        }
+        case "lens_diagram": {
+            const source = payload?.source_map?.lens_diagram;
+            return [[t("codeRepair.sourceStatus", {}, "Status"), getCodeRepairStatusLabel(String(source?.status || "missing"))]];
+        }
+        case "finish": {
+            const source = payload?.source_map?.finish_image;
+            const summary = payload?.summary || {};
+            const editable = payload?.editable_fields || {};
+            return [
+                [t("codeRepair.sourceStatus", {}, "Status"), getCodeRepairStatusLabel(String(source?.status || "missing"))],
+                ["Finish", editable.finish_name || summary.finish_name || ""],
+            ];
+        }
+        default:
+            return [];
+    }
 }
 
 function buildCodeRepairContextRows(payload) {
@@ -1266,7 +1361,6 @@ function buildCodeRepairContextRows(payload) {
         [t("codeRepair.summaryProductType", {}, "Product type"), summary.product_type || ""],
         ["Product ID", summary.product_id || ""],
         ["LED ID", summary.led_id || ""],
-        ["Finish", editable.finish_name || summary.finish_name || ""],
         ["Header text", editable.header_description_text || summary.header_description || ""],
     ];
 }
@@ -1384,25 +1478,6 @@ function buildCodeRepairSegmentRows(payload) {
 
         return [label, value];
     });
-}
-
-function renderCodeRepairDrawingPreview() {
-    const drawingSource = codeRepairState.data?.source_map?.technical_drawing || null;
-    const previewUrl = getCodeRepairPreviewUrl(drawingSource?.active || {});
-    const hasPreview = previewUrl !== "";
-    const previewAlt = t("codeRepair.sourceDrawing", {}, "Technical drawing");
-
-    codeRepairElements.dimensionsPreview.classList.toggle("hidden", false);
-    codeRepairElements.dimensionsPreviewImage.classList.toggle("hidden", !hasPreview);
-    codeRepairElements.dimensionsPreviewEmpty.classList.toggle("hidden", hasPreview);
-    codeRepairElements.dimensionsPreviewImage.alt = previewAlt;
-
-    if (hasPreview) {
-        codeRepairElements.dimensionsPreviewImage.src = previewUrl;
-        return;
-    }
-
-    codeRepairElements.dimensionsPreviewImage.removeAttribute("src");
 }
 
 function buildCodeRepairDefinitionRows(items) {
@@ -2412,10 +2487,17 @@ function getCodeRepairErrorMessage(error, fallback) {
 }
 
 async function codeRepairApiRequest(path, options = {}) {
-    const base = getCodeRepairApiBase();
+    // Allow overriding API base via a global (e.g. for local testing) while preserving the default behavior
+    const baseOverride = (typeof window !== 'undefined' && window.__CODE_REPAIR_API_BASE__) ? String(window.__CODE_REPAIR_API_BASE__).trim() : null;
+    const base = (baseOverride && baseOverride.length > 0) ? baseOverride : getCodeRepairApiBase();
     const headers = new Headers(options.headers || {});
 
-    headers.set("X-API-Key", CODE_REPAIR_API_KEY);
+    // Do not expose API key in environments where a proxy or server-side handling is used.
+    // This flag can be toggled at runtime for debugging or CI, e.g. window.__CODE_REPAIR_DISABLE_API_KEY__ = true;
+    const disableHeader = (typeof window !== 'undefined') ? Boolean(window.__CODE_REPAIR_DISABLE_API_KEY__) : false;
+    if (!disableHeader && CODE_REPAIR_API_KEY) {
+        headers.set("X-API-Key", CODE_REPAIR_API_KEY);
+    }
 
     const requestOptions = {
         method: options.method || "GET",
