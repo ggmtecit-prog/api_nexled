@@ -612,6 +612,7 @@ function renderCodeRepairSummary() {
         configuratorMarkup,
         datasheetMarkup,
         gridSpanClass: "xl:col-span-1",
+        imageUrl: getCodeRepairPreviewUrl(payload?.source_map?.header?.active),
     }) + buildCodeRepairBlockerStatusHeroMarkup(payload);
 }
 
@@ -668,16 +669,36 @@ function buildCodeRepairSummaryHeroMarkup({
     configuratorMarkup = "",
     datasheetMarkup = "",
     gridSpanClass = "xl:col-span-1",
+    imageUrl = "",
 } = {}) {
     const safeConfiguratorMarkup = configuratorMarkup || buildCodeRepairNeutralBadge(t("codeRepair.statusUnavailable", {}, "Unavailable"));
     const safeDatasheetMarkup = datasheetMarkup || buildCodeRepairNeutralBadge(t("codeRepair.statusUnavailable", {}, "Unavailable"));
+    const hasImage = imageUrl !== "";
+
+    if (!hasImage) {
+        return `
+            <article class="${gridSpanClass} flex flex-col gap-20 min-w-0 items-center text-center justify-self-center self-center w-full max-w-3xl">
+                <p class="text-h1 text-black break-all">${escapeHtml(reference)}</p>
+                <div class="flex flex-col gap-16 min-w-0 items-center">
+                    <p class="text-title-lg text-black break-words">${escapeHtml(family)}</p>
+                    <div class="flex flex-wrap items-center justify-center gap-10">
+                        <div>${safeConfiguratorMarkup}</div>
+                        <div>${safeDatasheetMarkup}</div>
+                    </div>
+                </div>
+            </article>
+        `;
+    }
 
     return `
-        <article class="${gridSpanClass} flex flex-col gap-20 min-w-0 items-center text-center justify-self-center self-center w-full max-w-3xl">
-            <p class="text-h1 text-black break-all">${escapeHtml(reference)}</p>
-            <div class="flex flex-col gap-16 min-w-0 items-center">
+        <article class="${gridSpanClass} flex flex-col lg:flex-row gap-20 lg:gap-32 min-w-0 items-center lg:items-center justify-self-center self-center w-full max-w-3xl">
+            <div class="shrink-0 w-120 h-120 lg:w-160 lg:h-160 flex items-center justify-center">
+                <img src="${escapeHtml(imageUrl)}" alt="${escapeHtml(family)}" class="w-full h-full object-contain rounded-12">
+            </div>
+            <div class="flex flex-col gap-16 min-w-0 items-center lg:items-start text-center lg:text-left">
+                <p class="text-h1 text-black break-all">${escapeHtml(reference)}</p>
                 <p class="text-title-lg text-black break-words">${escapeHtml(family)}</p>
-                <div class="flex flex-wrap items-center justify-center gap-10">
+                <div class="flex flex-wrap items-center justify-center lg:justify-start gap-10">
                     <div>${safeConfiguratorMarkup}</div>
                     <div>${safeDatasheetMarkup}</div>
                 </div>
