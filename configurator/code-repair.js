@@ -692,8 +692,8 @@ function buildCodeRepairSummaryHeroMarkup({
 
     return `
         <article class="${gridSpanClass} flex flex-col lg:flex-row gap-20 lg:gap-32 min-w-0 items-center lg:items-center justify-self-center self-center w-full max-w-3xl">
-            <div class="shrink-0 w-120 h-120 lg:w-160 lg:h-160 flex items-center justify-center">
-                <img src="${escapeHtml(imageUrl)}" alt="${escapeHtml(family)}" class="w-full h-full object-contain rounded-12">
+            <div class="text-style-media-frame shrink-0 w-120 h-120 lg:w-160 lg:h-160 aspect-square flex items-center justify-center">
+                <img src="${escapeHtml(imageUrl)}" alt="${escapeHtml(family)}" class="text-style-media-image h-full aspect-square">
             </div>
             <div class="flex flex-col gap-16 min-w-0 items-center lg:items-start text-center lg:text-left">
                 <p class="text-h1 text-black break-all">${escapeHtml(reference)}</p>
