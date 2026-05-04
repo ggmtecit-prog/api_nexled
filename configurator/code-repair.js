@@ -612,7 +612,6 @@ function renderCodeRepairSummary() {
         configuratorMarkup,
         datasheetMarkup,
         gridSpanClass: "xl:col-span-1",
-        imageUrl: getCodeRepairPreviewUrl(payload?.source_map?.header?.active),
     }) + buildCodeRepairBlockerStatusHeroMarkup(payload);
 }
 
@@ -669,39 +668,19 @@ function buildCodeRepairSummaryHeroMarkup({
     configuratorMarkup = "",
     datasheetMarkup = "",
     gridSpanClass = "xl:col-span-1",
-    imageUrl = "",
 } = {}) {
     const safeConfiguratorMarkup = configuratorMarkup || buildCodeRepairNeutralBadge(t("codeRepair.statusUnavailable", {}, "Unavailable"));
     const safeDatasheetMarkup = datasheetMarkup || buildCodeRepairNeutralBadge(t("codeRepair.statusUnavailable", {}, "Unavailable"));
-    const hasImage = imageUrl !== "";
-
-    if (!hasImage) {
-        return `
-            <article class="${gridSpanClass} flex flex-col gap-20 min-w-0 items-center text-center justify-self-center self-center w-full max-w-3xl">
-                <p class="text-h1 text-black break-all">${escapeHtml(reference)}</p>
-                <div class="flex flex-col gap-16 min-w-0 items-center">
-                    <p class="text-title-lg text-black break-words">${escapeHtml(family)}</p>
-                    <div class="flex flex-wrap items-center justify-center gap-10">
-                        <div>${safeConfiguratorMarkup}</div>
-                        <div>${safeDatasheetMarkup}</div>
-                    </div>
-                </div>
-            </article>
-        `;
-    }
 
     return `
-        <article class="${gridSpanClass} flex flex-row gap-24 min-w-0 items-center justify-self-center self-center w-full max-w-3xl">
-            <div class="flex flex-col gap-12 min-w-0 items-start text-left flex-1">
-                <p class="text-h1 text-black break-all">${escapeHtml(reference)}</p>
+        <article class="${gridSpanClass} flex flex-col gap-20 min-w-0 items-center text-center justify-self-center self-center w-full max-w-3xl">
+            <p class="text-h1 text-black break-all">${escapeHtml(reference)}</p>
+            <div class="flex flex-col gap-16 min-w-0 items-center">
                 <p class="text-title-lg text-black break-words">${escapeHtml(family)}</p>
-                <div class="flex flex-wrap items-center gap-10">
+                <div class="flex flex-wrap items-center justify-center gap-10">
                     <div>${safeConfiguratorMarkup}</div>
                     <div>${safeDatasheetMarkup}</div>
                 </div>
-            </div>
-            <div class="text-style-media-frame shrink-0 w-96 lg:w-120 max-w-120 aspect-square flex items-center justify-center">
-                <img src="${escapeHtml(imageUrl)}" alt="${escapeHtml(family)}" class="text-style-media-image h-full aspect-square">
             </div>
         </article>
     `;
