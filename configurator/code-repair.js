@@ -1231,13 +1231,13 @@ function renderCodeRepairOverview() {
 
 function buildCodeRepairOverviewGroupMarkup(group, payload) {
     const rows = getCodeRepairOverviewGroupRows(group.key, payload);
+    const imageMarkup = buildCodeRepairOverviewGroupImageMarkup(group, payload);
 
-    if (rows.length === 0 && group.key !== "segments") {
+    if (rows.length === 0 && imageMarkup === "" && group.key !== "segments") {
         return "";
     }
 
     const label = t(group.labelKey, {}, group.fallback);
-    const imageMarkup = buildCodeRepairOverviewGroupImageMarkup(group, payload);
     const hasImage = imageMarkup !== "";
     const gridClass = hasImage
         ? "grid gap-x-24 gap-y-8 xl:grid-cols-[minmax(0,1fr)_280px] items-start"
@@ -1323,18 +1323,14 @@ function getCodeRepairOverviewGroupRows(groupKey, payload) {
         case "color_graph": {
             const source = payload?.source_map?.color_graph;
             const label = source?.lookup?.color_graph_label || source?.active?.color_graph_label || "";
-            return [[t("codeRepair.sourceStatus", {}, "Status"), getCodeRepairStatusLabel(String(source?.status || "missing"))], ...label ? [[t("codeRepair.dbCheckColorGraphLabel", {}, "Color graph label"), label]] : []];
+            return label ? [[t("codeRepair.dbCheckColorGraphLabel", {}, "Color graph label"), label]] : [];
         }
-        case "lens_diagram": {
-            const source = payload?.source_map?.lens_diagram;
-            return [[t("codeRepair.sourceStatus", {}, "Status"), getCodeRepairStatusLabel(String(source?.status || "missing"))]];
-        }
+        case "lens_diagram":
+            return [];
         case "finish": {
-            const source = payload?.source_map?.finish_image;
             const summary = payload?.summary || {};
             const editable = payload?.editable_fields || {};
             return [
-                [t("codeRepair.sourceStatus", {}, "Status"), getCodeRepairStatusLabel(String(source?.status || "missing"))],
                 ["Finish", editable.finish_name || summary.finish_name || ""],
             ];
         }
