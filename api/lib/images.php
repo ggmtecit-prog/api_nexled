@@ -896,3 +896,111 @@ function nexledNormalizeAssetStem(string $value): string {
     $value = preg_replace("/[^a-z0-9]+/", "-", $value) ?? "";
     return trim($value, "-");
 }
+
+// --- Parallel pre-fetch for PDF remote assets --------------------------------
+// Walks any data structure for image URLs, then downloads them in parallel into
+// the same disk cache that cacheRemoteAssetForPdf() reads from. Sequential
+// fallback at render time is preserved — this is a pure speed-up, not a
+// correctness change.
+
+function pdfPrefetchEnabled(): bool { return getenv("PDF_PREFETCH_ENABLED") !== "0" && function_exists("curl_multi_init"); }
+
+function collectRemoteAssetUrls($value, array &$out = []): array {
+    if (is_array($value)) {
+        foreach ($value as $v) { collectRemoteAssetUrls($v, $out); }
+    } elseif (is_object($value)) {
+        foreach (get_object_vars($value) as $v) { collectRemoteAssetUrls($v, $out); }
+    } elseif (is_string($value)) {
+        $s = trim($value);
+        if ($s !== "" && preg_match("#^https?://[^\\s\"'<>]+\\.(?:png|jpe?g|gif|svg|webp)(?:\\?[^\\s\"'<>]*)?$#i", $s)) {
+            $out[$s] = true;
+        } elseif ($s !== "" && stripos($s, "cloudinary.com") !== false && preg_match("#^https?://#i", $s)) {
+            $out[$s] = true;
+        }
+    }
+    return array_keys($out);
+}
+
+function prefetchPdfRemoteAssets(array $urls): void {
+    if (!pdfPrefetchEnabled() || empty($urls)) return;
+    $cacheDir = ensurePdfRemoteCacheDirectory();
+    if ($cacheDir === null) return;
+
+    $allowed = ["png", "jpg", "jpeg", "gif", "svg", "webp", "pdf"];
+    $todo = [];
+    foreach ($urls as $rawUrl) {
+        $url = getCloudinaryRasterizedUrl((string) $rawUrl);
+        $ext = strtolower(pathinfo((string) (parse_url($url, PHP_URL_PATH) ?? ""), PATHINFO_EXTENSION));
+        if (!in_array($ext, $allowed, true)) $ext = "bin";
+        $cachePath = $cacheDir . DIRECTORY_SEPARATOR . sha1($url) . "." . $ext;
+        if (is_file($cachePath) && filesize($cachePath) > 0) continue;
+        $todo[] = ["url" => $url, "ext" => $ext, "cache" => $cachePath];
+    }
+    if (empty($todo)) return;
+
+    $maxParallel = 8;
+    $mh = curl_multi_init();
+    $active = [];
+    $idx = 0;
+
+    $startHandle = function () use (&$idx, &$active, &$todo, $mh) {
+        if ($idx >= count($todo)) return;
+        $job = $todo[$idx];
+        $ch = curl_init($job["url"]);
+        if ($ch === false) { $idx++; return; }
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
+        curl_setopt($ch, CURLOPT_TIMEOUT, 15);
+        curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 10);
+        curl_setopt($ch, CURLOPT_USERAGENT, "NexLed PDF Asset Resolver");
+        curl_setopt($ch, CURLOPT_HEADER, true);
+        curl_multi_add_handle($mh, $ch);
+        $active[(int) $ch] = ["handle" => $ch, "job" => $job];
+        $idx++;
+    };
+
+    for ($i = 0; $i < $maxParallel; $i++) { $startHandle(); }
+
+    do {
+        $status = curl_multi_exec($mh, $running);
+        if ($running) curl_multi_select($mh, 1.0);
+
+        while ($info = curl_multi_info_read($mh)) {
+            $ch = $info["handle"];
+            $key = (int) $ch;
+            if (!isset($active[$key])) continue;
+            $job = $active[$key]["job"];
+
+            if ($info["result"] === CURLE_OK) {
+                $response = curl_multi_getcontent($ch);
+                if (is_string($response) && $response !== "") {
+                    $headerSize = (int) curl_getinfo($ch, CURLINFO_HEADER_SIZE);
+                    $body = substr($response, $headerSize);
+                    $cachePath = $job["cache"];
+                    if ($job["ext"] === "bin") {
+                        $contentType = strtolower((string) curl_getinfo($ch, CURLINFO_CONTENT_TYPE));
+                        $resolvedExt = match (true) {
+                            str_contains($contentType, "image/svg") => "svg",
+                            str_contains($contentType, "image/png") => "png",
+                            str_contains($contentType, "image/jpeg") => "jpg",
+                            str_contains($contentType, "image/gif") => "gif",
+                            str_contains($contentType, "image/webp") => "webp",
+                            str_contains($contentType, "application/pdf") => "pdf",
+                            default => "bin",
+                        };
+                        $cachePath = $cacheDir . DIRECTORY_SEPARATOR . sha1($job["url"]) . "." . $resolvedExt;
+                    }
+                    @file_put_contents($cachePath, $body);
+                }
+            }
+
+            curl_multi_remove_handle($mh, $ch);
+            curl_close($ch);
+            unset($active[$key]);
+            $startHandle();
+        }
+    } while ($running > 0 || !empty($active));
+
+    curl_multi_close($mh);
+}
+

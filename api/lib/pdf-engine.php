@@ -483,6 +483,8 @@ function renderDatasheetPdfBinaryFromContext(array $context): string {
             ]);
         }
 
+        prefetchPdfRemoteAssets(collectRemoteAssetUrls($context["data"] ?? []));
+
         $css = "<style>" . getDatasheetCssForVariant($designVariant) . "</style>";
         $html = $css . buildPdfLayoutForVariant($context["data"] ?? [], $designVariant);
 
