@@ -1271,10 +1271,6 @@ function buildCodeRepairOverviewGroupImageMarkup(group, payload) {
         const illuminanceUrl = getCodeRepairPreviewUrl(lensSource?.active?.illuminance);
         const diagramAlt = t("codeRepair.sourceLensDiagram", {}, "Lens diagram");
         const illuminanceAlt = t("codeRepair.sourceLensIlluminance", {}, "Illuminance diagram");
-        const statusBadge = buildCodeRepairDatabaseStatusBadge(
-            String(lensSource?.status || "missing"),
-            getCodeRepairStatusLabel(String(lensSource?.status || "missing"))
-        );
 
         return `
             <div class="panel p-16 bg-grey-quaternary/10 overflow-hidden">
@@ -1290,7 +1286,6 @@ function buildCodeRepairOverviewGroupImageMarkup(group, payload) {
                         <img src="${escapeHtml(illuminanceUrl)}" alt="${escapeHtml(illuminanceAlt)}" class="w-full h-full object-contain rounded-12">
                     </div>` : ""}
                 </div>
-                <div class="pt-8 text-center">${statusBadge}</div>
             </div>
         `;
     }
@@ -1302,10 +1297,6 @@ function buildCodeRepairOverviewGroupImageMarkup(group, payload) {
 
     const previewUrl = getCodeRepairPreviewUrl(source?.active);
     const alt = t(CODE_REPAIR_SOURCE_META[group.sourceKey]?.labelKey || "codeRepair.statusUnavailable", {}, group.sourceKey);
-    const statusBadge = buildCodeRepairDatabaseStatusBadge(
-        String(source?.status || "missing"),
-        getCodeRepairStatusLabel(String(source?.status || "missing"))
-    );
 
     return `
         <div class="panel p-16 bg-grey-quaternary/10 overflow-hidden">
@@ -1315,7 +1306,6 @@ function buildCodeRepairOverviewGroupImageMarkup(group, payload) {
                     : `<div class="flex flex-col items-center gap-10 text-center text-grey-primary"><i class="ri-image-2-line text-icon-xl" aria-hidden="true"></i><span class="text-body-xs">${escapeHtml(t("codeRepair.statusUnavailable", {}, "Unavailable"))}</span></div>`
                 }
             </div>
-            <div class="pt-8 text-center">${statusBadge}</div>
         </div>
     `;
 }
