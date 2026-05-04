@@ -910,12 +910,14 @@ function collectRemoteAssetUrls($value, array &$out = []): array {
         foreach ($value as $v) { collectRemoteAssetUrls($v, $out); }
     } elseif (is_object($value)) {
         foreach (get_object_vars($value) as $v) { collectRemoteAssetUrls($v, $out); }
-    } elseif (is_string($value)) {
+    } elseif (is_string($value) && $value !== "") {
         $s = trim($value);
         if ($s !== "" && preg_match("#^https?://[^\\s\"'<>]+\\.(?:png|jpe?g|gif|svg|webp)(?:\\?[^\\s\"'<>]*)?$#i", $s)) {
             $out[$s] = true;
-        } elseif ($s !== "" && stripos($s, "cloudinary.com") !== false && preg_match("#^https?://#i", $s)) {
+        } elseif ($s !== "" && stripos($s, "cloudinary.com") !== false && preg_match("#^https?://[^\\s\"'<>]+$#i", $s)) {
             $out[$s] = true;
+        } elseif (preg_match_all("#https?://[^\\s\"'<>()]+?\\.(?:png|jpe?g|gif|svg|webp)(?:\\?[^\\s\"'<>()]*)?#i", $value, $m)) {
+            foreach ($m[0] as $url) { $out[$url] = true; }
         }
     }
     return array_keys($out);

@@ -143,6 +143,8 @@ function renderShowcasePdfBinary(array $normalizedRequest, array $assembledShowc
         );
     }
 
+    prefetchPdfRemoteAssets(collectRemoteAssetUrls($pages));
+
     $bufferLevel = ob_get_level();
     ob_start();
 
