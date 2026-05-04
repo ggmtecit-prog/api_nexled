@@ -691,14 +691,16 @@ function buildCodeRepairSummaryHeroMarkup({
     }
 
     return `
-        <article class="${gridSpanClass} flex flex-col lg:flex-row gap-20 lg:gap-32 min-w-0 items-center lg:items-center justify-self-center self-center w-full max-w-3xl">
-            <div class="text-style-media-frame shrink-0 w-96 lg:w-120 max-w-120 aspect-square flex items-center justify-center">
-                <img src="${escapeHtml(imageUrl)}" alt="${escapeHtml(family)}" class="text-style-media-image h-full aspect-square">
-            </div>
-            <div class="flex flex-col gap-16 min-w-0 items-center lg:items-start text-center lg:text-left">
+        <article class="${gridSpanClass} flex flex-col gap-20 min-w-0 items-center text-center justify-self-center self-center w-full max-w-3xl">
+            <div class="flex items-center gap-16">
+                <div class="text-style-media-frame shrink-0 w-64 lg:w-80 max-w-80 aspect-square flex items-center justify-center">
+                    <img src="${escapeHtml(imageUrl)}" alt="${escapeHtml(family)}" class="text-style-media-image h-full aspect-square">
+                </div>
                 <p class="text-h1 text-black break-all">${escapeHtml(reference)}</p>
+            </div>
+            <div class="flex flex-col gap-16 min-w-0 items-center">
                 <p class="text-title-lg text-black break-words">${escapeHtml(family)}</p>
-                <div class="flex flex-wrap items-center justify-center lg:justify-start gap-10">
+                <div class="flex flex-wrap items-center justify-center gap-10">
                     <div>${safeConfiguratorMarkup}</div>
                     <div>${safeDatasheetMarkup}</div>
                 </div>
