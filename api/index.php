@@ -52,9 +52,7 @@ require_once "./lib/validate.php";
 // Route: /api/?endpoint=custom-datasheet-pdf (POST)
 
 if (!$endpoint) {
-    http_response_code(400);
-    echo json_encode(["error" => "No endpoint specified"]);
-    exit();
+    respondError(400, "no_endpoint", "No endpoint specified");
 }
 
 switch ($endpoint) {
@@ -122,7 +120,5 @@ switch ($endpoint) {
         require "./endpoints/dam.php";
         break;
     default:
-        http_response_code(404);
-        echo json_encode(["error" => "Endpoint not found"]);
-        break;
+        respondError(404, "endpoint_not_found", "Endpoint not found", ["endpoint" => $endpoint]);
 }

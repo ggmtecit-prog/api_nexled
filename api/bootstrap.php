@@ -1,5 +1,8 @@
 <?php
 
+require_once dirname(__FILE__) . "/lib/logger.php";
+require_once dirname(__FILE__) . "/lib/responses.php";
+
 if (!defined("BASE_PATH")) {
     define("BASE_PATH", dirname(__DIR__));
 }

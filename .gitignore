@@ -26,6 +26,7 @@ composer.lock
 
 # Logs
 *.log
+api/logs/
 
 # Generated output (regeneratable)
 output/
