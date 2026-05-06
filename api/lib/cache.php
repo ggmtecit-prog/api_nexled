@@ -27,9 +27,16 @@ function cacheSet($key, $val, $ttl = 3600) {
     return @file_put_contents(cachePath($key), serialize(["exp" => time() + $ttl, "val" => $val])) !== false;
 }
 
+function cacheBustRequested() { return isset($_GET["cache"]) && $_GET["cache"] === "bust"; }
+
+function cacheSendStatusHeader($status) { if (!headers_sent()) header("X-Cache: " . $status); }
+
 function cacheRemember($key, $ttl, $fn) {
-    $v = cacheGet($key);
-    if ($v !== null) return $v;
+    $bust = cacheBustRequested();
+    if ($bust) @unlink(cachePath($key));
+    $v = $bust ? null : cacheGet($key);
+    if ($v !== null) { cacheSendStatusHeader("HIT"); return $v; }
+    cacheSendStatusHeader($bust ? "BUST" : "MISS");
     $v = $fn();
     cacheSet($key, $v, $ttl);
     return $v;

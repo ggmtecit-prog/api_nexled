@@ -5,6 +5,23 @@ const APP_SHELL_LANGUAGE_EVENT = "nexled:app-language-change";
 const API_CACHE_VERSION = "v1";
 const API_CACHE_PREFIX = "nx-api-cache:" + API_CACHE_VERSION + ":";
 
+// Detect ?cache=bust on this page load. If present, remember it for the
+// session, then strip from URL so a future browser refresh doesn't keep
+// busting forever. Consumers (apiCacheRemember + apiFetch) read this flag.
+window.__nxCacheBustOnce = false;
+(function () {
+    try {
+        const params = new URLSearchParams(window.location.search);
+        if (params.get("cache") === "bust") {
+            window.__nxCacheBustOnce = true;
+            params.delete("cache");
+            const newSearch = params.toString();
+            const newUrl = window.location.pathname + (newSearch ? "?" + newSearch : "") + window.location.hash;
+            window.history.replaceState({}, "", newUrl);
+        }
+    } catch (e) { /* private mode / sandbox — leave flag false */ }
+})();
+
 function apiCacheGet(key) {
     try {
         const raw = window.localStorage.getItem(API_CACHE_PREFIX + key);
@@ -25,11 +42,43 @@ function apiCacheSet(key, val, ttlSeconds) {
 }
 
 async function apiCacheRemember(key, ttlSeconds, fetcher) {
-    const cached = apiCacheGet(key);
-    if (cached !== null && cached !== undefined) return cached;
+    if (!window.__nxCacheBustOnce) {
+        const cached = apiCacheGet(key);
+        if (cached !== null && cached !== undefined) return cached;
+    }
     const fresh = await fetcher();
     if (fresh !== null && fresh !== undefined) apiCacheSet(key, fresh, ttlSeconds);
     return fresh;
+}
+
+function nxClearApiCache() {
+    try {
+        const toRemove = [];
+        for (let i = 0; i < window.localStorage.length; i++) {
+            const k = window.localStorage.key(i);
+            if (k && k.indexOf(API_CACHE_PREFIX) === 0) toRemove.push(k);
+        }
+        toRemove.forEach(function (k) { window.localStorage.removeItem(k); });
+    } catch (e) { /* silent */ }
+}
+
+function nxRefreshData() {
+    nxClearApiCache();
+    try {
+        const url = new URL(window.location.href);
+        url.searchParams.set("cache", "bust");
+        window.location.replace(url.toString());
+    } catch (e) {
+        window.location.reload();
+    }
+}
+
+// Append &cache=bust to a URL when the bust flag is set this page load.
+// Used by both apiFetch implementations (script.js, code-explorer.js) so
+// the bust intent propagates from frontend to server in one trip.
+function nxApplyCacheBustToPath(path) {
+    if (!window.__nxCacheBustOnce) return path;
+    return path + (path.indexOf("?") >= 0 ? "&" : "?") + "cache=bust";
 }
 
 const APP_SHELL_LANGUAGES = {

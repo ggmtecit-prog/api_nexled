@@ -2230,7 +2230,8 @@ async function getApiBase() {
 
 async function apiFetch(queryString) {
     const base = await getApiBase();
-    const response = await fetch(base + queryString, {
+    const finalPath = (typeof nxApplyCacheBustToPath === "function") ? nxApplyCacheBustToPath(queryString) : queryString;
+    const response = await fetch(base + finalPath, {
         headers: {
             "X-API-Key": API_KEY,
         },

@@ -5008,10 +5008,11 @@ function bindDocumentLanguageControls() {
 
 async function apiFetch(path) {
     const apiBase = await getApiBase();
+    const finalPath = (typeof nxApplyCacheBustToPath === "function") ? nxApplyCacheBustToPath(path) : path;
     let response;
 
     try {
-        response = await fetch(apiBase + path, {
+        response = await fetch(apiBase + finalPath, {
             headers: { "X-API-Key": API_KEY },
         });
         noteSuccessfulApiContact();
