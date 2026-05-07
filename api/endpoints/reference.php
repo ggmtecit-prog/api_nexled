@@ -6,18 +6,14 @@
 $ref = $_GET["ref"] ?? null;
 
 if (!$ref) {
-    http_response_code(400);
-    echo json_encode(["error" => "Missing ref parameter"]);
-    exit();
+    respondError(400, "missing_ref", "Missing ref parameter");
 }
 
 $ref = validateReference($ref);
 $ref = substr($ref, 0, 10); // product identity is the first 10 characters
 
 if ($ref === "") {
-    http_response_code(400);
-    echo json_encode(["error" => "Invalid ref parameter"]);
-    exit();
+    respondError(400, "invalid_ref", "Invalid ref parameter", ["ref" => $_GET["ref"] ?? null]);
 }
 
 $con  = connectDBLampadas();
@@ -28,13 +24,9 @@ $result = mysqli_stmt_get_result($stmt);
 
 if ($result && mysqli_num_rows($result) > 0) {
     $row = mysqli_fetch_row($result);
-    echo json_encode(["description" => $row[0]]);
-} else {
-    http_response_code(404);
-    echo json_encode([
-        "error" => "A combinacao da familia, tamanho, cor, CRI e serie nao exite na view Luminos",
-        "error_code" => "invalid_luminos_combination",
-    ]);
+    closeDB($con);
+    respondJson(["description" => $row[0]]);
 }
 
 closeDB($con);
+respondError(404, "invalid_luminos_combination", "A combinacao da familia, tamanho, cor, CRI e serie nao exite na view Luminos", ["ref" => $ref]);

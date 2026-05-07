@@ -54,9 +54,7 @@ $families = cacheRemember("families", 3600, function () {
 });
 
 if ($families === null) {
-    http_response_code(500);
-    echo json_encode(["error" => "Database error"]);
-    exit();
+    respondError(500, "db_error", "Database error");
 }
 
-echo json_encode($families);
+respondJson($families);

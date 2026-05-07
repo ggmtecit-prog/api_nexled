@@ -8,9 +8,7 @@ require_once dirname(__FILE__) . "/../lib/cache.php";
 $family = validateFamily($_GET["family"] ?? null);
 
 if ($family === 0) {
-    http_response_code(400);
-    echo json_encode(["error" => "Missing or invalid family parameter"]);
-    exit();
+    respondError(400, "invalid_family", "Missing or invalid family parameter", ["family" => $_GET["family"] ?? null]);
 }
 
 header("Cache-Control: public, max-age=3600");
@@ -70,4 +68,4 @@ $payload = cacheRemember("options:" . $family, 3600, function () use ($family) {
     ];
 });
 
-echo json_encode($payload);
+respondJson($payload);
