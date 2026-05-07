@@ -16,7 +16,7 @@
  */
 
 // Base path to sizes JSON files for bar products
-define("SIZES_JSON_PATH", dirname(__FILE__, 3) . "/appdatasheets/json/tamanhos");
+define("SIZES_JSON_PATH", dirname(__FILE__, 3) . "/api/json/tamanhos");
 
 function getEmptyBarSizesDefinition(): object {
     return (object) [

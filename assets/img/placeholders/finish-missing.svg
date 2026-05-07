@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="720" viewBox="0 0 1200 720">
+  <rect width="1200" height="720" fill="#f4f5f4"/>
+  <rect x="48" y="48" width="1104" height="624" rx="28" fill="#ffffff" stroke="#d9dedb" stroke-width="8"/>
+  <rect x="140" y="156" width="920" height="320" rx="24" fill="#e8eeea"/>
+  <path d="M260 420l150-146c18-18 47-18 65 0l118 115 102-99c18-18 47-18 65 0l180 176H260z" fill="#bfd4c9"/>
+  <circle cx="368" cy="258" r="48" fill="#92b5a3"/>
+  <rect x="188" y="538" width="824" height="18" rx="9" fill="#dbe4df"/>
+  <rect x="188" y="580" width="566" height="18" rx="9" fill="#e4ebe7"/>
+  <text x="600" y="110" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="42" font-weight="700" fill="#03683D">
+    NexLed
+  </text>
+  <text x="600" y="642" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="32" fill="#4f5f57">
+    Finish image unavailable
+  </text>
+</svg>

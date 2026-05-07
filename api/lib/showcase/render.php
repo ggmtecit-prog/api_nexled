@@ -1,7 +1,7 @@
 <?php
 
 if (!defined("TCPDF_PATH")) {
-    define("TCPDF_PATH", dirname(__FILE__, 4) . "/appdatasheets/tcpdf/");
+    define("TCPDF_PATH", dirname(__FILE__, 4) . "/api/vendor/tcpdf/");
 }
 
 require_once TCPDF_PATH . "tcpdf_include.php";
@@ -29,7 +29,7 @@ class NEXLEDSHOWCASEPDF extends TCPDF {
         $nexledLogo = findDamOrLocalSharedAsset(
             "logo",
             ["nexled"],
-            dirname(__FILE__, 4) . "/appdatasheets/img/logos/nexled",
+            dirname(__FILE__, 4) . "/assets/img/logos/nexled",
             ["png", "svg"]
         );
 
@@ -41,7 +41,7 @@ class NEXLEDSHOWCASEPDF extends TCPDF {
             $companyLogo = findDamOrLocalSharedAsset(
                 "logo",
                 [$this->showcaseCompany],
-                dirname(__FILE__, 4) . "/appdatasheets/img/logos/" . $this->showcaseCompany,
+                dirname(__FILE__, 4) . "/assets/img/logos/" . $this->showcaseCompany,
                 ["png", "svg"]
             );
 
@@ -63,7 +63,7 @@ class NEXLEDSHOWCASEPDF extends TCPDF {
         $tecitLogo = findDamOrLocalSharedAsset(
             "logo",
             ["tecit"],
-            dirname(__FILE__, 4) . "/appdatasheets/img/logos/tecit",
+            dirname(__FILE__, 4) . "/assets/img/logos/tecit",
             ["png", "svg"]
         );
 

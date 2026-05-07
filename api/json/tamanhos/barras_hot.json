@@ -1,0 +1,42 @@
+{
+
+    "comentário tampa": [
+        "tampa -> código da tampa selecionada",
+            "desc: indicação do nome da tampa - apenas para organização interna, não tem qualquer função",
+            "comprimento: comprimento que será adicionado ao total do comprimento da barra",
+            "largura: largura da tampa",
+            "altura -> código da lente: a altura da barra com aquela tampa e lente"
+    ],
+
+    "tampa": {
+        "2": {
+            "desc": "chapa", 
+            "comprimento": "1.5", 
+            "largura": "17", 
+            "altura": {
+                "1": "12",
+                "2": "12"
+            }
+        }
+    },
+
+    
+
+    "comentário barra": [
+        "largura: largura do perfil em alumínio",
+        "altura -> código da lente: a altura da barra aquela lente"
+    ],
+
+    "barra": {
+
+        "largura": "17",
+        "altura": {
+            "1": "11.4",
+            "2": "11.4",
+            "6": "12.4",
+            "7": "13.4",
+            "8": "18"
+        }
+    }
+
+}

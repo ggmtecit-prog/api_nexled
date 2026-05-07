@@ -1,0 +1,103 @@
+@font-face {
+    font-family: Lato;
+    src: url(/font/Lato-Regular.ttf);
+}
+
+@font-face {
+    font-family: Lato;
+    src: url(/font/Lato-Bold.ttf);
+    font-weight: bold;
+}
+
+.datasheet-variant-modern {
+    color: #243642;
+}
+
+.datasheet-variant-modern h1 {
+    font-family: Lato;
+    font-size: 20px;
+    line-height: 24px;
+    color: #183847;
+    margin: 0;
+    padding: 0;
+}
+
+.datasheet-variant-modern h2 {
+    font-family: Lato;
+    font-size: 9px;
+    line-height: 14px;
+    color: #0f766e;
+    text-transform: uppercase;
+}
+
+.datasheet-variant-modern p {
+    font-size: 8px;
+    line-height: 13px;
+    color: #425466;
+    margin: 0;
+    padding: 0;
+}
+
+.datasheet-variant-modern p.descricao {
+    font-size: 9px;
+    line-height: 14px;
+    color: #243642;
+}
+
+.datasheet-variant-modern table {
+    width: 100%;
+    margin-bottom: 10px;
+}
+
+.datasheet-variant-modern table.tabela,
+.datasheet-variant-modern table.modern-hero,
+.datasheet-variant-modern table[nobr="true"] {
+    border: solid 1px #d7e4ea;
+    background-color: #fbfdfe;
+}
+
+.datasheet-variant-modern .titulo-tabela {
+    background-color: #edf7f6;
+}
+
+.datasheet-variant-modern .linha-tabela-contorno {
+    border-top: solid 1px #dbe5ea;
+    border-bottom: solid 1px #dbe5ea;
+    background-color: #ffffff;
+}
+
+.datasheet-variant-modern .notaLumino {
+    font-size: 7px;
+    line-height: 10px;
+    text-align: right;
+    color: #64748b;
+}
+
+.datasheet-variant-modern .modern-hero {
+    background-color: #f3f9fb;
+}
+
+.datasheet-variant-modern .modern-hero-kicker {
+    font-size: 7px;
+    line-height: 10px;
+    color: #0f766e;
+    text-transform: uppercase;
+}
+
+.datasheet-variant-modern .modern-meta-cell {
+    background-color: #ffffff;
+    border-top: solid 1px #d7e4ea;
+}
+
+.datasheet-variant-modern .modern-meta-label {
+    font-size: 7px;
+    line-height: 10px;
+    color: #64748b;
+    text-transform: uppercase;
+}
+
+.datasheet-variant-modern .modern-meta-value {
+    font-size: 9px;
+    line-height: 12px;
+    color: #183847;
+}

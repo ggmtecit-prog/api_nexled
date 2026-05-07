@@ -3,7 +3,7 @@
 /**
  * Cloudinary helpers — no SDK, plain cURL.
  *
- * Expects these constants (defined in appdatasheets/config.php):
+ * Expects these constants (defined in api/bootstrap.php from env vars):
  *   CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, CLOUDINARY_API_SECRET
  */
 

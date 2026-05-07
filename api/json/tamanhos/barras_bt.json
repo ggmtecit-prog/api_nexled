@@ -1,0 +1,81 @@
+{
+
+    "comentário tampa": [
+        "tampa -> código da tampa selecionada -> no caso da BT é sempre 0, não tem tampas",
+            "0 -> código da tampa",
+                "comprimento: comprimento que será adicionado ao total do comprimento da barra",
+                "largura: largura da barra",
+                "altura -> código da lente: a altura da barra com aquela tampa e lente"
+    ],
+
+
+    "tampa": {
+        "0": {
+            "comprimento": "0", 
+            "largura": "12.5", 
+            "altura": {
+                "1": "6.4",
+                "2": "6.4"
+            }
+        }
+
+    },
+
+
+    
+    "comentário barra": [
+        "largura: largura da barra",
+        "altura -> código da lente: a altura da barra aquela lente"
+    ],
+
+    "barra": {
+
+        "largura": "12.5",
+        "altura": {
+            "1": "6.4",
+            "2": "6.4"
+        }
+    },
+
+
+    
+    "comentário caps": [
+            "desc: indicação do cap - apenas para organização interna, não tem qualquer função",
+            "cap: referências de cap que têm aquelas medidas",
+            "comprimento: comprimento que será adicionado ao total do comprimento da barra"
+    ],
+
+    "caps": [
+
+        {
+            "desc": "saida tras", 
+            "cap": ["02", "09", "15", "27", "29", "31"], 
+            "comprimento": "10"
+        },
+
+        {
+            "desc": "2 x saida tras", 
+            "cap": ["07", "08"],
+            "comprimento": "20"
+        }
+
+    ],
+
+    
+
+    "comentário conectorcabo": [
+        "altura: altura do conector do cabo",
+        "largura: largura do conector do cabo"
+    ],
+
+    "conectorcabo": {
+
+        "asqc2": {"altura": "6", "largura": "8"},
+
+        "c1m": {"altura": "13", "largura": "13"},
+
+        "dc24": {"altura": "13", "largura": "13"},
+
+        "dcj": {"altura": "12", "largura": "12"}
+    }
+}

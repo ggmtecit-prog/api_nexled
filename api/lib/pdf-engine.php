@@ -7,7 +7,7 @@
  * builds the HTML layout, and outputs a PDF via TCPDF.
  *
  * Replaces the old gerarDatasheet.php + estruturaDatasheet.php pair.
- * The NEXLEDPDF class (header/footer) still lives in appdatasheets/tcpdf/classes.php.
+ * The NEXLEDPDF class (header/footer) lives in api/vendor/tcpdf/classes.php.
  *
  * Expected POST JSON fields:
  *   referencia, descricao, idioma, empresa,
@@ -16,9 +16,9 @@
  *   caboligacao, conectorligacao, tamanhocaboligacao, finalidade
  */
 
-define("TCPDF_PATH", dirname(__FILE__, 3) . "/appdatasheets/tcpdf/");
-define("DATASHEET_CLASSIC_CSS_PATH", dirname(__FILE__, 3) . "/appdatasheets/style/datasheet.css");
-define("DATASHEET_MODERN_CSS_PATH", dirname(__FILE__, 3) . "/appdatasheets/style/datasheet-modern.css");
+define("TCPDF_PATH", dirname(__FILE__, 3) . "/api/vendor/tcpdf/");
+define("DATASHEET_CLASSIC_CSS_PATH", dirname(__FILE__, 3) . "/api/style/datasheet.css");
+define("DATASHEET_MODERN_CSS_PATH", dirname(__FILE__, 3) . "/api/style/datasheet-modern.css");
 
 require_once TCPDF_PATH . "tcpdf_include.php";
 require_once TCPDF_PATH . "tcpdf.php";

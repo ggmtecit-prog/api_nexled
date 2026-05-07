@@ -1,0 +1,139 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   width="869.25299"
+   height="87.263649"
+   version="1.1"
+   id="svg82"
+   sodipodi:docname="desenhotecnico.svg"
+   inkscape:version="1.2.2 (732a01da63, 2022-12-09)"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:cc="http://creativecommons.org/ns#"
+   xmlns:dc="http://purl.org/dc/elements/1.1/">
+  <defs
+     id="defs86" />
+  <sodipodi:namedview
+     id="namedview84"
+     pagecolor="#505050"
+     bordercolor="#ffffff"
+     borderopacity="1"
+     inkscape:showpageshadow="0"
+     inkscape:pageopacity="0"
+     inkscape:pagecheckerboard="1"
+     inkscape:deskcolor="#505050"
+     showgrid="false"
+     inkscape:zoom="1.6518014"
+     inkscape:cx="648.08033"
+     inkscape:cy="67.199362"
+     inkscape:window-width="1920"
+     inkscape:window-height="1009"
+     inkscape:window-x="-8"
+     inkscape:window-y="-8"
+     inkscape:window-maximized="1"
+     inkscape:current-layer="svg82" />
+  <metadata
+     id="metadata2">
+    <rdf:RDF>
+      <cc:Work
+         rdf:about="">
+        <dc:format>image/svg+xml</dc:format>
+        <dc:type
+           rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
+      </cc:Work>
+    </rdf:RDF>
+  </metadata>
+  <rect
+     transform="matrix(-0.89978939,0,0,0.89983896,-103.30214,-92.102282)"
+     x="-983.15997"
+     y="105.31"
+     width="767.16998"
+     height="90.054001"
+     ry="0"
+     stroke-width="1.11137"
+     id="rect54"
+     style="fill:none;stroke:#000000;stroke-miterlimit:0;stroke-width:1.11134057;stroke-dasharray:none" />
+  <rect
+     transform="matrix(-2.5174068,0,0,2.5161941,-224.73052,-295.27444)"
+     x="-97.521004"
+     y="142.82001"
+     width="8.0516996"
+     height="2.3041"
+     rx="0.83204252"
+     ry="0.83199668"
+     id="rect56"
+     style="fill:none;stroke:#000000;stroke-width:0.39732988;stroke-miterlimit:0;stroke-dasharray:none" />
+  <rect
+     transform="matrix(-2.5174068,0,0,2.5161941,-224.73052,-295.27444)"
+     x="-97.539001"
+     y="123.48"
+     width="8.0628004"
+     height="2.3173001"
+     rx="0.8367936"
+     ry="0.83674753"
+     id="rect58"
+     style="fill:none;stroke:#000000;stroke-width:0.39732988;stroke-miterlimit:0;stroke-dasharray:none" />
+  <rect
+     transform="matrix(-2.5174068,0,0,2.5161941,-224.73052,-295.27444)"
+     x="-111.19"
+     y="119.95"
+     width="13.664"
+     height="29.584"
+     ry="0"
+     id="rect60"
+     style="fill:none;stroke:#000000;stroke-width:0.39732988;stroke-miterlimit:0;stroke-dasharray:none" />
+  <rect
+     transform="matrix(-1.4083785,0,0,1.4077354,-150.47489,-205.53649)"
+     x="-171.44"
+     y="146.37"
+     width="25.500999"
+     height="61.245998"
+     ry="0"
+     fill="none"
+     stroke="#000000"
+     stroke-miterlimit="0"
+     stroke-width="0.710193"
+     id="rect64"
+     style="stroke-width:0.71019857;stroke-dasharray:none" />
+  <rect
+     transform="matrix(0.89978939,0,0,0.89983896,-103.30214,-92.102282)"
+     x="1057.8"
+     y="173.60001"
+     width="22.514"
+     height="6.4429998"
+     rx="2.3265977"
+     ry="2.3264694"
+     id="rect68"
+     style="fill:none;stroke:#000000;stroke-width:1.11134057;stroke-miterlimit:0;stroke-dasharray:none" />
+  <rect
+     transform="matrix(0.89978939,0,0,0.89983896,-103.30214,-92.102282)"
+     x="1057.7"
+     y="119.5"
+     width="22.545"
+     height="6.4797001"
+     rx="2.3399184"
+     ry="2.3397894"
+     id="rect70"
+     style="fill:none;stroke:#000000;stroke-width:1.11134057;stroke-miterlimit:0;stroke-dasharray:none" />
+  <rect
+     transform="matrix(0.89978939,0,0,0.89983896,-103.30214,-92.102282)"
+     x="1019.7"
+     y="109.64"
+     width="38.101002"
+     height="82.724998"
+     ry="0"
+     id="rect72"
+     style="fill:none;stroke:#000000;stroke-width:1.11134057;stroke-miterlimit:0;stroke-dasharray:none" />
+  <rect
+     transform="matrix(1.2879358,0,0,1.4077354,1002.1281,-205.52748)"
+     x="-171.44"
+     y="146.37"
+     width="25.500999"
+     height="61.245998"
+     ry="0"
+     stroke-width="0.742672"
+     id="rect76"
+     style="fill:none;stroke:#000000;stroke-miterlimit:0;stroke-width:0.74266401;stroke-dasharray:none" />
+</svg>

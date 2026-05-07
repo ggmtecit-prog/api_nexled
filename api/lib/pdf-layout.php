@@ -92,7 +92,7 @@ function getPdfEnergyLabelPath(string $energyClass): ?string {
     return findDamOrLocalSharedAsset(
         "energy-label",
         [$energyClass],
-        dirname(__FILE__, 3) . "/appdatasheets/img/classe-energetica/" . $energyClass,
+        dirname(__FILE__, 3) . "/assets/img/classe-energetica/" . $energyClass,
         ["svg", "png"]
     );
 }
@@ -103,7 +103,7 @@ function getPdfIconPath(string $iconFile): ?string {
     return findDamOrLocalSharedAsset(
         "icon",
         [$iconFile, $baseName],
-        dirname(__FILE__, 3) . "/appdatasheets/img/icones/" . $baseName,
+        dirname(__FILE__, 3) . "/assets/img/icones/" . $baseName,
         ["svg", "png"]
     );
 }

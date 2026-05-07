@@ -11,7 +11,7 @@ require_once dirname(__FILE__) . "/cloudinary.php";
 
 // Base path to the image folder — change here when images move to their final location
 if (!defined("IMAGES_BASE_PATH")) {
-    define("IMAGES_BASE_PATH", dirname(__FILE__, 3) . "/appdatasheets");
+    define("IMAGES_BASE_PATH", dirname(__FILE__, 3) . "/assets");
 }
 
 if (!defined("DAM_RUNTIME_PRIMARY_FAMILIES")) {

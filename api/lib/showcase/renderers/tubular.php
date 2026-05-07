@@ -393,7 +393,7 @@ function getShowcaseTubularCss(): string {
         return $css;
     }
 
-    $cssPath = dirname(__FILE__, 5) . "/appdatasheets/style/datasheet.css";
+    $cssPath = dirname(__FILE__, 5) . "/api/style/datasheet.css";
     $baseCss = is_file($cssPath) ? (string) file_get_contents($cssPath) : "";
 
     $css = $baseCss .
