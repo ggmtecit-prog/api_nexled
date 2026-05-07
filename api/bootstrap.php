@@ -45,6 +45,8 @@ if (!function_exists("connectDBReferencias")) {
                 getRuntimeDatabaseName(["INF_DB_NAME", "DB_NAME_INF"], ["info_nexled_2024"]),
                 ["DB_USER_INF"],
                 ["DB_PASS_INF", "MYSQLPASSWORD"],
+                ["DB_HOST"],
+                ["DB_PORT"],
                 [
                     [["MYSQLUSER"], ["MYSQLPASSWORD"]],
                     [["DB_USER_LAMP"], ["DB_PASS_LAMP"]],
@@ -99,7 +101,7 @@ if (!function_exists("connectDBDam")) {
             return $connection;
         }
 
-        return connectDedicatedRuntimeDatabase(
+        return connectRuntimeDatabase(
             $databaseName,
             ["DAM_DB_USER", "MYSQLUSER"],
             ["DAM_DB_PASS", "MYSQLPASSWORD"],
@@ -128,7 +130,7 @@ if (!function_exists("connectDBEprelMappings")) {
             return $connection;
         }
 
-        return connectDedicatedRuntimeDatabase(
+        return connectRuntimeDatabase(
             $databaseName,
             ["EPREL_MAP_DB_USER", "MYSQLUSER"],
             ["EPREL_MAP_DB_PASS", "MYSQLPASSWORD"],
@@ -170,7 +172,7 @@ if (!function_exists("tryConnectDBDam")) {
         $lastError = "Unable to connect to the database.";
 
         foreach (resolveRuntimeCredentialCandidates(["DAM_DB_USER", "MYSQLUSER"], ["DAM_DB_PASS", "MYSQLPASSWORD"]) as $credentials) {
-            $config = getDedicatedRuntimeDatabaseConfig(
+            $config = getRuntimeDatabaseConfig(
                 $databaseName,
                 $credentials["user"],
                 $credentials["password"],
@@ -404,6 +406,8 @@ function connectRuntimeDatabase(
     string $databaseName,
     array $userEnvKeys = ["MYSQLUSER"],
     array $passwordEnvKeys = ["MYSQLPASSWORD"],
+    array $hostEnvKeys = ["DB_HOST"],
+    array $portEnvKeys = ["DB_PORT"],
     array $fallbackCredentialSets = []
 ) {
     if (!function_exists("mysqli_init") || !function_exists("mysqli_real_connect")) {
@@ -413,7 +417,7 @@ function connectRuntimeDatabase(
     $lastError = "Unable to connect to the database.";
 
     foreach (resolveRuntimeCredentialCandidates($userEnvKeys, $passwordEnvKeys, $fallbackCredentialSets) as $credentials) {
-        $config = getRuntimeDatabaseConfig($databaseName, $credentials["user"], $credentials["password"]);
+        $config = getRuntimeDatabaseConfig($databaseName, $credentials["user"], $credentials["password"], $hostEnvKeys, $portEnvKeys);
         [$connection, $errorMessage] = openRuntimeDatabaseConnection($config, false);
 
         if ($connection !== null) {
@@ -429,91 +433,12 @@ function connectRuntimeDatabase(
     failRuntimeDatabaseConnection($databaseName, $lastError);
 }
 
-function connectDedicatedRuntimeDatabase(
-    string $databaseName,
-    array $userEnvKeys,
-    array $passwordEnvKeys,
-    array $hostEnvKeys,
-    array $portEnvKeys,
-    array $fallbackCredentialSets = []
-) {
-    if (!function_exists("mysqli_init") || !function_exists("mysqli_real_connect")) {
-        failRuntimeBootstrap("The MySQLi extension is not available.");
-    }
-
-    $lastError = "Unable to connect to the database.";
-
-    foreach (resolveRuntimeCredentialCandidates($userEnvKeys, $passwordEnvKeys, $fallbackCredentialSets) as $credentials) {
-        $config = getDedicatedRuntimeDatabaseConfig(
-            $databaseName,
-            $credentials["user"],
-            $credentials["password"],
-            $hostEnvKeys,
-            $portEnvKeys
-        );
-        [$connection, $errorMessage] = openRuntimeDatabaseConnection($config, false);
-
-        if ($connection !== null) {
-            mysqli_set_charset($connection, "utf8");
-            return $connection;
-        }
-
-        if ($errorMessage !== "") {
-            $lastError = $errorMessage;
-        }
-    }
-
-    failRuntimeDatabaseConnection($databaseName, $lastError);
-}
-
-function getRuntimeDatabaseConfig(string $databaseName, string $user, string $password): array {
-    $dbHost = getRuntimeEnvValue("DB_HOST");
-
-    if ($dbHost !== null) {
-        return [
-            "host" => $dbHost,
-            "user" => $user,
-            "password" => $password,
-            "database" => $databaseName,
-            "port" => (int) (getRuntimeEnvValue("DB_PORT") ?? "3306"),
-        ];
-    }
-
-    $databaseUrl = getRuntimeEnvValue("MYSQL_URL");
-
-    if ($databaseUrl === null) {
-        $databaseUrl = getRuntimeEnvValue("DATABASE_URL");
-    }
-
-    if ($databaseUrl !== null) {
-        $parsedUrl = parse_url($databaseUrl);
-
-        if (is_array($parsedUrl) && isset($parsedUrl["host"], $parsedUrl["user"])) {
-            return [
-                "host" => $parsedUrl["host"],
-                "user" => $user,
-                "password" => $password,
-                "database" => $databaseName,
-                "port" => isset($parsedUrl["port"]) ? (int) $parsedUrl["port"] : 3306,
-            ];
-        }
-    }
-
-    return [
-        "host" => getRuntimeEnvValue("MYSQLHOST") ?? "localhost",
-        "user" => $user,
-        "password" => $password,
-        "database" => $databaseName,
-        "port" => (int) (getRuntimeEnvValue("MYSQLPORT") ?? "3306"),
-    ];
-}
-
-function getDedicatedRuntimeDatabaseConfig(
+function getRuntimeDatabaseConfig(
     string $databaseName,
     string $user,
     string $password,
-    array $hostEnvKeys,
-    array $portEnvKeys
+    array $hostEnvKeys = ["DB_HOST"],
+    array $portEnvKeys = ["DB_PORT"]
 ): array {
     $dbHost = getRuntimeEnvValueFromList($hostEnvKeys);
     $dbPort = getRuntimeEnvValueFromList($portEnvKeys);
@@ -528,11 +453,7 @@ function getDedicatedRuntimeDatabaseConfig(
         ];
     }
 
-    $databaseUrl = getRuntimeEnvValue("MYSQL_URL");
-
-    if ($databaseUrl === null) {
-        $databaseUrl = getRuntimeEnvValue("DATABASE_URL");
-    }
+    $databaseUrl = getRuntimeEnvValue("MYSQL_URL") ?? getRuntimeEnvValue("DATABASE_URL");
 
     if ($databaseUrl !== null) {
         $parsedUrl = parse_url($databaseUrl);
@@ -667,7 +588,9 @@ function probeRuntimeDatabase(
     string $databaseName,
     array $userEnvKeys,
     array $passwordEnvKeys,
-    array $fallbackCredentialSets = []
+    array $fallbackCredentialSets = [],
+    array $hostEnvKeys = ["DB_HOST"],
+    array $portEnvKeys = ["DB_PORT"]
 ): array {
     if (!function_exists("mysqli_init") || !function_exists("mysqli_real_connect")) {
         return [
@@ -680,55 +603,7 @@ function probeRuntimeDatabase(
     $lastError = "Unable to connect to the database.";
 
     foreach (resolveRuntimeCredentialCandidates($userEnvKeys, $passwordEnvKeys, $fallbackCredentialSets) as $credentials) {
-        $config = getRuntimeDatabaseConfig($databaseName, $credentials["user"], $credentials["password"]);
-        [$connection, $errorMessage] = openRuntimeDatabaseConnection($config, true);
-
-        if ($connection !== null) {
-            mysqli_close($connection);
-            return [
-                "ok" => true,
-                "database" => $databaseName,
-            ];
-        }
-
-        if ($errorMessage !== "") {
-            $lastError = $errorMessage;
-        }
-    }
-
-    return [
-        "ok" => false,
-        "database" => $databaseName,
-        "message" => $lastError,
-    ];
-}
-
-function probeDedicatedRuntimeDatabase(
-    string $databaseName,
-    array $userEnvKeys,
-    array $passwordEnvKeys,
-    array $hostEnvKeys,
-    array $portEnvKeys,
-    array $fallbackCredentialSets = []
-): array {
-    if (!function_exists("mysqli_init") || !function_exists("mysqli_real_connect")) {
-        return [
-            "ok" => false,
-            "database" => $databaseName,
-            "message" => "The MySQLi extension is not available.",
-        ];
-    }
-
-    $lastError = "Unable to connect to the database.";
-
-    foreach (resolveRuntimeCredentialCandidates($userEnvKeys, $passwordEnvKeys, $fallbackCredentialSets) as $credentials) {
-        $config = getDedicatedRuntimeDatabaseConfig(
-            $databaseName,
-            $credentials["user"],
-            $credentials["password"],
-            $hostEnvKeys,
-            $portEnvKeys
-        );
+        $config = getRuntimeDatabaseConfig($databaseName, $credentials["user"], $credentials["password"], $hostEnvKeys, $portEnvKeys);
         [$connection, $errorMessage] = openRuntimeDatabaseConnection($config, true);
 
         if ($connection !== null) {
@@ -772,10 +647,11 @@ function getApiHealthSnapshot(): array {
             [["DB_USER_REF"], ["DB_PASS_REF"]],
         ]
     );
-    $dam = probeDedicatedRuntimeDatabase(
+    $dam = probeRuntimeDatabase(
         getRuntimeDatabaseName(["DAM_DB_NAME"], ["nexled_dam"]),
         ["DAM_DB_USER", "MYSQLUSER"],
         ["DAM_DB_PASS", "MYSQLPASSWORD"],
+        [],
         ["DAM_DB_HOST", "DB_HOST", "MYSQLHOST"],
         ["DAM_DB_PORT", "DB_PORT", "MYSQLPORT"]
     );
