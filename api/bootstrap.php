@@ -59,25 +59,19 @@ if (!function_exists("connectDBReferencias")) {
             mysqli_close($con);
         }
     } else {
-        $legacyConfigPath = dirname(__DIR__) . "/appdatasheets/config.php";
+        function connectDBReferencias() {
+            failRuntimeBootstrap("No database configuration is available for tecit_referencias.");
+        }
 
-        if (file_exists($legacyConfigPath)) {
-            require_once $legacyConfigPath;
-        } else {
-            function connectDBReferencias() {
-                failRuntimeBootstrap("No database configuration is available for tecit_referencias.");
-            }
+        function connectDBLampadas() {
+            failRuntimeBootstrap("No database configuration is available for tecit_lampadas.");
+        }
 
-            function connectDBLampadas() {
-                failRuntimeBootstrap("No database configuration is available for tecit_lampadas.");
-            }
+        function connectDBInf() {
+            failRuntimeBootstrap("No database configuration is available for info_nexled_2024.");
+        }
 
-            function connectDBInf() {
-                failRuntimeBootstrap("No database configuration is available for info_nexled_2024.");
-            }
-
-            function closeDB($con) {
-            }
+        function closeDB($con) {
         }
     }
 }
