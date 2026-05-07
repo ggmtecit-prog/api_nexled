@@ -5,17 +5,13 @@ require_once dirname(__FILE__) . "/../lib/code-explorer.php";
 $family = validateFamily($_GET["family"] ?? null);
 
 if ($family === 0) {
-    http_response_code(400);
-    echo json_encode(["error" => "Missing or invalid family parameter"]);
-    exit();
+    respondError(400, "invalid_family", "Missing or invalid family parameter", ["family" => $_GET["family"] ?? null]);
 }
 
 $familyMeta = getCodeExplorerFamilyMeta($family);
 
 if ($familyMeta === null) {
-    http_response_code(400);
-    echo json_encode(["error" => "Unknown family"]);
-    exit();
+    respondError(400, "unknown_family", "Unknown family", ["family" => $family]);
 }
 
 $page = getCodeExplorerPage($_GET["page"] ?? null);
@@ -29,7 +25,7 @@ $filters = getFamilyReadyFilters($_GET, $options, getFamilyReadyProductsBaseRows
     $identities
 ));
 
-echo json_encode(
+respondJson(
     buildFamilyReadyProductsResponse(
         $familyMeta["code"],
         $familyMeta["name"],

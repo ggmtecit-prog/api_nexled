@@ -8,9 +8,7 @@ require_once dirname(__FILE__) . "/../lib/reference-decoder.php";
 $reference = validateReference($_GET["ref"] ?? "");
 
 if ($reference === "") {
-    http_response_code(400);
-    echo json_encode(["error" => "Missing or invalid ref parameter"]);
-    exit();
+    respondError(400, "invalid_ref", "Missing or invalid ref parameter", ["ref" => $_GET["ref"] ?? null]);
 }
 
 $parts = decodeReference($reference);
@@ -47,7 +45,7 @@ if ($productType !== null) {
 
 $description = getDecodedReferenceDescription($parts["identity"]);
 
-echo json_encode([
+respondJson([
     "reference" => $reference,
     "valid" => hasFullReferenceLength($reference) && $productType !== null && $productId !== null,
     "length" => $parts["length"],
