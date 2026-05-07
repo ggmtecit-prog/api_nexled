@@ -2230,34 +2230,18 @@ async function getApiBase() {
 
 async function apiFetch(queryString) {
     const base = await getApiBase();
-    const finalPath = (typeof nxApplyCacheBustToPath === "function") ? nxApplyCacheBustToPath(queryString) : queryString;
-    const response = await fetch(base + finalPath, {
-        headers: {
-            "X-API-Key": API_KEY,
-        },
-    });
+    const result = await apiCoreFetch(base, queryString, API_KEY);
 
-    const rawText = await response.text();
-    let payload = null;
-
-    if (rawText !== "") {
-        try {
-            payload = JSON.parse(rawText);
-        } catch (error) {
-            payload = null;
-        }
-    }
-
-    if (!response.ok) {
-        const message = payload?.error || rawText || ("Request failed with status " + response.status);
+    if (!result.ok) {
+        const message = result.payload?.error || result.rawText || ("Request failed with status " + result.status);
         const failure = new Error(message);
-        failure.status = response.status;
-        failure.payload = payload;
+        failure.status = result.status;
+        failure.payload = result.payload;
         throw failure;
     }
 
     noteSuccessfulApiContact();
-    return payload;
+    return result.payload;
 }
 
 function noteSuccessfulApiContact() {

@@ -5008,52 +5008,41 @@ function bindDocumentLanguageControls() {
 
 async function apiFetch(path) {
     const apiBase = await getApiBase();
-    const finalPath = (typeof nxApplyCacheBustToPath === "function") ? nxApplyCacheBustToPath(path) : path;
-    let response;
+    let result;
 
     try {
-        response = await fetch(apiBase + finalPath, {
-            headers: { "X-API-Key": API_KEY },
-        });
+        result = await apiCoreFetch(apiBase, path, API_KEY);
         noteSuccessfulApiContact();
     } catch (error) {
         markApiUnavailable();
         throw error;
     }
 
-    if (!response.ok) {
-        if (isApiServiceFailureStatus(response.status)) {
+    if (!result.ok) {
+        if (isApiServiceFailureStatus(result.status)) {
             markApiDegraded();
         }
 
-        const rawError = await response.text();
-        const cleanError = extractResponseMessage(rawError);
-        let message = cleanError || "Request failed with status " + response.status;
+        const cleanError = extractResponseMessage(result.rawText);
+        let message = cleanError || "Request failed with status " + result.status;
         let code = "";
 
-        if (rawError.trim() !== "") {
-            try {
-                const errorPayload = JSON.parse(rawError);
-
-                if (typeof errorPayload?.error === "string" && errorPayload.error.trim() !== "") {
-                    message = errorPayload.error.trim();
-                }
-
-                if (typeof errorPayload?.error_code === "string") {
-                    code = errorPayload.error_code;
-                }
-            } catch (_parseError) {
-                // Keep cleaned text fallback when body is not JSON.
+        if (result.payload && typeof result.payload === "object") {
+            if (typeof result.payload.error === "string" && result.payload.error.trim() !== "") {
+                message = result.payload.error.trim();
+            }
+            if (typeof result.payload.error_code === "string") {
+                code = result.payload.error_code;
             }
         }
 
         const requestError = new Error(message);
-        requestError.status = response.status;
+        requestError.status = result.status;
         requestError.code = code;
         throw requestError;
     }
 
-    return response.json();
+    return result.payload;
 }
 
 async function apiPost(path, body) {

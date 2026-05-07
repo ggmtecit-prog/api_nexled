@@ -81,6 +81,23 @@ function nxApplyCacheBustToPath(path) {
     return path + (path.indexOf("?") >= 0 ? "&" : "?") + "cache=bust";
 }
 
+// Shared API transport. Pure mechanics: build URL with bust, send X-API-Key,
+// read body, parse JSON safely. Never throws on HTTP errors — callers decide
+// whether to throw and how to report (badge state, error UX) per page.
+// Returns { ok, status, payload, rawText }.
+async function apiCoreFetch(apiBase, path, apiKey) {
+    const finalPath = nxApplyCacheBustToPath(path);
+    const response = await fetch(apiBase + finalPath, {
+        headers: { "X-API-Key": apiKey },
+    });
+    const rawText = await response.text();
+    let payload = null;
+    if (rawText !== "") {
+        try { payload = JSON.parse(rawText); } catch (_) { payload = null; }
+    }
+    return { ok: response.ok, status: response.status, payload, rawText };
+}
+
 const APP_SHELL_LANGUAGES = {
     en: {
         app: "en",
