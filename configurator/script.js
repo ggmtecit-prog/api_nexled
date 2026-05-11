@@ -6,11 +6,9 @@
  */
 
 const API_KEY = "7b8edd27a16f60bf7a1c92b8ceb40cda474588d24491140c130418153053063b";
-const DEFAULT_API_BASE = "https://apinexled-production.up.railway.app/api";
 const PDF_LOADING_SUCCESS_HOLD_MS = 2800;
 const SHOWCASE_PREVIEW_DEBOUNCE_MS = 260;
 const CUSTOM_PREVIEW_DEBOUNCE_MS = 260;
-const LOCAL_API_HOSTNAMES = new Set(["localhost", "127.0.0.1", "[::1]"]);
 const SHOWCASE_DEFAULT_FILTERS = {
     datasheet_ready_only: true,
     max_variants: 250,
@@ -3946,43 +3944,10 @@ function escapeHtml(value) {
 
 async function getApiBase() {
     if (!apiBasePromise) {
-        apiBasePromise = Promise.resolve(resolveApiBase());
+        apiBasePromise = Promise.resolve(nxResolveApiBase());
     }
 
     return apiBasePromise;
-}
-
-function resolveApiBase() {
-    if (typeof window !== "undefined" && window.location) {
-        const hostname = String(window.location.hostname || "").toLowerCase();
-
-        if (LOCAL_API_HOSTNAMES.has(hostname)) {
-            const localApiBase = buildLocalApiBase(window.location.origin, window.location.pathname);
-
-            if (localApiBase) {
-                return localApiBase;
-            }
-        }
-    }
-
-    return DEFAULT_API_BASE.replace(/\/+$/, "");
-}
-
-function buildLocalApiBase(origin, pathname) {
-    const cleanOrigin = String(origin || "").replace(/\/+$/, "");
-    const cleanPathname = String(pathname || "");
-
-    if (!cleanOrigin) {
-        return "";
-    }
-
-    if (cleanPathname.includes("/configurator/")) {
-        return (cleanOrigin + cleanPathname.split("/configurator/")[0] + "/api").replace(/\/+$/, "");
-    }
-
-    const withoutFile = cleanPathname.replace(/\/[^/]*$/, "");
-    const withoutConfiguratorRoot = withoutFile.replace(/\/configurator$/, "");
-    return (cleanOrigin + withoutConfiguratorRoot + "/api").replace(/\/+$/, "");
 }
 
 function setApiHealthState(nextState = {}) {

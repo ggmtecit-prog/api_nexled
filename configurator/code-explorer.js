@@ -1,5 +1,4 @@
 const API_KEY = "7b8edd27a16f60bf7a1c92b8ceb40cda474588d24491140c130418153053063b";
-const DEFAULT_API_BASE = "https://apinexled-production.up.railway.app/api";
 const STATUS_TOAST_BASE_CLASS = "toast toast-sm";
 const STATUS_TOAST_TITLE_MAX_LENGTH = 64;
 const STATUS_TOAST_AUTOHIDE_DELAY = 4000;
@@ -2222,7 +2221,7 @@ function syncBlockedSummaryCard(blockedCount) {
 
 async function getApiBase() {
     if (!apiBasePromise) {
-        apiBasePromise = Promise.resolve(DEFAULT_API_BASE.replace(/\/+$/, ""));
+        apiBasePromise = Promise.resolve(nxResolveApiBase());
     }
 
     return apiBasePromise;

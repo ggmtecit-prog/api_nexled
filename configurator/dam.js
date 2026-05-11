@@ -854,11 +854,7 @@ async function performDamRequest(url, options) {
 }
 
 function resolveDamApiBase() {
-    if (window.location.protocol === "file:") {
-        return "http://localhost/api_nexled/api";
-    }
-
-    return new URL("../api", window.location.href).toString().replace(/\/+$/, "");
+    return nxResolveApiBase();
 }
 
 function renderLinkRoleOptions() {

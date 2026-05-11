@@ -81,6 +81,22 @@ function nxApplyCacheBustToPath(path) {
     return path + (path.indexOf("?") >= 0 ? "&" : "?") + "cache=bust";
 }
 
+// Shared API base resolver. Returns absolute URL to the API root.
+// Strategy: resolve relative to current page (../api). This works for both
+// local XAMPP (http://localhost/api_nexled/configurator/X.html -> http://localhost/api_nexled/api)
+// and Railway (https://<host>/configurator/X.html -> https://<host>/api), since
+// the frontend and API are co-deployed under the same origin.
+// Falls back to the Railway production URL for file:// or weird envs.
+const NX_DEFAULT_API_BASE = "https://apinexled-production.up.railway.app/api";
+
+function nxResolveApiBase() {
+    if (typeof window === "undefined" || !window.location) return NX_DEFAULT_API_BASE;
+    if (window.location.protocol === "file:") return "http://localhost/api_nexled/api";
+    try {
+        return new URL("../api", window.location.href).toString().replace(/\/+$/, "");
+    } catch (_) { return NX_DEFAULT_API_BASE; }
+}
+
 // Shared API transport. Pure mechanics: build URL with bust, send X-API-Key,
 // read body, parse JSON safely. Never throws on HTTP errors — callers decide
 // whether to throw and how to report (badge state, error UX) per page.

@@ -1,5 +1,4 @@
 const CODE_REPAIR_API_KEY = "7b8edd27a16f60bf7a1c92b8ceb40cda474588d24491140c130418153053063b";
-const CODE_REPAIR_DEFAULT_API_BASE = "https://apinexled-production.up.railway.app/api";
 const CODE_REPAIR_I18N_EVENT = "nexled:i18n-applied";
 const CODE_REPAIR_API_BADGE_BASE_CLASS = "badge badge-md shrink-0";
 const CODE_REPAIR_API_BADGE_VARIANTS = {
@@ -2526,20 +2525,7 @@ async function codeRepairApiRequest(path, options = {}) {
 }
 
 function getCodeRepairApiBase() {
-    const protocol = String(window.location.protocol || "").toLowerCase();
-    const origin = String(window.location.origin || "").trim();
-    const pathname = String(window.location.pathname || "");
-
-    if (
-        (protocol === "http:" || protocol === "https:")
-        && origin !== ""
-        && /\/configurator\/[^/]+$/.test(pathname)
-    ) {
-        const projectBase = pathname.replace(/\/configurator\/[^/]+$/, "");
-        return origin + (projectBase || "") + "/api";
-    }
-
-    return CODE_REPAIR_DEFAULT_API_BASE.replace(/\/+$/, "");
+    return nxResolveApiBase();
 }
 
 function getCodeRepairLanguage() {
