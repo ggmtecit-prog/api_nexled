@@ -9,8 +9,8 @@ class NEXLEDPDF extends TCPDF {
         $pdf->Line(10, 20, 200, 20, array('width' => 0.2, 'color' => array(0, 0, 0)));
 
         $nexledLogo = function_exists("findDamOrLocalSharedAsset")
-            ? findDamOrLocalSharedAsset("logo", ["nexled"], dirname(__DIR__) . "/img/logos/nexled", ["png", "svg"])
-            : dirname(__DIR__) . "/img/logos/nexled.png";
+            ? findDamOrLocalSharedAsset("logo", ["nexled"], dirname(__DIR__, 3) . "/assets/img/logos/nexled", ["png", "svg"])
+            : dirname(__DIR__, 3) . "/assets/img/logos/nexled.png";
         $nexledLogo = is_string($nexledLogo) && function_exists("getPdfSafeAssetPath")
             ? getPdfSafeAssetPath($nexledLogo)
             : $nexledLogo;
@@ -21,8 +21,8 @@ class NEXLEDPDF extends TCPDF {
 
         if($empresa !== "0") {
             $companyLogo = function_exists("findDamOrLocalSharedAsset")
-                ? findDamOrLocalSharedAsset("logo", [$empresa], dirname(__DIR__) . "/img/logos/$empresa", ["png", "svg"])
-                : dirname(__DIR__) . "/img/logos/$empresa.png";
+                ? findDamOrLocalSharedAsset("logo", [$empresa], dirname(__DIR__, 3) . "/assets/img/logos/$empresa", ["png", "svg"])
+                : dirname(__DIR__, 3) . "/assets/img/logos/$empresa.png";
             $companyLogo = is_string($companyLogo) && function_exists("getPdfSafeAssetPath")
                 ? getPdfSafeAssetPath($companyLogo)
                 : $companyLogo;
@@ -48,8 +48,8 @@ class NEXLEDPDF extends TCPDF {
         $pdf->Line(10, 275, 200, 275, array('width' => 0.2, 'color' => array(0, 0, 0)));
 
         $tecitLogo = function_exists("findDamOrLocalSharedAsset")
-            ? findDamOrLocalSharedAsset("logo", ["tecit"], dirname(__DIR__) . "/img/logos/tecit", ["png", "svg"])
-            : dirname(__DIR__) . "/img/logos/tecit.png";
+            ? findDamOrLocalSharedAsset("logo", ["tecit"], dirname(__DIR__, 3) . "/assets/img/logos/tecit", ["png", "svg"])
+            : dirname(__DIR__, 3) . "/assets/img/logos/tecit.png";
         $tecitLogo = is_string($tecitLogo) && function_exists("getPdfSafeAssetPath")
             ? getPdfSafeAssetPath($tecitLogo)
             : $tecitLogo;
