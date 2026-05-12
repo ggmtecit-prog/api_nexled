@@ -82,19 +82,26 @@ function nxApplyCacheBustToPath(path) {
 }
 
 // Shared API base resolver. Returns absolute URL to the API root.
-// Strategy: resolve relative to current page (../api). This works for both
-// local XAMPP (http://localhost/api_nexled/configurator/X.html -> http://localhost/api_nexled/api)
-// and Railway (https://<host>/configurator/X.html -> https://<host>/api), since
-// the frontend and API are co-deployed under the same origin.
-// Falls back to the Railway production URL for file:// or weird envs.
+//
+// Local dev (localhost / 127.0.0.1): resolve relative to the page so
+//   http://localhost/api_nexled/configurator/X.html -> http://localhost/api_nexled/api
+//
+// Production / external hosts (Railway, alwaysdata.net, anything else):
+//   always use the canonical Railway URL so pages hosted on a different
+//   origin (e.g. nexled.alwaysdata.net) correctly reach the API, not
+//   themselves.
 const NX_DEFAULT_API_BASE = "https://apinexled-production.up.railway.app/api";
+const NX_LOCAL_HOSTS = new Set(["localhost", "127.0.0.1", "[::1]"]);
 
 function nxResolveApiBase() {
     if (typeof window === "undefined" || !window.location) return NX_DEFAULT_API_BASE;
     if (window.location.protocol === "file:") return "http://localhost/api_nexled/api";
-    try {
-        return new URL("../api", window.location.href).toString().replace(/\/+$/, "");
-    } catch (_) { return NX_DEFAULT_API_BASE; }
+    if (NX_LOCAL_HOSTS.has(window.location.hostname.toLowerCase())) {
+        try {
+            return new URL("../api", window.location.href).toString().replace(/\/+$/, "");
+        } catch (_) {}
+    }
+    return NX_DEFAULT_API_BASE;
 }
 
 // Shared API transport. Pure mechanics: build URL with bust, send X-API-Key,
