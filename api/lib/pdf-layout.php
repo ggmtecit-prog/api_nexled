@@ -16,6 +16,12 @@
 
 define("DATASHEET_JSON_PATH", dirname(__FILE__, 2) . "/json/datasheet.json");
 
+function nxDatasheetJson(): object {
+    static $data = null;
+    if ($data === null) $data = json_decode(file_get_contents(DATASHEET_JSON_PATH));
+    return $data;
+}
+
 function toPdfAssetSrc(?string $path): string {
     if (!is_string($path) || trim($path) === "") {
         return "";
@@ -363,7 +369,7 @@ function buildHeader(array $header, string $energyClass): string {
  * @return string  HTML
  */
 function buildCharacteristics(array $characteristics, string $lang, ?string $customIntro = null): string {
-    $json  = json_decode(file_get_contents(DATASHEET_JSON_PATH));
+    $json  = nxDatasheetJson();
     $title = $json->caracteristicas->titulo->$lang;
     $intro = buildCustomCopyRows($customIntro, 5);
 
@@ -404,7 +410,7 @@ function buildCharacteristics(array $characteristics, string $lang, ?string $cus
  * @return string  HTML
  */
 function buildLuminotechnical(array $lumino, string $reference, string $description, string $lensName, string $ipRating, string $lang, ?string $customIntro = null, ?string $displayReference = null): string {
-    $json    = json_decode(file_get_contents(DATASHEET_JSON_PATH));
+    $json    = nxDatasheetJson();
     $section = $json->luminotecnicas;
     $intro = buildCustomCopyRows($customIntro, 80);
 
@@ -496,7 +502,7 @@ function buildLuminotechnicalNotes(string $reference, string $ipRating, object $
  * @return string  HTML
  */
 function buildTechnicalDrawing(array $drawing, string $lang, ?string $customIntro = null): string {
-    $json  = json_decode(file_get_contents(DATASHEET_JSON_PATH));
+    $json  = nxDatasheetJson();
     $title = $json->desenhotecnico->titulo->$lang;
     $note  = $json->notaMedidas->$lang;
     $dimKeys = ["A","B","C","D","E","F","G","H","I","J"];
@@ -544,7 +550,7 @@ function buildTechnicalDrawing(array $drawing, string $lang, ?string $customIntr
  * @return string  HTML
  */
 function buildColorGraph(array $graph, string $reference, string $lang, ?string $customIntro = null): string {
-    $json   = json_decode(file_get_contents(DATASHEET_JSON_PATH));
+    $json   = nxDatasheetJson();
     $title  = $json->graficocor->titulo->$lang;
     $parts  = decodeReference($reference);
     $family = $parts["family"];
@@ -581,7 +587,7 @@ function buildColorGraph(array $graph, string $reference, string $lang, ?string 
  * @return string  HTML
  */
 function buildLensDiagram(array $diagram, string $lensName, string $lang, ?string $customIntro = null): string {
-    $json  = json_decode(file_get_contents(DATASHEET_JSON_PATH));
+    $json  = nxDatasheetJson();
     $title = $json->diagramalente->titulo->$lang;
     $intro = buildCustomCopyRows($customIntro, 2);
 
@@ -620,7 +626,7 @@ function buildLensDiagram(array $diagram, string $lensName, string $lang, ?strin
  * @return string  HTML
  */
 function buildFinishAndLens(array $finishData, string $lensName, string $reference, string $lang, ?string $customIntro = null): string {
-    $json    = json_decode(file_get_contents(DATASHEET_JSON_PATH));
+    $json    = nxDatasheetJson();
     $section = $json->acabamento;
     $parts   = decodeReference($reference);
     $family  = $parts["family"];
@@ -669,7 +675,7 @@ function buildFinishAndLens(array $finishData, string $lensName, string $referen
  * @return string  HTML
  */
 function buildFixing(array $fixing, string $reference, string $lang, ?string $customIntro = null): string {
-    $json    = json_decode(file_get_contents(DATASHEET_JSON_PATH));
+    $json    = nxDatasheetJson();
     $section = $json->fixacao;
     $parts   = decodeReference($reference);
     $family  = $parts["family"];
@@ -719,7 +725,7 @@ function buildFixing(array $fixing, string $reference, string $lang, ?string $cu
  * @return string  HTML
  */
 function buildPowerSupply(array $supply, string $lang, ?string $customIntro = null): string {
-    $json  = json_decode(file_get_contents(DATASHEET_JSON_PATH));
+    $json  = nxDatasheetJson();
     $title = $json->fonte->titulo->$lang;
     $note  = $json->notaMedidas->$lang;
     $descriptionText = is_string($customIntro) && trim($customIntro) !== ""
@@ -756,7 +762,7 @@ function buildPowerSupply(array $supply, string $lang, ?string $customIntro = nu
  * @return string  HTML
  */
 function buildConnectionCable(array $cable, string $lang, ?string $customIntro = null): string {
-    $json  = json_decode(file_get_contents(DATASHEET_JSON_PATH));
+    $json  = nxDatasheetJson();
     $title = $json->ligacao->titulo->$lang;
     $note  = $json->notaLigacao->$lang ?? "";
     $descriptionText = is_string($customIntro) && trim($customIntro) !== ""

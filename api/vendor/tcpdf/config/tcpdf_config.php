@@ -78,8 +78,9 @@
 
 /**
  * Cache directory for temporary files (full path).
+ * Persists font cache across requests — major speed win on repeated renders.
  */
-//define ('K_PATH_CACHE', '/tmp/');
+define ('K_PATH_CACHE', sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'nexled_tcpdf_cache' . DIRECTORY_SEPARATOR);
 
 /**
  * Generic name for a blank image.

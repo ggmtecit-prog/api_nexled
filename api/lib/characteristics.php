@@ -35,13 +35,13 @@ function getLensAngles(string $family, string $lens): array {
 
     $con = connectDBInf();
 
-    $queryBeam  = mysqli_query($con, "SELECT beam FROM angulos_lente WHERE familia = '$family' AND lente = '$lens'");
-    $queryField = mysqli_query($con, "SELECT field FROM angulos_lente WHERE familia = '$family' AND lente = '$lens'");
+    $query = mysqli_query($con, "SELECT beam, field FROM angulos_lente WHERE familia = '$family' AND lente = '$lens' LIMIT 1");
 
     closeDB($con);
 
-    $beam  = mysqli_num_rows($queryBeam)  > 0 ? mysqli_fetch_assoc($queryBeam)["beam"]   : null;
-    $field = mysqli_num_rows($queryField) > 0 ? mysqli_fetch_assoc($queryField)["field"] : null;
+    $row   = ($query && mysqli_num_rows($query) > 0) ? mysqli_fetch_assoc($query) : [];
+    $beam  = $row["beam"]  ?? null;
+    $field = $row["field"] ?? null;
 
     return ["beam" => $beam, "field" => $field];
 }

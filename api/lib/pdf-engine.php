@@ -72,6 +72,9 @@ function getDatasheetCssPathForVariant(string $designVariant): string {
 }
 
 function getDatasheetCssForVariant(string $designVariant): string {
+    static $cache = [];
+    if (isset($cache[$designVariant])) return $cache[$designVariant];
+
     $cssPath = getDatasheetCssPathForVariant($designVariant);
 
     if (!is_file($cssPath) || !is_readable($cssPath)) {
@@ -92,6 +95,7 @@ function getDatasheetCssForVariant(string $designVariant): string {
         ]);
     }
 
+    $cache[$designVariant] = $css;
     return $css;
 }
 
