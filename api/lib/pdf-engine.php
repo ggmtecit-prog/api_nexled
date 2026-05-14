@@ -509,6 +509,7 @@ function renderDatasheetPdfBinaryFromContext(array $context): string {
         ob_start();
 
         $pdf = new NEXLEDPDF("p", "mm", "A4", true, "UTF-8", false);
+        $pdf->SetTitle($descricaoProduto);
         $pdf->SetTopMargin(25);
         $pdf->SetLeftMargin(10);
         $pdf->SetRightMargin(10);

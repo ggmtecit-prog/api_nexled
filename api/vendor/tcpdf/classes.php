@@ -33,7 +33,7 @@ class NEXLEDPDF extends TCPDF {
         }
 
         $html = <<<EOD
-        <h1 style="font-size: 10px; line-height: 24px; font-family: Lato; color: black; text-align: center;">$descricaoProduto</h1>
+        <h1 style="font-size: 10px; line-height: 24px; font-family: helvetica; color: black; text-align: center;">$descricaoProduto</h1>
         EOD;
 
         $pdf->writeHTMLCell(0, 0, '', 7, $html, 0, 1, 0, true, '', true);
