@@ -26,28 +26,48 @@ jobs:
       - name: Ensure target folders exist
         run: |
           ssh -p "${{ secrets.ALWAYSDATA_PORT }}" "${{ secrets.ALWAYSDATA_USER }}@${{ secrets.ALWAYSDATA_HOST }}" \
-            "mkdir -p '${{ secrets.ALWAYSDATA_TARGET_DIR }}' '${{ secrets.ALWAYSDATA_TARGET_DIR }}/api' '${{ secrets.ALWAYSDATA_TARGET_DIR }}/appdatasheets'"
+            "mkdir -p \
+              '${{ secrets.ALWAYSDATA_TARGET_DIR }}/api' \
+              '${{ secrets.ALWAYSDATA_TARGET_DIR }}/assets/img/logos' \
+              '${{ secrets.ALWAYSDATA_TARGET_DIR }}/assets/img/icones' \
+              '${{ secrets.ALWAYSDATA_TARGET_DIR }}/assets/img/classe-energetica' \
+              '${{ secrets.ALWAYSDATA_TARGET_DIR }}/assets/img/temperaturas' \
+              '${{ secrets.ALWAYSDATA_TARGET_DIR }}/assets/img/placeholders' \
+              '${{ secrets.ALWAYSDATA_TARGET_DIR }}/assets/img/01' \
+              '${{ secrets.ALWAYSDATA_TARGET_DIR }}/configurator'"
 
-      - name: Deploy frontend root
+      - name: Deploy configurator (frontend)
         run: |
           rsync -az \
             --exclude "UI_SYSTEM/" \
-            --exclude ".env" \
+            --exclude ".env*" \
             configurator/ \
-            "${{ secrets.ALWAYSDATA_USER }}@${{ secrets.ALWAYSDATA_HOST }}:${{ secrets.ALWAYSDATA_TARGET_DIR }}/"
+            "${{ secrets.ALWAYSDATA_USER }}@${{ secrets.ALWAYSDATA_HOST }}:${{ secrets.ALWAYSDATA_TARGET_DIR }}/configurator/"
 
       - name: Deploy API
         run: |
           rsync -az --delete \
             --exclude "auth.php" \
-            --exclude ".env" \
+            --exclude ".env*" \
             api/ \
             "${{ secrets.ALWAYSDATA_USER }}@${{ secrets.ALWAYSDATA_HOST }}:${{ secrets.ALWAYSDATA_TARGET_DIR }}/api/"
 
-      - name: Deploy datasheet app
+      - name: Deploy shared assets (logos, icons, energy labels, temperatures)
         run: |
-          rsync -az --delete \
-            --exclude "config.php" \
-            --exclude ".env" \
-            appdatasheets/ \
-            "${{ secrets.ALWAYSDATA_USER }}@${{ secrets.ALWAYSDATA_HOST }}:${{ secrets.ALWAYSDATA_TARGET_DIR }}/appdatasheets/"
+          rsync -az --delete assets/img/logos/              "${{ secrets.ALWAYSDATA_USER }}@${{ secrets.ALWAYSDATA_HOST }}:${{ secrets.ALWAYSDATA_TARGET_DIR }}/assets/img/logos/"
+          rsync -az --delete assets/img/icones/             "${{ secrets.ALWAYSDATA_USER }}@${{ secrets.ALWAYSDATA_HOST }}:${{ secrets.ALWAYSDATA_TARGET_DIR }}/assets/img/icones/"
+          rsync -az --delete assets/img/classe-energetica/ "${{ secrets.ALWAYSDATA_USER }}@${{ secrets.ALWAYSDATA_HOST }}:${{ secrets.ALWAYSDATA_TARGET_DIR }}/assets/img/classe-energetica/"
+          rsync -az --delete assets/img/temperaturas/      "${{ secrets.ALWAYSDATA_USER }}@${{ secrets.ALWAYSDATA_HOST }}:${{ secrets.ALWAYSDATA_TARGET_DIR }}/assets/img/temperaturas/"
+          rsync -az --delete assets/img/placeholders/      "${{ secrets.ALWAYSDATA_USER }}@${{ secrets.ALWAYSDATA_HOST }}:${{ secrets.ALWAYSDATA_TARGET_DIR }}/assets/img/placeholders/" || true
+
+      - name: Deploy family 01 images (non-DAM local fallback)
+        run: |
+          rsync -az --delete assets/img/01/ \
+            "${{ secrets.ALWAYSDATA_USER }}@${{ secrets.ALWAYSDATA_HOST }}:${{ secrets.ALWAYSDATA_TARGET_DIR }}/assets/img/01/"
+
+      - name: Deploy small asset files
+        run: |
+          for f in assets/img/favicon.ico assets/img/loading.gif; do
+            [ -f "$f" ] && rsync -az "$f" \
+              "${{ secrets.ALWAYSDATA_USER }}@${{ secrets.ALWAYSDATA_HOST }}:${{ secrets.ALWAYSDATA_TARGET_DIR }}/assets/img/"
+          done

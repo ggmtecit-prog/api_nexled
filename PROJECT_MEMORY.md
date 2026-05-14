@@ -48,11 +48,11 @@ Important interpretation rules:
 
 ### Runtime / Hosting
 
-- API is deployed online on Railway
+- API is deployed on alwaysdata.net (moved from Railway, trial expired)
 - main live API base used by the configurator is:
-  - `https://apinexled-production.up.railway.app/api`
-- frontend pages are served separately from the API runtime
-- the API is online, but the project is not fully cloud-native yet
+  - `https://nexled.alwaysdata.net/api`
+- frontend and API are co-deployed on the same alwaysdata account
+- GitHub Actions deploys automatically on push to main
 
 ### Main Backend Subsystems
 
