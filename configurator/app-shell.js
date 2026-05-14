@@ -90,7 +90,7 @@ function nxApplyCacheBustToPath(path) {
 //   always use the canonical Railway URL so pages hosted on a different
 //   origin (e.g. nexled.alwaysdata.net) correctly reach the API, not
 //   themselves.
-const NX_DEFAULT_API_BASE = "https://apinexled-production.up.railway.app/api";
+const NX_DEFAULT_API_BASE = "https://nexled.alwaysdata.net/api";
 const NX_LOCAL_HOSTS = new Set(["localhost", "127.0.0.1", "[::1]"]);
 
 function nxResolveApiBase() {

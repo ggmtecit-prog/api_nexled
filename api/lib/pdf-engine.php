@@ -503,8 +503,8 @@ function renderDatasheetPdfBinaryFromContext(array $context): string {
 
         // --- Generate PDF ---
         $stage = "render_pdf";
-        set_time_limit(0);
-        ini_set("memory_limit", "640M");
+        set_time_limit(120);
+        ini_set("memory_limit", "256M");
 
         ob_start();
 

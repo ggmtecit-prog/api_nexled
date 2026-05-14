@@ -1,0 +1,14 @@
+# Apache config for NexLed API on alwaysdata.net
+# PHP limits safe for shared hosting (alwaysdata free tier)
+
+php_value memory_limit 256M
+php_value max_execution_time 120
+php_value max_input_time 120
+php_value upload_max_filesize 50M
+php_value post_max_size 50M
+
+# Disable directory listing
+Options -Indexes
+
+# All requests handled by index.php via ?endpoint= — no rewriting needed
+# because the API uses query strings natively
