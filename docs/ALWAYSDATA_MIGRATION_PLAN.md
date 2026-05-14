@@ -64,10 +64,11 @@ DB_PASS_LAMP=ledlamp74621
 DB_USER_INF=nexled_2024
 DB_PASS_INF=nexled_2024
 
-# DAM database — test first: see step 3
-DAM_DB_HOST=tecit.pt
-DAM_DB_USER=<nexled_dam_mysql_user>
-DAM_DB_PASS=<nexled_dam_mysql_password>
+# DAM database — on alwaysdata MySQL (nexled_dam was local, migrated here)
+DAM_DB_HOST=mysql-nexled.alwaysdata.net
+DAM_DB_USER=nexled
+DAM_DB_NAME=nexled_dam
+# DAM_DB_PASS=<set on server, not in git>
 ```
 
 ### 2c. Set PHP version to 8.2 on alwaysdata
