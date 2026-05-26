@@ -366,7 +366,7 @@ function buildDatasheetRenderContext(array $input): array {
     $ipRating  = getIpRating($productId, $ipOverride) ?? "";
     $sizesFile = getBarSizesFile($reference);
 
-    $lensLabel   = ($lens !== "" && $lens !== "0") ? " " . htmlspecialchars($lensName, ENT_QUOTES, "UTF-8") : "";
+    $lensLabel   = ($lens !== "" && $lens !== "0") ? " " . htmlspecialchars($lens, ENT_QUOTES, "UTF-8") : "";
     $finishLabel = ($finish !== "" && $finish !== "0") ? " " . htmlspecialchars($finish, ENT_QUOTES, "UTF-8") : "";
     $fullDescription = $description . $lensLabel . $finishLabel;
 
