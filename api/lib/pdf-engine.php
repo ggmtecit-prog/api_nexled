@@ -364,6 +364,10 @@ function buildDatasheetRenderContext(array $input): array {
     $ipRating  = getIpRating($productId, $ipOverride) ?? "";
     $sizesFile = getBarSizesFile($reference);
 
+    $lensLabel   = ($lens !== "" && $lens !== "0") ? " " . htmlspecialchars($lens, ENT_QUOTES, "UTF-8") : "";
+    $finishLabel = ($finish !== "" && $finish !== "0") ? " " . htmlspecialchars($finish, ENT_QUOTES, "UTF-8") : "";
+    $fullDescription = $description . $lensLabel . $finishLabel;
+
     $header          = getProductHeader($productType, $productId, $reference, $ledId, $config);
     $characteristics = getCharacteristics($productId, $ipRating, $parts["family"], $parts["lens"], $lang);
     $drawing         = getTechnicalDrawing($productType, $reference, $productId, $sizesFile, $config);
@@ -395,7 +399,7 @@ function buildDatasheetRenderContext(array $input): array {
     $data = [
         "lang"            => $lang,
         "reference"       => $reference,
-        "description"     => $description,
+        "description"     => $fullDescription,
         "energy_class"    => $lumino["energy_class"],
         "header"          => $header,
         "characteristics" => $characteristics,
@@ -440,13 +444,13 @@ function buildDatasheetRenderContext(array $input): array {
         "data" => $data,
         "reference" => $reference,
         "product_id" => $productId,
-        "description" => $description,
-        "document_title" => $description,
+        "description" => $fullDescription,
+        "document_title" => $fullDescription,
         "company" => $company,
         "lang" => $lang,
         "design_variant" => $designVariant,
         "footer_note" => "",
-        "footer_marker" => "officPDF",
+        "footer_marker" => "",
         "filename_reference" => preg_replace("/[^a-zA-Z0-9_-]/", "", $reference) ?: "datasheet",
     ];
     } catch (DatasheetRequestException $error) {

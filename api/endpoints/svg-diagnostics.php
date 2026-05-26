@@ -100,9 +100,12 @@ echo json_encode([
         "convert" => function_exists("findSystemCommand") ? findSystemCommand("convert") : null,
     ],
     "cache" => [
-        "path" => defined("PDF_RASTER_CACHE_PATH") ? PDF_RASTER_CACHE_PATH : null,
-        "exists" => defined("PDF_RASTER_CACHE_PATH") ? is_dir(PDF_RASTER_CACHE_PATH) : false,
+        "raster_path" => defined("PDF_RASTER_CACHE_PATH") ? PDF_RASTER_CACHE_PATH : null,
+        "raster_exists" => defined("PDF_RASTER_CACHE_PATH") ? is_dir(PDF_RASTER_CACHE_PATH) : false,
+        "remote_path" => defined("PDF_REMOTE_CACHE_PATH") ? PDF_REMOTE_CACHE_PATH : null,
+        "remote_exists" => defined("PDF_REMOTE_CACHE_PATH") ? is_dir(PDF_REMOTE_CACHE_PATH) : false,
     ],
+    "remote_fetch_test" => buildRemoteFetchTest($drawing["drawing"] ?? null),
     "color_graph_data" => [
         "label" => $colorGraph["label"] ?? null,
         "image" => $colorGraph["image"] ?? null,
@@ -165,6 +168,22 @@ function resolveDebugLensLabel(string $lensCode): string {
         "9" => "40°",
         default => "Nada",
     };
+}
+
+function buildRemoteFetchTest(?string $rawUrl): array {
+    if (!is_string($rawUrl) || trim($rawUrl) === "") {
+        return ["skipped" => true];
+    }
+    $transformedUrl = function_exists("getCloudinaryRasterizedUrl") ? getCloudinaryRasterizedUrl($rawUrl) : $rawUrl;
+    $cachedPath = function_exists("cacheRemoteAssetForPdf") ? cacheRemoteAssetForPdf($transformedUrl) : null;
+    return [
+        "raw_url" => $rawUrl,
+        "transformed_url" => $transformedUrl,
+        "cached_path" => $cachedPath,
+        "cached_file_exists" => $cachedPath !== null && is_file($cachedPath),
+        "cached_file_size" => ($cachedPath !== null && is_file($cachedPath)) ? filesize($cachedPath) : null,
+        "safe_path" => function_exists("getPdfSafeAssetPath") ? getPdfSafeAssetPath($rawUrl) : null,
+    ];
 }
 
 function resolveDebugFinishLabel(string $finishCode): string {
