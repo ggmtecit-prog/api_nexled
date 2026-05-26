@@ -105,6 +105,12 @@ echo json_encode([
         "remote_path" => defined("PDF_REMOTE_CACHE_PATH") ? PDF_REMOTE_CACHE_PATH : null,
         "remote_exists" => defined("PDF_REMOTE_CACHE_PATH") ? is_dir(PDF_REMOTE_CACHE_PATH) : false,
     ],
+    "gd_info" => [
+        "imagecreatefrompng" => function_exists("imagecreatefrompng"),
+        "imageistruecolor" => function_exists("imageistruecolor"),
+        "imagecreatetruecolor" => function_exists("imagecreatetruecolor"),
+        "imagepng" => function_exists("imagepng"),
+    ],
     "remote_fetch_test" => buildRemoteFetchTest($drawing["drawing"] ?? null),
     "to_pdf_asset_src_test" => buildToPdfAssetSrcTest($drawing["drawing"] ?? null),
     "color_graph_data" => [
