@@ -481,21 +481,25 @@ function cacheRemoteAssetForPdf(string $url): ?string {
 }
 
 /**
- * Converts a palette (indexed-color) PNG to true-color RGB so TCPDF can render it.
+ * Composites any cached PNG onto a white RGB canvas for TCPDF.
  *
- * TCPDF fails silently on 8-bit colormap PNGs (e.g. Cloudinary's f_png output from SVGs).
- * Uses GD to produce a companion .rgb.png file and returns that path instead.
- * If GD is unavailable or the PNG is already true-color, returns the original path.
+ * TCPDF fails silently on:
+ *   - 8-bit colormap (palette) PNGs — Cloudinary's f_png from simple SVGs
+ *   - RGBA PNGs with alpha channel — Cloudinary's f_png from complex/colored SVGs
+ *
+ * Always composites onto an opaque white RGB canvas so TCPDF gets a plain
+ * 24-bit RGB PNG regardless of the source type. Saves to a .rgb.png sibling
+ * in the same cache directory and reuses it on subsequent calls.
+ * Falls back silently to the original path if GD is unavailable.
  *
  * @param  string $pngPath  Local path to a PNG file
- * @return string  Path to true-color PNG (may be same as input or a .rgb.png sibling)
+ * @return string  Path to opaque RGB PNG (.rgb.png sibling, or original if GD absent)
  */
 function ensureTrueColorPng(string $pngPath): string {
     if (
         !is_file($pngPath) ||
         strtolower(pathinfo($pngPath, PATHINFO_EXTENSION)) !== "png" ||
         !function_exists("imagecreatefrompng") ||
-        !function_exists("imageistruecolor") ||
         !function_exists("imagecreatetruecolor") ||
         !function_exists("imagepng")
     ) {
@@ -511,11 +515,6 @@ function ensureTrueColorPng(string $pngPath): string {
     $img = @imagecreatefrompng($pngPath);
 
     if ($img === false) {
-        return $pngPath;
-    }
-
-    if (imageistruecolor($img)) {
-        imagedestroy($img);
         return $pngPath;
     }
 
