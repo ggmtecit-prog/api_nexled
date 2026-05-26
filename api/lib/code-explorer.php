@@ -2218,11 +2218,11 @@ function getCodeExplorerDatasheetReadiness(string $reference, string $productId,
 }
 
 function getCodeExplorerSafeLensAngles(string $family, string $lens): array {
-    if (!canReadInfoLensAngles()) {
+    $con = connectDBInf();
+
+    if (!$con instanceof mysqli) {
         return ["beam" => null, "field" => null];
     }
-
-    $con = connectDBInf();
     $lensQuery = $lens;
 
     $check = mysqli_query($con, "SELECT 1 FROM angulos_lente WHERE familia = '$family' AND lente = '$lens' LIMIT 1");
