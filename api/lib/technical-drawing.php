@@ -120,23 +120,23 @@ function getBarDrawing(string $reference, string $productId, ?string $sizesFile,
         $cap,
     ];
 
-    $drawing = findDamProductAsset($family, $productId, "drawing", $candidates);
+    foreach ($candidates as $name) {
+        $drawing = findImage(IMAGES_BASE_PATH . $folder . $name);
+
+        if ($drawing !== null) {
+            break;
+        }
+    }
+
+    if ($drawing === null) {
+        $drawing = findDamProductAsset($family, $productId, "drawing", $candidates);
+    }
 
     if ($drawing === null && $family === "01") {
         $drawing = cloudinaryDamExactAssetUrl("nexled/datasheet/drawings", "t8-fixo.svg");
     } elseif ($drawing === null && $family === "05") {
         $drawingAsset = $parts["cap"] === "02" ? "t5_sfio.svg" : "t5.svg";
         $drawing = cloudinaryDamExactAssetUrl("nexled/datasheet/drawings", $drawingAsset);
-    }
-
-    if ($drawing === null) {
-        foreach ($candidates as $name) {
-            $drawing = findImage(IMAGES_BASE_PATH . $folder . $name);
-
-            if ($drawing !== null) {
-                break;
-            }
-        }
     }
 
     // --- Read end cap dimensions from sizes JSON ---
