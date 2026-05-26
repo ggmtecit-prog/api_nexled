@@ -106,6 +106,7 @@ echo json_encode([
         "remote_exists" => defined("PDF_REMOTE_CACHE_PATH") ? is_dir(PDF_REMOTE_CACHE_PATH) : false,
     ],
     "remote_fetch_test" => buildRemoteFetchTest($drawing["drawing"] ?? null),
+    "to_pdf_asset_src_test" => buildToPdfAssetSrcTest($drawing["drawing"] ?? null),
     "color_graph_data" => [
         "label" => $colorGraph["label"] ?? null,
         "image" => $colorGraph["image"] ?? null,
@@ -168,6 +169,34 @@ function resolveDebugLensLabel(string $lensCode): string {
         "9" => "40°",
         default => "Nada",
     };
+}
+
+function buildToPdfAssetSrcTest(?string $rawUrl): array {
+    if (!is_string($rawUrl) || trim($rawUrl) === "") {
+        return ["skipped" => true];
+    }
+
+    $result = ["raw_url" => $rawUrl];
+
+    $safePath = function_exists("getPdfSafeAssetPath") ? getPdfSafeAssetPath($rawUrl) : null;
+    $result["safe_path"] = $safePath;
+    $result["safe_path_is_url"] = is_string($safePath) && (bool) preg_match("#^(https?:)?//#i", $safePath);
+    $result["safe_path_is_file"] = is_string($safePath) && is_file($safePath);
+    $result["safe_path_size"] = (is_string($safePath) && is_file($safePath)) ? filesize($safePath) : null;
+
+    if (is_string($safePath) && is_file($safePath)) {
+        $ext = strtolower(pathinfo($safePath, PATHINFO_EXTENSION));
+        $result["safe_path_ext"] = $ext;
+
+        if ($ext !== "svg") {
+            $contents = file_get_contents($safePath);
+            $result["file_readable"] = ($contents !== false);
+            $result["file_content_bytes"] = is_string($contents) ? strlen($contents) : 0;
+            $result["would_produce"] = "data:" . ($ext === "png" ? "image/png" : "image/jpeg") . ";base64,[" . (is_string($contents) ? strlen(base64_encode($contents)) : 0) . " chars]";
+        }
+    }
+
+    return $result;
 }
 
 function buildRemoteFetchTest(?string $rawUrl): array {
