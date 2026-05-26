@@ -2223,8 +2223,32 @@ function getCodeExplorerSafeLensAngles(string $family, string $lens): array {
     }
 
     $con = connectDBInf();
-    $queryBeam  = mysqli_query($con, "SELECT beam FROM angulos_lente WHERE familia = '$family' AND lente = '$lens'");
-    $queryField = mysqli_query($con, "SELECT field FROM angulos_lente WHERE familia = '$family' AND lente = '$lens'");
+    $lensQuery = $lens;
+
+    $check = mysqli_query($con, "SELECT 1 FROM angulos_lente WHERE familia = '$family' AND lente = '$lens' LIMIT 1");
+
+    if (!($check instanceof mysqli_result) || mysqli_num_rows($check) === 0) {
+        $conRef = connectDBReferencias();
+        $nameQ = mysqli_query($conRef,
+            "SELECT Acrilico.pt FROM Acrilico, Familias
+             WHERE Familias.codigo = '$family'
+               AND Acrilico.familia = Familias.acrilico
+               AND Acrilico.codigo = '$lens'
+             LIMIT 1"
+        );
+        closeDB($conRef);
+
+        if ($nameQ instanceof mysqli_result && mysqli_num_rows($nameQ) > 0) {
+            $nameRow = mysqli_fetch_row($nameQ);
+            $resolved = trim((string) $nameRow[0]);
+            if ($resolved !== "" && $resolved !== $lens) {
+                $lensQuery = $resolved;
+            }
+        }
+    }
+
+    $queryBeam  = mysqli_query($con, "SELECT beam FROM angulos_lente WHERE familia = '$family' AND lente = '$lensQuery'");
+    $queryField = mysqli_query($con, "SELECT field FROM angulos_lente WHERE familia = '$family' AND lente = '$lensQuery'");
     closeDB($con);
 
     $beam = ($queryBeam instanceof mysqli_result && mysqli_num_rows($queryBeam) > 0)

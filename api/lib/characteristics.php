@@ -37,6 +37,26 @@ function getLensAngles(string $family, string $lens): array {
 
     $query = mysqli_query($con, "SELECT beam, field FROM angulos_lente WHERE familia = '$family' AND lente = '$lens' LIMIT 1");
 
+    if ($query && mysqli_num_rows($query) === 0) {
+        $conRef = connectDBReferencias();
+        $nameQ = mysqli_query($conRef,
+            "SELECT Acrilico.pt FROM Acrilico, Familias
+             WHERE Familias.codigo = '$family'
+               AND Acrilico.familia = Familias.acrilico
+               AND Acrilico.codigo = '$lens'
+             LIMIT 1"
+        );
+        closeDB($conRef);
+
+        if ($nameQ && mysqli_num_rows($nameQ) > 0) {
+            $nameRow = mysqli_fetch_row($nameQ);
+            $lensName = trim((string) $nameRow[0]);
+            if ($lensName !== "" && $lensName !== $lens) {
+                $query = mysqli_query($con, "SELECT beam, field FROM angulos_lente WHERE familia = '$family' AND lente = '$lensName' LIMIT 1");
+            }
+        }
+    }
+
     closeDB($con);
 
     $row   = ($query && mysqli_num_rows($query) > 0) ? mysqli_fetch_assoc($query) : [];
