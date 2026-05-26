@@ -106,7 +106,7 @@ function getBarDrawing(string $reference, string $productId, ?string $sizesFile,
     $option         = $config["option"];
     $cableLength    = $config["cable_length"];
     $connectorCable = $config["connector_cable"];
-    $endCap         = $config["end_cap"];
+    $endCap         = $config["actual_end_cap"] ?? $config["end_cap"];
     $gasket         = $config["gasket"];
 
     $sizes = loadBarSizesDefinition($sizesFile, $reference);

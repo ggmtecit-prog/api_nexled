@@ -286,6 +286,7 @@ function buildDatasheetRenderContext(array $input): array {
     $connectorCable = preg_replace("/[^a-zA-Z0-9]/", "", $input["conectorcabo"]  ?? "0");
     $cableType      = preg_replace("/[^a-zA-Z0-9]/", "", $input["tipocabo"]      ?? "");
     $endCap         = preg_replace("/[^a-zA-Z0-9]/", "", $input["tampa"]         ?? "0");
+    $actualEndCap   = preg_replace("/[^a-zA-Z0-9]/", "", $input["tampafim"]      ?? "0");
     $gasket         = floatval($input["vedante"]                     ?? 5);
     $extraLength    = intval($input["acrescimo"]                     ?? 0);
     $fixingId       = preg_replace("/[^a-zA-Z0-9]/", "", $input["fixacao"]       ?? "0");
@@ -342,6 +343,7 @@ function buildDatasheetRenderContext(array $input): array {
         "connector_cable" => $connectorCable,
         "cable_type"      => $cableType,
         "end_cap"         => $endCap,
+        "actual_end_cap"  => $actualEndCap,
         "purpose"         => $purpose,
         "lang"            => $lang,
         "extra_length"    => $extraLength,
