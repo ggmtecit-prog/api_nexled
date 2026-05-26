@@ -293,6 +293,7 @@ function getFinishAndLens(string $productType, string $productId, string $refere
             } else {
                 $candidates = [
                     str_replace("+", "_", "{$finish}_{$cap}"),
+                    str_replace("+", "_", "{$finish}_{$series}"),
                     str_replace("+", "_", "{$finish}_{$endCap}"),
                 ];
             }

@@ -2634,6 +2634,7 @@ function getCodeExplorerFinishImagePath(string $productType, string $productId, 
             } else {
                 $candidates = [
                     str_replace("+", "_", "{$finish}_{$cap}"),
+                    str_replace("+", "_", "{$finish}_{$series}"),
                     str_replace("+", "_", "{$finish}_{$endCap}"),
                 ];
             }
