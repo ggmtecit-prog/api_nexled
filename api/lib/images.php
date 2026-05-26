@@ -481,6 +481,69 @@ function cacheRemoteAssetForPdf(string $url): ?string {
 }
 
 /**
+ * Converts a palette (indexed-color) PNG to true-color RGB so TCPDF can render it.
+ *
+ * TCPDF fails silently on 8-bit colormap PNGs (e.g. Cloudinary's f_png output from SVGs).
+ * Uses GD to produce a companion .rgb.png file and returns that path instead.
+ * If GD is unavailable or the PNG is already true-color, returns the original path.
+ *
+ * @param  string $pngPath  Local path to a PNG file
+ * @return string  Path to true-color PNG (may be same as input or a .rgb.png sibling)
+ */
+function ensureTrueColorPng(string $pngPath): string {
+    if (
+        !is_file($pngPath) ||
+        strtolower(pathinfo($pngPath, PATHINFO_EXTENSION)) !== "png" ||
+        !function_exists("imagecreatefrompng") ||
+        !function_exists("imageistruecolor") ||
+        !function_exists("imagecreatetruecolor") ||
+        !function_exists("imagepng")
+    ) {
+        return $pngPath;
+    }
+
+    $rgbPath = $pngPath . ".rgb.png";
+
+    if (is_file($rgbPath) && filesize($rgbPath) > 0) {
+        return $rgbPath;
+    }
+
+    $img = @imagecreatefrompng($pngPath);
+
+    if ($img === false) {
+        return $pngPath;
+    }
+
+    if (imageistruecolor($img)) {
+        imagedestroy($img);
+        return $pngPath;
+    }
+
+    $w   = imagesx($img);
+    $h   = imagesy($img);
+    $rgb = @imagecreatetruecolor($w, $h);
+
+    if ($rgb === false) {
+        imagedestroy($img);
+        return $pngPath;
+    }
+
+    imagefill($rgb, 0, 0, imagecolorallocate($rgb, 255, 255, 255));
+    imagecopy($rgb, $img, 0, 0, 0, 0, $w, $h);
+    imagedestroy($img);
+
+    if (@imagepng($rgb, $rgbPath, 6)) {
+        imagedestroy($rgb);
+        return $rgbPath;
+    }
+
+    imagedestroy($rgb);
+    return $pngPath;
+}
+
+
+
+/**
  * Normalizes a PDF asset path so remote DAM URLs become local cache files.
  *
  * @param  string $path
@@ -497,7 +560,7 @@ function getPdfSafeAssetPath(string $path): string {
         $cachedPath = cacheRemoteAssetForPdf(getCloudinaryRasterizedUrl($resolvedPath));
 
         if ($cachedPath !== null) {
-            $resolvedPath = $cachedPath;
+            $resolvedPath = ensureTrueColorPng($cachedPath);
         } else {
             return $path;
         }
