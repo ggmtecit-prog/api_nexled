@@ -336,7 +336,7 @@ function getFinishAndLens(string $productType, string $productId, string $refere
             break;
     }
 
-    $image = findDamProductAsset($family, $productId, "finish", $candidates);
+    $image = findDamProductAsset($family, $productId, "finish", $candidates, $lens);
 
     if ($image === null && $family === "01") {
         $finishFolder = strtolower(trim((string) $lens)) === "frost"

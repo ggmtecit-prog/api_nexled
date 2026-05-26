@@ -629,7 +629,7 @@ function buildProductSlugCandidates(string $productId): array {
  * @param  array<int, string> $filenameCandidates
  * @return string|null
  */
-function findDamProductAsset(string $familyCode, string $productId, string $kind, array $filenameCandidates = []): ?string {
+function findDamProductAsset(string $familyCode, string $productId, string $kind, array $filenameCandidates = [], string $lens = ""): ?string {
     static $cache = [];
     static $linkRowsCache = [];
     static $sharedConnection = null;
@@ -638,6 +638,7 @@ function findDamProductAsset(string $familyCode, string $productId, string $kind
         trim($familyCode),
         trim($productId),
         trim($kind),
+        $lens,
         implode(",", $filenameCandidates),
     ]);
 
@@ -678,9 +679,10 @@ function findDamProductAsset(string $familyCode, string $productId, string $kind
     if (!array_key_exists($rowsCacheKey, $linkRowsCache)) {
         $stmt = mysqli_prepare(
             $con,
-            "SELECT a.`filename`, a.`display_name`, a.`public_id`, a.`secure_url`, l.`product_code`
+            "SELECT a.`filename`, a.`display_name`, a.`public_id`, a.`secure_url`, l.`product_code`, f.`path` AS `folder_path`
              FROM `dam_asset_links` l
              JOIN `dam_assets` a ON a.`id` = l.`asset_id`
+             LEFT JOIN `dam_folders` f ON f.`folder_id` = a.`folder_id`
              WHERE a.`resource_type` = 'image'
                AND l.`family_code` = ?
                AND l.`role` = ?
@@ -730,6 +732,13 @@ function findDamProductAsset(string $familyCode, string $productId, string $kind
 
         if ($rowProductCode !== "" && in_array($rowProductCode, $slugCandidates, true)) {
             $score += 40;
+        }
+
+        if ($lens !== "") {
+            $folderPath = strtolower((string) ($row["folder_path"] ?? ""));
+            if ($folderPath !== "" && str_contains($folderPath, "/" . $lens)) {
+                $score += 15;
+            }
         }
 
         foreach ($stemCandidates as $stemCandidate) {

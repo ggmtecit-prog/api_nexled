@@ -86,21 +86,23 @@ class NEXLEDSHOWCASEPDF extends TCPDF {
         }
 
         if ($footerText !== "") {
-            $footerText .= " | showPDF";
-            $this->writeHTMLCell(
-                0,
-                0,
-                40,
-                280,
-                "<p style=\"font-size:7px; line-height:10px; color:#666666;\">{$footerText}</p>",
-                0,
-                1,
-                0,
-                true,
-                "",
-                true
-            );
+            $footerText .= " | ";
         }
+
+        $footerText .= "showPDF";
+        $this->writeHTMLCell(
+            0,
+            0,
+            40,
+            280,
+            "<p style=\"font-size:7px; line-height:10px; color:#666666;\">{$footerText}</p>",
+            0,
+            1,
+            0,
+            true,
+            "",
+            true
+        );
 
         $this->writeHTMLCell(
             0,

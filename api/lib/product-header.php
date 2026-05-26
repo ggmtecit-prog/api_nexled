@@ -119,7 +119,7 @@ function getProductImage(string $productType, string $productId, array $parts, a
             return null;
     }
 
-    $damImage = findDamProductAsset($family, $productId, "packshot", $candidates);
+    $damImage = findDamProductAsset($family, $productId, "packshot", $candidates, $lens);
 
     if ($damImage === null && $family === "01") {
         $damImage = getTubularFamily01DamPackshot($productId);
