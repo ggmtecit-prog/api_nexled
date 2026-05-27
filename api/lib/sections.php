@@ -630,7 +630,16 @@ function getFooter(string $productId, string $lang): string {
             $version = $row["@v"] ?? "";
         }
     } catch (\Exception $e) {
-        // Stored procedure not available (e.g. local dev) — version stays empty
+        // Stored procedure not available — version stays empty
+    }
+
+    // Direct-query fallback: read versao row from caracteristicas when stored proc unavailable
+    if ($version === "") {
+        $vq = mysqli_query($con, "SELECT valor_pt FROM caracteristicas WHERE texto_pt LIKE 'versao' AND ID LIKE '$productId' LIMIT 1");
+        if ($vq && mysqli_num_rows($vq) > 0) {
+            $vrow    = mysqli_fetch_row($vq);
+            $version = $vrow[0] ?? "";
+        }
     }
 
     closeDB($con);
