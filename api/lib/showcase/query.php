@@ -310,6 +310,20 @@ function collectShowcaseConfiguratorValidBaseRows(
     $baseRows = [];
     $seen = [];
 
+    // Safety cap: unconstrained queries on large families (e.g. family 11 with
+    // 1850 identities × 10 lenses × 13 finishes × 22 caps = 5.3M combos) cause
+    // memory exhaustion and HTTP 500. If no identity segment is locked AND
+    // the family has more identities than this threshold, return empty so
+    // buildShowcasePreview() surfaces a clean "no variants / needs scope" error
+    // instead of crashing the server.
+    $identityLocked = array_filter(
+        SHOWCASE_IDENTITY_SEGMENTS,
+        static fn(string $seg): bool => trim((string) ($locked[$seg] ?? "")) !== ""
+    );
+    if ($identityLocked === [] && count($identities) > 200) {
+        return [];
+    }
+
     foreach ($identities as $identityData) {
         $identity = (string) ($identityData["identity"] ?? "");
 

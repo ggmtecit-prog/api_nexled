@@ -1552,6 +1552,15 @@ function buildCodeExplorerEprelFields(string $productId, string $reference, stri
 }
 
 function collectFamilyReadyProductBaseRows(string $familyCode, array $options, array $identities): array {
+    // Safety cap: iterating >200 identities × all lens/finish/cap combos
+    // can exhaust memory for large families. The ready-products cache should
+    // be built offline (via family-ready-products endpoint warm-up), not on
+    // demand from a web request. Return empty when identities exceed the
+    // safe threshold so callers fall through cleanly.
+    if (count($identities) > 200) {
+        return [];
+    }
+
     $defaultProductType = getProductType($familyCode . str_repeat("0", REFERENCE_LENGTH_FULL - REFERENCE_LENGTH_FAMILY));
     $defaultOptionCode = $options["option"][0]["code"] ?? str_repeat("0", REFERENCE_LENGTH_OPTION);
     $baseRows = [];
