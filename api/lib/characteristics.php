@@ -178,12 +178,15 @@ function getCharacteristics(string $productId, string $ipRating, string $family,
         }
 
         // Override: beam angle (from angulos_lente table)
-        if ($ptLabel === $beamLabel && $angles["beam"] !== null) {
+        // Skip if the caracteristicas value already has footnote markers (**) —
+        // that means the DB stores a product-specific precise value; angulos_lente
+        // would only replace it with a less precise generic override.
+        if ($ptLabel === $beamLabel && $angles["beam"] !== null && !str_contains($value, "*")) {
             $value = strval($angles["beam"]);
         }
 
         // Override: field angle (from angulos_lente table)
-        if ($ptLabel === $fieldLabel && $angles["field"] !== null) {
+        if ($ptLabel === $fieldLabel && $angles["field"] !== null && !str_contains($value, "*")) {
             $value = strval($angles["field"]);
         }
 

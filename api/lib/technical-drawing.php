@@ -203,7 +203,7 @@ function getBarDrawing(string $reference, string $productId, ?string $sizesFile,
     }
 
     // When 2 end caps and no option selected, default cable length to 1.5m
-    if ($numEndCaps === 2 && $cableLength === "0" && $option === "0") {
+    if ($numEndCaps === 2 && $cableLength == 0 && $option === "0") {
         $cableLength = 1.5;
     }
 
