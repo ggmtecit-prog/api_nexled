@@ -108,7 +108,7 @@ echo json_encode([
     "versao_debug" => (function() use ($productId) {
         try {
             $con = connectDBLampadas();
-            $q = mysqli_query($con, "SELECT texto_pt, valor_pt, texto_en, valor_en FROM caracteristicas WHERE ID = '$productId' ORDER BY indice ASC");
+            $q = mysqli_query($con, "SELECT texto_pt, valor_pt, texto_en, valor_en, indice FROM caracteristicas WHERE ID = '$productId' ORDER BY indice ASC");
             $rows = [];
             if ($q) { while ($r = mysqli_fetch_assoc($q)) { $rows[] = $r; } }
             // Also try stored proc
