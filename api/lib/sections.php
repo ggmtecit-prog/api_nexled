@@ -238,7 +238,7 @@ function getLensDiagram(string $productId, string $reference): ?array {
  * @param  array  $config       User selections: lens, finish, end_cap, lang
  * @return array|null  Keys: image (path), finish_name (string) — null if image not found
  */
-function getFinishAndLens(string $productType, string $productId, string $reference, array $config): ?array {
+function getFinishAndLens(string $productType, string $productId, string $reference, array $config, bool $strictLens = false): ?array {
     $parts  = decodeReference($reference);
     $family = $parts["family"];
     $size   = $parts["size"];
@@ -278,38 +278,50 @@ function getFinishAndLens(string $productType, string $productId, string $refere
                 ? "/img/$family/acabamentos/$lens/$series/"
                 : "/img/$family/acabamentos/$lens/";
 
+            $lensCode   = $parts["lens"];
+            $lensPrefix = ($lens === "clear") ? "l{$lensCode}s{$series}" : "l{$lensCode}";
+
             if ($family === "32") {
                 $finishToken = ltrim($finishCode, "0");
                 if ($finishToken === "") {
                     $finishToken = "0";
                 }
-
-                $candidates = [
+                // BT bars: no lens prefix needed
+                $tierA = [];
+                $tierB = [
                     "{$finishToken}_{$endCap}",
                     "{$finishToken}_{$cap}",
                     str_replace("+", "_", "{$finish}_{$endCap}"),
                     str_replace("+", "_", "{$finish}_{$cap}"),
                 ];
             } else {
-                $candidates = [
+                $tierA = [
+                    str_replace("+", "_", "{$lensPrefix}_{$finish}_{$cap}"),
+                    str_replace("+", "_", "{$lensPrefix}_{$finish}_{$series}"),
+                    str_replace("+", "_", "{$lensPrefix}_{$finish}_{$endCap}"),
+                ];
+                $tierB = [
                     str_replace("+", "_", "{$finish}_{$cap}"),
                     str_replace("+", "_", "{$finish}_{$series}"),
                     str_replace("+", "_", "{$finish}_{$endCap}"),
                 ];
             }
+
+            $damCandidates  = $strictLens ? $tierA : array_merge($tierA, $tierB);
+            $diskCandidates = array_merge($tierA, $tierB);
             break;
 
         case "dynamic":
             $subtype    = explode("/", $productId)[1];
             $folder     = "/img/$family/$subtype/acabamentos/";
             $cleanFinish = str_replace("+", "", $finish);
-            $candidates = ["{$size}_{$cleanFinish}"];
+            $damCandidates = $diskCandidates = ["{$size}_{$cleanFinish}"];
             break;
 
         case "shelf":
             $folder = "/img/$family/acabamentos/";
             $cleanFinish = str_replace("+", "_", $finish);
-            $candidates = [
+            $damCandidates = $diskCandidates = [
                 "{$size}_{$lens}_{$cleanFinish}_{$cap}",
                 "{$size}_{$lens}_{$cleanFinish}_{$endCap}",
                 "{$size}_{$lens}_{$cleanFinish}",
@@ -323,7 +335,7 @@ function getFinishAndLens(string $productType, string $productId, string $refere
         case "tubular":
             $folder = "/img/$family/acabamentos/";
             $cleanFinish = str_replace("+", "_", $finish);
-            $candidates = [
+            $damCandidates = $diskCandidates = [
                 "{$size}_{$lens}_{$cleanFinish}_{$cap}",
                 "{$size}_{$lens}_{$cleanFinish}",
                 "{$size}_{$lens}",
@@ -332,12 +344,12 @@ function getFinishAndLens(string $productType, string $productId, string $refere
             break;
 
         default: // downlight
-            $folder     = "/img/$family/acabamentos/";
-            $candidates = ["{$size}_{$lens}_{$finish}"];
+            $folder = "/img/$family/acabamentos/";
+            $damCandidates = $diskCandidates = ["{$size}_{$lens}_{$finish}"];
             break;
     }
 
-    $image = findDamProductAsset($family, $productId, "finish", $candidates, $lens);
+    $image = findDamProductAsset($family, $productId, "finish", $damCandidates, $lens);
 
     if ($image === null && $family === "01") {
         $finishFolder = strtolower(trim((string) $lens)) === "frost"
@@ -352,7 +364,7 @@ function getFinishAndLens(string $productType, string $productId, string $refere
     }
 
     if ($image === null) {
-        foreach ($candidates as $name) {
+        foreach ($diskCandidates as $name) {
             $image = findImage(IMAGES_BASE_PATH . $folder . $name);
 
             if ($image !== null) {

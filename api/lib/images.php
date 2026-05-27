@@ -737,7 +737,7 @@ function findDamProductAsset(string $familyCode, string $productId, string $kind
         if ($lens !== "") {
             $folderPath = strtolower((string) ($row["folder_path"] ?? ""));
             if ($folderPath !== "" && str_contains($folderPath, "/" . $lens)) {
-                $score += 15;
+                $score += 80;
             }
         }
 

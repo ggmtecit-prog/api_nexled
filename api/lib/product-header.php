@@ -39,7 +39,7 @@ define("JSON_DESC_PATH", dirname(__FILE__, 2) . "/json/descricao");
  * @param  array  $config       User selections: lens, finish, connector_cable, cable_type, end_cap
  * @return string|null  Full image path, or null if no image found
  */
-function getProductImage(string $productType, string $productId, array $parts, array $config): ?string {
+function getProductImage(string $productType, string $productId, array $parts, array $config, bool $strictLens = false): ?string {
     if ($productType === "barra") {
         $config = normalizeBarAssetConfig($parts["raw"] ?? "", $config);
     }
@@ -62,32 +62,47 @@ function getProductImage(string $productType, string $productId, array $parts, a
                 ? "/img/$family/produto/$lens/$series/"
                 : "/img/$family/produto/$lens/";
 
-            // Try combinations from most specific to least specific
-            $candidates = [
-                str_replace("+", "_", "{$finish}_{$connectorCable}_{$cableType}_{$endCap}"),
-                str_replace("+", "_", "{$finish}_{$cap}"),
-            ];
+            // Lens-prefixed prefix encodes lens code (numeric) + series (for clear only).
+            // This makes DAM lookups unambiguous: "l1s1_alu_01" is clear/series-1/alu/cap-01.
+            // Tier A = lens-specific (preferred for DAM). Tier B = generic legacy fallback.
+            $lensCode   = $parts["lens"];
+            $lensPrefix = ($lens === "clear") ? "l{$lensCode}s{$series}" : "l{$lensCode}";
 
-            // Special case: BT bars (family 32) use connector + cable type + end cap only
             if ($family === "32") {
-                $candidates = ["{$connectorCable}_{$cableType}_{$endCap}"];
+                // BT bars: connector + cable + end cap (no finish, no lens prefix needed)
+                $tierA = [];
+                $tierB = ["{$connectorCable}_{$cableType}_{$endCap}"];
+            } elseif ($family === "58") {
+                // HOT bars: finish + end cap only
+                $tierA = [];
+                $tierB = ["{$finish}_{$endCap}"];
+            } else {
+                $tierA = [
+                    str_replace("+", "_", "{$lensPrefix}_{$finish}_{$connectorCable}_{$cableType}_{$endCap}"),
+                    str_replace("+", "_", "{$lensPrefix}_{$finish}_{$cap}"),
+                ];
+                $tierB = [
+                    str_replace("+", "_", "{$finish}_{$connectorCable}_{$cableType}_{$endCap}"),
+                    str_replace("+", "_", "{$finish}_{$cap}"),
+                ];
             }
 
-            // Special case: HOT bars (family 58) use finish + end cap only
-            if ($family === "58") {
-                $candidates = ["{$finish}_{$endCap}"];
-            }
+            // DAM: strict uses Tier A only (lens-specific). Non-strict includes Tier B fallbacks.
+            $damCandidates  = $strictLens ? $tierA : array_merge($tierA, $tierB);
+            // Disk: always include both tiers — the folder already discriminates lens for legacy files.
+            $diskCandidates = array_merge($tierA, $tierB);
             break;
 
         case "downlight":
-            $folder     = "/img/$family/produto/";
-            $candidates = ["{$size}_{$lens}"];
+            $folder         = "/img/$family/produto/";
+            $damCandidates  = ["{$size}_{$lens}"];
+            $diskCandidates = $damCandidates;
             break;
 
         case "shelf":
-            $folder = "/img/$family/produto/";
+            $folder      = "/img/$family/produto/";
             $cleanFinish = str_replace("+", "_", $finish);
-            $candidates = [
+            $damCandidates = $diskCandidates = [
                 "{$size}_{$lens}_{$cleanFinish}_{$cap}",
                 "{$size}_{$lens}_{$cleanFinish}_{$endCap}",
                 "{$size}_{$lens}_{$cleanFinish}",
@@ -97,9 +112,9 @@ function getProductImage(string $productType, string $productId, array $parts, a
             break;
 
         case "tubular":
-            $folder = "/img/$family/produto/";
+            $folder      = "/img/$family/produto/";
             $cleanFinish = str_replace("+", "_", $finish);
-            $candidates = [
+            $damCandidates = $diskCandidates = [
                 "{$size}_{$lens}_{$cleanFinish}_{$cap}",
                 "{$size}_{$lens}_{$cleanFinish}",
                 "{$size}_{$lens}",
@@ -112,14 +127,14 @@ function getProductImage(string $productType, string $productId, array $parts, a
             $subtype  = $idParts[1];
             $folder   = "/img/$family/$subtype/produto/";
             $finish   = str_replace("+", "", $finish);
-            $candidates = ["{$size}_{$finish}"];
+            $damCandidates = $diskCandidates = ["{$size}_{$finish}"];
             break;
 
         default:
             return null;
     }
 
-    $damImage = findDamProductAsset($family, $productId, "packshot", $candidates, $lens);
+    $damImage = findDamProductAsset($family, $productId, "packshot", $damCandidates, $lens);
 
     if ($damImage === null && $family === "01") {
         $damImage = getTubularFamily01DamPackshot($productId);
@@ -133,7 +148,7 @@ function getProductImage(string $productType, string $productId, array $parts, a
         return $damImage;
     }
 
-    foreach ($candidates as $filename) {
+    foreach ($diskCandidates as $filename) {
         $image = findImage(IMAGES_BASE_PATH . $folder . $filename);
 
         if ($image !== null) {
@@ -408,7 +423,7 @@ function getEnergyClassText(string $lang): string {
  * @return array  Keys: image (path|null), description (HTML string)
  *                Missing image returns null — the PDF builder decides how to handle it
  */
-function getProductHeader(string $productType, string $productId, string $reference, string $ledId, array $config): array {
+function getProductHeader(string $productType, string $productId, string $reference, string $ledId, array $config, bool $strictLens = false): array {
     $parts = decodeReference($reference);
     $lang  = $config["lang"];
 
@@ -419,7 +434,7 @@ function getProductHeader(string $productType, string $productId, string $refere
         getEnergyClassText($lang);
 
     return [
-        "image"       => getProductImage($productType, $productId, $parts, $config),
+        "image"       => getProductImage($productType, $productId, $parts, $config, $strictLens),
         "description" => $description,
     ];
 }

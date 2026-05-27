@@ -388,6 +388,11 @@ function requiresStrictBarValidation(string $familyCode): bool {
     return (bool) ($entry["strict_bar_validation"] ?? false);
 }
 
+function requiresStrictPackshotValidation(string $familyCode): bool {
+    $entry = getFamilyRegistryEntry($familyCode);
+    return (bool) ($entry["strict_packshot_validation"] ?? false);
+}
+
 function isFamilyShowcaseSupported(string $familyCode): bool {
     $entry = getFamilyRegistryEntry($familyCode);
     return (bool) ($entry["showcase_supported"] ?? false);

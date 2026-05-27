@@ -595,6 +595,57 @@ function cloudinaryDeleteFolderDetailed(string $folderPath): array {
     ];
 }
 
+/**
+ * Renames a Cloudinary asset in-place (changes public_id / filename).
+ *
+ * Uses the Upload API rename endpoint — cheaper than delete+re-upload.
+ * Returns the new secure_url on success, null on failure.
+ *
+ * @param  string $fromPublicId  Current public_id
+ * @param  string $toPublicId    New public_id (must be in same or different folder)
+ * @param  string $resourceType  "image" | "video" | "raw"
+ * @return string|null  New secure_url or null on failure
+ */
+function cloudinaryRename(string $fromPublicId, string $toPublicId, string $resourceType = "image"): ?string {
+    $missing = cloudinaryMissingAdminConfig();
+    if ($missing !== []) {
+        return null;
+    }
+
+    $credentials = cloudinaryAdminCredentials();
+    $cloudName   = cloudinaryConfigValue("CLOUDINARY_CLOUD_NAME");
+    $apiKey      = $credentials["api_key"];
+    $apiSecret   = $credentials["api_secret"];
+    $timestamp   = (string) time();
+
+    $params = [
+        "api_key"      => $apiKey,
+        "from_public_id" => $fromPublicId,
+        "overwrite"    => "true",
+        "timestamp"    => $timestamp,
+        "to_public_id" => $toPublicId,
+    ];
+    $params["signature"] = cloudinaryBuildSignature($params, $apiSecret);
+
+    $url = "https://api.cloudinary.com/v1_1/{$cloudName}/{$resourceType}/rename";
+
+    $ch = curl_init($url);
+    curl_setopt($ch, CURLOPT_POST,           true);
+    curl_setopt($ch, CURLOPT_POSTFIELDS,     http_build_query($params));
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_TIMEOUT,        30);
+    $response = curl_exec($ch);
+    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    curl_close($ch);
+
+    if ($httpCode !== 200 || !is_string($response)) {
+        return null;
+    }
+
+    $data = json_decode($response, true);
+    return is_array($data) && !empty($data["secure_url"]) ? (string) $data["secure_url"] : null;
+}
+
 function cloudinaryBuildSignature(array $params, string $apiSecret): string {
     $signatureParams = [];
 
