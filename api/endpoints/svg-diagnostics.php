@@ -119,7 +119,10 @@ echo json_encode([
             if ($vr) { $vrow = mysqli_fetch_array($vr); $procVersion = $vrow["@vv"] ?? null; }
             closeDB($con);
             $versaoRows = array_values(array_filter($rows, fn($r) => str_contains(strtolower($r["texto_pt"] ?? ""), "versao") || str_contains(strtolower($r["texto_pt"] ?? ""), "version")));
-            return ["proc_result" => $procVersion, "versao_rows" => $versaoRows, "all_count" => count($rows)];
+            // Check if stored proc exists in information_schema
+            $procCheckQ = mysqli_query($con, "SELECT ROUTINE_NAME FROM information_schema.ROUTINES WHERE ROUTINE_SCHEMA = DATABASE() AND ROUTINE_NAME = 'versao'");
+            $procExists = ($procCheckQ && mysqli_num_rows($procCheckQ) > 0);
+            return ["proc_result" => $procVersion, "proc_exists" => $procExists, "versao_rows" => $versaoRows, "all_rows" => $rows, "all_count" => count($rows)];
         } catch (\Throwable $e) { return ["error" => $e->getMessage()]; }
     })(),
     "gd_info" => [
