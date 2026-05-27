@@ -961,6 +961,7 @@ window.NexLedLocales.pt = {
             showcaseSectionRequired: "Selecione pelo menos uma secao de showcase.",
             showcasePreviewWaiting: "Escolha filtros de escopo e secoes do showcase para ver contagem de variantes e paginas estimadas.",
             showcasePreviewNeedsScope: "Escolha uma familia e mantenha os filtros de escopo que pretende antes de fazer preview do showcase PDF.",
+            showcaseNeedsScopeValues: "Carregue uma referência ou selecione pelo menos um valor de escopo (cor, lente, série…) para iniciar o preview.",
             showcasePreviewLoading: "A gerar preview do showcase...",
             showcasePreviewReady: "Preview do showcase pronto. Reveja contagens e depois gere o PDF.",
             showcasePreviewRequired: "Espere pelo preview do showcase antes de gerar o PDF.",

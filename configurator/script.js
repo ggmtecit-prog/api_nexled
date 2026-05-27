@@ -3185,6 +3185,25 @@ function scheduleShowcasePreview() {
         return;
     }
 
+    // Require at least one locked segment before running the preview.
+    // An unconstrained query (locked={}) for a large family can contain
+    // thousands of variants and will time out or exceed the variant limit.
+    // The user must load a reference or manually select at least one scope
+    // value (color, lens, series, etc.) before the preview fires.
+    const previewBody = buildShowcaseRequestBody();
+    const hasLockedScope = Object.keys(previewBody.locked || {}).length > 0;
+    if (!hasLockedScope) {
+        showcasePreviewState = {
+            ...createEmptyShowcasePreviewState(),
+            family: get("select-family"),
+            messageKey: "configurator.runtime.showcaseNeedsScopeValues",
+            messageFallback: "Load a reference or select at least one scope value (color, lens, series…) to start the preview.",
+        };
+        renderShowcasePreviewState();
+        syncGenerateButton();
+        return;
+    }
+
     showcasePreviewState = {
         ...showcasePreviewState,
         pending: true,

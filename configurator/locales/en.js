@@ -889,6 +889,7 @@ window.NexLedLocales.en = {
             showcaseSectionRequired: "Select at least one showcase section.",
             showcasePreviewWaiting: "Choose scope filters and showcase sections to preview variant count and estimated pages.",
             showcasePreviewNeedsScope: "Choose a family and keep the scope filters you want before previewing showcase PDF.",
+            showcaseNeedsScopeValues: "Load a reference or select at least one scope value (color, lens, series…) to start the preview.",
             showcasePreviewLoading: "Previewing showcase...",
             showcasePreviewReady: "Showcase preview ready. Review counts, then generate PDF.",
             showcasePreviewRequired: "Wait for showcase preview before generating PDF.",
