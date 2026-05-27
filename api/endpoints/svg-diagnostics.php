@@ -105,26 +105,6 @@ echo json_encode([
         "remote_path" => defined("PDF_REMOTE_CACHE_PATH") ? PDF_REMOTE_CACHE_PATH : null,
         "remote_exists" => defined("PDF_REMOTE_CACHE_PATH") ? is_dir(PDF_REMOTE_CACHE_PATH) : false,
     ],
-    "versao_debug" => (function() use ($productId) {
-        try {
-            $con = connectDBLampadas();
-            $q = mysqli_query($con, "SELECT texto_pt, valor_pt, texto_en, valor_en, indice FROM caracteristicas WHERE ID = '$productId' ORDER BY indice ASC");
-            $rows = [];
-            if ($q) { while ($r = mysqli_fetch_assoc($q)) { $rows[] = $r; } }
-            // Also try stored proc
-            $procVersion = null;
-            mysqli_query($con, "CALL versao('$productId', @vv)");
-            mysqli_query($con, "SELECT @vv");
-            $vr = mysqli_query($con, "SELECT @vv");
-            if ($vr) { $vrow = mysqli_fetch_array($vr); $procVersion = $vrow["@vv"] ?? null; }
-            closeDB($con);
-            $versaoRows = array_values(array_filter($rows, fn($r) => str_contains(strtolower($r["texto_pt"] ?? ""), "versao") || str_contains(strtolower($r["texto_pt"] ?? ""), "version")));
-            // Check if stored proc exists in information_schema
-            $procCheckQ = mysqli_query($con, "SELECT ROUTINE_NAME FROM information_schema.ROUTINES WHERE ROUTINE_SCHEMA = DATABASE() AND ROUTINE_NAME = 'versao'");
-            $procExists = ($procCheckQ && mysqli_num_rows($procCheckQ) > 0);
-            return ["proc_result" => $procVersion, "proc_exists" => $procExists, "versao_rows" => $versaoRows, "all_rows" => $rows, "all_count" => count($rows)];
-        } catch (\Throwable $e) { return ["error" => $e->getMessage()]; }
-    })(),
     "gd_info" => [
         "imagecreatefrompng" => function_exists("imagecreatefrompng"),
         "imageistruecolor" => function_exists("imageistruecolor"),

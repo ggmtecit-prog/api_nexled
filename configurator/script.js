@@ -3106,7 +3106,7 @@ function buildCustomRequestBody() {
             copy_overrides: copyOverrides,
             section_visibility: sectionVisibility,
             footer: {
-                marker: "CustPDF",
+                marker: "Custom",
             },
         },
     };
@@ -5699,7 +5699,12 @@ async function updateDescription(reference) {
             return;
         }
 
-        outputField.value = data.description || "";
+        let desc = data.description || "";
+        const lens = getDisplayText("select-lens");
+        const finish = getDisplayText("select-finish");
+        if (lens && lens !== "0") desc += " " + lens;
+        if (finish && finish !== "0") desc += " " + finish;
+        outputField.value = desc;
 
         setSummaryStateKeys(
             "configurator.runtime.ready",

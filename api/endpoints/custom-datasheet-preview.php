@@ -80,7 +80,7 @@ try {
                 "field_overrides" => $fieldOverrides,
                 "advanced_copy_sections" => $advancedCopySections,
                 "hidden_sections" => $hiddenSections,
-                "footer_marker" => $custom["footer"]["marker"] ?? "CustPDF",
+                "footer_marker" => $custom["footer"]["marker"] ?? "Custom",
             ],
             "field_snapshot" => $fieldSnapshot,
             "editable_copy" => $editableCopy,

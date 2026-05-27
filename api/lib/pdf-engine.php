@@ -370,12 +370,13 @@ function buildDatasheetRenderContext(array $input): array {
     $finishLabel = ($finish !== "" && $finish !== "0") ? " " . htmlspecialchars($finish, ENT_QUOTES, "UTF-8") : "";
     $fullDescription = $description . $lensLabel . $finishLabel;
 
-    $header          = getProductHeader($productType, $productId, $reference, $ledId, $config);
+    $strictPackshot  = requiresStrictPackshotValidation($parts["family"]);
+    $header          = getProductHeader($productType, $productId, $reference, $ledId, $config, $strictPackshot);
     $characteristics = getCharacteristics($productId, $ipRating, $parts["family"], $parts["lens"], $lang);
     $drawing         = getTechnicalDrawing($productType, $reference, $productId, $sizesFile, $config);
     $colorGraph      = getColorGraph($ledId, $lang);
     $lensDiagram     = getLensDiagram($productId, $reference);
-    $finishData      = getFinishAndLens($productType, $productId, $reference, $config);
+    $finishData      = getFinishAndLens($productType, $productId, $reference, $config, $strictPackshot);
 
     // --- Optional sections ---
     $fixing = ($fixingId !== "0")
@@ -452,7 +453,7 @@ function buildDatasheetRenderContext(array $input): array {
         "lang" => $lang,
         "design_variant" => $designVariant,
         "footer_note" => "",
-        "footer_marker" => "",
+        "footer_marker" => "Official",
         "filename_reference" => preg_replace("/[^a-zA-Z0-9_-]/", "", $reference) ?: "datasheet",
     ];
     } catch (DatasheetRequestException $error) {

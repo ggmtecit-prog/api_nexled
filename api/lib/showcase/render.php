@@ -22,6 +22,7 @@ class NEXLEDSHOWCASEPDF extends TCPDF {
     public string $showcaseCompany = "0";
     public string $showcaseLang = "pt";
     public string $showcaseProductId = "";
+    public string $footerMarker = "Showcase";
 
     public function Header(): void {
         $this->Line(10, 20, 200, 20, ["width" => 0.2, "color" => [0, 0, 0]]);
@@ -89,7 +90,7 @@ class NEXLEDSHOWCASEPDF extends TCPDF {
             $footerText .= " | ";
         }
 
-        $footerText .= "showPDF";
+        $footerText .= $this->footerMarker;
         $this->writeHTMLCell(
             0,
             0,
@@ -156,6 +157,7 @@ function renderShowcasePdfBinary(array $normalizedRequest, array $assembledShowc
         $pdf->showcaseCompany = (string) ($normalizedRequest["company"] ?? "0");
         $pdf->showcaseLang = (string) ($normalizedRequest["lang"] ?? "pt");
         $pdf->showcaseProductId = (string) (($assembledShowcase["sections"]["overview"]["representative_product_id"] ?? ""));
+        $pdf->footerMarker = "Showcase";
         $pdf->SetCreator("Nexled API");
         $pdf->SetAuthor("Nexled API");
         $pdf->SetTitle($pdf->showcaseTitle);
