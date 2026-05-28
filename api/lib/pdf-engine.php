@@ -283,6 +283,7 @@ function buildDatasheetRenderContext(array $input): array {
     $lens           = preg_replace("/[^a-zA-Z0-9°×\s]/", "", $input["lente"]    ?? "");
     $finish         = preg_replace("/[^a-zA-Z0-9+_-]/", "", $input["acabamento"] ?? "");
     $option         = preg_replace("/[^a-zA-Z0-9]/", "", $input["opcao"]         ?? "0");
+    $optionDesc     = trim(preg_replace("/[^a-zA-Z0-9°×\s.\/+_-]/", "", $input["opcao_desc"] ?? ""));
     $connectorCable = preg_replace("/[^a-zA-Z0-9]/", "", $input["conectorcabo"]  ?? "0");
     $cableType      = preg_replace("/[^a-zA-Z0-9]/", "", $input["tipocabo"]      ?? "");
     $endCap         = preg_replace("/[^a-zA-Z0-9]/", "", $input["tampa"]         ?? "0");
@@ -293,6 +294,7 @@ function buildDatasheetRenderContext(array $input): array {
     $supplyId       = preg_replace("/[^a-zA-Z0-9]/", "", $input["fonte"]         ?? "0");
     $cableId        = preg_replace("/[^a-zA-Z0-9]/", "", $input["caboligacao"]   ?? "0");
     $connectorId    = preg_replace("/[^a-zA-Z0-9]/", "", $input["conectorligacao"] ?? "0");
+    $outgoingCableLength = floatval($input["tamanhocabo"]             ?? 0);
     $cableLength    = floatval($input["tamanhocaboligacao"]          ?? 0);
     $purpose        = preg_replace("/[^a-zA-Z0-9]/", "", $input["finalidade"]    ?? "0");
 
@@ -348,7 +350,7 @@ function buildDatasheetRenderContext(array $input): array {
         "lang"            => $lang,
         "extra_length"    => $extraLength,
         "option"          => $option,
-        "cable_length"    => $cableLength,
+        "cable_length"    => $outgoingCableLength,
         "gasket"          => $gasket,
     ];
 
@@ -366,9 +368,10 @@ function buildDatasheetRenderContext(array $input): array {
     $ipRating  = getIpRating($productId, $ipOverride) ?? "";
     $sizesFile = getBarSizesFile($reference);
 
-    $lensLabel   = ($lens !== "" && $lens !== "0") ? " " . htmlspecialchars($lens, ENT_QUOTES, "UTF-8") : "";
-    $finishLabel = ($finish !== "" && $finish !== "0") ? " " . htmlspecialchars($finish, ENT_QUOTES, "UTF-8") : "";
-    $fullDescription = $description . $lensLabel . $finishLabel;
+    $lensLabel    = ($lens !== "" && $lens !== "0") ? " " . htmlspecialchars($lens, ENT_QUOTES, "UTF-8") : "";
+    $finishLabel  = ($finish !== "" && $finish !== "0") ? " " . htmlspecialchars($finish, ENT_QUOTES, "UTF-8") : "";
+    $optionLabel  = ($option !== "0" && $option !== "00" && $optionDesc !== "") ? " " . htmlspecialchars($optionDesc, ENT_QUOTES, "UTF-8") : "";
+    $fullDescription = $description . $lensLabel . $finishLabel . $optionLabel;
 
     $strictPackshot  = requiresStrictPackshotValidation($parts["family"]);
     $header          = getProductHeader($productType, $productId, $reference, $ledId, $config, $strictPackshot);

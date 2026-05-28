@@ -3032,8 +3032,10 @@ function buildDatasheetRequestBody() {
         lente: getSelectedOptionHint("select-lens"),
         acabamento: getSelectedOptionHint("select-finish"),
         opcao: get("select-option"),
+        opcao_desc: (get("select-option") && get("select-option") !== "0" && get("select-option") !== "00") ? (getSelectedOptionHint("select-option") || "") : "",
         conectorcabo: getRequestSelectValue("select-connector-cable"),
         tipocabo: getRequestSelectValue("select-cable-type"),
+        tamanhocabo: get("input-cable-length") || "0",
         tampa: getRequestSelectValue("select-end-cap"),
         vedante: getRequestSelectValue("select-gasket"),
         acrescimo: get("input-extra-length") || "0",
@@ -5699,12 +5701,7 @@ async function updateDescription(reference) {
             return;
         }
 
-        let desc = data.description || "";
-        const lens = getDisplayText("select-lens");
-        const finish = getDisplayText("select-finish");
-        if (lens && lens !== "0") desc += " " + lens;
-        if (finish && finish !== "0") desc += " " + finish;
-        outputField.value = desc;
+        outputField.value = data.description || "";
 
         setSummaryStateKeys(
             "configurator.runtime.ready",
