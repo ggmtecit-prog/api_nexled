@@ -400,6 +400,15 @@ function buildDatasheetRenderContext(array $input): array {
     if ($finishData === null) {
         throwDatasheetRequestError(422, ["error" => "Missing required data: finish image"]);
     }
+    if ($strictPackshot && ($header["image"] ?? null) === null) {
+        throwDatasheetRequestError(422, [
+            "error"      => "Missing required data: product image (no exact match for this lens/finish combination)",
+            "error_code" => "packshot_not_found",
+            "family"     => $parts["family"],
+            "lens"       => $parts["lens"],
+            "finish"     => $parts["finish"],
+        ]);
+    }
 
     // --- Assemble data array for the layout builder ---
     $data = [

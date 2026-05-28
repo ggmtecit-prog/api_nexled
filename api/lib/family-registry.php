@@ -99,6 +99,11 @@ function getFamilyRegistry(): array {
 
 function buildFamilyRegistryEntry(string $familyCode, array $entry): array {
     $entry["datasheet_runtime_implemented"] = (bool) ($entry["datasheet_runtime_supported"] ?? false);
+    // All datasheet-supported families require an exact lens/finish packshot match.
+    // No fallbacks: if the correct image is missing the PDF is blocked.
+    if (!array_key_exists("strict_packshot_validation", $entry)) {
+        $entry["strict_packshot_validation"] = (bool) ($entry["datasheet_runtime_supported"] ?? false);
+    }
     $productType = (string) ($entry["product_type"] ?? "");
     $showcaseMetadata = getFamilyShowcaseMetadata($familyCode, $productType);
     $customMetadata = getFamilyCustomDatasheetMetadata($familyCode, $entry);

@@ -629,7 +629,7 @@ function buildProductSlugCandidates(string $productId): array {
  * @param  array<int, string> $filenameCandidates
  * @return string|null
  */
-function findDamProductAsset(string $familyCode, string $productId, string $kind, array $filenameCandidates = [], string $lens = ""): ?string {
+function findDamProductAsset(string $familyCode, string $productId, string $kind, array $filenameCandidates = [], string $lens = "", bool $strict = false): ?string {
     static $cache = [];
     static $linkRowsCache = [];
     static $sharedConnection = null;
@@ -716,6 +716,7 @@ function findDamProductAsset(string $familyCode, string $productId, string $kind
 
     $bestUrl = null;
     $bestScore = 0;
+    $bestHasFilenameMatch = false;
 
     foreach ($linkRowsCache[$rowsCacheKey] as $row) {
         $secureUrl = trim((string) ($row["secure_url"] ?? ""));
@@ -725,6 +726,7 @@ function findDamProductAsset(string $familyCode, string $productId, string $kind
         }
 
         $score = 0;
+        $filenameMatched = false;
         $rowFilename = nexledNormalizeAssetStem((string) ($row["filename"] ?? ""));
         $rowDisplayName = nexledNormalizeAssetStem((string) ($row["display_name"] ?? ""));
         $rowPublicId = nexledNormalizeAssetStem((string) ($row["public_id"] ?? ""));
@@ -748,6 +750,7 @@ function findDamProductAsset(string $familyCode, string $productId, string $kind
 
             if ($rowFilename === $stemCandidate) {
                 $score += 60;
+                $filenameMatched = true;
                 break;
             }
 
@@ -756,11 +759,13 @@ function findDamProductAsset(string $familyCode, string $productId, string $kind
                 str_ends_with($rowFilename, $stemCandidate)
             ) {
                 $score += 55;
+                $filenameMatched = true;
                 break;
             }
 
             if ($rowDisplayName === $stemCandidate) {
                 $score += 50;
+                $filenameMatched = true;
                 break;
             }
 
@@ -769,11 +774,13 @@ function findDamProductAsset(string $familyCode, string $productId, string $kind
                 str_ends_with($rowDisplayName, $stemCandidate)
             ) {
                 $score += 45;
+                $filenameMatched = true;
                 break;
             }
 
             if (str_contains($rowPublicId, strtolower($stemCandidate))) {
                 $score += 20;
+                $filenameMatched = true;
                 break;
             }
         }
@@ -781,7 +788,15 @@ function findDamProductAsset(string $familyCode, string $productId, string $kind
         if ($score > $bestScore) {
             $bestScore = $score;
             $bestUrl = $secureUrl;
+            $bestHasFilenameMatch = $filenameMatched;
         }
+    }
+
+    // In strict mode a filename/displayName candidate match is mandatory.
+    // Slug + lens-folder scoring alone (+40+80=120) is not enough — that
+    // would return a wrong-finish asset linked to the same product code.
+    if ($strict && !$bestHasFilenameMatch) {
+        return $cache[$cacheKey] = null;
     }
 
     return $cache[$cacheKey] = ($bestScore > 0 ? $bestUrl : null);

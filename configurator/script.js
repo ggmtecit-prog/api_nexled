@@ -344,6 +344,7 @@ let selectDropdowns = new Map();
 let activeSelectDropdown = null;
 let selectDropdownEventsBound = false;
 let liveReferenceDraftDirty = false;
+let currentProductDescription = "";
 let availableConfiguratorFamilies = [];
 let apiBadgeState = {
     tone: "error",
@@ -3026,7 +3027,7 @@ function getSelectedDatasheetDesignVariant() {
 function buildDatasheetRequestBody() {
     return {
         referencia: document.getElementById("output-reference").value,
-        descricao: document.getElementById("output-description").value,
+        descricao: currentProductDescription || document.getElementById("output-description").value,
         idioma: getRequestSelectValue("select-language"),
         empresa: getRequestSelectValue("select-company"),
         lente: getSelectedOptionHint("select-lens"),
@@ -5226,7 +5227,7 @@ function bindLiveReferenceLoader() {
     }
 
     input.addEventListener("input", () => {
-        input.value = sanitizeTecitCode(input.value);
+        input.value = sanitizeTecitCode(input.value).slice(0, 17);
         liveReferenceDraftDirty = true;
         descriptionRequestToken += 1;
         document.getElementById("output-description").value = "";
@@ -5701,7 +5702,17 @@ async function updateDescription(reference) {
             return;
         }
 
-        outputField.value = data.description || "";
+        currentProductDescription = data.description || "";
+
+        const lensHint   = getSelectedOptionHint("select-lens") || "";
+        const finishHint = getSelectedOptionHint("select-finish") || "";
+        const optCode    = get("select-option") || "";
+        const optHint    = (optCode && optCode !== "0" && optCode !== "00")
+            ? (getSelectedOptionHint("select-option") || "") : "";
+        outputField.value = [currentProductDescription, lensHint, finishHint, optHint]
+            .filter((p) => p && p !== "0")
+            .join(" ")
+            .trim();
 
         setSummaryStateKeys(
             "configurator.runtime.ready",
@@ -5955,6 +5966,7 @@ function resetConfiguratorState() {
 
 function clearOutputValues() {
     liveReferenceDraftDirty = false;
+    currentProductDescription = "";
     document.getElementById("output-reference").value = "";
     document.getElementById("output-description").value = "";
 }
