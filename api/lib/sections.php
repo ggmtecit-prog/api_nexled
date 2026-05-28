@@ -382,7 +382,7 @@ function getFinishAndLens(string $productType, string $productId, string $refere
 
         error_log(
             "NexLed datasheet: missing finish image, using placeholder. " .
-            "reference={$reference}; folder={$folder}; candidates=" . implode(",", $candidates)
+            "reference={$reference}; folder={$folder}; candidates=" . implode(",", $diskCandidates)
         );
 
         if ($finishName === "") {
