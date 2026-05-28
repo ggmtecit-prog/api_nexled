@@ -1159,6 +1159,7 @@ function applyOutputModeState() {
     syncShowcaseScopeFieldStates();
     renderShowcasePreviewState();
     renderCustomPreviewState();
+    renderCustomInlineFieldOverrideEditors();
     syncGenerateButton();
 }
 
@@ -5452,6 +5453,10 @@ async function applyDecodedReferenceToForm(data) {
         extraLengthField.value = "0";
     }
 
+    // Changing select values via .value doesn't fire change events,
+    // so manually trigger cable auto-fill after option is set.
+    syncCableFieldsFromOption();
+
     buildReference();
 
     return {
@@ -5633,6 +5638,104 @@ function fillSelect(id, items, isArray) {
     selectDropdowns.get(id)?.refreshOptions();
 }
 
+/**
+ * Parses an option hint string (e.g. "ASQC2 0.6", "C1M 1m", "DC24 0.4P")
+ * and returns the inferred cable connector, cable type, and cable length.
+ * Returns null when the option does not encode cable information.
+ */
+function inferCableFromOptionHint(hint) {
+    if (!hint || hint === "" || hint === "0") return null;
+
+    const h = hint.trim();
+    const upper = h.toUpperCase();
+
+    // Connector prefix → select-connector-cable value.
+    // Check longer prefixes first to avoid false matches (ASQC2 before ASQC).
+    const CONNECTOR_PREFIXES = [
+        ["ASQC2", "asqc2"],
+        ["ASQC",  "asqc2"],
+        ["C1M",   "c1m"],
+        ["DC24",  "dc24"],
+        ["DCJ",   "dcj"],
+        ["C2P",   "c2p"],
+        ["C2 ",   "c2p"],   // "C2 " with space distinguishes from "C2P"
+        ["C2P",   "c2p"],
+    ];
+
+    let connector = null;
+    let rest = h;
+
+    for (const [prefix, value] of CONNECTOR_PREFIXES) {
+        if (upper.startsWith(prefix)) {
+            connector = value;
+            rest = h.slice(prefix.length).trim();
+            break;
+        }
+    }
+
+    if (!connector) return null;
+
+    // Strip trailing "UL" variant flag (e.g. "C2 0.6 UL")
+    rest = rest.replace(/\s+UL\s*$/i, "").trim();
+
+    // "P" suffix (before optional trailing text) → preto (black); default → branco (white)
+    let cableType = "branco";
+    if (/\s*P\s*$/i.test(rest)) {
+        cableType = "preto";
+        rest = rest.replace(/\s*P\s*$/i, "").trim();
+    }
+
+    // Extract the first numeric value as cable length in metres.
+    // Handles: "0.6", "1", "1.8", "0.17", "1m", "1.8m"
+    const match = rest.match(/^(\d+(?:[.,]\d+)?)\s*m?\b/i);
+    let cableLength = "";
+    if (match) {
+        const num = parseFloat(match[1].replace(",", "."));
+        if (!isNaN(num) && num >= 0) {
+            cableLength = String(num);
+        }
+    }
+
+    // Only return if we extracted at least a connector
+    return { connector, cableType, cableLength };
+}
+
+/**
+ * Reads the currently selected option, infers cable settings from its hint,
+ * and auto-fills select-connector-cable, select-cable-type, input-cable-length.
+ */
+function syncCableFieldsFromOption() {
+    const hint = getSelectedOptionHint("select-option") || "";
+    const cable = inferCableFromOptionHint(hint);
+
+    if (!cable) return;
+
+    // Connector
+    const connectorSelect = document.getElementById("select-connector-cable");
+    if (connectorSelect) {
+        const match = Array.from(connectorSelect.options).find((o) => o.value === cable.connector);
+        if (match) {
+            connectorSelect.value = cable.connector;
+            selectDropdowns.get("select-connector-cable")?.syncFromSelect();
+        }
+    }
+
+    // Cable type
+    const typeSelect = document.getElementById("select-cable-type");
+    if (typeSelect) {
+        typeSelect.value = cable.cableType;
+        selectDropdowns.get("select-cable-type")?.syncFromSelect();
+    }
+
+    // Cable length
+    if (cable.cableLength !== "") {
+        const lengthInput = document.getElementById("input-cable-length");
+        if (lengthInput) {
+            lengthInput.value = cable.cableLength;
+        }
+    }
+}
+
 function bindReferenceListeners() {
     REFERENCE_INPUT_IDS.forEach((id) => {
         const element = document.getElementById(id);
@@ -5651,6 +5754,13 @@ function bindReferenceListeners() {
 
         element.dataset.referenceBound = "true";
     });
+
+    // Auto-fill Cable and Connectors fields when the Option changes
+    const optionSelect = document.getElementById("select-option");
+    if (optionSelect && !optionSelect.dataset.cableAutoFillBound) {
+        optionSelect.addEventListener("change", syncCableFieldsFromOption);
+        optionSelect.dataset.cableAutoFillBound = "true";
+    }
 }
 
 function buildReference() {
