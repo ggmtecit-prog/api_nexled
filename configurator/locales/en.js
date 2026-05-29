@@ -927,6 +927,7 @@ window.NexLedLocales.en = {
             datasheetFailedWithMessage: "Datasheet generation failed: {message}",
             datasheetReady: "PDF ready. The download has started.",
             datasheetFailed: "Datasheet generation failed.",
+            datasheetPackshotMissing: "Product image not available for this lens and finish combination. The PDF cannot be generated until the image is added.",
             nothingToCopy: "Nothing to copy yet.",
             copied: "Copied {label}.",
             clipboardFailed: "Clipboard copy failed. Please copy manually.",

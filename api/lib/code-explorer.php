@@ -2175,7 +2175,7 @@ function getCodeExplorerDatasheetReadiness(string $reference, string $productId,
         ];
     }
 
-    $header = getProductHeader((string) $productType, $productId, $reference, $ledId, $config);
+    $header = getProductHeader((string) $productType, $productId, $reference, $ledId, $config, true);
 
     if (($header["image"] ?? null) === null || trim((string) ($header["description"] ?? "")) === "") {
         return $cache[$cacheKey] = [
@@ -2462,7 +2462,7 @@ function buildCodeExplorerPdfSpecsResponse(string $familyCode, string $familyNam
             "cable_length" => 0,
             "gasket" => 5,
         ];
-        $header = $ledId !== "" ? getProductHeader((string) $productType, $productId, $reference, $ledId, $config) : null;
+        $header = $ledId !== "" ? getProductHeader((string) $productType, $productId, $reference, $ledId, $config, true) : null;
         $ipRating = getCodeExplorerSafeIpRating($productId);
         $characteristics = getCodeExplorerSafeCharacteristics($productId, (string) ($ipRating ?? ""), $familyCode, $parts["lens"] ?? "", $lang);
         $technicalDrawing = getCodeExplorerSafeDimensions((string) $productType, $reference, $productId, getBarSizesFile($reference), $config);
@@ -2707,7 +2707,7 @@ function getCodeExplorerFinishImagePath(string $productType, string $productId, 
             break;
     }
 
-    $image = findDamProductAsset($family, $productId, "finish", $candidates);
+    $image = findDamProductAsset($family, $productId, "finish", $candidates, $lens, true);
 
     if ($image === null && $family === "01") {
         $finishFolder = strtolower(trim((string) $lens)) === "frost"

@@ -302,7 +302,7 @@ function buildCodeRepairHeaderSourceMap(
     }
 
     $parts = decodeReference($reference);
-    $header = getProductHeader($productType, $productId, $reference, $ledId, $config);
+    $header = getProductHeader($productType, $productId, $reference, $ledId, $config, true);
     $lookup = getCodeRepairProductImageLookup($productType, $productId, $parts, $config);
     $descriptionHtml =
         getProductDescriptionText($productId, $familyCode, $config["lang"]) .

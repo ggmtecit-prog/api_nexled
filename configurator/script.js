@@ -4978,6 +4978,32 @@ function refreshLocalizedControls() {
     applySummaryState();
     applyApiBadgeState();
     applyOutputModeState();
+    void refetchLanguageSensitiveData();
+}
+
+/**
+ * Re-fetches language-sensitive data after a UI language switch.
+ * Cache keys include language, so a different cached entry is loaded for
+ * the new language without busting the original.
+ *
+ * Safe to call when no family/reference is loaded — guards on presence.
+ */
+async function refetchLanguageSensitiveData() {
+    const familyCode = get("select-family");
+    const reference = document.getElementById("output-reference")?.value || "";
+
+    if (familyCode) {
+        try {
+            await loadOptions(familyCode);
+        } catch (error) {
+            console.error(error);
+        }
+    }
+
+    if (reference && reference.length >= 10) {
+        currentProductDescription = "";
+        updateDescription(reference);
+    }
 }
 
 window.addEventListener(CONFIGURATOR_I18N_EVENT, refreshLocalizedControls);
@@ -5078,9 +5104,14 @@ async function loadFamilies() {
     familyCombobox?.setDisabled(true);
     setFamilyPlaceholderKey("configurator.runtime.familyLoading", "Loading families...");
 
+    const familiesLang = getCurrentAppLanguage();
     const [healthResult, familiesResult] = await Promise.allSettled([
         fetchApiHealth(),
-        apiCacheRemember("families", 3600, () => apiFetch("/?endpoint=families")),
+        apiCacheRemember(
+            "families:" + familiesLang,
+            3600,
+            () => apiFetch("/?endpoint=families&lang=" + encodeURIComponent(familiesLang))
+        ),
     ]);
 
     try {
@@ -5185,7 +5216,12 @@ async function handleFamilyChange() {
 }
 
 async function loadOptions(familyCode) {
-    const data = await apiCacheRemember("options:" + familyCode, 3600, () => apiFetch("/?endpoint=options&family=" + encodeURIComponent(familyCode)));
+    const lang = getCurrentAppLanguage();
+    const data = await apiCacheRemember(
+        "options:" + familyCode + ":" + lang,
+        3600,
+        () => apiFetch("/?endpoint=options&family=" + encodeURIComponent(familyCode) + "&lang=" + encodeURIComponent(lang))
+    );
 
     fillSelect("select-size", data.tamanho, false);
     fillSelect("select-color", data.cor, true);
@@ -5659,7 +5695,6 @@ function inferCableFromOptionHint(hint) {
         ["DCJ",   "dcj"],
         ["C2P",   "c2p"],
         ["C2 ",   "c2p"],   // "C2 " with space distinguishes from "C2P"
-        ["C2P",   "c2p"],
     ];
 
     let connector = null;
@@ -5805,7 +5840,7 @@ async function updateDescription(reference) {
     }
 
     try {
-        const data = await apiFetch("/?endpoint=reference&ref=" + encodeURIComponent(reference));
+        const data = await apiFetch("/?endpoint=reference&ref=" + encodeURIComponent(reference) + "&lang=" + encodeURIComponent(getCurrentAppLanguage()));
         const familyName = getDisplayText("select-family");
 
         if (requestToken !== descriptionRequestToken) {
@@ -5912,9 +5947,12 @@ async function generateDatasheet() {
             const rawError = await response.text();
             const cleanError = extractResponseMessage(rawError);
 
+            let errorCode = "";
+
             if (contentType.includes("application/json") && rawError.trim() !== "") {
                 try {
                     const error = JSON.parse(rawError);
+                    errorCode = typeof error.error_code === "string" ? error.error_code : "";
                     const errorParts = [
                         error.error || "",
                         error.stage ? "stage: " + error.stage : "",
@@ -5929,6 +5967,16 @@ async function generateDatasheet() {
                 message = cleanError;
             } else {
                 message = "Request failed with status " + response.status;
+            }
+
+            if (errorCode === "packshot_not_found") {
+                setStatusKey(
+                    "configurator.runtime.datasheetPackshotMissing",
+                    "error",
+                    {},
+                    "Product image not available for this lens and finish combination. The PDF cannot be generated until the image is added."
+                );
+                return;
             }
 
             const failureMessage = resolveRuntimeFailureMessage("datasheetPdf", message);
@@ -6369,6 +6417,13 @@ function pad(value, length) {
 
     while (output.length < length) {
         output = "0" + output;
+    }
+
+    // Truncate from the left if the value is longer than the segment length.
+    // Reference codes have fixed-width segments — overflow would corrupt the
+    // 17-character reference layout.
+    if (output.length > length) {
+        output = output.slice(-length);
     }
 
     return output;

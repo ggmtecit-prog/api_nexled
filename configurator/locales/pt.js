@@ -998,6 +998,7 @@ window.NexLedLocales.pt = {
             datasheetFailedWithMessage: "Falha na geração da ficha técnica: {message}",
             datasheetReady: "Ficha técnica pronta. A transferência do PDF começou.",
             datasheetFailed: "Falha na geração da ficha técnica.",
+            datasheetPackshotMissing: "Imagem do produto indisponível para esta combinação de lente e acabamento. O PDF não pode ser gerado até a imagem ser adicionada.",
             nothingToCopy: "Ainda não existe nada para copiar.",
             copied: "Copiado {label}.",
             clipboardFailed: "Falha ao copiar para a área de transferência. Copie manualmente.",
