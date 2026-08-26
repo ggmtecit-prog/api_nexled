@@ -1,0 +1,132 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+
+<svg
+   width="72"
+   height="72"
+   viewBox="0 0 67.499999 67.499998"
+   id="svg2"
+   version="1.1"
+   inkscape:version="1.2.2 (732a01da63, 2022-12-09)"
+   sodipodi:docname="Outdoor.svg"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:cc="http://creativecommons.org/ns#"
+   xmlns:dc="http://purl.org/dc/elements/1.1/">
+  <defs
+     id="defs4">
+    <inkscape:perspective
+       sodipodi:type="inkscape:persp3d"
+       inkscape:vp_x="0 : 58.640327 : 1"
+       inkscape:vp_y="0 : 1000 : 0"
+       inkscape:vp_z="17.718681 : 58.640327 : 1"
+       inkscape:persp3d-origin="8.8593407 : 55.687104 : 1"
+       id="perspective4172" />
+    <marker
+       style="overflow:visible"
+       inkscape:stockid="InfiniteLineEnd"
+       id="InfiniteLineEnd"
+       refX="0"
+       refY="0"
+       orient="auto"
+       inkscape:isstock="true">
+      <g
+         id="g4450"
+         style="fill:#000000">
+        <circle
+           id="circle4452"
+           r="0.80000001"
+           cy="0"
+           cx="3" />
+        <circle
+           id="circle4454"
+           r="0.80000001"
+           cy="0"
+           cx="6.5" />
+        <circle
+           id="circle4456"
+           r="0.80000001"
+           cy="0"
+           cx="10" />
+      </g>
+    </marker>
+  </defs>
+  <sodipodi:namedview
+     id="base"
+     pagecolor="#ffffff"
+     bordercolor="#666666"
+     borderopacity="1.0"
+     inkscape:pageopacity="0.0"
+     inkscape:pageshadow="2"
+     inkscape:zoom="8"
+     inkscape:cx="9.6875"
+     inkscape:cy="31.125"
+     inkscape:document-units="px"
+     inkscape:current-layer="g4198"
+     showgrid="false"
+     fit-margin-top="0"
+     fit-margin-left="0"
+     fit-margin-right="0"
+     fit-margin-bottom="0"
+     inkscape:window-width="1920"
+     inkscape:window-height="1009"
+     inkscape:window-x="-8"
+     inkscape:window-y="-8"
+     inkscape:window-maximized="1"
+     showguides="true"
+     inkscape:guide-bbox="true"
+     inkscape:showpageshadow="0"
+     inkscape:pagecheckerboard="1"
+     inkscape:deskcolor="#d1d1d1" />
+  <metadata
+     id="metadata7">
+    <rdf:RDF>
+      <cc:Work
+         rdf:about="">
+        <dc:format>image/svg+xml</dc:format>
+        <dc:type
+           rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
+      </cc:Work>
+    </rdf:RDF>
+  </metadata>
+  <g
+     inkscape:label="Camada 1"
+     inkscape:groupmode="layer"
+     id="layer1"
+     transform="translate(-178.57143,-377.5)">
+    <g
+       id="g4198">
+      <g
+         id="g4198-4">
+        <rect
+           style="fill:#ffffff;fill-opacity:1;fill-rule:evenodd;stroke:#666666;stroke-width:0.262467;stroke-dasharray:none;stroke-opacity:1"
+           id="rect799"
+           width="18.897638"
+           height="18.897638"
+           x="0"
+           y="0"
+           transform="matrix(3.5718747,0,0,3.5718747,178.57143,377.5)" />
+      </g>
+      <g
+         id="g2705"
+         transform="matrix(0.80881142,0,0,0.80881142,42.290486,80.245422)">
+        <path
+           style="opacity:1;fill:none;fill-opacity:1;fill-rule:nonzero;stroke:#666666;stroke-width:0.60853;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:1;stroke-opacity:1"
+           d="m 189.09367,380.21035 -6.4408,6.42266 1.4421,0.002 v 4.82235 h 9.94136 v -4.81411 l 1.44539,0.002 -3.19403,-3.2171 v -2.8743 h -1.45033 v 1.41408 l -1.73197,-1.74516 z"
+           id="rect4184"
+           inkscape:connector-curvature="0"
+           sodipodi:nodetypes="ccccccccccccc"
+           transform="matrix(3.8095385,0,0,3.8095385,-501.70331,-1060.6008)" />
+        <path
+           style="opacity:1;fill:none;fill-opacity:1;fill-rule:nonzero;stroke:#666666;stroke-width:0.60853;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:1;stroke-opacity:1"
+           d="m 181.17691,388.11593 -1.71235,1.3764 1.71235,1.37819 v -0.69542 h 2.05374 v -1.36555 h -2.05374 z"
+           id="rect4170"
+           inkscape:connector-curvature="0"
+           transform="matrix(3.8095385,0,0,3.8095385,-506.22244,-1060.6008)" />
+      </g>
+    </g>
+  </g>
+</svg>

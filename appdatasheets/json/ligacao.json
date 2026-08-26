@@ -1,0 +1,18 @@
+{
+    "ligacao": {
+
+        "id": {
+            "branco": "cabo/[conector]/brf",
+            "preto": "cabo/[conector]/prf",
+            "cinzento": "cabo/[conector]/czi"
+        },
+
+        "tamanho": {
+            "pt": "Tamanho do cabo: [tamanho]m.",
+            "en": "Cable size: [tamanho]m.", 
+            "es": "Tamaño del cable: [tamanho]m."
+        }
+        
+    }
+
+}
